@@ -1,6 +1,13 @@
 Makefile
+*.knit
 *.txt
+*.lib
+*.exe
+*.dll
+lib/
+include/
 trashcan/
+release/
 __pycache__/
 src/ESPECTRO/shell.py
 src/ESPECTRO/utils/lyfile.py
