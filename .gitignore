@@ -1,0 +1,14 @@
+Makefile
+*.txt
+trashcan/
+__pycache__/
+src/ESPECTRO/shell.py
+src/ESPECTRO/utils/lyfile.py
+src/KVRNEL/LEX/KVR_PRS.c
+src/KVRNEL/LEX/KVR_PRS.h
+src/KVRNEL/MEM/KVR_COM.c
+src/KVRNEL/MEM/KVR_COM.h
+src/KVRNEL/MEM/KVR_KLS.c
+src/KVRNEL/MEM/KVR_KLS.h
+src/TEST.c
+KVR.px
