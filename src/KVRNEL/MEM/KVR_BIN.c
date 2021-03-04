@@ -14,8 +14,8 @@ int MKBIN(BIN* bin)                         {
     int isnew   = 0;                        // just so we know if we created something
 
                                             // we consider it a reading sesh if either
-    int reading = ( (bin->mode == "rb+")    // -mode is read for update (input & output)
-                  | (bin->mode == "rb" ) ); // -mode is read only       (just input    )
+    int r = ( !strcmp(bin->mode, "rb+")     // -mode is read for update (input & output)
+            | !strcmp(bin->mode, "rb" ) );  // -mode is read only       (just input    )
 
 //   ---     ---     ---     ---     ---
 
@@ -24,7 +24,7 @@ int MKBIN(BIN* bin)                         {
     if  (bin->file == NULL)                 {
 
         if  (isnew >  0   )                 { return ERROR;                                 }
-        elif(reading      )                 { bin->mode = "wb"; isnew = 1;  goto OPEN;      }
+        elif(r            )                 { bin->mode = "wb"; isnew = 1;  goto OPEN;      }
                                                                                             }
 
 //   ---     ---     ---     ---     ---
@@ -66,8 +66,8 @@ int MKBIN(BIN* bin)                         {
 //   ---     ---     ---     ---     ---
 
                                             // inform console rats like me about the fopen
-    if  (!MUTEBIN          )                { printf("Opened file <%s>\n", bin->path);      }
-    if  (bin->mode == "wb+")                { isnew = 2;                                    }
+    if  ( !MUTEBIN                 )        { printf("Opened file <%s>\n", bin->path);      }
+    if  ( !strcmp(bin->mode, "wb+"))        { isnew = 2;                                    }
 
     return isnew;                                                                           }
 

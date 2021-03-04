@@ -9,14 +9,15 @@
 from   msvcrt   import getch;
 from   pathlib  import Path;
 
-import os, sys, atexit;
+import os, sys, atexit, time;
 
 sys.ps1 = '>';
 sys.ps2 = '-';
 
 #   ---     ---     ---     ---     ---
 
-hxDEBUG = True;
+hxDEBUG  = -1;
+hxEPRINT =  1;
 
 def DEBUG_PRINT(d=None):
 
@@ -28,27 +29,89 @@ def DEBUG_PRINT(d=None):
 
     return hxDEBUG;
 
+def DISABLE_EPRINT(d=None):
+
+    global hxEPRINT;
+
+    if d:
+        hxEPRINT = d;
+        return None;
+
+    return hxEPRINT;
+
+hxNVRASK = 0;
+
+def DISABLE_CONFIRM(d=None):
+
+    global hxNVRASK;
+
+    if d:
+        hxNVRASK = d;
+        return None;
+
+    return hxNVRASK;
+
 ERRLEVELS =                                 {
 
+   -1: "SATANIC",
     0: "SYS",
     1: "WRNG",
     2: "ERR",
     3: "FTL_ERR",
-    4: "SATANIC"
 
                                             };
 
+import inspect;
+
+def QLNAME(frame):
+
+    code = frame.f_code;
+    name = code.co_name;
+    qual = None;
+
+    for cls in ( obj for obj in frame.f_globals.values()  #
+                     if  inspect.isclass(obj)             ):
+
+        if hasattr(cls, name):
+
+            member = getattr(cls, name);
+            if not inspect.isfunction(member): continue;
+
+            if member.__code__ == code:
+                qual = member.__qualname__;
+                break;
+
+    return qual;
+
 def ERRPRINT(*args, err=0, rec=1, sep=' ', end='\n'):
+
+    global hxEPRINT;
+    if not hxEPRINT: return None;
+
+#   ---     ---     ---     ---     ---
 
     global hxDEBUG; rec = max(1, min(rec, 7));
     mess = f"{sep.join(s for s in args)}{end}";
-    
-    if hxDEBUG:
 
-        prev   = sys._getframe(rec);
+    prev   = sys._getframe(rec);
+    kls    = QLNAME(prev);
 
-        caller = prev.f_code.co_name;
-        file   = prev.f_code.co_filename.replace(f"{ROOT()}\\", "").split("\\");
+    caller = prev.f_code.co_name if not kls else kls;
+    file   = prev.f_code.co_filename.replace(f"{ROOT()}\\", "").split("\\");
+
+    if rec > 1:
+        last     = sys._getframe(1);
+        reporter = last.f_code.co_name;
+
+    else:
+        reporter = caller;
+
+    mess   = mess.replace("$CALLER", caller  );
+    mess   = mess.replace("$LAST",   reporter);
+
+#   ---     ---     ---     ---     ---
+
+    if hxDEBUG <= err:
 
         x      = len(file);
 
@@ -65,42 +128,11 @@ def ERRPRINT(*args, err=0, rec=1, sep=' ', end='\n'):
             file = file[-1];
 
         line   = prev.f_lineno;
-
-        if rec > 1:
-            last     = sys._getframe(1);
-            reporter = last.f_code.co_name;
-
-        else:
-            reporter = caller;
-
-        mess   = mess.replace("$CALLER", caller  );
-        mess   = mess.replace("$LAST",   reporter);
-
         mess   = f"{ERRLEVELS[err]}: {caller} on {file} @{line}\n" + mess;
 
-    else:
-
-        mess =                              (
-
-                         mess.replace       ("$CALLER", "Caller")
-                    if   mess.startswith    ("$CALLER"          )
-
-                    else mess.replace       ("$CALLER", "caller") 
-
-                                            );
-
-        mess =                              (
-
-                         mess.replace       ("$LAST", "Reporter")
-                    if   mess.startswith    ("$LAST"            )
-
-                    else mess.replace       ("$LAST", "reporter") 
-
-                                            );
+#   ---     ---     ---     ---     ---
 
     print(mess);
-
-#   ---     ---     ---     ---     ---
 
 hxWARNS = True;
 
@@ -113,6 +145,18 @@ def FATAL_WARNINGS(d=None):
         return None;
 
     return hxWARNS;
+
+hxWALL = False;
+
+def FKWALL(d=None):
+
+    global hxWALL;
+
+    if d:
+        hxWALL = d;
+        return None;
+
+    return hxWALL;
 
 #   ---     ---     ---     ---     ---
 
@@ -172,6 +216,19 @@ def TARGET(p=None):
 
     ERRPRINT("TARGET%s"%PLATFORM);
 
+hxBTIME = 0.0;
+def BTIME(f=None):
+
+    global hxBTIME;
+    if f:
+
+        if f == 'rnow': f = time.time();
+
+        hxBTIME = f;
+        return None;
+
+    return hxBTIME;
+
 #   ---     ---     ---     ---     ---
 
 def DOS(comm): os.system(comm );
@@ -206,7 +263,7 @@ def WALK(path):
     return list(os.walk(path));
 
 def LISTDIR(path, exts=[]):
-    if ext: return [x for x in os.listdir(path) if len(x) >= 4 and  x[-4:] in exts];
+    if exts: return [x for x in os.listdir(path) if len(x) >= 4 and  x[-4:] in exts];
     return os.listdir(path);
 
 def EXTSOLVE(name, full):
@@ -265,19 +322,46 @@ def MULTICHOICE(mess, items, repeat = 0):
 
 #   ---     ---     ---     ---     ---
 
-def MKDIR(path):
+def MKDIR(path, recursive=1):
 
-    d = path.split("\\"); recurs = d[0]; 
-    for sp in d[1:]:
-        recurs = recurs + f"\\{sp}";
-        if not OKPATH(recurs): os.mkdir(recurs);
+    if recursive:
+
+        d = path.split("\\"); r = d[0]; 
+        for sp in d[1:]:
+            r = r + f"\\{sp}";
+            if not OKPATH(r): os.mkdir(r);
+
+        return 0;
+
+    else:
+
+        try:
+            os.mkdir(r); return 0;
+
+        except:
+            ERRPRINT(f"$LAST can't create dir <{path}> because the path is invalid",
+                      "$CALLER may have meant to turn on the recursive flag?",
+                      err=2, rec=2, sep="\n"                                       );
+
+            return 1;
+
+#   ---     ---     ---     ---     ---
+
+def SEP_DIRFRFILE(path):
+    return "\\".join( x for x in (path.split("\\")[:-1]));
+
+def SEP_FILEFRDIR(path):
+    return path.split("\\")[-1];
 
 #   ---     ---     ---     ---     ---
 
 def FLFILE(path, ask=1):
 
+    global hxNVRASK;
+    if hxNVRASK: ask=0;
+
     if not OKFILE(path):
-        ERRPRINT(f"File <{SHPATH(path)}> doesn't exist, cannot flush");
+        ERRPRINT(f"File <{SHPATH(path)}> doesn't exist, cannot flush", err=2, rec=2);
 
     else:
 
@@ -289,9 +373,108 @@ def FLFILE(path, ask=1):
 
         open(path, 'w').close();
 
-def MKFILE(path, s="", b=0, rh=0):
+#   ---     ---     ---     ---     ---
 
-    d = "\\".join( x for x in (path.split("\\")[:-1]);
+def RDFILE(path, b=0, rh=0, rl=0, dec=0, rl_sep="\n", trunc=0, ask=1):
+
+    global hxNVRASK;
+    if hxNVRASK: ask=0;
+
+    if not OKFILE(path):
+        ERRPRINT(f"File <{SHPATH(path)}> doesn't exist, cannot read", err=2, rec=2);
+        return (None, None);
+
+    if trunc and rh: rh = 0;
+    if dec and not b: dec = 0;
+
+    size = FILESIZE(path);
+    if ask:
+        i = CHOICE(f"File <{SHPATH(path)}> is over ({(READSIZE()/1024):.2f}KB)\n",
+                   f"Read anyway?"                                               );
+
+        if i == 2:
+            ERRPRINT("$CALLER attempted reading large file, but $LAST denied", rec=2);
+            return None;
+
+#   ---     ---     ---     ---     ---
+
+    if not rl:
+
+        if b:
+            m = 'rb+' if trunc else 'rb';
+            d = b"";
+
+        else:
+            m = 'r+' if trunc else 'r';
+            d = "";
+
+#   ---     ---     ---     ---     ---
+
+        file = None; ERRPRINT(f"Opened file <{SHPATH(path)}>", rec=2);
+        if rh:
+
+            file = open(path, m);
+            while size:
+
+                rb = min(size, READSIZE()); # bytes to read clamped to bytes left
+
+                s  = file.read(rb);         # read, cat, substract
+                d  = d + s; size -= rb;
+
+        else:
+
+            with open(path, m) as file:
+
+                while size:
+
+                    rb = min(size, READSIZE());
+
+                    s  = file.read(rb);
+                    d  = d + s; size -= rb;
+
+                if trunc: file.truncate(0);
+
+            ERRPRINT(f"Closed file <{SHPATH(path)}>", rec=2);
+
+#   ---     ---     ---     ---     ---
+
+        if dec:
+
+            try:
+                d = d.decode('ascii');
+
+            except UnicodeDecodeError:
+                d = d.decode                ( 'utf-8'                                       );
+                ERRPRINT                    ( "Your staunch defiance of ASCII is",          #
+                                              "looked down uppon by dark forces unknown...",#
+                                              err=-1, rec=2                                 );
+
+        if rh: return (d, file);
+        return (d, None);
+
+#   ---     ---     ---     ---     ---
+
+    file  = None; ERRPRINT(f"Opened file <{SHPATH(path)}>", rec=2);
+    file  = open(path, 'r+');
+    lines = rl_sep.join(line for line in file);
+
+    if trunc:
+        file.truncate(0);
+
+    if not rh:
+        file.close();
+        ERRPRINT(f"Closed file <{SHPATH(path)}>", rec=2);
+
+    return (lines, file);
+
+#   ---     ---     ---     ---     ---
+
+def MKFILE(path, s="", b=0, rh=0, ask=0):
+
+    global hxNVRASK;
+    if hxNVRASK: ask=0;
+
+    d = SEP_DIRFRFILE(path);
 
     if not OKPATH(d):
 
@@ -304,8 +487,8 @@ def MKFILE(path, s="", b=0, rh=0):
             ERRPRINT("BAD PATH: $LAST cannot create file for $CALLER", err=2, rec=2);
             return None;
 
-    if OKFILE(path):
-        i = CHOICE(f"File <{SHPATH(d)}> already exists. Overwrite?");
+    if OKFILE(path) and ask:
+        i = CHOICE(f"File <{SHPATH(path)}> already exists. Overwrite?");
 
         if i == 2:
             ERRPRINT("$CALLER attempted overwrite, but $LAST denied", rec=2);
@@ -313,7 +496,7 @@ def MKFILE(path, s="", b=0, rh=0):
 
 #   ---     ---     ---     ---     ---
 
-    success_mess = f"Created file <{SHPATH(path)}> for $CALLER";
+    success_mess = f"$CALLER created file <{SHPATH(path)}>";
     m = 'wb' if b else 'w';
 
     if s:
@@ -329,7 +512,7 @@ def MKFILE(path, s="", b=0, rh=0):
                     s = bytes               ( s, encoding='utf-8'                           );
                     ERRPRINT                ( "Your staunch defiance of ASCII is",          #
                                               "looked down uppon by dark forces unknown...",#
-                                              err=4, rec=2                                  );
+                                              err=-1, rec=2                                 );
 
 #   ---     ---     ---     ---     ---
 
@@ -356,7 +539,7 @@ def MKFILE(path, s="", b=0, rh=0):
     return 1;
 
 def CATPATH(*args):
-    return "\\".join(s for s in args);
+    return '\\'.join(s for s in args);
 
 #   ---     ---     ---     ---     ---
 
@@ -364,7 +547,7 @@ def DELF(path):
 
     if OKFILE(path):
         DOS("@del %s"%path);
-        ERRPRINT(f"Deleted file <{SHPATH(path)}>", rec=2);
+        ERRPRINT(f"$CALLER deleted file <{SHPATH(path)}>", rec=2);
 
     else: ERRPRINT(f"Error deleting <{SHPATH(path)}>", err=2, rec=2);
 
@@ -372,11 +555,15 @@ def DELD(path):
 
     if OKPATH(path):
         DOS("@rmdir %s"%path);
-        ERRPRINT(f"Deleted directory <{SHPATH(path)}>", rec=2);
+        ERRPRINT(f"$CALLER deleted directory <{SHPATH(path)}>", rec=2);
 
     else: ERRPRINT(f"Error deleting <{SHPATH(path)}>", err=2, rec=2);
 
 #   ---     ---     ---     ---     ---
+
+def FKTOUCH(f):
+    t = BTIME();
+    os.utime(f, (t, t));
 
 def TOUCH(f):
     Path(f).touch();
@@ -386,6 +573,32 @@ def MODTIME(path):
 
 def MTIMEVS(f1, f2):
     return MODTIME(f1) != MODTIME(f2);
+
+def MTIMELT(flist):
+
+    t      = MODTIME(flist[0]);
+    lesser = flist[0];
+
+    for f in flist[1:]:
+        new_t = MODTIME(f);
+        if new_t < t:
+            t      = new_t;
+            lesser = f;
+
+    return lesser;
+
+def MTIMEGT(flist):
+
+    t       = MODTIME(flist[0]);
+    greater = flist[0];
+
+    for f in flist[1:]:
+        new_t = MODTIME(f)
+        if new_t > t:
+            t       = new_t;
+            greater = f;
+
+    return greater;
 
 #   ---     ---     ---     ---     ---
 
@@ -397,22 +610,25 @@ def CLEANUP():
 
 def STARTUP(SETTINGS):
 
-    r         = SETTINGS[0]; ROOT           (r              );
+    r         = SETTINGS[ 0]; ROOT           (r              );
 
-    ccd       = SETTINGS[2];
-    ccd64     = SETTINGS[3];
-    p         = SETTINGS[4]; CC             (ccd, ccd64, p  );
+    ccd       = SETTINGS[ 2];
+    ccd64     = SETTINGS[ 3];
+    p         = SETTINGS[ 4]; CC             (ccd, ccd64, p  );
 
-    read_size = SETTINGS[5]; READSIZE       (read_size      ); 
-    warnfatal = SETTINGS[6]; FATAL_WARNINGS (warnfatal      );
-    debugprnt = SETTINGS[7]; DEBUG_PRINT    (debugprnt      );
+    read_size = SETTINGS[ 5]; READSIZE       (read_size      ); 
+    warnfatal = SETTINGS[ 6]; FATAL_WARNINGS (warnfatal      );
+    debugprnt = SETTINGS[ 7]; DEBUG_PRINT    (debugprnt      );
+    disblprnt = SETTINGS[ 8]; DISABLE_EPRINT (not disblprnt  );
+    nvrask    = SETTINGS[ 9]; DISABLE_CONFIRM(nvrask         );
+    fkwall    = SETTINGS[10]; FKWALL         (fkwall         );
 
     global KVRLOG;
 
     logpath = ROOT() + "\\KVR\\trashcan\\log";
     if not OKPATH(logpath): MKDIR(logpath);
 
-    KVRLOG = logpath + "\\KVNSLOG"; MKFILE(KVRLOG);
+    KVRLOG = logpath + "\\KVNSLOG"; MKFILE(KVRLOG, ask=0);
 
     DOS('TITLE %__SLAVE%%_PLATFORM% (ESPECTRO)');
     atexit.register(CLEANUP);
@@ -427,12 +643,7 @@ def SYSFLUSH():
 
 def SYSREAD(clear=1):
     global KVRLOG;
-
-    f     = open(KVRLOG, 'r+');
-    lines = '\n'.join(line for line in f);
-
-    if clear: f.truncate(0);
-    f.close(); return lines;
+    return RDFILE(KVRLOG, rl=1, trunc=clear, ask=0)[0];
 
 def SYSDUMP():
     pass;

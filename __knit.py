@@ -17,16 +17,19 @@ knitfold = str(pathlib.Path(__file__).parent.absolute());
 
 knitdefault =                               [
 
-    "PARENT_DIR     ='D:\\lieb_git'",
-    "KVR_DIR        ='\\KVR\\src'",
+    "PARENT_DIR     = 'D:\\lieb_git'",
+    "KVR_DIR        = '\\KVR\\src'",
 
-    "CC_DIR         ='C:\\MINGW'",
-    "CC_DIR64       ='\\x64\\mingw64'",
-    "PLATFORM       ='x64'",
+    "CC_DIR         = 'C:\\MINGW'",
+    "CC_DIR64       = '\\x64\\mingw64'",
+    "PLATFORM       = 'x64'",
 
-    "READ_SIZE      = 16384",
-    "FATAL_WARNINGS = 1",
-    "DEBUG_MESSAGES = 1"
+    "READ_SIZE      =  16384",
+    "FATAL_WARNINGS =  1",
+    "DEBUG_MESSAGES = -1",
+    "DISABLE_EPRINT =  0",
+    "NEVER_ASK      =  0",
+    "WALL           =  0"
 
                                             ];
 
@@ -71,6 +74,7 @@ with open(SETTINGS, 'r') as file:
 
             else:
                 s = s.replace("'", "");
+                s = s.rstrip(" "); s = s.lstrip(" ");
 
             LSET.append(s);
 

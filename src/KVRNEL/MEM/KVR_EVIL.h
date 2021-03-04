@@ -44,7 +44,7 @@ static char* __shpath(char* path)           {
                                               src[2] = *(path+3) == 'c';
 
                                             // shorten file string on success
-            if(src[0]*src[1]*src[2])        { file = path+5; break; }                       };
+            if(src[0] && src[1] && src[2])  { file = path+5; break; }                       };
 
     } return file;                          /* original path is returned on failure */      };
 

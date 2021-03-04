@@ -33,6 +33,7 @@ from ESPECTRO import (
 
     MKDIR,
     MKFILE,
+    RDFILE,
     DELF,
     DELD,
 
@@ -42,6 +43,8 @@ from ESPECTRO import (
     LKEYS,
     lyDICT,
 
+    BTIME,
+
     AVTO_SETOUT,
     AVTO_SETIN,
     AVTO_SETINC,
@@ -49,6 +52,7 @@ from ESPECTRO import (
     AVTO_LIBBIN,
 
     AVTO_CHKFILE,
+    AVTO_CHKDEPS,
     AVTO_CLEAN,
 
     AVTO_MKEXE,
@@ -92,7 +96,7 @@ class hxSRC:
         r = CHOICE("Current submodule is %s: %s. Choose another?"%(mod.name, sub));
         if r == 1:
             i = MULTICHOICE("Choose a subdir for %s:"%(self.name), mod.reprdirs());
-            key = LKEYS(mod.subdirs, i-1);
+            key = LKEYS(mod.subdirs, i-1 if i else 0);
 
         else: key = sub;
 
@@ -110,7 +114,7 @@ class hxSRC:
                 self.hed = 1;
                 f        = PX.at + "\\" + name + ".h";
 
-                with open(f, "w+") as fh: fh.write("".join(MKHED(name, self.ext)));
+                MKFILE(f, "".join(MKHED(name, self.ext)));
 
 #   ---     ---     ---     ---     ---
 
@@ -119,7 +123,8 @@ class hxSRC:
 
             lines = MKSRC(name, self.ext);
             if self.hed: lines[6] = '#include "%s.h"\n\n'%(name);
-            with open(f, "w+") as fh: fh.write("".join(lines));
+
+            MKFILE(f, "".join(lines));
 
         return self;
 
@@ -144,6 +149,8 @@ class hxSRC:
 #   ---     ---     ---     ---     ---
 
 class hxMOD:
+
+    load = "FUK";
 
     def __init__(self, name = 'MOD', subdirs = {}, lib=[], lib64=[], mode = 1):
 
@@ -186,7 +193,7 @@ class hxMOD:
         self.name    = clnstr               (x                                         );
 
         i            = MULTICHOICE("Build %s as..."%self.name, build_opt);
-        self.mode    = i - 1;
+        self.mode    = i - 1 if i else 0;
 
         mdpath       = self.path;
 
@@ -275,6 +282,13 @@ class hxMOD:
 
     def listfiles(self, sub):
         return ( [fname, fdata] for fname, fdata in self.subdirs[sub].items() );
+
+    def getoutf(self):
+
+        p = self.path; l = [];
+        
+
+        return l;
 
 #   ---     ---     ---     ---     ---
 
@@ -385,32 +399,20 @@ class hxPX:
 
             px_dict["modules"].append(d);
 
-        with open(self.path + ("\\%s.px"%self.name), 'wb') as pxfile:
-            pxfile.write(bytes(str(px_dict), encoding='ascii'));
+        MKFILE(self.path + ("\\%s.px"%self.name), str(px_dict).replace(" ", ""), b=1);
 
 #   ---     ---     ---     ---     ---
 
     @staticmethod
     def load(name):
 
-        path = CATPATH(ROOT(), name, "\\%s.px"%name);
+        path = CATPATH(ROOT(), name, "%s.px"%name);
 
         if not OKFILE(path):
             ERRPRINT(f"Project <{SHPATH(path)}> not found", err=2, rec=1);
             return None;
 
-        d = b""; s = 1;
-        with open(path, 'rb') as file:
-
-            size = FILESIZE(path);
-            while size:
-
-                rb = min(size, READSIZE()); # bytes to read  clamped to bytes left
-
-                s  = file.read(rb);         # read, cat, substract
-                d  = d + s; size -= rb;
-
-        d = eval(d.decode('ascii'));
+        d = eval(RDFILE(path, b=1, dec=1, ask=0)[0]);
         return hxPX(**d);
 
 #   ---     ---     ---     ---     ---
@@ -471,16 +473,21 @@ class hxPX:
 
         nthmod = 1;
         while nthmod == 1:
-            i = MULTICHOICE("Which module?", [m.name for m in self.modules]) - 1;
-            m = self.modules[i];
+            i = MULTICHOICE("Which module?", [m.name for m in self.modules]);
+            m = self.modules[i-1 if i else 0];
 
             nthlib = 1;
             while nthlib == 1:
-                l32 = input("\nlib  : ");
-                l64 = input("lib64: "  );
+                l32 = input("\nlib: ");
+
+                i = CHOICE(f"The 64-bits version is named different?");
+                if i == 1:
+                    l64 = input("lib64: ");
+
+                else: l64 = l32;
 
                 if l32 not in m.lib  : m.lib.append(l32);
-                if l64 not in m.lib64: m.lib.append(l64);
+                if l64 not in m.lib64: m.lib64.append(l64);
 
                 nthlib = CHOICE(f"\nAdd another lib to {m.name}?");
 
@@ -523,7 +530,7 @@ class hxPX:
         self.mkpaths();
 
         i            = MULTICHOICE("Build %s as..."%self.name, build_opt);
-        self.mode    = i - 1;
+        self.mode    = i - 1 if i else 0;
 
         self.modules = self.scanmods();
 
@@ -573,7 +580,7 @@ class hxPX:
         x = 0;
         for m in self.modules:
 
-            if len((t for t in tmp if t)) == 1:
+            if len([t for t in tmp if t]) == 1:
 
                                             # solid competitor for ugliest shit ever written
                                             # worst part is i understand why it works
@@ -581,8 +588,8 @@ class hxPX:
                 self.build_order[x] =       (
 
                                             self.modules.index(                              #
-                                                ( m for m, t in zip(self.modules, tmp)       #
-                                                    if  m == t and m.name != '__main__' )[0] #
+                                                [ m for m, t in zip(self.modules, tmp)       #
+                                                    if  m == t and m.name != '__main__' ][0] #
                                             )                                                );
 
                 continue;
@@ -590,6 +597,8 @@ class hxPX:
             if m.name == '__main__': continue;
 
             i = MULTICHOICE(f"SLOT {x}", [m for m in tmp if m]);
+            if not i: break;
+
             self.build_order[x] = i-1; tmp[i-1] = 0; x += 1;
 
         self.build_order[-1] = self.modules.index( [ m for m in self.modules
@@ -609,6 +618,10 @@ class hxPX:
 
         global PX; PX = self;
 
+        BTIME('rnow');                      # sets time value for all timestamps to right now
+                                            # ensures there's no variance in mod/access time
+                                            # for all files built by this call
+
         outbase = self.intdir;
         release = self.outdir;
         libdir  = self.libdir;
@@ -623,8 +636,6 @@ class hxPX:
         AVTO_SETINC(self.includes);
         AVTO_LIBDIR(libdir       );
 
-        incr_lib = [];
-
         for m in self.orderedModules():
 
             self.curmod = m;
@@ -632,7 +643,6 @@ class hxPX:
             if not OKPATH(outdir): MKDIR(outdir);
 
             AVTO_SETOUT(outdir); mfiles = []; fcount = 0;
-            deps = m.lib if TARGET() == "x32" else m.lib64; AVTO_LIBBIN(deps);
 
 #   ---     ---     ---     ---     ---
 
@@ -659,25 +669,26 @@ class hxPX:
 
             if abort: break;
 
-            if len(mfiles):
+            if m.name == '__main__':
+                n = self.name; AVTO_SETOUT(release);
+                DEPS = AVTO_CHKDEPS(m, f"{n}.exe");
 
-                if fcount != -len(mfiles) or force:
+            elif m.mode == 0:
+                n = m.name; AVTO_SETOUT(f"{release}\\bin");
+                DEPS = AVTO_CHKDEPS(m, f"{n}.exe");
 
-                    if m.name == '__main__':
-                        n = self.name;
-                        AVTO_SETOUT(release);
+            else:
+                n = m.name; DEPS = 0;
+                AVTO_SETOUT(libdir);
 
-                    elif m.mode == 0:
-                        n = m.name;
-                        AVTO_SETOUT(f"{release}\\bin");
+            if len(mfiles) or DEPS:
 
-                    else:
-                        n = m.name;
-                        AVTO_SETOUT(libdir);
+                if fcount != -len(mfiles) or brute or DEPS:
 
                     if    m.mode == 0: inc, failure = AVTO_MKEXE(mfiles, gcc, n);
                     elif  m.mode == 1: inc, failure = AVTO_MKLIB(mfiles, ar,  n);
                     else             : inc, failure = AVTO_MKDLL(mfiles, gcc, n);
+
                     if failure: break;
 
                 else:

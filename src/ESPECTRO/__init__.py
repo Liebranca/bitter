@@ -8,6 +8,7 @@
 from .utils.lyos import (
 
     ROOT,
+    BTIME,
 
     DOS,
     CLS,
@@ -21,6 +22,9 @@ from .utils.lyos import (
 
     MKDIR,
     MKFILE,
+    RDFILE,
+    FLFILE,
+
     DELF,
     DELD,
 
@@ -33,8 +37,11 @@ from .utils.lyos import (
     READSIZE,
 
     TOUCH,
+    FKTOUCH,
     MODTIME,
     MTIMEVS,
+    MTIMELT,
+    MTIMEGT,
 
     SYSREAD,
     SYSDUMP,
@@ -48,6 +55,7 @@ from .utils.lyos import (
     CHOICE,
     MULTICHOICE,
 
+    FKWALL,
     FATAL_WARNINGS
 
 );
@@ -68,6 +76,7 @@ from .builder import (
     AVTO_LIBBIN,
 
     AVTO_CHKFILE,
+    AVTO_CHKDEPS,
     AVTO_CLEAN,
 
     AVTO_MKEXE,
