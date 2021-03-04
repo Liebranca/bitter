@@ -22,6 +22,7 @@ from ESPECTRO import (
     MKHED,
 
     CATPATH,
+    SHPATH,
     OKPATH,
     OKFILE,
 
@@ -31,6 +32,7 @@ from ESPECTRO import (
     WALK,
 
     MKDIR,
+    MKFILE,
     DELF,
     DELD,
 
@@ -43,7 +45,8 @@ from ESPECTRO import (
     AVTO_SETOUT,
     AVTO_SETIN,
     AVTO_SETINC,
-    AVTO_SETLIB,
+    AVTO_LIBDIR,
+    AVTO_LIBBIN,
 
     AVTO_CHKFILE,
     AVTO_CLEAN,
@@ -142,10 +145,13 @@ class hxSRC:
 
 class hxMOD:
 
-    def __init__(self, name = 'MOD', subdirs = {}, mode = 1):
+    def __init__(self, name = 'MOD', subdirs = {}, lib=[], lib64=[], mode = 1):
 
-        self.name = name;
-        self.mode = mode;
+        self.name  = name;
+        self.mode  = mode;
+
+        self.lib   = lib;
+        self.lib64 = lib64;
 
         if subdirs:
             for sd in subdirs:
@@ -311,14 +317,13 @@ class hxMOD:
             del fh;
 
         else:
-            print("Cannot find file <%s>"%fname);
+            ERRPRINT(f"Cannot find file <{SHPATH(fname)}>", err=2, rec=1);
 
 #   ---     ---     ---     ---     ---
 
 class hxPX:
 
-    def __init__(self, name   ="", includes=[], lib =[], lib64=[],
-                       modules=[], order   =[], mode=0           ):
+    def __init__(self, name="", includes=[], modules=[], order=[], mode=0):
 
         self.name         = name;
         self.mode         = mode;
@@ -327,10 +332,6 @@ class hxPX:
         self.cursub       = "";
 
         self.add_includes = includes;
-
-        self.add_lib      = lib;
-        self.add_lib64    = lib64;
-
         self.build_order  = order;
 
         global PX; PX     = self;
@@ -348,8 +349,6 @@ class hxPX:
             "mode"    : self.mode,
 
             "includes": self.add_includes,
-            "lib"     : self.add_lib,
-            "lib64"   : self.add_lib64,
 
             "order"   : self.build_order,
 
@@ -365,7 +364,10 @@ class hxPX:
 
                 "name"   : m.name,
                 "mode"   : m.mode,
-                "subdirs": {}
+                "subdirs": {},
+
+                "lib"    : m.lib,
+                "lib64"  : m.lib64
 
                                             };
 
@@ -394,7 +396,7 @@ class hxPX:
         path = CATPATH(ROOT(), name, "\\%s.px"%name);
 
         if not OKFILE(path):
-            print("Project <%s> not found"%path)
+            ERRPRINT(f"Project <{SHPATH(path)}> not found", err=2, rec=1);
             return None;
 
         d = b""; s = 1;
@@ -428,11 +430,8 @@ class hxPX:
                + self.add_includes                 );
 
     @property
-    def libs(self):
-        return ( [ CATPATH(self.path, "lib", TARGET()) ] #
-
-               +   self.add_lib if   TARGET() == "x86"   #
-                                else self.add_lib64      )
+    def libdir(self):
+        return CATPATH(self.path, "lib", TARGET());
 
     @property
     def intdir(self):
@@ -452,9 +451,9 @@ class hxPX:
         else    :
             self.add_includes.extend(includes);
 
-    def setlib(self, libs, m=0):
+    def setlibdir(self, libs, m=0):
 
-        if TARGET() == "x86":
+        if TARGET() == "x32":
             if not m:
                 self.add_lib = libs;
 
@@ -468,26 +467,43 @@ class hxPX:
             else    :
                 self.add_lib64.extend(libs);
 
+    def addlibs(self, libs=[]):
+
+        nthmod = 1;
+        while nthmod == 1:
+            i = MULTICHOICE("Which module?", [m.name for m in self.modules]) - 1;
+            m = self.modules[i];
+
+            nthlib = 1;
+            while nthlib == 1:
+                l32 = input("\nlib  : ");
+                l64 = input("lib64: "  );
+
+                if l32 not in m.lib  : m.lib.append(l32);
+                if l64 not in m.lib64: m.lib.append(l64);
+
+                nthlib = CHOICE(f"\nAdd another lib to {m.name}?");
+
+            nthmod = CHOICE(f"Add libs to another module?");
+
 #   ---     ---     ---     ---     ---
 
     def mkpaths(self):
 
-        if not OKPATH(self.path):
-            MKDIR(self.path);
+        p = self.path;
 
-            if not OKPATH(self.path):
-                print("Path creation failed: you're in deep shit"); return None;
+        if not OKPATH(p):
+            MKDIR(p);
 
-        folds = [ self.path + "\\src", self.path + "\\include",
+            if not OKPATH(p):
+                ERRPRINT("Path creation failed: you're in deep shit", err=3, rec=1);
+                return None;
 
-                  self.path + "\\lib",
-                  self.path + "\\lib\\x64",      self.path + "\\lib\\x86",
+        folds = [ f"{p}\\src",                f"{p}\\include",
 
-                  self.path + "\\release",
-                  self.path + "\\release\\x64",  self.path + "\\release\\x86",
-
-                  self.path + "\\trashcan",
-                  self.path + "\\trashcan\\x64", self.path + "\\trashcan\\x86" ];
+                  f"{p}\\lib\\x64",           f"{p}\\lib\\x32",
+                  f"{p}\\release\\x64\\bin",  f"{p}\\release\\x32\\bin",
+                  f"{p}\\trashcan\\x64",      f"{p}\\trashcan\\x32" ];
 
         for f in folds:
             if not OKPATH(f): MKDIR(f);
@@ -557,7 +573,7 @@ class hxPX:
         x = 0;
         for m in self.modules:
 
-            if len([t for t in tmp if t]) == 1:
+            if len((t for t in tmp if t)) == 1:
 
                                             # solid competitor for ugliest shit ever written
                                             # worst part is i understand why it works
@@ -565,8 +581,8 @@ class hxPX:
                 self.build_order[x] =       (
 
                                             self.modules.index(                              #
-                                                [ m for m, t in zip(self.modules, tmp)       #
-                                                    if  m == t and m.name != '__main__' ][0] #
+                                                ( m for m, t in zip(self.modules, tmp)       #
+                                                    if  m == t and m.name != '__main__' )[0] #
                                             )                                                );
 
                 continue;
@@ -582,6 +598,7 @@ class hxPX:
     def orderedModules(self):
 
         if len(self.build_order) != len(self.modules):
+            print(f"Set the build order for {self.name}")
             self.setBuildOrder();
 
         return [self.modules[x] for x in self.build_order];
@@ -593,6 +610,9 @@ class hxPX:
         global PX; PX = self;
 
         outbase = self.intdir;
+        release = self.outdir;
+        libdir  = self.libdir;
+
         cc      = CC();
 
         gcc     = cc + "gcc.exe";
@@ -601,7 +621,9 @@ class hxPX:
         abort   = 0;
 
         AVTO_SETINC(self.includes);
-        AVTO_SETLIB(self.libs    );
+        AVTO_LIBDIR(libdir       );
+
+        incr_lib = [];
 
         for m in self.orderedModules():
 
@@ -610,6 +632,7 @@ class hxPX:
             if not OKPATH(outdir): MKDIR(outdir);
 
             AVTO_SETOUT(outdir); mfiles = []; fcount = 0;
+            deps = m.lib if TARGET() == "x32" else m.lib64; AVTO_LIBBIN(deps);
 
 #   ---     ---     ---     ---     ---
 
@@ -642,33 +665,54 @@ class hxPX:
 
                     if m.name == '__main__':
                         n = self.name;
-                        AVTO_SETOUT(f"{self.path}\\release\\{TARGET()}")
+                        AVTO_SETOUT(release);
+
+                    elif m.mode == 0:
+                        n = m.name;
+                        AVTO_SETOUT(f"{release}\\bin");
 
                     else:
                         n = m.name;
-                        AVTO_SETOUT(m.path);
+                        AVTO_SETOUT(libdir);
 
-                    if   m.mode == 0: AVTO_MKEXE(mfiles, gcc, n);
-                    elif m.mode == 1: AVTO_MKLIB(mfiles, ar,  n);
-                    else            : AVTO_MKDLL(mfiles, gcc, n);
+                    if    m.mode == 0: inc, failure = AVTO_MKEXE(mfiles, gcc, n);
+                    elif  m.mode == 1: inc, failure = AVTO_MKLIB(mfiles, ar,  n);
+                    else             : inc, failure = AVTO_MKDLL(mfiles, gcc, n);
+                    if failure: break;
 
-                else: print(f"{m.name} is up to date");
+                else:
+                    print(f"{m.name} is up to date");
 
 #   ---     ---     ---     ---     ---
 
     def clean(self):
 
         global PX; PX = self;
+
         outbase = self.intdir;
+        libbase = self.libdir;
+        relbase = self.outdir
 
         for m in self.modules:
 
             self.curmod = m;
-            outdir = outbase + "\\" + m.name
+
+            outdir = f"{outbase}\\{m.name}"
             if not OKPATH(outdir): continue;
 
             AVTO_SETOUT(outdir);
             AVTO_CLEAN("o"); AVTO_CLEAN("d");
+
+            if m.mode in (1, 2):
+                AVTO_SETOUT(libbase);
+                AVTO_CLEAN(".lib"); AVTO_CLEAN(".dll");
+
+            else:
+                if m.name == '__main__': outdir = relbase;
+                else: outdir = f"{relbase}\\{bin}"
+
+                AVTO_SETOUT(outdir);
+                AVTO_CLEAN(".exe");
 
 #   ---     ---     ---     ---     ---
 
@@ -728,6 +772,6 @@ class hxPX:
 
         s = ("\n>__%s__ ( %s )\n"%(self.name, pers)) + s;
 
-        return s;
+        print(s);
 
 #   ---     ---     ---     ---     ---

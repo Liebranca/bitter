@@ -13,20 +13,27 @@ from .utils.lyos import (
     CLS,
     IN,
 
+    ERRPRINT,
+
     WALK,
+    LISTDIR,
+    EXTSOLVE,
 
     MKDIR,
+    MKFILE,
     DELF,
     DELD,
 
     OKPATH,
     CATPATH,
+    SHPATH,
 
     OKFILE,
     FILESIZE,
     READSIZE,
 
     TOUCH,
+    MODTIME,
     MTIMEVS,
 
     SYSREAD,
@@ -37,6 +44,9 @@ from .utils.lyos import (
 
     CC,
     TARGET,
+
+    CHOICE,
+    MULTICHOICE,
 
     FATAL_WARNINGS
 
@@ -49,14 +59,13 @@ from .utils.lylist    import LFLAT, LKEYS, lyDICT;
 
 from .utils.multilang import ALL_LANGS, COMP_LANG, MKSRC, MKHED;
 
-from .utils.console   import CHOICE, MULTICHOICE;
-
 from .builder import (
 
     AVTO_SETOUT,
     AVTO_SETIN,
     AVTO_SETINC,
-    AVTO_SETLIB,
+    AVTO_LIBDIR,
+    AVTO_LIBBIN,
 
     AVTO_CHKFILE,
     AVTO_CLEAN,

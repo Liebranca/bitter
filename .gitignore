@@ -4,6 +4,7 @@ Makefile
 *.lib
 *.exe
 *.dll
+*.uu
 lib/
 include/
 trashcan/
