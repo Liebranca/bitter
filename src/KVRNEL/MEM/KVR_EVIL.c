@@ -99,6 +99,7 @@ void __terminator (int errcode, char* info) {
         case 67: mbody =                    "Error reading from file <%s>.";            break;
 
         case 68: mbody =                    "Inappropriate file signature <%s>";        break;
+        case 69: mbody =                    "Error deleting file <%s>";                 break;
 
         default: mbody =                    "UNRECOGNIZED %s";                          break;
 

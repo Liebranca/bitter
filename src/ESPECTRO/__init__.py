@@ -7,6 +7,8 @@
 
 from .utils.lyos import (
 
+    getch,
+
     ROOT,
     BTIME,
 
@@ -85,6 +87,7 @@ from .builder import (
 
 );
 
-from .HXPX            import hxPX as PX;
+from .HXPX            import hxPX;
+from .lang.KVR        import INTPRT;
 
 #   ---     ---     ---     ---     ---

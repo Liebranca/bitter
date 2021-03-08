@@ -1,16 +1,18 @@
 #include "KVRNEL/MEM/KVR_BIN.h"
+#include "KVRNEL/MEM/KVR_COM.h"
+#include "KVRNEL/LEX/KVR_INTPRT.h"
 
 #include <stdio.h>
 
+#define COMLEN 70
+
 void main() {
 
-    BIN b     = {0};
-    b.path    = "D:\\lieb_git\\KVR\\src\\TEST.uu";
-    b.mode    = "wb+";
+    COM c = {0};
 
-    int isnew = 0;
+    char buff [COMLEN];
+    GTIN(buff, COMLEN);
 
-    BINOPEN ((&b), isnew); printf("%i\n", isnew);
-    BINCLOSE((&b));
+    MKCOM(&c, buff);
 
 }

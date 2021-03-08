@@ -212,7 +212,7 @@ def TARGET(p=None):
         return PLATFORM;
 
     if p in ["64", "x64", 0]: PLATFORM = "x64";
-    else                    : PLATFORM = "x32";
+    else                    : PLATFORM = "Win32";
 
     ERRPRINT("TARGET%s"%PLATFORM);
 
@@ -263,7 +263,16 @@ def WALK(path):
     return list(os.walk(path));
 
 def LISTDIR(path, exts=[]):
-    if exts: return [x for x in os.listdir(path) if len(x) >= 4 and  x[-4:] in exts];
+
+    if exts:
+
+        flist  = os.listdir(path);
+        select = [];
+
+        for e in exts:
+            l = [f for f in flist if f".{e}" in f];
+            if len(l): select.extend(l);
+
     return os.listdir(path);
 
 def EXTSOLVE(name, full):
@@ -543,17 +552,31 @@ def CATPATH(*args):
 
 #   ---     ---     ---     ---     ---
 
-def DELF(path):
+def DELF(path, ext=0):
 
     if OKFILE(path):
-        DOS("@del %s"%path);
-        ERRPRINT(f"$CALLER deleted file <{SHPATH(path)}>", rec=2);
 
-    else: ERRPRINT(f"Error deleting <{SHPATH(path)}>", err=2, rec=2);
+        DOS("@del %s"%path);
+        ERRPRINT(f"$CALLER deleted file <{SHPATH(path)}>", rec=3 if ext else 2);
+
+    else: ERRPRINT(f"Error deleting <{SHPATH(path)}>", err=2, rec=3 if ext else 2);
 
 def DELD(path):
 
     if OKPATH(path):
+
+        flist = LISTDIR(path);
+        if len(flist):
+            i = CHOICE(f"Directory <{SHPATH(path)}> is not empty.\n"\
+                       +"All files in it will be lost. Is that OK?" );
+
+            if i == 1:
+                for f in flist:
+                    DELF(f"{path}\\{f}", 1);
+
+            else:
+                ERRPRINT(f"$LAST aborted deletion of <{SHPATH(path)}>", rec=2);
+
         DOS("@rmdir %s"%path);
         ERRPRINT(f"$CALLER deleted directory <{SHPATH(path)}>", rec=2);
 
@@ -643,7 +666,15 @@ def SYSFLUSH():
 
 def SYSREAD(clear=1):
     global KVRLOG;
-    return RDFILE(KVRLOG, rl=1, trunc=clear, ask=0)[0];
+
+    global hxEPRINT; hxEPRINT = 0;
+
+    try:
+        log = RDFILE(KVRLOG, rl=1, trunc=clear, ask=0)[0];
+    finally:
+        hxEPRINT = 1;
+
+    return log;
 
 def SYSDUMP():
     pass;

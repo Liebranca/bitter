@@ -111,3 +111,10 @@ from ESPECTRO import *;
 
 STARTUP(LSET);
 
+while(True):
+    ret = INTPRT();
+    if ret == "EXIT": break;
+    elif ret: print(ret);
+
+os._exit(1);
+

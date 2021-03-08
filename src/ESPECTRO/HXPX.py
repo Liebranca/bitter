@@ -13,6 +13,8 @@ from ESPECTRO import (
     CC,
     TARGET,
 
+    DOS,
+
     clnstr,
     clnpth,
 
@@ -91,14 +93,9 @@ class hxSRC:
         global PX;
 
         mod = PX.curmod;
-        sub = PX.cursub;
 
-        r = CHOICE("Current submodule is %s: %s. Choose another?"%(mod.name, sub));
-        if r == 1:
-            i = MULTICHOICE("Choose a subdir for %s:"%(self.name), mod.reprdirs());
-            key = LKEYS(mod.subdirs, i-1 if i else 0);
-
-        else: key = sub;
+        i   = MULTICHOICE("Choose a submodule:", mod.reprdirs());
+        key = LKEYS(mod.subdirs, i-1 if i else 0);
 
         PX.cursub = key;                    # set cwd to folder we add to
         mod.subdirs[key][name] = self;
@@ -149,8 +146,6 @@ class hxSRC:
 #   ---     ---     ---     ---     ---
 
 class hxMOD:
-
-    load = "FUK";
 
     def __init__(self, name = 'MOD', subdirs = {}, lib=[], lib64=[], mode = 1):
 
@@ -243,7 +238,7 @@ class hxMOD:
         global PX; PX.curmod = self; PX.cursub = newsub;
         fdpath = PX.at;
 
-        self.subdirs[newsub] = [];
+        self.subdirs[newsub] = {};
         if not OKPATH(fdpath):
             MKDIR(fdpath);
 
@@ -283,13 +278,6 @@ class hxMOD:
     def listfiles(self, sub):
         return ( [fname, fdata] for fname, fdata in self.subdirs[sub].items() );
 
-    def getoutf(self):
-
-        p = self.path; l = [];
-        
-
-        return l;
-
 #   ---     ---     ---     ---     ---
 
     def popfile(self, fname):
@@ -312,7 +300,7 @@ class hxMOD:
         else:                               # default to looking through all subdirs
 
             for d in self.subdirs:
-                if fname in self.subdirs[sd]:
+                if fname in self.subdirs[d]:
                     sd = d;
                     fh = self.subdirs[sd].pop(fname);
                     break;
@@ -323,7 +311,7 @@ class hxMOD:
             r = CHOICE("File removed from project. Delete?");
             if r == 1:
 
-                PX.cursub = PX; fdpath = PX.at;
+                PX.cursub = sd; fdpath = PX.at;
                 DELF(fdpath + "\\" + fname + "." + fh.ext);
                 if fh.hed:
                     DELF(fdpath + "\\" + fname + ".h");
@@ -453,34 +441,17 @@ class hxPX:
         else    :
             self.add_includes.extend(includes);
 
-    def setlibdir(self, libs, m=0):
-
-        if TARGET() == "x32":
-            if not m:
-                self.add_lib = libs;
-
-            else    :
-                self.add_lib.extend(libs);
-
-        else:
-            if not m:
-                self.add_lib64 = libs;
-
-            else    :
-                self.add_lib64.extend(libs);
-
     def addlibs(self, libs=[]):
 
         nthmod = 1;
         while nthmod == 1:
-            i = MULTICHOICE("Which module?", [m.name for m in self.modules]);
-            m = self.modules[i-1 if i else 0];
+            m = self.modSelect();
 
             nthlib = 1;
             while nthlib == 1:
-                l32 = input("\nlib: ");
+                l32 = input("lib: ");
 
-                i = CHOICE(f"The 64-bits version is named different?");
+                i = CHOICE("Is the 64-bits version named different?");
                 if i == 1:
                     l64 = input("lib64: ");
 
@@ -491,7 +462,7 @@ class hxPX:
 
                 nthlib = CHOICE(f"\nAdd another lib to {m.name}?");
 
-            nthmod = CHOICE(f"Add libs to another module?");
+            nthmod = CHOICE("Add libs to another module?");
 
 #   ---     ---     ---     ---     ---
 
@@ -508,9 +479,9 @@ class hxPX:
 
         folds = [ f"{p}\\src",                f"{p}\\include",
 
-                  f"{p}\\lib\\x64",           f"{p}\\lib\\x32",
-                  f"{p}\\release\\x64\\bin",  f"{p}\\release\\x32\\bin",
-                  f"{p}\\trashcan\\x64",      f"{p}\\trashcan\\x32" ];
+                  f"{p}\\lib\\x64",           f"{p}\\lib\\Win32",
+                  f"{p}\\release\\x64\\bin",  f"{p}\\release\\Win32\\bin",
+                  f"{p}\\trashcan\\x64",      f"{p}\\trashcan\\Win32" ];
 
         for f in folds:
             if not OKPATH(f): MKDIR(f);
@@ -565,8 +536,24 @@ class hxPX:
 
         return result;
 
+    def modSelect(self):
+
+        i = MULTICHOICE("Select module:", [m.name for m in self.modules]);
+        m = self.modules[i - 1 if i else 0];
+
+        self.curmod = m; self.cursub = LKEYS(m.subdirs, 0);
+
+        return m;
+
     def addModule(self):
         return self.modules.append(hxMOD.new());
+
+#   ---     ---     ---     ---     ---
+
+    def addFile(self):
+
+        m = self.modSelect();
+        m.addfile();
 
 #   ---     ---     ---     ---     ---
 
@@ -689,10 +676,18 @@ class hxPX:
                     elif  m.mode == 1: inc, failure = AVTO_MKLIB(mfiles, ar,  n);
                     else             : inc, failure = AVTO_MKDLL(mfiles, gcc, n);
 
-                    if failure: break;
+                    if failure:
+                        abort = 1;
+                        break;
 
                 else:
                     print(f"{m.name} is up to date");
+
+#   ---     ---     ---     ---     ---
+
+        if self.mode == 0 and not abort:    # ask run after compile
+            i = CHOICE("\nBuild ready. Run?")
+            if i == 1: DOS(f"{release}\\{self.name}.exe");
 
 #   ---     ---     ---     ---     ---
 

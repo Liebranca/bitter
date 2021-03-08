@@ -18,7 +18,32 @@ extern "C" {
 #define FATAL -255                          /* also prettier than return -num or some      */
 #define ERROR -254                          /* other int errcode; return ERROR is cleaner  */
 
-typedef void (*stark)(void* buff);          // pointer to void func taking a void* arg
+//   ---     ---     ---     ---     ---
+
+#define KCOM_MAXVAL 8                       /* maximum number of tokens per command        */
+#define KCOM_VALW   8                       /* maximum token length                        */
+#define KCOM_INLEN  KCOM_MAXVAL * KCOM_VALW
+
+#define ARRSIZE(arr) sizeof(arr) / sizeof(*arr)
+
+typedef struct KVR_COM {                    // a command
+
+    int   order;                            // SGL || VERB_FIRST || SUBJ_FIRST
+    int   ids[2];                           // indices for key tokens
+    int   token_count;                      // return state of the command
+    char  tokens[KCOM_MAXVAL][KCOM_VALW]    // handle to datablock or NULL
+
+} COM;
+
+typedef struct KVR_RET {                    // a command's return
+
+    int   state;                            // return state of the command
+    void* block;                            // handle to datablock or NULL
+
+} RET;
+
+typedef void (*COMMAND)(RET*  r   );        // pointer to void func taking a RET* arg
+typedef void (*STARK  )(void* buff);        // pointer to void func taking a void* arg
 
 //   ---     ---     ---     ---     ---
 /* utils */                                 /* generally i wouldn't define shit in a  *

@@ -24,8 +24,8 @@ int MKBIN(BIN* bin)                         {
     if  (bin->file == NULL)                 {
 
         if  (isnew >  0   )                 { return ERROR;                                 }
-        elif(r            )                 { bin->mode = "wb"; isnew = 1;  goto OPEN;      }
-                                                                                            }
+        elif(r            )                 { bin->mode = "wb"; isnew = 1;  goto OPEN;      };
+                                                                                            };
 
 //   ---     ---     ---     ---     ---
 
@@ -66,10 +66,10 @@ int MKBIN(BIN* bin)                         {
 //   ---     ---     ---     ---     ---
 
                                             // inform console rats like me about the fopen
-    if  ( !MUTEBIN                 )        { printf("Opened file <%s>\n", bin->path);      }
-    if  ( !strcmp(bin->mode, "wb+"))        { isnew = 2;                                    }
+    if  ( !MUTEBIN                 )        { printf("Opened file <%s>\n", bin->path);      };
+    if  ( !strcmp(bin->mode, "wb+"))        { isnew = 2;                                    };
 
-    return isnew;                                                                           }
+    return isnew;                                                                           };
 
 //   ---     ---     ---     ---     ---
 
@@ -78,9 +78,18 @@ int DLBIN(BIN* bin)                         {
     int failure = fclose(bin->file);
 
     if  ( failure)                          { return ERROR;                                 }
-    elif(!MUTEBIN)                          { printf("File closed <%s>\n", bin->path);      }
+    elif(!MUTEBIN)                          { printf("File closed <%s>\n", bin->path);      };
 
     bin->file = NULL;
-    return 0;                                                                               }
+    return 0;                                                                               };
+
+int RMBIN(BIN* bin)                         {
+
+    if(bin->file)                           { BINCLOSE(bin)                                 };
+
+    int retx = remove(bin->path); if(retx)  { return ERROR;                                 };
+    printf                                  ( "Deleted file <%s>\n", bin->path              );
+
+    return 0;                                                                               };
 
 //   ---     ---     ---     ---     ---

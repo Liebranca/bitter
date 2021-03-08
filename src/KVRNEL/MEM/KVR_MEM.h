@@ -12,7 +12,7 @@ extern "C" {
 typedef struct KVR_MEM {                    // generic holding some dynamic memory address
 
     void* buff;                             // malloc'd memory location
-    stark free;                             // pointer to destructor
+    STARK free;                             // pointer to a free func
 
     int   count;                            // element count
     int   size;                             // element size

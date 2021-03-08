@@ -21,6 +21,7 @@ typedef struct KVR_BIN {                    // helper struct for dealing with fi
 
 int MKBIN(BIN* bin);                        // opens a bin file
 int DLBIN(BIN* bin);                        // closes a bin file
+int RMBIN(BIN* bin);                        // removes a bin file from disk
 
 //   ---     ---     ---     ---     ---
 
@@ -43,6 +44,9 @@ int DLBIN(BIN* bin);                        // closes a bin file
                                             // catch if file signatures don't match
 #define BINSIG(bin, sig)                    { int retx = 0;                                  \
     CALL(__wrstrcmp(bin->sign, sig), retx, 0x44, bin->path);                                }
+
+#define BINREMOVE(bin)                      { int retx = 0;                                  \
+    CALL(RMBIN(bin), retx, 0x45, bin->path);                                                }
 
 //   ---     ---     ---     ---     ---
 
