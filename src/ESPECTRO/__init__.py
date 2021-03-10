@@ -50,6 +50,7 @@ from .utils.lyos import (
     LOGOS,
 
     STARTUP,
+    CLEANUP,
 
     CC,
     TARGET,

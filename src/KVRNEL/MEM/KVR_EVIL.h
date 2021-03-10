@@ -31,7 +31,7 @@ typedef struct KVR_COM {                    // a command
     int   order;                            // SGL || VERB_FIRST || SUBJ_FIRST
     int   ids[2];                           // indices for key tokens
     int   token_count;                      // return state of the command
-    char  tokens[KCOM_MAXVAL][KCOM_VALW]    // handle to datablock or NULL
+    char  tokens[KCOM_MAXVAL][KCOM_VALW];   // handle to datablock or NULL
 
 } COM;
 

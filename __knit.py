@@ -113,8 +113,8 @@ STARTUP(LSET);
 
 while(True):
     ret = INTPRT();
-    if ret == "EXIT": break;
-    elif ret: print(ret);
+    if "EXIT" in ret: break;
 
+CLEANUP();
 os._exit(1);
 

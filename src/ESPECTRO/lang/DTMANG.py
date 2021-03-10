@@ -15,11 +15,24 @@ DTYPES =                                    {
 
                                             };
 
+DOPS =                                      {
+
+    "PX": { "BUILD":"build",
+            "CLEAN":"clean",
+            "RUN"  :"run",
+            "ADDF" :"addFile",
+            "POPF" :"popFile",
+            "FTREE":"fileTree",
+          }
+
+                                            };
+
 class hxMANG:
 
     def __init__(self):
         self.dt  = { key:{} for key in DTYPES };
         self.sel = None;
+        self.wed = None;
 
     def insert(self, key, name, block):
         self.sel = self.dt[key][name] = block;
@@ -27,6 +40,12 @@ class hxMANG:
 #    ---     ---     ---     ---     ---
 
 MANG = hxMANG();
+
+def GETWED():
+    return MANG.wed;
+
+def WDTYPE(cls_key):
+    MANG.wed = cls_key if cls_key in DTYPES else None;
 
 def LDBLOCK(cls_key, block_name):
     block = getattr(DTYPES[cls_key], "load")(block_name);

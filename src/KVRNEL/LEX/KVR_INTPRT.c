@@ -77,8 +77,8 @@ void GTIN(COM* com)                         {
 
 //   ---     ---     ---     ---     ---
 
-int VALIDATE_TOKEN(char*       token,
-                   const char* table)       { int len = ARRSIZE(KVR_VRB);
+int VALIDATE_TOKEN(char*        token,
+                   const char** table)      { int len = ARRSIZE(KVR_VRB);
 
     for(int x = 0; x < len; x++)            { if( !strcmp(token, KVR_VRB[x]) )
                                                 {  return x+1;                 }            };
@@ -92,7 +92,7 @@ int VALIDATE_COMMAND(COM* c)                {
 
     if(c->token_count < 2) {
         verb = VALIDATE_TOKEN(c->tokens[0], KVR_SGL);
-        if(!verb) { INTPRT_ERRC0(c->tokens->[0]); return 0; }
+        if(!verb) { INTPRT_ERRC0(c->tokens[0]); return 0; }
 
         c->ids[0] = verb - 1;
         c->order = -1;
@@ -107,10 +107,10 @@ int VALIDATE_COMMAND(COM* c)                {
 
     if(!verb) {
         int subj = VALIDATE_TOKEN(c->tokens[0], KVR_SBJ);
-        if(!subj) { INTPRT_ERRC0(c->tokens->[0]); return 0; };
+        if(!subj) { INTPRT_ERRC0(c->tokens[0]); return 0; };
 
         verb = VALIDATE_TOKEN(c->tokens[1], KVR_VRB);
-        if(!verb) { INTPRT_ERRC0(c->tokens->[1]); return 0; };
+        if(!verb) { INTPRT_ERRC0(c->tokens[1]); return 0; };
 
         c->order  = 1;
         c->ids[0] = subj - 1;
@@ -121,7 +121,7 @@ int VALIDATE_COMMAND(COM* c)                {
 //   ---     ---     ---     ---     ---
 
     subj = VALIDATE_TOKEN(c->tokens[1], KVR_SBJ);
-    if(!subj) { INTPRT_ERRC0(c->tokens->[1]); return 0; };
+    if(!subj) { INTPRT_ERRC0(c->tokens[1]); return 0; };
 
     c->order  = 0;
     c->ids[0] = verb - 1;
@@ -145,8 +145,8 @@ void TKIN(COM* com, char* buff)             {
 
     do {
 
-        if(i > MAXVAL) { break; }            // raise overargs
-        if(k > VALW-1) { break; }            // raise overlen
+        if(i > KCOM_MAXVAL) { break; }      // raise overargs
+        if(k > KCOM_VALW-1) { break; }      // raise overlen
 
         while(*buff == ' ')                 { if(last != ' ') { i++; k = 0; }
                                               buff++; continue;                             };
@@ -239,10 +239,7 @@ int comsubj(char* s) {
 
 RET RDIN(COM* c)                            {
 
-    if(c->order == -1)
-
-    int verb = comverb(com[verb_i]);
-    int subj = comsubj(com[subj_i]);
+    ;
 
     };
 

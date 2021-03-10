@@ -16,6 +16,45 @@ sys.ps2 = '-';
 
 #   ---     ---     ---     ---     ---
 
+WCHROMA =                                   {
+
+     0: ";2;0;0;0m",                        # black
+     1: ";2;128;0;0m",                      # red
+     2: ";2;0;128;0m",                      # green
+     3: ";2;128;128;0m",                    # yellow
+     4: ";2;0;0;128m",                      # blue
+     5: ";2;128;0;128m",                    # magenta
+     6: ";2;0;128;128m",                    # cyan
+     7: ";2;128;128;128m",                  # white
+
+    10: ";2;64;0;0m",                       # bright black
+    11: ";2;255;0;0m",                      # bright red
+    12: ";2;0;255;0m",                      # bright green
+    13: ";2;255;255;0m",                    # bright yellow
+    14: ";2;0;0;255m",                      # bright blue
+    15: ";2;255;0;255m",                    # bright magenta
+    16: ";2;0;255;255m",                    # bright cyan
+    17: ";2;255;255;255m",                  # bright white
+
+                                            };
+
+def ANSIC(f=1, b=1):
+
+    if f > 17:
+        f = "\x1b[39m";
+    else:
+        f = f"\x1b[38{WCHROMA[f]}";
+
+    if b > 17:
+        b = "\x1b[49m";
+
+    else:
+        b = f"\x1b[48{WCHROMA[b]}";
+
+    return f + b;
+
+#   ---     ---     ---     ---     ---
+
 hxDEBUG  = -1;
 hxEPRINT =  1;
 
@@ -57,7 +96,17 @@ ERRLEVELS =                                 {
     0: "SYS",
     1: "WRNG",
     2: "ERR",
-    3: "FTL_ERR",
+    3: "FTL_ERR"
+
+                                            };
+
+ERRLEVELS_COL =                             {
+
+   -1:"\x1b[22m\x1b[24m\x1b[48;2;256;128;128m\x1b[38;2;0;0;0m",
+    0:"\x1b[22m\x1b[24m\x1b[48;2;0;32;128m\x1b[38;2;0;128;128m",
+    1:"\x1b[22m\x1b[24m\x1b[48;2;256;256;0m\x1b[38;2;0;0;0m",
+    2:"\x1b[22m\x1b[24m\x1b[48;2;128;128;0m\x1b[38;2;0;0;0m",
+    3:"\x1b[22m\x1b[24m\x1b[48;2;128;0;0m\x1b[38;2;192;192;192m"
 
                                             };
 
@@ -83,7 +132,13 @@ def QLNAME(frame):
 
     return qual;
 
-def ERRPRINT(*args, err=0, rec=1, sep=' ', end='\n'):
+def GETERR(err):
+    return ERRLEVELS_COL[err] + ERRLEVELS[err];
+
+def CPRINT(s, f=0):
+    print(s, sep='', end='', flush=f);
+
+def ERRPRINT(*args, err=0, rec=1, sep=' ', end=''):
 
     global hxEPRINT;
     if not hxEPRINT: return None;
@@ -128,11 +183,14 @@ def ERRPRINT(*args, err=0, rec=1, sep=' ', end='\n'):
             file = file[-1];
 
         line   = prev.f_lineno;
-        mess   = f"{ERRLEVELS[err]}: {caller} on {file} @{line}\n" + mess;
+        mess   = f"{GETERR(err)}: {caller} on {file} @{line}\n" + mess;
+
+    else:
+        mess = f"{GETERR(err)}: {mess}"
 
 #   ---     ---     ---     ---     ---
 
-    print(mess);
+    print(mess + "\x1b[0m");
 
 hxWARNS = True;
 
@@ -629,7 +687,6 @@ KVRLOG   = None;
 
 def CLEANUP():
     global KVRLOG; DELF(KVRLOG);
-    sys.exit();
 
 def STARTUP(SETTINGS):
 
@@ -681,29 +738,415 @@ def SYSDUMP():
 
 #   ---     ---     ---     ---     ---
 
-kBACKSPACE = 8;
+class KEYBOARD_CONTROLLER:
 
-def IN(ret = 13):
+    KEYS =                                  {
 
-    char = '\x00'; usin = ''; prmt = "\r>"
-    print("%s"%prmt, end = '');
+        "BACKSPACE" :  8,
+        "RETURN"    : 13,
+        "EXIT"      : 26,
+        "ESCAPE"    : 27,
 
-    while( ord(char) != ret ):
+        "ARROWLEFT" : 75,
+        "ARROWRIGHT": 77,
+        "ARROWUP"   : 72,
+        "ARROWDOWN" : 80,
 
-        char = getch();
+        "DELETE"    : 83,
+        "START"     : 71,
+        "END"       : 79,
 
-        if char:
+        "ORDM"      : 167,
 
-            x    = ord(char);
-            if x == kBACKSPACE:
-                usin = usin[0:-1]; CLS();
+        "SPEC"      : 224,
 
-            else:
-                char = (char.decode('utf-8')).upper();
-                usin = usin + char;
-
-            print("%s%s"%(prmt, usin), end = '');
-
-    return usin;
+                                            };
 
 #   ---     ---     ---     ---     ---
+
+    @staticmethod
+    def RUN(cases={}, spec_cases={}):
+
+        KEYS = KEYBOARD_CONTROLLER.KEYS;
+        VAL  = list(KEYS.values());
+        ID   = list(KEYS.keys  ());
+
+        retx = None;
+
+        while not retx:
+
+            char = getch(); x = ord(char);
+
+            if x == KEYS["SPEC"]:
+                y   = ord(getch());
+
+                if y not in VAL:
+                    continue;
+
+                i = VAL.index(y); key = ID[i];
+
+                if key in spec_cases:
+                    retx = spec_cases[key]();
+
+            else:
+
+                if x not in VAL:
+                    continue;
+
+                i = VAL.index(x); key = ID[i];
+
+                if key in cases:
+                    retx = cases[key]();
+
+            CPRINT("", 1);
+
+        return retx;
+
+#   ---     ---     ---     ---     ---
+
+class ASCIBOX:
+
+    CHARS =                                 {
+
+        "VV": " ││║║█",
+        "VR": " ├╞╟╠▌",
+        "VL": " ┤╡╢╣▐",
+        "VS": " ·░▒▓█",
+        "TL": " ┌╒╓╔▄",
+        "BL": " └╘╙╚▀",
+        "TR": " ┐╕╖╗▄",
+        "BR": " ┘╛╜╝▀",
+        "HH": " ─═─═■",
+        "HD": " ┬╤╥╦▄",
+        "CC": " ┼╪╫╬█",
+        "HU": " ┴╧╨╩▀"
+
+                                            };
+
+    def __init__(self, items, title="BOX", ptrchar_l='♦', ptrchar_r='♦', offset=0, pad=0,
+                 sel=5, thick=2, col=(12, 14), rev=1, align=0, t_align=2, p_align=2):
+
+        if not pad:
+            pad = len(title) + 4;
+
+        newpad = 0;
+        for s in items:
+            if len(s) > pad:
+                pad = len(s);
+                newpad = 1;
+
+        if newpad:
+            pad += 4;
+            if pad%2: pad += 1;
+
+#   ---     ---     ---     ---     ---
+
+        self.title     = title;
+        self.pad       = pad;
+
+        self.items     = items;
+        self.sel       = items[sel];
+        self.ptr       = sel;
+        self.rev       = rev;
+
+        self.thick     = min(thick, 5);
+        self.col       = col;
+        self.ioffset   = offset;
+        self.align     = align;
+
+        self.t_align   = t_align;
+        self.p_align   = p_align;
+        self.ptrchar_l = ptrchar_l;
+        self.ptrchar_r = ptrchar_r;
+
+#   ---     ---     ---     ---     ---
+
+        CPRINT("\x1b[?25l");
+        self.drawTop(); self.drawMid("");
+
+        for i in items:
+            self.drawMid(i);
+
+        self.drawMid(""); self.drawBottom();
+
+        CPRINT(f"\x1b[{(len(self.items) + 2) - self.ptr}F");
+
+#   ---     ---     ---     ---     ---
+
+    def RUN(self):
+
+        spec_cases =                        {
+
+            "ARROWUP"  : self.UP,
+            "ARROWDOWN": self.DOWN,
+                                            };
+
+        cases =                             {
+
+            "RETURN"   : self.SELECT,
+            "ESCAPE"   : self.CANCEL,
+            "EXIT"     : self.CANCEL,
+            "ORDM"     : self.CANCEL,
+
+                                            };
+
+        return KEYBOARD_CONTROLLER.RUN(cases, spec_cases);
+
+#   ---     ---     ---     ---     ---
+
+    def end(self):
+        CPRINT("\x1b[?25h");
+        CPRINT(f"\x1b[{(len(self.items) + 2) - self.ptr}E");
+
+    @property
+    def offset(self):
+        return " " * self.ioffset;
+
+    @property
+    def start_line(self):
+        return ANSIC(*self.col);
+
+    @property
+    def close_line(self):
+        return "\x1b[0m\n";
+
+    def drawTop(self):
+
+        CHARS = ASCIBOX.CHARS; CPRINT(self.offset + self.start_line
+                                     +  CHARS["TL"][self.thick]     );
+
+        hchar = CHARS["HH"][self.thick] if self.thick < 5 else CHARS["TR"][5];
+
+        space = self.pad;
+        if   self.t_align == 1:
+            wsp_e = "]" ; space -= 1;
+            space -= len(self.title); wsp_s = (hchar * (space - 1)) + ("[");
+
+        elif self.t_align == 2:
+            w = int((self.pad)/2) - int(len(self.title)/2);
+            wsp_s = (hchar * (w-2)) + ("["); space -= (w-1);
+            space -= len(self.title); wsp_e = ("]") + (hchar * (space - 1));
+
+        else:
+            wsp_s = "["; space -= 1;
+            space -= len(self.title); wsp_e = ("]") + (hchar * (space - 1));
+
+        CPRINT(wsp_s + self.title + wsp_e); CPRINT(CHARS["TR"][self.thick]
+                                                  + self.close_line, 1   );
+
+    def drawMid(self, i):
+        CHARS = ASCIBOX.CHARS; CPRINT(self.offset + self.start_line
+                                     + CHARS["VV"][self.thick]      );
+        if i == self.sel:
+            i = self.itemAligned_sel(i);
+        else:
+            i = self.itemAligned(i);
+
+        CPRINT(i); CPRINT(CHARS["VV"][self.thick]
+                         + self.close_line, 1   );
+
+    def drawBottom(self):
+        CHARS = ASCIBOX.CHARS; CPRINT(self.offset + self.start_line
+                                     + CHARS["BL"][self.thick]      );
+
+        hchar = CHARS["HH"][self.thick] if self.thick < 5 else CHARS["BR"][5];
+        CPRINT(hchar * self.pad); CPRINT(CHARS["BR"][self.thick]
+                                        + self.close_line, 1   );
+
+    def itemAligned_sel(self, i):
+
+        length = len(i);
+
+        pdch_s = self.ptrchar_l if self.p_align in [2, 0] else " ";
+        pdch_e = self.ptrchar_r if self.p_align in [2, 1] else " ";
+
+        space = self.pad;
+        if   self.align == 1:
+            wsp_e = "\x1b[27m" + pdch_e + " "; space -= 2;
+            space -= length; wsp_s = " " + pdch_s + "\x1b[7m" + (" " * (space - 2));
+
+        elif self.align == 2:
+            w = int((self.pad)/2) - int(length/2);
+            wsp_s = " " + pdch_s + "\x1b[7m" + (" " * (w - 2)); space -= w;
+            space -= length; wsp_e = (" " * (space - 2)) + "\x1b[27m" + pdch_e + " ";
+
+        else:
+            wsp_s = " " + pdch_s + "\x1b[7m"; space -= 2;
+            space -= length; wsp_e = (" " * (space - 2)) + "\x1b[27m" + pdch_e + " ";
+
+        return wsp_s + i + wsp_e;
+
+    def itemAligned(self, i):
+
+        space = self.pad; length = len(i);
+        if   self.align == 1:
+            wsp_e = "  "; space -= 2;
+            space -= length; wsp_s = " " * space;
+
+        elif self.align == 2:
+            w = int((self.pad)/2) - int(length/2);
+            wsp_s = " " * (w); space -= w;
+            space -= length; wsp_e = " " * space;
+
+        else:
+            wsp_s = "  "; space -= 2;
+            space -= length; wsp_e = " " * space;
+
+        return "\x1b[27m" + wsp_s + i + wsp_e;
+
+    def UP(self):
+        if not self.ptr > 0: return;
+
+        CPRINT(f"\x1b[G\x1b[{self.ioffset}C");
+        CPRINT(self.start_line + self.itemAligned(self.sel) + "\x1b[0m");
+        
+        self.ptr -= 1; self.sel = self.items[self.ptr];
+        CPRINT(f"\x1b[F\x1b[{self.ioffset}C");
+        CPRINT(self.start_line + self.itemAligned_sel(self.sel) + "\x1b[0m", 1);
+
+    def DOWN(self):
+        if not self.ptr < (len(self.items) - 1): return;
+
+        CPRINT(f"\x1b[G\x1b[{self.ioffset}C");
+        CPRINT(self.start_line + self.itemAligned(self.sel) + "\x1b[0m");
+        
+        self.ptr += 1; self.sel = self.items[self.ptr];
+        CPRINT(f"\x1b[E\x1b[{self.ioffset}C");
+        CPRINT(self.start_line + self.itemAligned_sel(self.sel) + "\x1b[0m", 1);
+
+    def SELECT(self):
+        self.end(); return self.ptr + 1;
+
+    def CANCEL(self):
+        self.end(); return -1;
+
+#   ---     ---     ---     ---     ---
+
+def TESTVCHOICE():
+
+    ops = ["PISS", "SHIT", "FUCK", "CUNT", "COCKSUCKER", "MOTHERFUCKER", "TITS"];
+    pad = 0;
+
+    box = ASCIBOX(ops, title="SEVEN DIRTY WORS");
+    i   = box.RUN(); i = i-1 if i > 0 else i;
+
+    if i > 0: print(ops[i]);
+    else    : print("CANCELLED");
+
+    del box;
+
+TESTVCHOICE();
+
+def PEIN():
+
+    global OCTAVE;
+
+    i   = 0; char = ""; s = "";
+    ptr = 0; print("\x1b[22m\x1b[24m\x1b[48;2;0;32;128m\x1b[38;2;0;192;0m$:"\
+                  +(" "*64) + ("\x1b[D"*64),
+
+                   end='', flush=1);
+
+    while char != "\r":
+
+        char = getch().upper();
+        x = ord(char);
+
+#   ---     ---     ---     ---     ---
+
+        if x == 224:
+
+            y = ord(getch());
+
+            if y == kARROWLEFT and ptr > 0:
+                ptr -= 1; print("\x1b[D", end='', flush=1);
+
+            elif y == kARROWRIGHT and ptr < len(s):
+                ptr += 1; print("\x1b[C", end='', flush=1);
+
+            elif y == kSTART:
+                print("\r\x1b[2C", end='', flush=1); ptr = 0;
+
+            elif y == kEND:
+                n = len(s) - ptr;
+                if n: print(f"\x1b[{n}C", end='', flush=1);
+
+                ptr = len(s);
+
+            elif y == kDELETE and ptr != len(s):
+                s = s[:ptr] + s[ptr+1:];
+                print(" \b", end='', flush=1);
+
+                for pos in range(ptr, len(s), 1):
+                    print(s[pos], end='', flush=1);
+
+                print(" \b", end='', flush=1);
+
+                for pos in range(ptr, len(s), 1):
+                    print("\b", end='', flush=1);
+
+            else:
+                pass; #print(x, end='', flush=1);
+
+#   ---     ---     ---     ---     ---
+
+        else:
+
+            i = GTPEKEY(char);
+
+            if x in [26, 27]:
+                s = "EXIT"; print("\r$:EXIT", end='', flush=1);
+                break;
+
+            elif x == 13: break;
+
+            elif x == kBACKSPACE:
+
+                if ptr > 0:
+
+                    if (ptr) == len(s):
+                        ptr -= 1; s = s[:-1];
+                        print("\b \b", end='', flush=1);
+
+                    else:
+                        ptr -= 1; s = s[:ptr] + s[ptr+1:];
+                        for pos in range(ptr, len(s) - 1, 1):
+                            print(s[pos+1], end='', flush=1);
+
+                        print(" \b", end='', flush=1);
+
+                        for pos in range(ptr, len(s)-1, 1):
+                            print("\b", end='', flush=1);
+
+                        print(f"\b{s[ptr]}\b", end='', flush=1);
+
+#   ---     ---     ---     ---     ---
+
+            else:
+                if i != -1:
+
+                    SPSHIFT = i>12; SPCTRL = not i%13;
+
+                    if SPCTRL:
+                        CHOCT(SPSHIFT);
+                        char = f"↑{OCTAVE}" if SPSHIFT else f"↓{OCTAVE}";
+
+                    else:
+                        i    = i - 1 if SPSHIFT else i;
+                        char = INMORPH(i + (24 * OCTAVE));
+
+#   ---     ---     ---     ---     ---
+
+                else:
+                    char = char.decode('utf-8');
+
+                if (len(s) < 64) and (ptr == len(s)):
+                    ptr += 1; s = s + char;
+                    print(char, end='', flush=1);
+
+                elif ptr != len(s):
+                    s = s[:ptr] + char + s[ptr+1:]; ptr += 1;
+                    print(char, end='', flush=1);
+
+    print(f"\x1b[0m\n");
+    return s;

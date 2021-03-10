@@ -269,6 +269,25 @@ class hxMOD:
     def reprdirs(self):
         return [ sd for sd in self.subdirs ];
 
+    def dirSelect(self):
+
+        global PX;
+
+        i = MULTICHOICE("Select submodule:", [sd for sd in self.subdirs.keys()]);
+        i = i - 1 if i else 0;
+        d = LKEYS(self.subdirs, i);
+
+        PX.cursub = d; return d;
+
+    def fileSelect(self):
+
+        global PX; flist = list(self.subdirs[PX.cursub].keys());
+
+        i = MULTICHOICE("Select file:", [f for f in flist]);
+        f = flist[(i - 1 if i else 0)]
+
+        return f;
+
 #   ---     ---     ---     ---     ---
 
     def addfile(self):
@@ -551,9 +570,14 @@ class hxPX:
 #   ---     ---     ---     ---     ---
 
     def addFile(self):
-
         m = self.modSelect();
         m.addfile();
+
+    def popFile(self):
+        m = self.modSelect();
+        d = m.dirSelect();
+
+        m.popfile(f"{d}\\{m.fileSelect()}");
 
 #   ---     ---     ---     ---     ---
 
@@ -687,7 +711,14 @@ class hxPX:
 
         if self.mode == 0 and not abort:    # ask run after compile
             i = CHOICE("\nBuild ready. Run?")
-            if i == 1: DOS(f"{release}\\{self.name}.exe");
+            if i == 1: self.run();
+
+    def run(self):
+        if self.mode == 0:
+            DOS(f"{self.outdir}\\{self.name}.exe");
+
+        else:
+            ERRPRINT(f"Cannot run {self.name}: it is a library", rec=1);
 
 #   ---     ---     ---     ---     ---
 

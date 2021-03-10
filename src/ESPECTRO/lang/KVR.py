@@ -1,15 +1,24 @@
 #   ---     ---     ---     ---     --- #
 #   KVR.py                              #
 #                                       #
-#   language syntax definitions         #
-#   interpreter for user input          #
-#                                       #
-#   char conversions for pesolang       #
+#  -manager for user input              #
+#  -char conversions for pesolang       #
 #                                       #
 #   ---     ---     ---     ---     --- #
 
-from  ESPECTRO import getch;
-from .DTMANG   import LDBLOCK, GTBLOCK;
+from  ESPECTRO import getch, CHOICE;
+from .DTMANG   import (
+
+    DTYPES,
+    DOPS,
+
+    GETWED,
+    WDTYPE,
+
+    LDBLOCK,
+    GTBLOCK,
+
+);
 
 PE_OPCHRS     = """
                 Ñ
@@ -91,156 +100,139 @@ def CHOCT(SHIFT):
 
 #   ---     ---     ---     ---     ---
 
-kBACKSPACE  =  8;
-kRETURN     = 13;
-kESCAPE     = 27;
+CMD =                                       {
 
-kARROWLEFT  = 75;
-kARROWRIGHT = 77;
+#    "NEW" : MKBLOCK,
+#    "DEL" : DLBLOCK,
+#    "SAVE": SVBLOCK,
+    "LOAD": LDBLOCK,
+    "GET" : GTBLOCK,
+    "WED" : WDTYPE,
+                                            };
 
-kDELETE     = 83;
-kSTART      = 71
-kEND        = 79;
+def VALIDATE_TOKENS(TKN, wed):
 
-def PEIN():
+    if len(TKN):
 
-    global OCTAVE;
+        verb  = None;
+        subj  = None;
+        args  = [];
 
-    i   = 0; char = ""; s = "";
-    ptr = 0; print("\x1b[22m\x1b[24m\x1b[48;2;0;32;128m\x1b[38;2;0;192;0m$:"\
-                  +(" "*64) + ("\x1b[D"*64),
-
-                   end='', flush=1);
-
-    while char != "\r":
-
-        char = getch().upper();
-        x = ord(char);
+        order = 0;
 
 #   ---     ---     ---     ---     ---
 
-        if x == 224:
+        if TKN[0] == "EXIT":
+            return "EXIT";
+        elif TKN[0] == "CHOICE":
+            return "CHOICE";
 
-            y = ord(getch());
+        elif wed:
 
-            if y == kARROWLEFT and ptr > 0:
-                ptr -= 1; print("\x1b[D", end='', flush=1);
+            subj    = wed;
+            data_op = TKN[0] in DOPS[wed];
 
-            elif y == kARROWRIGHT and ptr < len(s):
-                ptr += 1; print("\x1b[C", end='', flush=1);
+#   ---     ---     ---     ---     ---
 
-            elif y == kSTART:
-                print("\r\x1b[2C", end='', flush=1); ptr = 0;
+            if data_op:
+                verb  = DOPS[wed][TKN[0]];
+                order = 1;
 
-            elif y == kEND:
-                n = len(s) - ptr;
-                if n: print(f"\x1b[{n}C", end='', flush=1);
+            elif TKN[0] in CMD:
+                verb = CMD[TKN[0]];
 
-                ptr = len(s);
+            else: return "FAIL";
 
-            elif y == kDELETE and ptr != len(s):
-                s = s[:ptr] + s[ptr+1:];
-                print(" \b", end='', flush=1);
+            if len(TKN) > 1:
+                try   : args = [GTBLOCK(wed, TKN[1])];
+                except: args: args = TKN[1:]
 
-                for pos in range(ptr, len(s), 1):
-                    print(s[pos], end='', flush=1);
-
-                print(" \b", end='', flush=1);
-
-                for pos in range(ptr, len(s), 1):
-                    print("\b", end='', flush=1);
-
-            else:
-                pass; #print(x, end='', flush=1);
+            if order: return (order, subj, verb, args);
+            return (order, verb, subj, args);
 
 #   ---     ---     ---     ---     ---
 
         else:
+            if TKN[0] not in CMD:
+                if TKN[0] in DTYPES and len(TKN) >= 2:
+                    order = 1;
 
-            i = GTPEKEY(char);
+                    subj = TKN[0];
+                    data_op = TKN[1] in DOPS[wed];
 
-            if x == 27 or x == 13: break;
+                    if data_op:
+                        verb = DOPS[subj][TKN[1]];
 
-            elif x == kBACKSPACE:
+                    else: return "FAIL";
 
-                if ptr > 0:
+                    if len(TKN) > 2:
+                        args = TKN[2:];
 
-                    if (ptr) == len(s):
-                        ptr -= 1; s = s[:-1];
-                        print("\b \b", end='', flush=1);
+                    return (order, subj, verb, args);
 
-                    else:
-                        ptr -= 1; s = s[:ptr] + s[ptr+1:];
-                        for pos in range(ptr, len(s) - 1, 1):
-                            print(s[pos+1], end='', flush=1);
-
-                        print(" \b", end='', flush=1);
-
-                        for pos in range(ptr, len(s)-1, 1):
-                            print("\b", end='', flush=1);
-
-                        print(f"\b{s[ptr]}\b", end='', flush=1);
+                else: return "FAIL";
 
 #   ---     ---     ---     ---     ---
 
             else:
-                if i != -1:
+                if len(TKN) >= 2:
 
-                    SPSHIFT = i>12; SPCTRL = not i%13;
+                    verb = CMD[TKN[0]];
+                    subj = TKN[1];
 
-                    if SPCTRL:
-                        CHOCT(SPSHIFT);
-                        char = f"↑{OCTAVE}" if SPSHIFT else f"↓{OCTAVE}";
+                    if len(TKN) > 2:
+                        args = TKN[2:];
 
-                    else:
-                        i    = i - 1 if SPSHIFT else i;
-                        char = INMORPH(i + (24 * OCTAVE));
+                    return (order, verb, subj, args);
 
-#   ---     ---     ---     ---     ---
-
-                else:
-                    char = char.decode('utf-8');
-
-                if (len(s) < 64) and (ptr == len(s)):
-                    ptr += 1; s = s + char;
-                    print(char, end='', flush=1);
-
-                elif ptr != len(s):
-                    s = s[:ptr] + char + s[ptr+1:]; ptr += 1;
-                    print(char, end='', flush=1);
-
-    print(f"\x1b[0m\n");
-    return s;
+    return "FAIL";
 
 #   ---     ---     ---     ---     ---
-
-CMD =                                       {
-
-#    "NEW" : MKBLOCK,                        # ☺
-#    "DEL" : DLBLOCK,                        # ☻
-#    "SAVE": SVBLOCK,                        # ♥
-    "LOAD": LDBLOCK,                        # ♦
-    "GET" : GTBLOCK
-
-                                            };
 
 def INTPRT():
 
-    TKN = [t for t in PEIN().split(" ") if t];
+    exps = [e for e in PEIN().split(";") if e];
+    ret  = [];
 
-    if TKN:
-        VERB = TKN[0];
-        if VERB == "EXIT": return VERB;
+    for e in exps:
 
-        if len(TKN) >= 2:
-            SUBJ = TKN[1];
+        TKN = [t for t in e.split(" ") if t];
 
-            if len(TKN) > 2:
-                ARGS = TKN[2:];
-                return CMD[VERB](SUBJ, *ARGS);
+        tup = VALIDATE_TOKENS(TKN, GETWED());
+        if tup == "EXIT":
+            ret.append("EXIT"); break;
+        elif tup == "CHOICE":
+            CHOICE("TEST?"); continue;
 
-            return CMD[VERB](SUBJ);
+        elif tup == "FAIL":
+            print( "\x1b[22m\x1b[24m\x1b[48;2;128;0;0m\x1b[38;2;192;192;192m"\
+                 +f"F:{e}" + (" "*(64-len(e)))                               );
 
-        return CMD[VERB]();
+            continue;
+
+#   ---     ---     ---     ---     ---
+
+        order = tup[0];
+
+        if order:
+            subj, verb, args = tup[1:];
+            cls = DTYPES[subj];
+            mth = getattr(cls, verb);
+
+            if args:
+                ret.append(mth(*args)); continue;
+
+            ret.append(mth()); continue;
+
+#   ---     ---     ---     ---     ---
+
+        verb, subj, args = tup[1:];
+
+        if args:
+            ret.append(verb(subj, *args)); continue;
+
+        ret.append(verb(subj));
+
+    return ret;
 
 #   ---     ---     ---     ---     ---
