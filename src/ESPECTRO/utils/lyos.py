@@ -4,6 +4,8 @@
 #   shorthands and aliases for os       #
 #   and sys calls; some path ops        #
 #                                       #
+#   console app pimping out             #
+#                                       #
 #   ---     ---     ---     ---     --- #
 
 from   msvcrt   import getch;
@@ -55,8 +57,11 @@ def ANSIC(f=1, b=1):
 
 #   ---     ---     ---     ---     ---
 
-hxDEBUG  = -1;
-hxEPRINT =  1;
+hxDRAWSPACE  = 64;
+hxDRAWUSED   =  0;
+hxDRAWHEIGHT =  0;
+hxDEBUG      = -1;
+hxEPRINT     =  1;
 
 def DEBUG_PRINT(d=None):
 
@@ -368,27 +373,15 @@ def CHOICE(mess, choices = ["Y", "N"], repeat = 0):
         ERRPRINT("$LAST exceeded number of invalid inputs", err=2, rec=2);
         return 0;
 
-alpha = [ bytes(chr(x), 'ascii') for x in range(65, 91) ];
-def MULTICHOICE(mess, items, repeat = 0):
+def MULTICHOICE(mess, items, chain=0):
 
-    if not repeat:
+    i = ASCIBOX.MAKE(items, title=mess, chain=chain);
 
-        print(mess); i = 0;
-        for item in items:
-
-            print("%s) %s"%(alpha[i].decode('ascii'), item));
-            i += 1;
-
-    c = getch().upper();
-    if c in alpha:
-        return 1 + alpha.index(c);
-
-    elif repeat < CHOICE_RECMAX:
-        return MULTICHOICE(mess, items, repeat + 1);
-
-    else:
-        ERRPRINT("$LAST exceeded number of invalid inputs", err=2, rec=2);
+    if i == -1:
+        #ERRPRINT("$LAST cancelled out of process", err=2, rec=2);
         return 0;
+
+    return i;
 
 #   ---     ---     ---     ---     ---
 
@@ -698,7 +691,7 @@ def STARTUP(SETTINGS):
     PALETTE[-1  ] = ANSIC(11,  4);
     PALETTE[ 0  ] = ANSIC(16,  4);
     PALETTE[ 1  ] = ANSIC(18,  3);
-    PALETTE[ 2  ] = ANSIC( 7,  1);
+    PALETTE[ 2  ] = ANSIC(13,  1);
     PALETTE[ 3  ] = ANSIC(17, 11);
 
     r             = SETTINGS[ 0]; ROOT           (r              );
@@ -845,10 +838,12 @@ class ASCIBOX:
                                             };
 
     @staticmethod
-    def MAKE(self, items, title="BOX", ptrchar_l='♦', ptrchar_r='♦', offset=0, pad=0,
-             sel=5, thick=2, col="IN", rev=1, align=0, t_align=2, p_align=2):
+    def MAKE(items, title="BOX", c_butt="X", ptrchar_l='♦', ptrchar_r='♦', offset=0, chain=0,
+            pad=0, sel=0, thick=2, col="IN", rev=1, align=2, t_align=0, c_align=1, p_align=2):
 
-        self = ASCIBOX();
+        self       = ASCIBOX();
+        self.thick = min(thick, 5);
+        self.col   = PALETTE[col];
 
         if not pad:
             pad = len(title) + 4;
@@ -863,9 +858,37 @@ class ASCIBOX:
             pad += 4;
             if pad%2: pad += 1;
 
+        if chain:
+
+            global hxDRAWSPACE, hxDRAWUSED, hxDRAWHEIGHT;
+
+            if (hxDRAWUSED + pad + 2) > hxDRAWSPACE:
+
+                CHARS = ASCIBOX.CHARS; CPRINT(f"\x1b[G\x1b[{hxDRAWUSED}C");
+                CPRINT(self.col + CHARS["TR"][self.thick] + "\x1b[E");
+
+                for i in range(len(items) + 2):
+                    CPRINT(f"\x1b[G\x1b[{hxDRAWUSED}C{self.col}"\
+                          + CHARS["VV"][self.thick] + "\x1b[B");
+
+                CPRINT(f"\x1b[G\x1b[{hxDRAWUSED}C" + self.col
+                      + CHARS["BR"][self.thick] + "\x1b[E");
+
+                offset = 0; hxDRAWUSED = 0;
+                chain = 0 if chain == 3 else 1;
+
+            if (len(items) + 4) > hxDRAWHEIGHT:
+                hxDRAWHEIGHT = len(items) + 4;
+
+            offset = hxDRAWUSED + (chain > 1);
+            hxDRAWUSED += pad + 1;
+
 #   ---     ---     ---     ---     ---
 
+        self.chain     = chain;
+
         self.title     = title;
+        self.c_butt    = c_butt;
         self.pad       = pad;
 
         self.items     = items;
@@ -873,16 +896,16 @@ class ASCIBOX:
         self.ptr       = sel;
         self.rev       = rev;
 
-        self.thick     = min(thick, 5);
-        self.col       = PALETTE[col];
-
-        print(self.col, "\n", "\n");
+        CPRINT(self.col);
 
         self.ioffset   = offset;
+        self.hoffset   = 0; #chain != 0;
         self.align     = align;
 
         self.t_align   = t_align;
+        self.c_align   = c_align;
         self.p_align   = p_align;
+
         self.ptrchar_l = ptrchar_l;
         self.ptrchar_r = ptrchar_r;
 
@@ -895,11 +918,17 @@ class ASCIBOX:
             self.drawMid(i);
 
         self.drawMid(""); self.drawBottom();
+        self.GOTOP();
 
-        CPRINT(f"\x1b[{(len(self.items) + 2) - self.ptr}F");
         return self.RUN();
 
 #   ---     ---     ---     ---     ---
+
+    def GOTOP(self, mod=2):
+        CPRINT(f"\x1b[{(len(self.items) + mod) - self.ptr}F");
+
+    def GOBUTT(self, mod=2):
+        CPRINT(f"\x1b[{(len(self.items) + mod) - self.ptr}E");
 
     def RUN(self):
 
@@ -924,11 +953,21 @@ class ASCIBOX:
 
     def KILL(self):
         CPRINT("\x1b[?25h");
-        CPRINT(f"\x1b[{(len(self.items) + 2) - self.ptr}E");
+        if (not self.chain) or (self.chain == 3):
+            CPRINT(f"\x1b[{(len(self.items) + 2) - self.ptr}E");
+
+        else:
+
+            if self.ptr == -1:
+                self.GOTOP();
+
+            else:
+                self.GOBUTT(0);
+                self.GOTOP(2+self.ptr);
 
     @property
     def offset(self):
-        return " " * self.ioffset;
+        return f"\x1b[{self.ioffset}C" if self.ioffset else "";
 
     @property
     def start_line(self):
@@ -938,10 +977,30 @@ class ASCIBOX:
     def close_line(self):
         return "\x1b[0m\n";
 
+    def getTopCornerL(self):
+        if (not self.chain) or (self.chain == 1): return "TL";
+        return "HD";
+
+    def getTopCornerR(self):
+        if (not self.chain) or (self.chain == 3): return "TR";
+        return "HD";
+
+    def getBotCornerL(self):
+        if not (self.chain) or (self.chain == 1): return "BL";
+        return "HU";
+
+    def getBotCornerR(self):
+        if (not self.chain) or (self.chain == 3): return "BR";
+        return "HU";
+
     def drawTop(self):
 
-        CHARS = ASCIBOX.CHARS; CPRINT(self.offset + self.start_line
-                                     +  CHARS["TL"][self.thick]     );
+        CHARS = ASCIBOX.CHARS;
+
+        if (not self.chain) or (self.chain == 1):
+            CPRINT(self.offset + self.start_line + CHARS[self.getTopCornerL()][self.thick]);
+        else:
+            CPRINT(self.offset + self.start_line);
 
         hchar = CHARS["HH"][self.thick] if self.thick < 5 else CHARS["TR"][5];
 
@@ -959,12 +1018,17 @@ class ASCIBOX:
             wsp_s = "["; space -= 1;
             space -= len(self.title); wsp_e = ("]") + (hchar * (space - 1));
 
-        CPRINT(wsp_s + self.title + wsp_e); CPRINT(CHARS["TR"][self.thick]
-                                                  + self.close_line, 1   );
+        CPRINT(wsp_s + self.title + wsp_e);
+        CPRINT(CHARS[self.getTopCornerR()][self.thick] + self.close_line, 1);
 
     def drawMid(self, i):
-        CHARS = ASCIBOX.CHARS; CPRINT(self.offset + self.start_line
-                                     + CHARS["VV"][self.thick]      );
+        CHARS = ASCIBOX.CHARS;
+
+        if (not self.chain) or (self.chain == 1):
+            CPRINT(self.offset + self.start_line + CHARS["VV"][self.thick]);
+        else:
+            CPRINT(self.offset + self.start_line);
+
         if i == self.sel:
             i = self.itemAligned_sel(i);
         else:
@@ -974,12 +1038,31 @@ class ASCIBOX:
                          + self.close_line, 1   );
 
     def drawBottom(self):
-        CHARS = ASCIBOX.CHARS; CPRINT(self.offset + self.start_line
-                                     + CHARS["BL"][self.thick]      );
+
+        CHARS = ASCIBOX.CHARS;
+
+        if (not self.chain) or (self.chain == 1):
+             CPRINT(self.offset + self.start_line + CHARS[self.getBotCornerL()][self.thick]);
+        else:
+            CPRINT(self.offset + self.start_line);
 
         hchar = CHARS["HH"][self.thick] if self.thick < 5 else CHARS["BR"][5];
-        CPRINT(hchar * self.pad); CPRINT(CHARS["BR"][self.thick]
-                                        + self.close_line, 1   );
+        space = self.pad;
+        if   self.c_align == 1:
+            wsp_e = "]" ; space -= 1;
+            space -= len(self.c_butt); wsp_s = (hchar * (space - 1)) + ("[");
+
+        elif self.c_align == 2:
+            w = int((self.pad)/2) - int(len(self.c_butt)/2);
+            wsp_s = (hchar * (w-2)) + ("["); space -= (w-1);
+            space -= len(self.c_butt); wsp_e = ("]") + (hchar * (space - 1));
+
+        else:
+            wsp_s = "["; space -= 1;
+            space -= len(self.c_butt); wsp_e = ("]") + (hchar * (space - 1));
+
+        CPRINT(wsp_s + self.c_butt + wsp_e);
+        CPRINT(CHARS[self.getBotCornerR()][self.thick] + self.close_line, 1);
 
     def itemAligned_sel(self, i):
 
@@ -990,19 +1073,22 @@ class ASCIBOX:
 
         space = self.pad;
         if   self.align == 1:
-            wsp_e = "\x1b[27m" + pdch_e + " "; space -= 2;
-            space -= length; wsp_s = " " + pdch_s + "\x1b[7m" + (" " * (space - 2));
+            wsp_e = f"\x1b[27m{self.col}" + pdch_e + " "; space -= 2;
+            space -= length; wsp_s = " " + pdch_s + f"\x1b[7m{self.col}"\
+                                   + (" " * (space - 2));
 
         elif self.align == 2:
             w = int((self.pad)/2) - int(length/2);
-            wsp_s = " " + pdch_s + "\x1b[7m" + (" " * (w - 2)); space -= w;
-            space -= length; wsp_e = (" " * (space - 2)) + "\x1b[27m" + pdch_e + " ";
+            wsp_s  = " " + pdch_s + f"\x1b[7m{self.col}" + (" " * (w - 2));
+            space -= w;
+            space -= length; wsp_e = (" " * (space - 2)) + f"\x1b[27m{self.col}" + pdch_e + " ";
 
         else:
             wsp_s = " " + pdch_s + "\x1b[7m"; space -= 2;
-            space -= length; wsp_e = (" " * (space - 2)) + "\x1b[27m" + pdch_e + " ";
+            space -= length; wsp_e = f"\x1b[27m{self.col}"\
+                                   + (" " * (space - 2)) + pdch_e + " ";
 
-        return wsp_s + i + wsp_e;
+        return wsp_s + self.col + i + wsp_e;
 
     def itemAligned(self, i):
 
@@ -1020,29 +1106,102 @@ class ASCIBOX:
             wsp_s = "  "; space -= 2;
             space -= length; wsp_e = " " * space;
 
-        return "\x1b[27m" + wsp_s + i + wsp_e;
+        return "\x1b[27m"+ self.col + wsp_s + i + wsp_e;
+
+    def buttAligned_sel(self):
+
+        space = self.pad; hchar = " ";
+        if   self.c_align == 1:
+            wsp_e = "]" ; space -= 1;
+            space -= len(self.c_butt); wsp_s = (hchar * (space - 1)) + ("[");
+
+        elif self.c_align == 2:
+            w = int((self.pad)/2) - int(len(self.c_butt)/2);
+            wsp_s = (hchar * (w-2)) + ("["); space -= (w-1);
+            space -= len(self.c_butt); wsp_e = ("]") + (hchar * (space - 1));
+
+        else:
+            wsp_s = "["; space -= 1;
+            space -= len(self.c_butt); wsp_e = ("]") + (hchar * (space - 1));
+
+        return f"\x1b[{len(wsp_s)}C\x1b[7m{self.col}{self.c_butt}\x1b[27m{self.col}"
+
+    def buttAligned(self):
+
+        space = self.pad; hchar = " ";
+        if   self.c_align == 1:
+            wsp_e = "]" ; space -= 1;
+            space -= len(self.c_butt); wsp_s = (hchar * (space - 1)) + ("[");
+
+        elif self.c_align == 2:
+            w = int((self.pad)/2) - int(len(self.c_butt)/2);
+            wsp_s = (hchar * (w-2)) + ("["); space -= (w-1);
+            space -= len(self.c_butt); wsp_e = ("]") + (hchar * (space - 1));
+
+        else:
+            wsp_s = "["; space -= 1;
+            space -= len(self.c_butt); wsp_e = ("]") + (hchar * (space - 1));
+
+        return f"\x1b[{len(wsp_s)}C\x1b[27m{self.col}{self.c_butt}";
 
     def UP(self):
-        if not self.ptr > 0: return;
 
-        CPRINT(f"\x1b[G\x1b[{self.ioffset}C");
-        CPRINT(self.start_line + self.itemAligned(self.sel) + "\x1b[0m");
-        
-        self.ptr -= 1; self.sel = self.items[self.ptr];
-        CPRINT(f"\x1b[F\x1b[{self.ioffset}C");
-        CPRINT(self.start_line + self.itemAligned_sel(self.sel) + "\x1b[0m", 1);
+        if self.ptr > 0:
+
+            CPRINT(f"\x1b[G\x1b[{self.ioffset + self.hoffset}C");
+            CPRINT(self.start_line + self.itemAligned(self.sel) + "\x1b[0m");
+            
+            self.ptr -= 1; self.sel = self.items[self.ptr];
+            CPRINT(f"\x1b[F\x1b[{self.ioffset + self.hoffset}C");
+            CPRINT(self.start_line + self.itemAligned_sel(self.sel) + "\x1b[0m", 1);
+
+        elif self.ptr != -1:
+
+            CPRINT(f"\x1b[G\x1b[{self.ioffset + self.hoffset}C");
+            CPRINT(self.start_line + self.itemAligned(self.sel) + "\x1b[0m");
+
+            self.sel = "CANCEL"; self.GOBUTT(1); self.ptr = -1;
+            CPRINT(f"\x1b[2G");
+            CPRINT(self.start_line + self.buttAligned_sel() + "\x1b[0m", 1);
+
+        else:
+            CPRINT(f"\x1b[G\x1b[{self.ioffset + self.hoffset}C");
+            CPRINT(self.start_line + self.buttAligned() + "\x1b[0m");
+
+            self.ptr = len(self.items)-1; self.GOTOP(3); self.sel = self.items[self.ptr];
+            CPRINT(f"\x1b[2E\x1b[{self.ioffset + self.hoffset}C");
+            CPRINT(self.start_line + self.itemAligned_sel(self.sel) + "\x1b[0m", 1);
 
     def DOWN(self):
-        if not self.ptr < (len(self.items) - 1): return;
 
-        CPRINT(f"\x1b[G\x1b[{self.ioffset}C");
-        CPRINT(self.start_line + self.itemAligned(self.sel) + "\x1b[0m");
-        
-        self.ptr += 1; self.sel = self.items[self.ptr];
-        CPRINT(f"\x1b[E\x1b[{self.ioffset}C");
-        CPRINT(self.start_line + self.itemAligned_sel(self.sel) + "\x1b[0m", 1);
+        if -1 < self.ptr < (len(self.items) - 1):
+
+            CPRINT(f"\x1b[G\x1b[{self.ioffset + self.hoffset}C");
+            CPRINT(self.start_line + self.itemAligned(self.sel) + "\x1b[0m");
+
+            self.ptr += 1; self.sel = self.items[self.ptr];
+            CPRINT(f"\x1b[E\x1b[{self.ioffset + self.hoffset}C");
+            CPRINT(self.start_line + self.itemAligned_sel(self.sel) + "\x1b[0m", 1);
+
+        elif self.ptr != -1:
+
+            CPRINT(f"\x1b[G\x1b[{self.ioffset + self.hoffset}C");
+            CPRINT(self.start_line + self.itemAligned(self.sel) + "\x1b[0m");
+
+            self.ptr = -1; self.sel = "CANCEL";
+            CPRINT(f"\x1b[2E\x1b[{self.ioffset + self.hoffset}C");
+            CPRINT(self.start_line + self.buttAligned_sel() + "\x1b[0m", 1);
+
+        else:
+            CPRINT(f"\x1b[G\x1b[{self.ioffset + self.hoffset}C");
+            CPRINT(self.start_line + self.buttAligned() + "\x1b[0m");
+
+            self.ptr = 0; self.GOTOP(3); self.sel = self.items[self.ptr];
+            CPRINT(f"\x1b[2E\x1b[{self.ioffset + self.hoffset}C");
+            CPRINT(self.start_line + self.itemAligned_sel(self.sel) + "\x1b[0m", 1);
 
     def SELECT(self):
+        if self.ptr == -1: return self.CANCEL();
         self.KILL(); return self.ptr + 1;
 
     def CANCEL(self):
@@ -1053,7 +1212,7 @@ class ASCIBOX:
 class INPUTFIELD:
 
     @staticmethod
-    def MAKE(length=64, col="IN", prompt='$:'):
+    def MAKE(length=hxDRAWSPACE, col="IN", prompt='$:'):
 
         self        = INPUTFIELD();
 
@@ -1083,6 +1242,7 @@ class INPUTFIELD:
             "DELETE"    : self.DELCUR,
             "START"     : self.FCOLUMN,
             "END"       : self.LCOLUMN
+
                                             };
 
         cases =                             {
@@ -1176,19 +1336,6 @@ class INPUTFIELD:
         self.KILL(); return self.buff;
 
 #   ---     ---     ---     ---     ---
-
-def TESTVCHOICE():
-
-    ops = ["PISS", "SHIT", "FUCK", "CUNT", "COCKSUCKER", "MOTHERFUCKER", "TITS"];
-    pad = 0;
-
-    box = ASCIBOX(ops, title="SEVEN DIRTY WORS");
-    i   = box.RUN(); i = i-1 if i > 0 else i;
-
-    if i > 0: print(ops[i]);
-    else    : print("CANCELLED");
-
-    del box;
 
 def PEIN():
     return INPUTFIELD.MAKE();

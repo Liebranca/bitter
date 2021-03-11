@@ -87,14 +87,20 @@ class hxSRC:
         x         = input                   ("-Name:     ");
         name      = clnstr(x);
 
-        i         = MULTICHOICE             ("-Extension:", ALL_LANGS);
+        i         = MULTICHOICE             ("Extension", ALL_LANGS);
+        if not i:
+            del self; return None;
+
         self.ext  = ALL_LANGS[i-1];
 
         global PX;
 
         mod = PX.curmod;
 
-        i   = MULTICHOICE("Choose a submodule:", mod.reprdirs());
+        i   = MULTICHOICE("Choose a submodule", mod.reprdirs());
+        if not i:
+            del self; return None;
+
         key = LKEYS(mod.subdirs, i-1 if i else 0);
 
         PX.cursub = key;                    # set cwd to folder we add to
@@ -187,7 +193,10 @@ class hxMOD:
         x            = input                ("-Name: "                                 );
         self.name    = clnstr               (x                                         );
 
-        i            = MULTICHOICE("Build %s as..."%self.name, build_opt);
+        i            = MULTICHOICE("Build %s as"%self.name, build_opt);
+        if not i:
+            del self; return None;
+
         self.mode    = i - 1 if i else 0;
 
         mdpath       = self.path;
@@ -273,7 +282,9 @@ class hxMOD:
 
         global PX;
 
-        i = MULTICHOICE("Select submodule:", [sd for sd in self.subdirs.keys()]);
+        i = MULTICHOICE("Select submodule", [sd for sd in self.subdirs.keys()]);
+        if not i: return None;
+
         i = i - 1 if i else 0;
         d = LKEYS(self.subdirs, i);
 
@@ -283,7 +294,9 @@ class hxMOD:
 
         global PX; flist = list(self.subdirs[PX.cursub].keys());
 
-        i = MULTICHOICE("Select file:", [f for f in flist]);
+        i = MULTICHOICE("Select file", [f for f in flist]);
+        if not i: return None;
+
         f = flist[(i - 1 if i else 0)]
 
         return f;
@@ -519,7 +532,10 @@ class hxPX:
 
         self.mkpaths();
 
-        i            = MULTICHOICE("Build %s as..."%self.name, build_opt);
+        i            = MULTICHOICE("Build %s as"%self.name, build_opt);
+        if not i:
+            del self; return None;
+
         self.mode    = i - 1 if i else 0;
 
         self.modules = self.scanmods();
@@ -557,7 +573,9 @@ class hxPX:
 
     def modSelect(self):
 
-        i = MULTICHOICE("Select module:", [m.name for m in self.modules]);
+        i = MULTICHOICE("Select module", [m.name for m in self.modules]);
+        if not i: return None;
+
         m = self.modules[i - 1 if i else 0];
 
         self.curmod = m; self.cursub = LKEYS(m.subdirs, 0);
