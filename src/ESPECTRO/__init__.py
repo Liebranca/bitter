@@ -14,7 +14,7 @@ from .utils.lyos import (
 
     DOS,
     CLS,
-    IN,
+    PEIN,
 
     ERRPRINT,
 

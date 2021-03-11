@@ -6,7 +6,7 @@
 #                                       #
 #   ---     ---     ---     ---     --- #
 
-from  ESPECTRO import getch, CHOICE;
+from  ESPECTRO import PEIN;
 from .DTMANG   import (
 
     DTYPES,
@@ -19,84 +19,6 @@ from .DTMANG   import (
     GTBLOCK,
 
 );
-
-PE_OPCHRS     = """
-                Ñ
-
-                &?≤≥÷±½¼q≈²ⁿ
-                |!«»%~°()=√τ
-                µαπ¢εƒδφ¥Ω♪♀
-                £@#$ΣÆßøΘ♫♂x
-                ☺♥♣•○¯⌂▲◄↑←↕
-                ☻♦♠◘◙≡∞▼►↓→↔
-
-                """.replace(" ", "").replace("\n", "");
-
-PE_DRCHRS     = """
-                ││║║█
-                ├╞╟╠▌
-                ┤╡╢╣▐
-                ·░▒▓█
-                ┌╒╓╔▄
-                └╘╙╚▀
-                ┐╕╖╗▄
-                ┘╛╜╝▀
-                ─═─═■
-                ┬╤╥╦▄
-                ┼╪╫╬█
-                ┴╧╨╩▀
-                """.replace(" ", "").replace("\n", "");
-
-PE_OPCHRS  = { i:k for k, i in zip(PE_OPCHRS, range(len(PE_OPCHRS))) };
-iPE_OPCHRS = { k:i for i, k in PE_OPCHRS.items()                     };
-
-PE_DRCHRS  = { i:k for k, i in zip(PE_DRCHRS, range(len(PE_DRCHRS))) };
-iPE_DRCHRS = { k:i for i, k in PE_DRCHRS.items()                     };
-
-PE_KEYS = b"\xA7\x31\x32\x33\x34\x35\x36\x37\x38\x39\x30\x27\xAD"\
-        + b"\xA6\x21\x22\xFA\x24\x25\x26\x2F\x28\x29\x3D\x3F\xA8"
-
-#   ---     ---     ---     ---     ---
-
-INCNTX = 0;
-OCTAVE = 0;
-INCHRS =                                    [
-
-    [PE_OPCHRS, iPE_OPCHRS],
-    [PE_DRCHRS, iPE_DRCHRS],
-
-                                            ];
-
-def INMORPH(char):
-
-    if   isinstance(char, int):
-        try:
-            x = INCHRS[INCNTX][0][char];
-        except:
-            x = INCHRS[INCNTX][0][0];
-
-    else:
-        try:
-            x = INCHRS[INCNTX][1][char];
-        except:
-            x = 0;
-
-    return x;
-
-def GTPEKEY(char):
-    try:
-        return PE_KEYS.index(char);
-    except:
-        return -1;
-
-def CHOCT(SHIFT):
-    global OCTAVE;
-
-    if SHIFT:
-        OCTAVE = OCTAVE + 1 if OCTAVE < 2 else 0
-
-    else:
-        OCTAVE = OCTAVE - 1 if OCTAVE > 0 else 2
 
 #   ---     ---     ---     ---     ---
 
@@ -201,8 +123,6 @@ def INTPRT():
         tup = VALIDATE_TOKENS(TKN, GETWED());
         if tup == "EXIT":
             ret.append("EXIT"); break;
-        elif tup == "CHOICE":
-            CHOICE("TEST?"); continue;
 
         elif tup == "FAIL":
             print( "\x1b[22m\x1b[24m\x1b[48;2;128;0;0m\x1b[38;2;192;192;192m"\
