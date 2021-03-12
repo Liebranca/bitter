@@ -8,8 +8,9 @@
 #                                       #
 #   ---     ---     ---     ---     --- #
 
-from   msvcrt   import getch;
-from   pathlib  import Path;
+from   ESPECTRO.PYZJC import *;
+from   msvcrt         import getch;
+from   pathlib        import Path;
 
 import os, sys, atexit, time;
 
@@ -120,6 +121,56 @@ PALETTE   =                                 {
 
 import inspect;
 
+#   ---     ---     ---     ---     ---
+# Win32 wrapping is just bad, man
+
+class COORD(struct):
+    _fields_ = [ ("X",      sshort),
+                 ("Y",      sshort) ];
+
+class RECT(struct):
+    _fields_ = [ ("Left",   sshort),
+                 ("Top",    sshort), 
+                 ("Right",  sshort),
+                 ("Bottom", sshort) ];
+
+class SCREEN_BUFFER(struct):
+    _fields_ = [ ("dwSize",              COORD ),
+                 ("dwCursorPosition",    COORD ),
+                 ("wAttributes",         sshort),
+                 ("srWindow",            RECT  ),
+                 ("dwMaximumWindowSize", COORD ) ];
+
+#   ---     ---     ---     ---     ---
+
+class KVNSL(struct):
+
+    BUFF = SCREEN_BUFFER();                 # cursor position
+    H    = None;                            # stdout handle
+
+    @staticmethod
+    def START():
+        KVNSL.H = winkernel.GetStdHandle(-11);
+
+    @staticmethod
+    def KILL():
+        del KVNSL.BUFF; del KVNSL.H;        # likely redundant
+
+    @staticmethod
+    def RFBUFF():
+        winkernel.GetConsoleScreenBufferInfo(KVNSL.H, byref(KVNSL.BUFF));
+
+    @staticmethod
+    def CURSOR_CO():
+        CO = KVNSL.BUFF.dwCursorPosition;
+        return (CO.X, CO.Y);
+
+    @staticmethod
+    def CURSOR_MV(x, y):
+        winkernel.SetConsoleCursorPosition(KVNSL.H, COORD(x, y));
+
+#   ---     ---     ---     ---     ---
+
 def QLNAME(frame):
 
     code = frame.f_code;
@@ -143,8 +194,8 @@ def QLNAME(frame):
 def GETERR(err):
     return PALETTE[err] + ERRLEVELS[err];
 
-def CPRINT(s, f=0):
-    print(s, sep='', end='', flush=f);
+def CPRINT(s, flush=0, file=None):
+    print(s, sep='', end='', flush=flush, file=file);
 
 def ERRPRINT(*args, err=0, rec=1, sep=' ', end=''):
 
@@ -679,10 +730,12 @@ def MTIMEGT(flist):
 
 #   ---     ---     ---     ---     ---
 
-KVRLOG   = None;
+KVRLOG = None;
+KVRIN  = None;
 
 def CLEANUP():
-    global KVRLOG; DELF(KVRLOG);
+    global KVRLOG, KVRIN;
+    DELF(KVRIN); DELF(KVRLOG); KVNSL.KILL();
 
 def STARTUP(SETTINGS):
 
@@ -707,13 +760,16 @@ def STARTUP(SETTINGS):
     nvrask        = SETTINGS[ 9]; DISABLE_CONFIRM(nvrask         );
     fkwall        = SETTINGS[10]; FKWALL         (fkwall         );
 
-    global KVRLOG;
+    global KVRLOG, KVRIN;
 
     logpath = ROOT() + "\\KVR\\trashcan\\log";
     if not OKPATH(logpath): MKDIR(logpath);
 
     KVRLOG = logpath + "\\KVNSLOG"; MKFILE(KVRLOG, ask=0);
+    KVRIN  = logpath + "\\KVNSIN";  MKFILE(KVRIN,  ask=0);
 
+
+    KVNSL.START(); KVNSL.RFBUFF();
     DOS('TITLE %__SLAVE%%_PLATFORM% (ESPECTRO)');
 
     atexit.register(CLEANUP);
@@ -726,13 +782,15 @@ def LOGOS():
 def SYSFLUSH():
     global KVRLOG; FLFILE(KVLOG, 0);
 
-def SYSREAD(clear=1):
-    global KVRLOG;
+def SYSREAD(i=0, clear=1):
+    global KVRLOG, KVRIN;
+
+    F = [KVRLOG, KVRIN][i];
 
     global hxEPRINT; hxEPRINT = 0;
 
     try:
-        log = RDFILE(KVRLOG, rl=1, trunc=clear, ask=0)[0];
+        log = RDFILE(F, rl=1, trunc=clear, ask=0)[0];
     finally:
         hxEPRINT = 1;
 
@@ -818,6 +876,8 @@ class KEYBOARD_CONTROLLER:
 
 #   ---     ---     ---     ---     ---
 
+prevbox = None;
+
 class ASCIBOX:
 
     CHARS =                                 {
@@ -842,6 +902,8 @@ class ASCIBOX:
             pad=0, sel=0, thick=2, col="IN", rev=1, align=2, t_align=0, c_align=1, p_align=2):
 
         self       = ASCIBOX();
+
+        global prevbox;
         self.thick = min(thick, 5);
         self.col   = PALETTE[col];
 
@@ -857,6 +919,8 @@ class ASCIBOX:
         if newpad:
             pad += 4;
             if pad%2: pad += 1;
+
+#   ---     ---     ---     ---     ---
 
         if chain:
 
@@ -896,10 +960,9 @@ class ASCIBOX:
         self.ptr       = sel;
         self.rev       = rev;
 
-        CPRINT(self.col);
+        CPRINT(self.col, 1);
 
         self.ioffset   = offset;
-        self.hoffset   = 0; #chain != 0;
         self.align     = align;
 
         self.t_align   = t_align;
@@ -912,23 +975,33 @@ class ASCIBOX:
 #   ---     ---     ---     ---     ---
 
         CPRINT("\x1b[?25l");
+
+        # get position of first char
+        KVNSL.RFBUFF(); self.co_t = KVNSL.CURSOR_CO();
+
         self.drawTop(); self.drawMid("");
 
         for i in items:
             self.drawMid(i);
 
         self.drawMid(""); self.drawBottom();
-        self.GOTOP();
 
+        # go back one, then get position of last char
+        CPRINT("\x1b[D", 1); KVNSL.RFBUFF(); self.co_b = KVNSL.CURSOR_CO();
+        self.GOTOP(1);
+
+        CPRINT("", 1);
         return self.RUN();
 
 #   ---     ---     ---     ---     ---
 
-    def GOTOP(self, mod=2):
-        CPRINT(f"\x1b[{(len(self.items) + mod) - self.ptr}F");
+    def GOTOP(self, mod=0):
+        KVNSL.CURSOR_MV(*self.co_t);
+        if mod: CPRINT(f"\x1b[2E");
 
-    def GOBUTT(self, mod=2):
-        CPRINT(f"\x1b[{(len(self.items) + mod) - self.ptr}E");
+    def GOBUTT(self, mod=0):
+        KVNSL.CURSOR_MV(*self.co_b);
+        if mod: CPRINT(f"\x1b[2F");
 
     def RUN(self):
 
@@ -952,9 +1025,9 @@ class ASCIBOX:
 #   ---     ---     ---     ---     ---
 
     def KILL(self):
-        CPRINT("\x1b[?25h");
+
         if (not self.chain) or (self.chain == 3):
-            CPRINT(f"\x1b[{(len(self.items) + 2) - self.ptr}E");
+            CPRINT(f"\x1b[?25h\x1b[{(len(self.items) + 2) - self.ptr}E");
 
         else:
 
@@ -962,8 +1035,7 @@ class ASCIBOX:
                 self.GOTOP();
 
             else:
-                self.GOBUTT(0);
-                self.GOTOP(2+self.ptr);
+                self.GOTOP();
 
     @property
     def offset(self):
@@ -975,7 +1047,7 @@ class ASCIBOX:
 
     @property
     def close_line(self):
-        return "\x1b[0m\n";
+        return "\x1b[0m\x1b[E";
 
     def getTopCornerL(self):
         if (not self.chain) or (self.chain == 1): return "TL";
@@ -1062,7 +1134,7 @@ class ASCIBOX:
             space -= len(self.c_butt); wsp_e = ("]") + (hchar * (space - 1));
 
         CPRINT(wsp_s + self.c_butt + wsp_e);
-        CPRINT(CHARS[self.getBotCornerR()][self.thick] + self.close_line, 1);
+        CPRINT(CHARS[self.getBotCornerR()][self.thick] + "\x1b[0m", 1);
 
     def itemAligned_sel(self, i):
 
@@ -1148,57 +1220,59 @@ class ASCIBOX:
 
         if self.ptr > 0:
 
-            CPRINT(f"\x1b[G\x1b[{self.ioffset + self.hoffset}C");
+            CPRINT(f"\x1b[G\x1b[{self.ioffset}C");
             CPRINT(self.start_line + self.itemAligned(self.sel) + "\x1b[0m");
             
             self.ptr -= 1; self.sel = self.items[self.ptr];
-            CPRINT(f"\x1b[F\x1b[{self.ioffset + self.hoffset}C");
-            CPRINT(self.start_line + self.itemAligned_sel(self.sel) + "\x1b[0m", 1);
+            CPRINT(f"\x1b[F\x1b[{self.ioffset}C");
+            CPRINT(self.start_line + self.itemAligned_sel(self.sel) + "\x1b[0m");
 
         elif self.ptr != -1:
 
-            CPRINT(f"\x1b[G\x1b[{self.ioffset + self.hoffset}C");
-            CPRINT(self.start_line + self.itemAligned(self.sel) + "\x1b[0m");
+            CPRINT(f"\x1b[G\x1b[{self.ioffset}C");
+            CPRINT(self.start_line + self.itemAligned(self.sel) + "\x1b[0m", 1);
 
-            self.sel = "CANCEL"; self.GOBUTT(1); self.ptr = -1;
+            self.sel = "CANCEL"; self.GOBUTT(); self.ptr = -1;
             CPRINT(f"\x1b[2G");
-            CPRINT(self.start_line + self.buttAligned_sel() + "\x1b[0m", 1);
+            CPRINT(self.start_line + self.buttAligned_sel() + "\x1b[0m");
 
         else:
-            CPRINT(f"\x1b[G\x1b[{self.ioffset + self.hoffset}C");
-            CPRINT(self.start_line + self.buttAligned() + "\x1b[0m");
+            CPRINT(f"\x1b[G\x1b[{self.ioffset}C");
+            CPRINT(self.start_line + self.buttAligned() + "\x1b[0m", 1);
 
-            self.ptr = len(self.items)-1; self.GOTOP(3); self.sel = self.items[self.ptr];
-            CPRINT(f"\x1b[2E\x1b[{self.ioffset + self.hoffset}C");
-            CPRINT(self.start_line + self.itemAligned_sel(self.sel) + "\x1b[0m", 1);
+            self.ptr = len(self.items)-1; self.GOBUTT(1);
+            self.sel = self.items[self.ptr];
+
+            CPRINT(f"\x1b[{self.ioffset}C");
+            CPRINT(self.start_line + self.itemAligned_sel(self.sel) + "\x1b[0m");
 
     def DOWN(self):
 
         if -1 < self.ptr < (len(self.items) - 1):
 
-            CPRINT(f"\x1b[G\x1b[{self.ioffset + self.hoffset}C");
+            CPRINT(f"\x1b[G\x1b[{self.ioffset}C");
             CPRINT(self.start_line + self.itemAligned(self.sel) + "\x1b[0m");
 
             self.ptr += 1; self.sel = self.items[self.ptr];
-            CPRINT(f"\x1b[E\x1b[{self.ioffset + self.hoffset}C");
-            CPRINT(self.start_line + self.itemAligned_sel(self.sel) + "\x1b[0m", 1);
+            CPRINT(f"\x1b[E\x1b[{self.ioffset}C");
+            CPRINT(self.start_line + self.itemAligned_sel(self.sel) + "\x1b[0m");
 
         elif self.ptr != -1:
 
-            CPRINT(f"\x1b[G\x1b[{self.ioffset + self.hoffset}C");
+            CPRINT(f"\x1b[G\x1b[{self.ioffset}C");
             CPRINT(self.start_line + self.itemAligned(self.sel) + "\x1b[0m");
 
             self.ptr = -1; self.sel = "CANCEL";
-            CPRINT(f"\x1b[2E\x1b[{self.ioffset + self.hoffset}C");
-            CPRINT(self.start_line + self.buttAligned_sel() + "\x1b[0m", 1);
+            CPRINT(f"\x1b[2E\x1b[{self.ioffset}C");
+            CPRINT(self.start_line + self.buttAligned_sel() + "\x1b[0m");
 
         else:
-            CPRINT(f"\x1b[G\x1b[{self.ioffset + self.hoffset}C");
-            CPRINT(self.start_line + self.buttAligned() + "\x1b[0m");
+            CPRINT(f"\x1b[G\x1b[{self.ioffset}C");
+            CPRINT(self.start_line + self.buttAligned() + "\x1b[0m", 1);
 
-            self.ptr = 0; self.GOTOP(3); self.sel = self.items[self.ptr];
-            CPRINT(f"\x1b[2E\x1b[{self.ioffset + self.hoffset}C");
-            CPRINT(self.start_line + self.itemAligned_sel(self.sel) + "\x1b[0m", 1);
+            self.ptr = 0; self.GOTOP(1); self.sel = self.items[self.ptr];
+            CPRINT(f"\x1b[{self.ioffset}C");
+            CPRINT(self.start_line + self.itemAligned_sel(self.sel) + "\x1b[0m");
 
     def SELECT(self):
         if self.ptr == -1: return self.CANCEL();

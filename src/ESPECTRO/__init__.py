@@ -5,6 +5,8 @@
 #                                       #
 #   ---     ---     ---     ---     --- #
 
+from . import PYZJC;
+
 from .utils.lyos import (
 
     getch,

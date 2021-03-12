@@ -109,11 +109,17 @@ from ESPECTRO import *;
 
 #   ---     ---     ---     ---     ---
 
-STARTUP(LSET);
+STARTUP(LSET); CLS();
+MULTICHOICE("BOX ONE", [str(x) for x in (0,1,2,3)], 1);
+MULTICHOICE("BOX TWO", [str(x) for x in (0,1,2,3)], 2);
+MULTICHOICE("BOX THREE", [str(x) for x in (0,1,2,3)], 3);
+
+"""
 
 while(True):
     ret = INTPRT();
     if "EXIT" in ret: break;
+"""
 
 CLEANUP();
 os._exit(1);
