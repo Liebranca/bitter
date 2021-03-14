@@ -11,13 +11,14 @@
 from   ESPECTRO.PYZJC import *;
 from   msvcrt         import getch;
 from   pathlib        import Path;
+from   time           import sleep;
 
 import os, sys, atexit, time;
 
 sys.ps1 = '>';
 sys.ps2 = '-';
 
-#   ---     ---     ---     ---     ---
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 WCHROMA =                                   {
 
@@ -41,6 +42,25 @@ WCHROMA =                                   {
 
                                             };
 
+BOXCHARS =                                  {
+
+        "VV": " ││║║█",
+        "VR": " ├╞╟╠▌",
+        "VL": " ┤╡╢╣▐",
+        "VS": " ·░▒▓█",
+        "TL": " ┌╒╓╔▄",
+        "BL": " └╘╙╚▀",
+        "TR": " ┐╕╖╗▄",
+        "BR": " ┘╛╜╝▀",
+        "HH": " ─═─═■",
+        "HD": " ┬╤╥╦▄",
+        "CC": " ┼╪╫╬█",
+        "HU": " ┴╧╨╩▀"
+
+                                            };
+
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
 def ANSIC(f=1, b=1):
 
     if f > 17:
@@ -58,11 +78,17 @@ def ANSIC(f=1, b=1):
 
 #   ---     ---     ---     ---     ---
 
-hxDRAWSPACE  = 64;
-hxDRAWUSED   =  0;
-hxDRAWHEIGHT =  0;
-hxDEBUG      = -1;
-hxEPRINT     =  1;
+hxDRAWSPACE_X = 76;
+hxDRAWSPACE_Y = 23;
+
+hxDRAWUSED    =  0;
+hxDRAWHEIGHT  =  0;
+
+hxDEBUG       = -1;
+hxEPRINT      =  1;
+
+def CPRINT(s, flush=0, file=None):
+    print(s, sep='', end='', flush=flush, file=file);
 
 def DEBUG_PRINT(d=None):
 
@@ -122,54 +148,315 @@ PALETTE   =                                 {
 import inspect;
 
 #   ---     ---     ---     ---     ---
-# Win32 wrapping is just bad, man
 
-class COORD(struct):
-    _fields_ = [ ("X",      sshort),
-                 ("Y",      sshort) ];
+class COORD:
 
-class RECT(struct):
-    _fields_ = [ ("Left",   sshort),
-                 ("Top",    sshort), 
-                 ("Right",  sshort),
-                 ("Bottom", sshort) ];
+    def __init__(self, x, tx, bx, y, ty, by):
 
-class SCREEN_BUFFER(struct):
-    _fields_ = [ ("dwSize",              COORD ),
-                 ("dwCursorPosition",    COORD ),
-                 ("wAttributes",         sshort),
-                 ("srWindow",            RECT  ),
-                 ("dwMaximumWindowSize", COORD ) ];
+        self.tx = max(tx, 0            );
+        self.bx = min(bx, hxDRAWSPACE_X);
+
+        self.ty = max(ty, 0            );
+        self.by = min(by, hxDRAWSPACE_Y);
+
+        self.x  = max(self.tx, min(x, self.bx));
+        self.y  = max(self.ty, min(y, self.by));
 
 #   ---     ---     ---     ---     ---
 
-class KVNSL(struct):
+    def CLAMPX(self):
+        self.x = max(self.tx, min(self.x, self.bx));
 
-    BUFF = SCREEN_BUFFER();                 # cursor position
-    H    = None;                            # stdout handle
+    def SETX(self, value):
+        self.x = value; self.CLAMPX();
 
-    @staticmethod
-    def START():
-        KVNSL.H = winkernel.GetStdHandle(-11);
+    def MODX(self, value):
+        self.x += value; self.CLAMPX();
 
-    @staticmethod
-    def KILL():
-        del KVNSL.BUFF; del KVNSL.H;        # likely redundant
+    def CLAMPY(self):
+        self.y = max(self.ty, min(self.y, self.by));
 
-    @staticmethod
-    def RFBUFF():
-        winkernel.GetConsoleScreenBufferInfo(KVNSL.H, byref(KVNSL.BUFF));
+    def SETY(self, value):
+        self.y = value; self.CLAMPY();
 
-    @staticmethod
-    def CURSOR_CO():
-        CO = KVNSL.BUFF.dwCursorPosition;
-        return (CO.X, CO.Y);
-
-    @staticmethod
-    def CURSOR_MV(x, y):
-        winkernel.SetConsoleCursorPosition(KVNSL.H, COORD(x, y));
+    def MODY(self, value):
+        self.y += value; self.CLAMPY();
 
 #   ---     ---     ---     ---     ---
+
+    @property
+    def CO(self):
+        return (self.x, self.y);
+
+    @property
+    def CHARNUM(self):
+        return (self.bx - self.tx) * ((self.by + 1) - self.ty);
+
+#   ---     ---     ---     ---     ---
+
+    def WRAP(self, CO):
+
+        changed = [0,0];
+        if CO.x >= self.bx:
+            CO.SETX(self.tx); CO.MODY(1);
+            changed[0] = 1;
+        elif CO.x < self.tx:
+            CO.SETX(self.bx); CO.MODY(-1);
+            changed[0] = -1;
+
+        if CO.y > self.by:
+            CO.SETY(self.by)
+            changed[1] = 1;
+        elif CO.y < self.ty:
+            CO.SETY(self.ty);
+            changed[1] = -1;
+
+        return changed;
+
+#   ---     ---     ---     ---     ---
+
+class REGION:
+
+    def __init__(self, name, mode="BLANKOUT", items=None, color="BX", buff = None,
+                 rect=COORD(1,1,76,22,22,23), border=(3,3), thick=4              ):
+
+        self.THICK  = thick;
+
+        self.MODE   = mode;
+        self.NAME   = name;
+
+        self.RECT   = rect;
+        self.BORDER = border;
+
+        self.COLOR  = PALETTE[color];
+        self.BUFF   = buff if isinstance(buff, str) else "";
+
+        self.align   = 0;
+        self.t_align = 0;
+        self.c_align = 0;
+        self.c_butt  = "X";
+        self.chain   = 0;
+
+    def GETBOXLINE(self, y):
+
+        m = self.drawMid() * (self.RECT.by - self.RECT.ty);
+        return self.drawTop() + m + self.drawBottom();
+
+    def WRITE(self, S, C):
+
+        if S == "$B":
+            S = self.GETBOXLINE(C.y);
+
+        WB = self.SPACEAT(C);
+
+        CPRINT(f"{self.COLOR}{S[:1]}\x1b[0m", 1);
+        C.x += 1; #sleep(0.01);
+
+        if not WB: return "";
+        return S[1:];
+
+    def SPACEAT(self, C):
+
+        DOJUMP = self.RECT.WRAP(C);
+        if DOJUMP[0] or DOJUMP[1]: C.UPDATE();
+
+        return self.RECT.bx - C.x;
+
+    def GOTOP(self, C):
+        C.JUMP(self.RECT.tx, self.RECT.ty);
+
+    def GOBUTT(self, C):
+        C.JUMP(self.RECT.bx, self.RECT.by);
+
+    @property
+    def offset(self):
+        return ""; #* self.RECT.ty if self.RECT.ty else "";
+
+    def getTopCornerL(self):
+        if (not self.chain) or (self.chain == 1): return "TL";
+        return "HD";
+
+    def getTopCornerR(self):
+        if (not self.chain) or (self.chain == 3): return "TR";
+        return "HD";
+
+    def getBotCornerL(self):
+        if not (self.chain) or (self.chain == 1): return "BL";
+        return "HU";
+
+    def getBotCornerR(self):
+        if (not self.chain) or (self.chain == 3): return "BR";
+        return "HU";
+
+    @property
+    def pad(self):
+        return (self.RECT.bx-1) - (self.RECT.tx+1);
+
+    def drawTop(self):
+        global BOXCHARS; CHARS = BOXCHARS; S = "";
+
+        hchar = CHARS["HH"][self.THICK] if self.THICK < 5 else CHARS["TR"][5];
+
+        if self.BORDER[0] & 1:
+            S = (self.offset + CHARS[self.getTopCornerL()][self.THICK]);
+        else:
+            S = hchar;
+
+        space = self.pad;
+        if   self.t_align == 1:
+            wsp_e = "]" ; space -= 1;
+            space -= len(self.NAME); wsp_s = (hchar * (space - 1)) + ("[");
+
+        elif self.t_align == 2:
+            w = int((self.pad)/2) - int(len(self.NAME)/2);
+            wsp_s = (hchar * (w-2)) + ("["); space -= (w-1);
+            space -= len(self.NAME); wsp_e = ("]") + (hchar * (space - 1));
+
+        else:
+            wsp_s = "["; space -= 1;
+            space -= len(self.NAME); wsp_e = ("]") + (hchar * (space - 1));
+
+        return S + (wsp_s + self.NAME + wsp_e) + CHARS[self.getTopCornerR()][self.THICK];
+
+    def drawMid(self):
+        global BOXCHARS; CHARS = BOXCHARS; S = "";
+
+        if self.BORDER[0] & 1:
+            S = self.offset + CHARS["VV"][self.THICK];
+        else:
+            S = " ";
+
+        #if i == self.sel:
+        #    i = self.itemAligned_sel(" ");
+        #else:
+        #    i = self.itemAligned(" ");
+
+        S = S + " " * self.pad;
+
+        return S + CHARS["VV"][self.THICK];
+
+    def drawBottom(self):
+        global BOXCHARS; CHARS = BOXCHARS; S= "";
+
+        hchar = CHARS["HH"][self.THICK] if self.THICK < 5 else CHARS["BR"][5];
+
+        if self.BORDER[0] & 1:
+            S = self.offset + CHARS[self.getBotCornerL()][self.THICK];
+        else:
+            S  = hchar;
+
+        space = self.pad;
+        if   self.c_align == 1:
+            wsp_e = "]" ; space -= 1;
+            space -= len(self.c_butt); wsp_s = (hchar * (space - 1)) + ("[");
+
+        elif self.c_align == 2:
+            w = int((self.pad)/2) - int(len(self.c_butt)/2);
+            wsp_s = (hchar * (w-2)) + ("["); space -= (w-1);
+            space -= len(self.c_butt); wsp_e = ("]") + (hchar * (space - 1));
+
+        else:
+            wsp_s = "["; space -= 1;
+            space -= len(self.c_butt); wsp_e = ("]") + (hchar * (space - 1));
+
+        return S + (wsp_s + self.c_butt + wsp_e) + CHARS[self.getBotCornerR()][self.THICK];
+
+class LAYOUT:
+
+    def __init__(self, regions):
+        self.REGIONS = { region.NAME:region for region in regions };
+        self.SEL     = regions[0].NAME;
+
+    @property
+    def ACTIVE_REGION(self):
+        return self.REGIONS[self.SEL];
+
+class KVRSOR(COORD):
+
+#   ---     ---     ---     ---     ---
+
+    def GORIGHT(self, x):
+        CPRINT(f"\x1b[{x}C"); self.x += x;
+
+    def GOLEFT(self, x):
+        CPRINT(f"\x1b[{x}D"); self.x -= x;
+
+    def XJUMP(self, x):
+        CPRINT(f"\x1b[{x}G"); self.x = x;
+
+#   ---     ---     ---     ---     ---
+
+    def GODOWN(self, y):
+        CPRINT(f"\x1b[{y}B"); self.y += y;
+
+    def GOUP(self, y):
+        CPRINT(f"\x1b[{y}A"); self.y -= y;
+
+    def YJUMP(self, y):
+        CPRINT(f"\x1b[{y};{self.x}H"); self.y = y;
+
+#   ---     ---     ---     ---     ---
+
+    def JUMP(self, x, y):
+        CPRINT(f"\x1b[{y};{x}H", 1);
+        self.y = y; self.x = x;
+
+    def UPDATE(self):
+        CPRINT(f"\x1b[{self.y};{self.x}H", 1);
+
+#   ---     ---     ---     ---     ---
+
+class KVNSL:
+
+    def __init__(self):
+
+        self.C       = KVRSOR(1,1,75,1,1,23);
+        self.S       = None;
+        self.SCREENS = {};
+
+        self.C.JUMP(1,22);
+
+    def NEW_SCREEN(self, ID, layout):
+        self.SCREENS[ID] = layout;
+        self.S           = ID;
+
+    @property
+    def CUR_SCREEN(self):
+        return self.SCREENS[self.S];
+
+    @property
+    def CUR_REGION(self):
+        return self.CUR_SCREEN.ACTIVE_REGION;
+
+    def FILL(self, ID=None):
+
+        if ID:
+            CANVAS = self.CUR_SCREEN.REGIONS[ID];
+        else:
+            CANVAS = self.CUR_REGION;
+
+        CANVAS.GOTOP(self.C);
+        self.OUT(" "*CANVAS.RECT.CHARNUM, CANVAS);
+
+    def FILLSCREEN(self):
+        SCREEN = self.CUR_SCREEN;
+        for REGION in SCREEN.REGIONS.values():
+            REGION.GOTOP(self.C); self.OUT("$B", REGION);
+
+    def OUT(self, s, CANVAS=None):
+
+        if not CANVAS: CANVAS = self.CUR_REGION;
+        while len(s):
+            s = CANVAS.WRITE(s, self.C);
+
+        self.NO_YSCROLL();
+
+    def NO_YSCROLL(self):
+        if self.C.y > (hxDRAWSPACE_Y-1): CPRINT("\x1b[T", 1);
+
+#   ---     ---     ---     ---     ---
+
+KVNSL_H = KVNSL();
 
 def QLNAME(frame):
 
@@ -193,9 +480,6 @@ def QLNAME(frame):
 
 def GETERR(err):
     return PALETTE[err] + ERRLEVELS[err];
-
-def CPRINT(s, flush=0, file=None):
-    print(s, sep='', end='', flush=flush, file=file);
 
 def ERRPRINT(*args, err=0, rec=1, sep=' ', end=''):
 
@@ -249,7 +533,7 @@ def ERRPRINT(*args, err=0, rec=1, sep=' ', end=''):
 
 #   ---     ---     ---     ---     ---
 
-    print(mess + "\x1b[0m");
+    #print(mess + "\x1b[0m");
 
 hxWARNS = True;
 
@@ -734,12 +1018,13 @@ KVRLOG = None;
 KVRIN  = None;
 
 def CLEANUP():
-    global KVRLOG, KVRIN;
-    DELF(KVRIN); DELF(KVRLOG); KVNSL.KILL();
+    global KVRLOG, KVRIN, KVNSL_H;
+    DELF(KVRIN); DELF(KVRLOG); del KVNSL_H;
 
 def STARTUP(SETTINGS):
 
     PALETTE["IN"] = ANSIC(12, 4);
+    PALETTE["BX"] = ANSIC(17, 0);
 
     PALETTE[-1  ] = ANSIC(11,  4);
     PALETTE[ 0  ] = ANSIC(16,  4);
@@ -765,19 +1050,37 @@ def STARTUP(SETTINGS):
     logpath = ROOT() + "\\KVR\\trashcan\\log";
     if not OKPATH(logpath): MKDIR(logpath);
 
-    KVRLOG = logpath + "\\KVNSLOG"; MKFILE(KVRLOG, ask=0);
-    KVRIN  = logpath + "\\KVNSIN";  MKFILE(KVRIN,  ask=0);
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
+    KVRLOG     = logpath + "\\KVNSLOG"; MKFILE(KVRLOG, ask=0);
+    KVRIN      = logpath + "\\KVNSIN";  MKFILE(KVRIN,  ask=0);
 
-    KVNSL.START(); KVNSL.RFBUFF();
+    DEBUGFIELD = REGION ( "DEBUG",                          #
+                          rect=COORD( 1,  1, 76, 21, 21, 23 ),
+                          color="BX", border=(3,3)          );
+
+    USERFIELD  = REGION ( "USER",                           #
+                          rect=COORD( 1,  1, 64,  1,  1, 19 ),
+                          color="IN", border=(3,3)          );
+
+    PANEL_A    = REGION ( "PANEL_A",                        #
+                          rect=COORD(64, 64, 76,  1,  1, 19 ),
+                          color=1,    border=(3,3)          );
+
+    DEFLAY     = LAYOUT ( [DEBUGFIELD, USERFIELD, PANEL_A]  );
+
+    DOS("@ECHO OFF && CLS");
+    KVNSL_H.NEW_SCREEN("HELLO", DEFLAY); KVNSL_H.FILLSCREEN();
     DOS('TITLE %__SLAVE%%_PLATFORM% (ESPECTRO)');
 
     atexit.register(CLEANUP);
 
+def GETKVNSL(): return KVNSL_H;
+
 def LOGOS():
     global KVRLOG; return KVRLOG;
 
-#   ---     ---     ---     ---     ---
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 def SYSFLUSH():
     global KVRLOG; FLFILE(KVLOG, 0);
@@ -880,22 +1183,7 @@ prevbox = None;
 
 class ASCIBOX:
 
-    CHARS =                                 {
 
-        "VV": " ││║║█",
-        "VR": " ├╞╟╠▌",
-        "VL": " ┤╡╢╣▐",
-        "VS": " ·░▒▓█",
-        "TL": " ┌╒╓╔▄",
-        "BL": " └╘╙╚▀",
-        "TR": " ┐╕╖╗▄",
-        "BR": " ┘╛╜╝▀",
-        "HH": " ─═─═■",
-        "HD": " ┬╤╥╦▄",
-        "CC": " ┼╪╫╬█",
-        "HU": " ┴╧╨╩▀"
-
-                                            };
 
     @staticmethod
     def MAKE(items, title="BOX", c_butt="X", ptrchar_l='♦', ptrchar_r='♦', offset=0, chain=0,
@@ -924,9 +1212,9 @@ class ASCIBOX:
 
         if chain:
 
-            global hxDRAWSPACE, hxDRAWUSED, hxDRAWHEIGHT;
+            global hxDRAWSPACE_X, hxDRAWUSED, hxDRAWHEIGHT;
 
-            if (hxDRAWUSED + pad + 2) > hxDRAWSPACE:
+            if (hxDRAWUSED + pad + 2) > hxDRAWSPACE_X:
 
                 CHARS = ASCIBOX.CHARS; CPRINT(f"\x1b[G\x1b[{hxDRAWUSED}C");
                 CPRINT(self.col + CHARS["TR"][self.thick] + "\x1b[E");
@@ -960,7 +1248,7 @@ class ASCIBOX:
         self.ptr       = sel;
         self.rev       = rev;
 
-        CPRINT(self.col, 1);
+        CPRINT(self.col);
 
         self.ioffset   = offset;
         self.align     = align;
@@ -974,9 +1262,10 @@ class ASCIBOX:
 
 #   ---     ---     ---     ---     ---
 
-        CPRINT("\x1b[?25l");
+        #CPRINT("\x1b[?25l");
 
         # get position of first char
+        CPRINT(f"\x1b[0;{self.ioffset+1}H", 1);
         KVNSL.RFBUFF(); self.co_t = KVNSL.CURSOR_CO();
 
         self.drawTop(); self.drawMid("");
@@ -987,20 +1276,27 @@ class ASCIBOX:
         self.drawMid(""); self.drawBottom();
 
         # go back one, then get position of last char
-        CPRINT("\x1b[D", 1); KVNSL.RFBUFF(); self.co_b = KVNSL.CURSOR_CO();
-        self.GOTOP(1);
+        CPRINT("\x1b[D"); KVNSL.RFBUFF(); self.co_b = KVNSL.CURSOR_CO();
+        #self.GOTOP(1);
+
+        x, y = self.INSPACE(11,5); CPRINT(f"\x1b[{y};{x}H");
+        CPRINT(f"\x1b[23;0H{[self.co_t, self.co_b]}"); self.GOTOP(1);
 
         CPRINT("", 1);
         return self.RUN();
 
 #   ---     ---     ---     ---     ---
 
+    def INSPACE(self, x, y):
+        return ( min((self.co_t[0] + 2) + x, self.co_b[0] - 1),
+                 max((self.co_t[1] + 2) + y, self.co_b[1] - 2) );
+
     def GOTOP(self, mod=0):
-        KVNSL.CURSOR_MV(*self.co_t);
+        CPRINT(f"\x1b[{self.co_t[1]};{self.co_t[0]}H")
         if mod: CPRINT(f"\x1b[2E");
 
     def GOBUTT(self, mod=0):
-        KVNSL.CURSOR_MV(*self.co_b);
+        CPRINT(f"\x1b[{self.co_b[1]+1};{self.co_b[0]}H")
         if mod: CPRINT(f"\x1b[2F");
 
     def RUN(self):
@@ -1038,10 +1334,6 @@ class ASCIBOX:
                 self.GOTOP();
 
     @property
-    def offset(self):
-        return f"\x1b[{self.ioffset}C" if self.ioffset else "";
-
-    @property
     def start_line(self):
         return self.col;
 
@@ -1049,92 +1341,9 @@ class ASCIBOX:
     def close_line(self):
         return "\x1b[0m\x1b[E";
 
-    def getTopCornerL(self):
-        if (not self.chain) or (self.chain == 1): return "TL";
-        return "HD";
 
-    def getTopCornerR(self):
-        if (not self.chain) or (self.chain == 3): return "TR";
-        return "HD";
 
-    def getBotCornerL(self):
-        if not (self.chain) or (self.chain == 1): return "BL";
-        return "HU";
 
-    def getBotCornerR(self):
-        if (not self.chain) or (self.chain == 3): return "BR";
-        return "HU";
-
-    def drawTop(self):
-
-        CHARS = ASCIBOX.CHARS;
-
-        if (not self.chain) or (self.chain == 1):
-            CPRINT(self.offset + self.start_line + CHARS[self.getTopCornerL()][self.thick]);
-        else:
-            CPRINT(self.offset + self.start_line);
-
-        hchar = CHARS["HH"][self.thick] if self.thick < 5 else CHARS["TR"][5];
-
-        space = self.pad;
-        if   self.t_align == 1:
-            wsp_e = "]" ; space -= 1;
-            space -= len(self.title); wsp_s = (hchar * (space - 1)) + ("[");
-
-        elif self.t_align == 2:
-            w = int((self.pad)/2) - int(len(self.title)/2);
-            wsp_s = (hchar * (w-2)) + ("["); space -= (w-1);
-            space -= len(self.title); wsp_e = ("]") + (hchar * (space - 1));
-
-        else:
-            wsp_s = "["; space -= 1;
-            space -= len(self.title); wsp_e = ("]") + (hchar * (space - 1));
-
-        CPRINT(wsp_s + self.title + wsp_e);
-        CPRINT(CHARS[self.getTopCornerR()][self.thick] + self.close_line, 1);
-
-    def drawMid(self, i):
-        CHARS = ASCIBOX.CHARS;
-
-        if (not self.chain) or (self.chain == 1):
-            CPRINT(self.offset + self.start_line + CHARS["VV"][self.thick]);
-        else:
-            CPRINT(self.offset + self.start_line);
-
-        if i == self.sel:
-            i = self.itemAligned_sel(i);
-        else:
-            i = self.itemAligned(i);
-
-        CPRINT(i); CPRINT(CHARS["VV"][self.thick]
-                         + self.close_line, 1   );
-
-    def drawBottom(self):
-
-        CHARS = ASCIBOX.CHARS;
-
-        if (not self.chain) or (self.chain == 1):
-             CPRINT(self.offset + self.start_line + CHARS[self.getBotCornerL()][self.thick]);
-        else:
-            CPRINT(self.offset + self.start_line);
-
-        hchar = CHARS["HH"][self.thick] if self.thick < 5 else CHARS["BR"][5];
-        space = self.pad;
-        if   self.c_align == 1:
-            wsp_e = "]" ; space -= 1;
-            space -= len(self.c_butt); wsp_s = (hchar * (space - 1)) + ("[");
-
-        elif self.c_align == 2:
-            w = int((self.pad)/2) - int(len(self.c_butt)/2);
-            wsp_s = (hchar * (w-2)) + ("["); space -= (w-1);
-            space -= len(self.c_butt); wsp_e = ("]") + (hchar * (space - 1));
-
-        else:
-            wsp_s = "["; space -= 1;
-            space -= len(self.c_butt); wsp_e = ("]") + (hchar * (space - 1));
-
-        CPRINT(wsp_s + self.c_butt + wsp_e);
-        CPRINT(CHARS[self.getBotCornerR()][self.thick] + "\x1b[0m", 1);
 
     def itemAligned_sel(self, i):
 
@@ -1230,15 +1439,15 @@ class ASCIBOX:
         elif self.ptr != -1:
 
             CPRINT(f"\x1b[G\x1b[{self.ioffset}C");
-            CPRINT(self.start_line + self.itemAligned(self.sel) + "\x1b[0m", 1);
+            CPRINT(self.start_line + self.itemAligned(self.sel) + "\x1b[0m");
 
             self.sel = "CANCEL"; self.GOBUTT(); self.ptr = -1;
-            CPRINT(f"\x1b[2G");
+            CPRINT(f"\x1b[{self.pad}D");
             CPRINT(self.start_line + self.buttAligned_sel() + "\x1b[0m");
 
         else:
             CPRINT(f"\x1b[G\x1b[{self.ioffset}C");
-            CPRINT(self.start_line + self.buttAligned() + "\x1b[0m", 1);
+            CPRINT(self.start_line + self.buttAligned() + "\x1b[0m");
 
             self.ptr = len(self.items)-1; self.GOBUTT(1);
             self.sel = self.items[self.ptr];
@@ -1268,7 +1477,7 @@ class ASCIBOX:
 
         else:
             CPRINT(f"\x1b[G\x1b[{self.ioffset}C");
-            CPRINT(self.start_line + self.buttAligned() + "\x1b[0m", 1);
+            CPRINT(self.start_line + self.buttAligned() + "\x1b[0m");
 
             self.ptr = 0; self.GOTOP(1); self.sel = self.items[self.ptr];
             CPRINT(f"\x1b[{self.ioffset}C");
@@ -1286,7 +1495,7 @@ class ASCIBOX:
 class INPUTFIELD:
 
     @staticmethod
-    def MAKE(length=hxDRAWSPACE, col="IN", prompt='$:'):
+    def MAKE(length=hxDRAWSPACE_X, col="IN", prompt='$:'):
 
         self        = INPUTFIELD();
 

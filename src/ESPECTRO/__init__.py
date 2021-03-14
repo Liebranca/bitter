@@ -13,11 +13,13 @@ from .utils.lyos import (
 
     ROOT,
     BTIME,
+    GETKVNSL,
 
     DOS,
     CLS,
     PEIN,
 
+    CPRINT,
     ERRPRINT,
 
     WALK,
