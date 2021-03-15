@@ -151,8 +151,6 @@ while(True):
     if "EXIT" in ret: break;
 """
 
-#KVNSL.C.JUMP(0, 22);
-
 CLEANUP();
 os._exit(1);
 

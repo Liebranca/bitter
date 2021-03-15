@@ -14,6 +14,7 @@ from .utils.lyos import (
     ROOT,
     BTIME,
     GETKVNSL,
+    GETKVRSOR,
 
     DOS,
     CLS,
