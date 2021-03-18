@@ -151,6 +151,8 @@ while(True):
     if "EXIT" in ret: break;
 """
 
+KVNSL.RUN();
+
 CLEANUP();
 os._exit(1);
 

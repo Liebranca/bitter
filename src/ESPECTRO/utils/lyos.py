@@ -9,14 +9,17 @@
 #   ---     ---     ---     ---     --- #
 
 from   ESPECTRO.PYZJC import *;
-from   msvcrt         import getch;
+from   msvcrt         import getch, kbhit;
 from   pathlib        import Path;
-from   time           import sleep;
+from   time           import time as rnow, sleep;
 
 import os, sys, atexit, time;
 
 sys.ps1    = '>';
 sys.ps2    = '-';
+
+FATAL      = -255;
+ERROR      = -254;
 
 ANSIPESO=                                   {
 
@@ -98,11 +101,11 @@ BOXCHARS =                                  {
     "CC": " ┼ ╪ ╫ ╬█",
     "HU": " ┴ ╧ ╨ ╩▀",
 
-    "LABEL_S": "[",
-    "LABEL_E": "]",
+    "LABEL_S": "< ",
+    "LABEL_E": " >",
 
-    "PTR_S"  : "♦",
-    "PTR_E"  : "♦"
+    "PTR_S"  : "•",
+    "PTR_E"  : "•"
 
                                             };
 
@@ -147,6 +150,85 @@ def PKCORNER( w, a, s, d):
             | (a * BOX_CORNER_A)
             | (s * BOX_CORNER_S)
             | (d * BOX_CORNER_D) );
+
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+class KEYBOARD_CONTROLLER:
+
+    LOG  = 27;
+    SPEC = 0;
+    TPWT = 0;
+
+    KEYS =                                  {
+
+        "BACKSPACE" :  8,
+        "RETURN"    : 13,
+        "EXIT"      : 26,
+        "ESCAPE"    : 27,
+
+        "ARROWLEFT" : 77,
+        "ARROWRIGHT": 75,
+        "ARROWUP"   : 72,
+        "ARROWDOWN" : 80,
+
+        "SPACE"     : 32,
+
+        "DELETE"    : 83,
+        "START"     : 71,
+        "END"       : 79,
+        "SEMICOLON" : 59,
+
+        "ORDM"      : 167,
+
+        "SPEC"      : 224
+
+                                            };
+
+    VAL = list(KEYS.values());
+    ID  = list(KEYS.keys  ());
+
+#   ---     ---     ---     ---     ---
+
+    @staticmethod
+    def RUN(cases={}, spec_cases={}, typewriter=0):
+
+        KEYS = KEYBOARD_CONTROLLER.KEYS;
+        VAL  = KEYBOARD_CONTROLLER.VAL;
+        ID   = KEYBOARD_CONTROLLER.ID;
+
+        char = getch().upper(); x = ord(char);
+
+        KEYBOARD_CONTROLLER.LOG = x;
+        KEYBOARD_CONTROLLER.SPEC = 0;
+        KEYBOARD_CONTROLLER.TPWT = 0;
+
+        if x == KEYS["SPEC"]:
+            y = ord(getch());
+            KEYBOARD_CONTROLLER.SPEC = 1;
+
+            if y not in VAL:
+                return ERROR;
+
+            i = VAL.index(y); key = ID[i];
+
+            if key in spec_cases:
+                return spec_cases[key][0](*spec_cases[key][1]);
+
+        elif typewriter and (90 >= x >= 65):
+            KEYBOARD_CONTROLLER.TPWT = 1;
+            return chr(x);
+
+        else:
+
+            if x not in VAL:
+                return ERROR;
+
+            i = VAL.index(x); key = ID[i];
+
+            if key in cases:
+                return cases[key][0](*cases[key][1]);
+
+        return 7;
 
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
@@ -271,11 +353,11 @@ class COORD:
 
         changed = [0,0];
         if CO.x >= self.bx:
-            CO.SETX(self.tx); CO.MODY(1);
-            changed[0] = 1;
+            CO.SETX(self.tx); changed[0] = 1;
+            if not CO.y >= self.by: CO.MODY(1);
         elif CO.x < self.tx:
-            CO.SETX(self.bx); CO.MODY(-1);
-            changed[0] = -1;
+            CO.SETX(self.bx); changed[0] = -1;
+            if not CO.y <= self.ty: CO.MODY(-1);
 
         if CO.y > self.by:
             CO.SETY(self.by)
@@ -286,45 +368,185 @@ class COORD:
 
         return changed;
 
-#   ---     ---     ---     ---     ---
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+REGION_ITEMS_NEXT  = -1;
+REGION_ITEMS_CURR  = -2;
+REGION_ITEMS_PREV  = -3;
+
+REGION_ITEMS_UP    = -4;
+REGION_ITEMS_LEFT  = -5;
+REGION_ITEMS_DOWN  = -6;
+REGION_ITEMS_RIGHT = -7;
 
 class REGION:
 
-    def __init__(self, name, mode="BLANKOUT", items=None, color="BX", buff=None,
-                 rect=COORD(1,1,76,22,22,23), borders=(1,1,1), corners=(12,6,9,3), title="",
-                 buttons=None, align=(0,0,0)):
+    def __init__(self, name, mode="BLANKOUT", items=None, items_ptr=-1, color="BX", buff=None,
+                 rect=COORD(1,1,76,22,22,23), borders=(1,1,1,1), corners=(12,6,9,3),
+                 labels_top=None, labels_butt=None, align=(0,0,0)):
 
-        self.BORDERS = borders;
+        if not labels_top:
+            labels_top = [];
+        if not labels_butt:
+            labels_butt = [];
 
-        self.MODE    = mode;
-        self.NAME    = name;
+        if not items:
+            items = [];
 
-        self.RECT    = rect;
-        self.CORNERS = corners;
+        self.BORDERS   = borders;
+        self.ITEMS     = items; self.buildItemMap();
 
-        self.COLOR   = PALETTE[color];
-        self.BUFF    = buff if isinstance(buff, str) else "";
+        self.ITEMS_PTR = items_ptr;
 
-        self.align   = 0;
-        self.t_align = 0;
-        self.c_align = 0;
-        self.c_butt  = "X";
-        self.chain   = 0;
+        self.MODE      = mode;
+        self.NAME      = name;
 
-        self.pad     = (self.RECT.bx-1) - (self.RECT.tx+1);
+        self.RECT      = rect;
+        self.CORNERS   = corners;
+
+        self.COLOR     = PALETTE[color];
+        self.BUFF      = buff if isinstance(buff, str) else "";
+
+        self.ALIGN     = align;
+        self.LABELS    = [labels_top, labels_butt];
+
+        self.pad       = (self.RECT.bx-1) - (self.RECT.tx+1);
+
+#   ---     ---     ---     ---     ---
+
+    def buildItemMap(self):
+
+        self.ITEMS_MAP = {};
+        for elem in self.ITEMS:
+            if elem["y"] not in self.ITEMS_MAP:
+               self.ITEMS_MAP[ elem['y'] ] = { elem['x']: elem["i"] };
+            else:
+                self.ITEMS_MAP[ elem['y'] ][ elem['x'] ] = elem["i"];
+
+    def addItem(self, x, y, label, func=None):
+
+        self.ITEMS_PTR      += 1;
+
+        new_elem = { "x"    : self.RECT.tx+(self.BORDERS[1]&1)+x,
+                     "y"    : self.RECT.ty+(self.BORDERS[0]&1)+y,
+                     "i"    : self.ITEMS_PTR,
+
+                     "label": label,                            #
+                     "func" : func                              };
+
+        self.ITEMS.append(new_elem);
+        if new_elem['y'] not in self.ITEMS_MAP:
+            self.ITEMS_MAP[ new_elem['y'] ] = { new_elem['x']: new_elem["i"] };
+        else:
+            self.ITEMS_MAP[ new_elem["y"] ][ new_elem["x"] ] = new_elem["i"];
+
+        return new_elem;
+
+#   ---     ---     ---     ---     ---
+
+    def ITEM_ACCESS(self, func_id, idex):
+        if len(self.ITEMS):
+
+            if -4 < idex < 0:
+                self.ITEMS_PTR += (idex+2);
+                arrtop = len(self.ITEMS) - 1;
+                if   self.ITEMS_PTR > arrtop:
+                    self.ITEMS_PTR = 0;
+                elif self.ITEMS_PTR < 0:
+                    self.ITEMS_PTR = arrtop;
+
+                idex = self.ITEMS_PTR;
+
+            elif -7 <= idex <= -4:
+
+                elem    = self.ITEMS[self.ITEMS_PTR];
+                x, y    = elem["x"], elem["y"];
+
+                if idex in (REGION_ITEMS_RIGHT, REGION_ITEMS_LEFT):
+
+                    keys    = sorted( list(self.ITEMS_MAP[y].keys()) );
+
+                    h_idex  = keys.index(x);
+                    h_idex += 1 if idex == REGION_ITEMS_RIGHT else -1;
+
+                    arrtop  = len(keys) - 1;
+                    if   h_idex > arrtop:
+                        h_idex = 0;
+                    elif h_idex < 0:
+                        h_idex = arrtop;
+
+                    idex    = self.ITEMS_MAP[y][keys[h_idex]];
+
+                else:
+                    keys    = sorted( list(self.ITEMS_MAP.keys()) );
+
+                    v_idex  = keys.index(y);
+                    v_idex += 1 if idex == REGION_ITEMS_DOWN else -1;
+
+                    arrtop  = len(keys) - 1;
+                    if   v_idex > arrtop:
+                        v_idex = 0;
+                    elif v_idex < 0:
+                        v_idex = arrtop;
+
+                    idex    = self.ITEMS_MAP[keys[v_idex]][x];
+
+                self.ITEMS_PTR = idex;
+
+            elif idex >= len(self.ITEMS) or idex < -7:
+                return ERROR;
+
+            return REGION.ITEM_FUNCS[func_id](self, self.ITEMS[idex]);
+
+        return ERROR;
+
+    def popItem(self, elem):
+        return self.ITEMS.pop(elem);
+
+    def selectItem(self, elem):
+
+        ptrchar_s = f"{BOXCHARS['PTR_S']}" if self.ALIGN[1] in (1, 2) else "";
+        ptrchar_e =    BOXCHARS['PTR_E']   if self.ALIGN[1] in (0, 2) else "";
+
+        return f"$:CURSOR.JUMP{elem['x']-len(ptrchar_s), elem['y']};>"\
+               f"{ptrchar_s}$:<%INVERT;>{elem['label']}$:</INVERT;>{ptrchar_e}";
+
+    def deselectItem(self, elem):
+
+        length_s  = len(BOXCHARS['PTR_S']);
+        length_e  = len(BOXCHARS['PTR_E']);
+
+        ptrchar_s = " "*length_s if self.ALIGN[1] in (1, 2) else "";
+        ptrchar_e = " "*length_e if self.ALIGN[1] in (0, 2) else "";
+
+        return f"$:CURSOR.JUMP{elem['x']-len(ptrchar_s), elem['y']};>"\
+               f"{ptrchar_s}$:</INVERT;>{elem['label']}{ptrchar_e}";
+
+    ITEM_FUNCS = { "select"  : selectItem,
+                   "deselect": deselectItem,
+                   "pop"     : popItem
+                 };
+
+#   ---     ---     ---     ---     ---
 
     def GETBOXLINE(self):
-        m = self.drawMid() * (self.RECT.by - self.RECT.ty);
-        return self.drawTop() + m + self.drawBottom();
+        m = self.drawTop();
+        for y in range(self.RECT.ty+1, self.RECT.by):
+            m = m + self.drawMid(y);
+
+        return m + self.drawBottom();
 
     def WRITE(self, S):
 
         global hxSGY;
 
         if S == "$B":
-            S = self.GETBOXLINE();
+            S  = self.GETBOXLINE();
+            WB = len(S);
 
-        WB     = self.SPACEAT();
+        else:
+            WB     = self.SPACEAT();
+
         LENGTH = DISCOUNT_ESCAPES(S, WB);
         BUFF   = S[:LENGTH].split("$:" );
         for sub in BUFF:
@@ -363,7 +585,7 @@ class REGION:
     def getCornerChar(self, x, h, v):
 
         if not x:
-            return "$:ƒCURSOR.GORIGHT();>";
+            return "$:CURSOR.GORIGHT();>";
 
         thick = (1 + ((self.BORDERS[h] & BORDER_THICK_H)
                      |(self.BORDERS[v] & BORDER_THICK_V)) );
@@ -371,14 +593,18 @@ class REGION:
         key = CORNERDICT[x];
         return BOXCHARS[key][thick];
 
-    def drawLabels(self, labels, top=1, align=0, sel=0):
+    def drawLabels(self, top=1, sel=0):
 
         if top:
-            thick = self.BORDERS[0]
-            hchar = (BOXCHARS["HH"][thick] if thick < 7 else BOXCHARS["TR"][7]);
+            thick  = self.BORDERS[0]
+            hchar  = (BOXCHARS["HH"][thick] if thick < 7 else BOXCHARS["TR"][7]);
+            labels = self.LABELS[0];
+            align  = self.ALIGN[0];
         else:
-            thick = self.BORDERS[2]
-            hchar = BOXCHARS["HH"][thick] if thick < 7 else BOXCHARS["BR"][7];
+            thick  = self.BORDERS[2]
+            hchar  = BOXCHARS["HH"][thick] if thick < 7 else BOXCHARS["BR"][7];
+            labels = self.LABELS[1];
+            align  = self.ALIGN[2];
 
         pdchr_s = BOXCHARS["LABEL_S"]; lpdc_s = len(pdchr_s);
         pdchr_e = BOXCHARS["LABEL_E"]; lpdc_e = len(pdchr_e);
@@ -401,8 +627,8 @@ class REGION:
             space -= length; wsp_s = hchar * space;
 
         elif align == 2:
-            w = int((self.pad)/2) - int(len(label)/2);
-            wsp_s = (hchar * (w-2)); space -= length; wsp_e = hchar * space;
+            w = int((self.pad)/2) - int(length/2);
+            wsp_s = (hchar * (w)); space -= length+w; wsp_e = hchar * space;
 
         else:
             wsp_s = hchar; space -= len(hchar);
@@ -411,18 +637,39 @@ class REGION:
         return wsp_s + label + wsp_e;
 
     def drawTop(self):
-        return  ( self.getCornerChar(self.CORNERS[0], 0, 1      )
-                + self.drawLabels   ([self.NAME], align=0, sel=1)
+        return  ( f"$:CURSOR.JUMP{self.RECT.tx, self.RECT.ty};>"
+                + self.getCornerChar(self.CORNERS[0], 0, 1      )
+                + self.drawLabels   (sel=0                      )
                 + self.getCornerChar(self.CORNERS[1], 0, 3      ) );
 
-    def drawMid(self):
-        vchar_s = BOXCHARS["VV"][self.BORDERS[1]];
-        vchar_e = BOXCHARS["VV"][self.BORDERS[3]];
-        return vchar_s + (" " * (self.pad)) + vchar_e;
+    def drawMid(self, y):
+
+        vchar_s = f"$:CURSOR.JUMP{self.RECT.tx,   y};>"\
+                + BOXCHARS["VV"][self.BORDERS[1]];
+
+        vchar_e = f"$:CURSOR.JUMP{self.RECT.bx-1, y};>"\
+                + BOXCHARS["VV"][self.BORDERS[3]];
+
+        s = "";
+        if y in self.ITEMS_MAP:
+
+            head = len(BOXCHARS['PTR_S']) if self.ALIGN[1] in (1, 2) else 0;
+            tail = len(BOXCHARS['PTR_E']) if self.ALIGN[1] in (0, 2) else 0;
+
+            for x in self.ITEMS_MAP[y]:
+
+                idex    = self.ITEMS_MAP[y][x];
+                SEL     = self.ITEMS_PTR == idex;
+                label   = self.ITEM_ACCESS("select" if SEL else "deselect", idex);
+
+                s       = s + label;
+
+        return vchar_s + s + vchar_e;
 
     def drawBottom(self):
-        return  ( self.getCornerChar(self.CORNERS[2], 2, 1            )
-                + self.drawLabels   (["X", "O"], align=0, top=0       )
+        return  ( f"$:CURSOR.JUMP{self.RECT.tx, self.RECT.by};>"
+                + self.getCornerChar(self.CORNERS[2], 2, 1            )
+                + self.drawLabels   (top=0                            )
                 + self.getCornerChar(self.CORNERS[3], 2, 3            ) );
 
 class LAYOUT:
@@ -438,36 +685,48 @@ class LAYOUT:
 
 class KVRSOR(COORD):
 
+    def __init__(self, x, tx, bx, y, ty, by):
+        COORD.__init__(self, x, tx, bx, y, ty, by);
+
+        self.saved     = (1,1);
+
 #   ---     ---     ---     ---     ---
 
     def GORIGHT(self, x=1):
-        CPRINT(f"\x1b[{x}C"); self.x += x;
+        CPRINT(f"\x1b[{x}C"); self.MODX( x);
 
     def GOLEFT(self, x=1):
-        CPRINT(f"\x1b[{x}D"); self.x -= x;
+        CPRINT(f"\x1b[{x}D"); self.MODX(-x);
 
     def XJUMP(self, x=1):
-        CPRINT(f"\x1b[{x}G"); self.x = x;
+        CPRINT(f"\x1b[{x}G"); self.SETX( x);
 
 #   ---     ---     ---     ---     ---
 
     def GODOWN(self, y=1):
-        CPRINT(f"\x1b[{y}B"); self.y += y;
+        CPRINT(f"\x1b[{y}B"); self.MODY( y);
 
     def GOUP(self, y=1):
-        CPRINT(f"\x1b[{y}A"); self.y -= y;
+        CPRINT(f"\x1b[{y}A"); self.MODY(-y)
 
     def YJUMP(self, y=1):
-        CPRINT(f"\x1b[{y};{self.x}H"); self.y = y;
+        CPRINT(f"\x1b[{y};{self.x}H"); self.SETY(y);
 
 #   ---     ---     ---     ---     ---
 
     def JUMP(self, x=1, y=1):
         CPRINT(f"\x1b[{y};{x}H");
-        self.y = y; self.x = x;
+        self.SETY(y); self.SETX(x);
 
     def UPDATE(self):
         CPRINT(f"\x1b[{self.y};{self.x}H");
+
+#   ---     ---     ---     ---     ---
+
+    def SAVE(self):
+        self.saved = (self.y, self.x);
+    def LOAD(self):
+        self.JUMP(*self.saved);
 
 CURSOR = KVRSOR(1,1,75,1,1,23);
 def GETKVRSOR(): return CURSOR;
@@ -494,33 +753,142 @@ class KVNSL:
     def CUR_REGION(self):
         return self.CUR_SCREEN.ACTIVE_REGION;
 
+    def CHREGION(self, new_ID):
+        self.ID    = new_ID;
+        SCREEN     = self.CUR_SCREEN;
+        SCREEN.SEL = self.ID;
+
     def FILL(self, ID=None):
 
         if ID:
-            CANVAS = self.CUR_SCREEN.REGIONS[ID];
+            region = self.CUR_SCREEN.REGIONS[ID];
         else:
-            CANVAS = self.CUR_REGION;
+            region = self.CUR_REGION;
 
-        CANVAS.GOTOP();
-        self.OUT(" "*CANVAS.RECT.CHARNUM, CANVAS);
+        region.GOTOP();
+        self.OUT(" "*region.RECT.CHARNUM, region);
 
     def FILLSCREEN(self):
         SCREEN = self.CUR_SCREEN;
-        for REGION in SCREEN.REGIONS.values():
-            REGION.GOTOP(); self.OUT("$B", CANVAS=REGION, flush=0);
+        for region in SCREEN.REGIONS.values():
+            region.GOTOP(); self.OUT("$B", region=region, flush=0);
 
         CPRINT("", 1);
 
-    def OUT(self, s, CANVAS=None, flush=1):
+    def OUT(self, s, region=None, flush=1):
 
-        if not CANVAS: CANVAS = self.CUR_REGION;
-        while len(s):
-            s = CANVAS.WRITE(s);
+        if not region: region = self.CUR_REGION;
+        while s: s = region.WRITE(s);
 
-        self.NO_YSCROLL(); CPRINT("", flush);
+        self.NO_YSCROLL();
+        CPRINT("", flush);
 
     def NO_YSCROLL(self):
         if CURSOR.y > (hxDRAWSPACE_Y-1): CPRINT("\x1b[T");
+
+    def RNAVIGATE(self, dirn):
+
+        region = self.CUR_REGION
+
+        s = "";
+
+        if dirn == REGION_ITEMS_UP:
+            s = s + region.ITEM_ACCESS("deselect", REGION_ITEMS_CURR );
+            s = s + region.ITEM_ACCESS("select",   REGION_ITEMS_UP   );
+
+        elif dirn == REGION_ITEMS_LEFT:
+            s = s + region.ITEM_ACCESS("deselect", REGION_ITEMS_CURR );
+            s = s + region.ITEM_ACCESS("select",   REGION_ITEMS_LEFT );
+
+        elif dirn == REGION_ITEMS_DOWN:
+            s = s + region.ITEM_ACCESS("deselect", REGION_ITEMS_CURR );
+            s = s + region.ITEM_ACCESS("select",   REGION_ITEMS_DOWN );
+
+        elif dirn == REGION_ITEMS_RIGHT:
+            s = s + region.ITEM_ACCESS("deselect", REGION_ITEMS_CURR );
+            s = s + region.ITEM_ACCESS("select",   REGION_ITEMS_RIGHT);
+
+        elif dirn == REGION_ITEMS_NEXT:
+            s = s + region.ITEM_ACCESS("deselect", REGION_ITEMS_CURR );
+            s = s + region.ITEM_ACCESS("select",   REGION_ITEMS_NEXT );
+
+        elif dirn == REGION_ITEMS_PREV:
+            s = s + region.ITEM_ACCESS("deselect", REGION_ITEMS_CURR );
+            s = s + region.ITEM_ACCESS("select",   REGION_ITEMS_PREV );
+        else:
+            s = s + region.ITEM_ACCESS("select",   REGION_ITEMS_CURR );
+
+        return s;
+
+    def RUN(self):
+
+        ptr = 0; s = "►▼◄▲";
+
+        CURSOR.SAVE(); CURSOR.JUMP(2, 23);
+        CPRINT(f"\x1b[?25lReady ");
+
+        # TODO: make an actual clock to propertly handle this loop
+        FPS=60; frametime=(1/FPS); framedelta=0.0;
+        framestart=0.0; framestop=0.0; fBy = 0.0;
+
+        CURSOR.LOAD(); shift=0; animframe=0.0; animrate=frametime*6;
+
+        while True:
+
+            framestart = rnow();
+            if framestop: framedelta += (framestart - framestop);
+
+            CURSOR.SAVE();
+
+            if kbhit():
+
+                spec_cases = {
+
+                    "ARROWUP"  :  [ self.RNAVIGATE, [REGION_ITEMS_UP   ] ],
+                    "ARROWLEFT":  [ self.RNAVIGATE, [REGION_ITEMS_LEFT ] ],
+                    "ARROWDOWN":  [ self.RNAVIGATE, [REGION_ITEMS_DOWN ] ],
+                    "ARROWRIGHT": [ self.RNAVIGATE, [REGION_ITEMS_RIGHT] ]
+
+                };
+
+                x = KEYBOARD_CONTROLLER.RUN(spec_cases=spec_cases, typewriter=True);
+
+                if isinstance(x, str):
+                    if KEYBOARD_CONTROLLER.TPWT:
+                        CURSOR.JUMP(2+shift, 21);
+                        CPRINT(x); shift+=1;
+
+                    elif KEYBOARD_CONTROLLER.SPEC:
+                        self.OUT(x, flush=0);
+
+                elif KEYBOARD_CONTROLLER.LOG == 27: break;
+
+            CURSOR.JUMP(2, 23);
+
+            if animframe >= animrate:
+
+                if ptr < 3:
+                    ptr += 1; CPRINT(f"\x1b[7G {s[ptr]}");
+                elif ptr == 3:
+                    ptr += 1;
+                else:
+                    ptr = 0; CPRINT(f"\x1b[7G {s[ptr]}");
+
+                animframe = animframe - animrate;
+
+            framestop = rnow(); framedelta += (framestop - framestart);
+            fBy = 1.0 * framedelta; animframe += fBy;
+
+            if framedelta < frametime:
+                sleep((frametime - framedelta)); framedelta = 0;
+            else:
+                framedelta = framedelta - frametime;
+
+            CPRINT("", 1);
+            CURSOR.LOAD();
+
+        CPRINT("\x1b[?25h");
+        CPRINT("", 1);
 
 #   ---     ---     ---     ---     ---
 
@@ -1125,25 +1493,43 @@ def STARTUP(SETTINGS):
     KVRIN      = logpath + "\\KVNSIN";  MKFILE(KVRIN,  ask=0);
 
     DEBUGFIELD = REGION ( "DEBUG",                          #
-                          rect=COORD( 1,  1, 76, 21, 21, 23 ),
-                          color="IN", borders=(0,1,1,1),
-                          corners=(1,1,9,3));
+                          rect=COORD( 1,  1, 76, 20, 20, 23 ),
+                          color="DF", borders=(0,1,1,1),
+                          corners=(1,1,9,3),
+                          labels_butt=["BACK"],
+                          align=(0,0,1));
 
     USERFIELD  = REGION ( "USER",                           #
                           rect=COORD( 1,  1, 64,  1,  1, 19 ),
-                          color="IN", borders=(1,1,3,5),
-                          corners=(12,14,13,11));
+                          color="DF", borders=(1,1,3,5),
+                          corners=(12,14,13,11),
+                          labels_top =["ESPECTRO PY"],
+                          labels_butt=["INPUT"],
+                          align=(0,1,0));
 
     PANEL_A    = REGION ( "PANEL_A",                        #
                           rect=COORD(64, 64, 76,  1,  1, 19 ),
-                          color="IN", borders=(1,0,3,1),
+                          color="DF", borders=(1,0,3,1),
                           corners=(2,6,2,7));
 
-    DEFLAY     = LAYOUT ( [DEBUGFIELD, USERFIELD, PANEL_A]  );
+    USERFIELD.addItem( 2, 1, "ITEM0");
+    USERFIELD.addItem( 2, 2, "ITEM1");
+    USERFIELD.addItem( 2, 3, "ITEM2");
+    USERFIELD.addItem( 2, 4, "ITEM3");
+
+    USERFIELD.addItem(10, 1, "ITEM4");
+    USERFIELD.addItem(10, 2, "ITEM5");
+    USERFIELD.addItem(10, 3, "ITEM6");
+    USERFIELD.addItem(10, 4, "ITEM7");
+
+    USERFIELD.ITEMS_PTR = 4;
+
+    DEFLAY     = LAYOUT ([DEBUGFIELD, USERFIELD, PANEL_A]);
 
     DOS("@ECHO OFF && CLS");
     KVNSL_H.NEW_SCREEN("HELLO", DEFLAY); KVNSL_H.FILLSCREEN();
     DOS('TITLE %__SLAVE%%_PLATFORM% (ESPECTRO)');
+    KVNSL_H.CHREGION("USER"); KVNSL_H.OUT(KVNSL_H.RNAVIGATE(REGION_ITEMS_CURR));
 
     atexit.register(CLEANUP);
 
@@ -1176,78 +1562,7 @@ def SYSDUMP():
 
 #   ---     ---     ---     ---     ---
 
-class KEYBOARD_CONTROLLER:
 
-    LOG  = 27;
-
-    KEYS =                                  {
-
-        "BACKSPACE" :  8,
-        "RETURN"    : 13,
-        "EXIT"      : 26,
-        "ESCAPE"    : 27,
-
-        "ARROWLEFT" : 77,
-        "ARROWRIGHT": 75,
-        "ARROWUP"   : 72,
-        "ARROWDOWN" : 80,
-
-        "SPACE"     : 32,
-
-        "DELETE"    : 83,
-        "START"     : 71,
-        "END"       : 79,
-        "SEMICOLON" : 59,
-
-        "ORDM"      : 167,
-
-        "SPEC"      : 224
-
-                                            };
-
-#   ---     ---     ---     ---     ---
-
-    @staticmethod
-    def RUN(cases={}, spec_cases={}, typewriter=None):
-
-        KEYS = KEYBOARD_CONTROLLER.KEYS;
-        VAL  = list(KEYS.values());
-        ID   = list(KEYS.keys  ());
-
-        retx = None;
-
-        while not retx:
-
-            char = getch().upper(); x = ord(char);
-            KEYBOARD_CONTROLLER.LOG = x;
-
-            if x == KEYS["SPEC"]:
-                y = ord(getch());
-
-                if y not in VAL:
-                    continue;
-
-                i = VAL.index(y); key = ID[i];
-
-                if key in spec_cases:
-                    retx = spec_cases[key]();
-
-            elif typewriter and (91 > x >= 65):
-                typewriter();
-
-            else:
-
-                if x not in VAL:
-                    continue;
-
-                i = VAL.index(x); key = ID[i];
-
-                if key in cases:
-                    retx = cases[key]();
-
-            CPRINT("", 1);
-
-        return retx;
 
 #   ---     ---     ---     ---     ---
 
