@@ -406,6 +406,7 @@ class REGION:
 
         self.COLOR     = PALETTE[color];
         self.BUFF      = buff if isinstance(buff, str) else "";
+        self.BUFF_PTR  = 0;
 
         self.ALIGN     = align;
         self.LABELS    = [labels_top, labels_butt];
@@ -423,15 +424,16 @@ class REGION:
             else:
                 self.ITEMS_MAP[ elem['y'] ][ elem['x'] ] = elem["i"];
 
-    def addItem(self, x, y, label, func=None):
+    def addItem(self, x, y, label, info="", func=None):
 
         self.ITEMS_PTR      += 1;
 
         new_elem = { "x"    : self.RECT.tx+(self.BORDERS[1]&1)+x,
                      "y"    : self.RECT.ty+(self.BORDERS[0]&1)+y,
-                     "i"    : self.ITEMS_PTR,
-
+                     "i"    : self.ITEMS_PTR,                   #
+                                                                #
                      "label": label,                            #
+                     "info" : info,                             #
                      "func" : func                              };
 
         self.ITEMS.append(new_elem);
@@ -464,32 +466,57 @@ class REGION:
 
                 if idex in (REGION_ITEMS_RIGHT, REGION_ITEMS_LEFT):
 
-                    keys    = sorted( list(self.ITEMS_MAP[y].keys()) );
+                    xvalues = sorted( list(self.ITEMS_MAP[y].keys()) );
 
-                    h_idex  = keys.index(x);
-                    h_idex += 1 if idex == REGION_ITEMS_RIGHT else -1;
+                    h_idex  = xvalues.index(x);
+                    h_idex -= 1 if idex == REGION_ITEMS_RIGHT else -1;
 
-                    arrtop  = len(keys) - 1;
+                    arrtop  = len(xvalues) - 1;
                     if   h_idex > arrtop:
                         h_idex = 0;
                     elif h_idex < 0:
                         h_idex = arrtop;
 
-                    idex    = self.ITEMS_MAP[y][keys[h_idex]];
+                    yvalues = list(self.ITEMS_MAP.keys());
+
+                    closest = y;
+                    dist    = hxDRAWSPACE_Y;
+                    for new_y in yvalues:
+                        new_dist = abs(new_y - y);
+                        if new_dist < dist:
+                            dist    = new_dist;
+                            closest = new_y;
+
+                    y       = closest;
+                    idex    = self.ITEMS_MAP[y][xvalues[h_idex]];
 
                 else:
-                    keys    = sorted( list(self.ITEMS_MAP.keys()) );
 
-                    v_idex  = keys.index(y);
+                    yvalues    = sorted( list(self.ITEMS_MAP.keys()) );
+
+                    v_idex  = yvalues.index(y);
                     v_idex += 1 if idex == REGION_ITEMS_DOWN else -1;
 
-                    arrtop  = len(keys) - 1;
+                    arrtop  = len(yvalues) - 1;
                     if   v_idex > arrtop:
                         v_idex = 0;
                     elif v_idex < 0:
                         v_idex = arrtop;
 
-                    idex    = self.ITEMS_MAP[keys[v_idex]][x];
+                    xvalues = list(self.ITEMS_MAP[yvalues[v_idex]].keys());
+                    dist    = hxDRAWSPACE_X;
+
+                    closest = x;
+                    #if x not in xvalues: x -> current value;
+                    for new_x in xvalues:
+                        new_dist = abs(new_x - x);
+                        if new_dist < dist:
+                            dist    = new_dist;
+                            closest = new_x;
+                            if not dist: break;
+
+                    x       = closest;
+                    idex    = self.ITEMS_MAP[yvalues[v_idex]][x];
 
                 self.ITEMS_PTR = idex;
 
@@ -522,9 +549,16 @@ class REGION:
         return f"$:CURSOR.JUMP{elem['x']-len(ptrchar_s), elem['y']};>"\
                f"{ptrchar_s}$:</INVERT;>{elem['label']}{ptrchar_e}";
 
+    def callItem(self, elem):
+        if elem['func']:
+            return elem['func']();
+
+        return None;
+
     ITEM_FUNCS = { "select"  : selectItem,
                    "deselect": deselectItem,
-                   "pop"     : popItem
+                   "pop"     : popItem,
+                   "call"    : callItem
                  };
 
 #   ---     ---     ---     ---     ---
@@ -664,7 +698,46 @@ class REGION:
 
                 s       = s + label;
 
+        if self.BUFF:
+            s = s + self.spitBuff(y);
+
         return vchar_s + s + vchar_e;
+
+    def spitBuff(self, y, clear=0):
+
+        tjump  = f"$:CURSOR.JUMP{self.RECT.tx+1, y};>"
+        length = len(self.BUFF[self.BUFF_PTR:]);
+
+        if clear:
+            s = tjump + (" "*length);
+            self.BUFF_PTR += length;
+
+        else:
+            if length > self.pad:
+                s = tjump + self.BUFF[self.BUFF_PTR:self.BUFF_PTR+self.pad];
+                self.BUFF_PTR += self.pad;
+            else:
+                s = tjump + self.BUFF[self.BUFF_PTR:];
+                self.BUFF_PTR += length;
+
+        return s;
+
+    def updateBuff(self, new_s):
+
+        old_length = len(self.BUFF);
+        new_length = len(new_s    );
+
+        s = ""; self.BUFF_PTR = 0;
+        for y in range(self.RECT.ty+1, self.RECT.by):
+            s = s + self.spitBuff(y, 1);
+            if self.BUFF_PTR >= old_length: break;
+
+        self.BUFF_PTR = 0; self.BUFF = new_s;
+        for y in range(self.RECT.ty+1, self.RECT.by):
+            s = s + self.spitBuff(y);
+            if self.BUFF_PTR >= new_length: break;
+
+        return s;
 
     def drawBottom(self):
         return  ( f"$:CURSOR.JUMP{self.RECT.tx, self.RECT.by};>"
@@ -674,10 +747,11 @@ class REGION:
 
 class LAYOUT:
 
-    def __init__(self, regions):
+    def __init__(self, regions, info_region=0):
 
         self.REGIONS = { region.NAME:region for region in regions };
         self.SEL     = regions[0].NAME;
+        self.INFO    = regions[0];
 
     @property
     def ACTIVE_REGION(self):
@@ -780,17 +854,23 @@ class KVNSL:
         if not region: region = self.CUR_REGION;
         while s: s = region.WRITE(s);
 
-        self.NO_YSCROLL();
+        #self.NO_YSCROLL();
         CPRINT("", flush);
 
     def NO_YSCROLL(self):
         if CURSOR.y > (hxDRAWSPACE_Y-1): CPRINT("\x1b[T");
 
+    def REXEC(self):
+        region = self.CUR_REGION;
+        return region.ITEM_ACCESS("call", REGION_ITEMS_CURR);
+
     def RNAVIGATE(self, dirn):
 
-        region = self.CUR_REGION
+        region = self.CUR_REGION;
+        info   = self.CUR_SCREEN.INFO;
 
-        s = "";
+        oldlen = len(info.BUFF);
+        s      = "";
 
         if dirn == REGION_ITEMS_UP:
             s = s + region.ITEM_ACCESS("deselect", REGION_ITEMS_CURR );
@@ -818,7 +898,9 @@ class KVNSL:
         else:
             s = s + region.ITEM_ACCESS("select",   REGION_ITEMS_CURR );
 
-        return s;
+        info_s = info.updateBuff(region.ITEMS[region.ITEMS_PTR]["info"]);
+
+        return s, info_s;
 
     def RUN(self):
 
@@ -844,22 +926,34 @@ class KVNSL:
 
                 spec_cases = {
 
-                    "ARROWUP"  :  [ self.RNAVIGATE, [REGION_ITEMS_UP   ] ],
-                    "ARROWLEFT":  [ self.RNAVIGATE, [REGION_ITEMS_LEFT ] ],
-                    "ARROWDOWN":  [ self.RNAVIGATE, [REGION_ITEMS_DOWN ] ],
-                    "ARROWRIGHT": [ self.RNAVIGATE, [REGION_ITEMS_RIGHT] ]
+                    "ARROWUP"   : [ self.RNAVIGATE, [REGION_ITEMS_UP   ] ],
+                    "ARROWLEFT" : [ self.RNAVIGATE, [REGION_ITEMS_LEFT ] ],
+                    "ARROWDOWN" : [ self.RNAVIGATE, [REGION_ITEMS_DOWN ] ],
+                    "ARROWRIGHT": [ self.RNAVIGATE, [REGION_ITEMS_RIGHT] ],
 
                 };
 
-                x = KEYBOARD_CONTROLLER.RUN(spec_cases=spec_cases, typewriter=True);
+                cases = {
+
+                    "RETURN"    : [ self.REXEC,     []                   ]
+
+                };
+
+                x = KEYBOARD_CONTROLLER.RUN(cases, spec_cases, 1);
 
                 if isinstance(x, str):
                     if KEYBOARD_CONTROLLER.TPWT:
                         CURSOR.JUMP(2+shift, 21);
                         CPRINT(x); shift+=1;
 
-                    elif KEYBOARD_CONTROLLER.SPEC:
-                        self.OUT(x, flush=0);
+                elif KEYBOARD_CONTROLLER.SPEC:
+
+                    if isinstance(x, tuple):
+                        itm, info  = x;
+                        inforegion = self.CUR_SCREEN.INFO;
+
+                        self.OUT(itm,                     flush=0);
+                        self.OUT(info, region=inforegion, flush=0);
 
                 elif KEYBOARD_CONTROLLER.LOG == 27: break;
 
@@ -1492,48 +1586,52 @@ def STARTUP(SETTINGS):
     KVRLOG     = logpath + "\\KVNSLOG"; MKFILE(KVRLOG, ask=0);
     KVRIN      = logpath + "\\KVNSIN";  MKFILE(KVRIN,  ask=0);
 
-    DEBUGFIELD = REGION ( "DEBUG",                          #
-                          rect=COORD( 1,  1, 76, 20, 20, 23 ),
+    INFOFIELD  = REGION ( "INFO",                           #
+                          rect=COORD( 1,  1, 76, 18, 18, 22 ),
                           color="DF", borders=(0,1,1,1),
                           corners=(1,1,9,3),
                           labels_butt=["BACK"],
                           align=(0,0,1));
 
-    USERFIELD  = REGION ( "USER",                           #
-                          rect=COORD( 1,  1, 64,  1,  1, 19 ),
+    MAINFIELD  = REGION ( "MAIN",                           #
+                          rect=COORD( 1,  1, 64,  1,  1, 18 ),
                           color="DF", borders=(1,1,3,5),
                           corners=(12,14,13,11),
                           labels_top =["ESPECTRO PY"],
-                          labels_butt=["INPUT"],
+                          labels_butt=["INFO"],
                           align=(0,1,0));
 
     PANEL_A    = REGION ( "PANEL_A",                        #
-                          rect=COORD(64, 64, 76,  1,  1, 19 ),
+                          rect=COORD(64, 64, 76,  1,  1, 18 ),
                           color="DF", borders=(1,0,3,1),
                           corners=(2,6,2,7));
 
-    USERFIELD.addItem( 2, 1, "ITEM0");
-    USERFIELD.addItem( 2, 2, "ITEM1");
-    USERFIELD.addItem( 2, 3, "ITEM2");
-    USERFIELD.addItem( 2, 4, "ITEM3");
+    MAINFIELD.addItem( 2, 1, "ITEM0", func=TESTCALL, info="This is an item");
+    MAINFIELD.addItem( 2, 2, "ITEM1", info="This is not");
+    MAINFIELD.addItem( 2, 3, "ITEM2", info="Is perhaps a better item");
+    MAINFIELD.addItem( 2, 4, "ITEM3", info="Not this one, it's cursed!");
 
-    USERFIELD.addItem(10, 1, "ITEM4");
-    USERFIELD.addItem(10, 2, "ITEM5");
-    USERFIELD.addItem(10, 3, "ITEM6");
-    USERFIELD.addItem(10, 4, "ITEM7");
+    MAINFIELD.addItem(10, 1, "ITEM4", info="Smiley face☻");
+    MAINFIELD.addItem(10, 2, "ITEM5", info="Semi-Cheeky face :>");
+    MAINFIELD.addItem(10, 3, "ITEM6", info="PE$O");
+    MAINFIELD.addItem(10, 4, "ITEM7", info="Whatevah mang");
 
-    USERFIELD.ITEMS_PTR = 4;
+    MAINFIELD.ITEMS_PTR = 0;
 
-    DEFLAY     = LAYOUT ([DEBUGFIELD, USERFIELD, PANEL_A]);
+    DEFLAY     = LAYOUT ([INFOFIELD, MAINFIELD, PANEL_A]);
 
     DOS("@ECHO OFF && CLS");
     KVNSL_H.NEW_SCREEN("HELLO", DEFLAY); KVNSL_H.FILLSCREEN();
     DOS('TITLE %__SLAVE%%_PLATFORM% (ESPECTRO)');
-    KVNSL_H.CHREGION("USER"); KVNSL_H.OUT(KVNSL_H.RNAVIGATE(REGION_ITEMS_CURR));
+    KVNSL_H.CHREGION("MAIN"); itm, info = KVNSL_H.RNAVIGATE(REGION_ITEMS_CURR);
+    KVNSL_H.OUT(itm, flush=0); KVNSL_H.OUT(info, flush=1, region=KVNSL_H.CUR_SCREEN.INFO);
 
     atexit.register(CLEANUP);
 
 def GETKVNSL(): return KVNSL_H;
+
+def TESTCALL():
+    CPRINT("YEY");
 
 def LOGOS():
     global KVRLOG; return KVRLOG;
