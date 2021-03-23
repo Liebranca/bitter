@@ -21,23 +21,6 @@ sys.ps2    = '-';
 FATAL      = -255;
 ERROR      = -254;
 
-ANSIPESO=                                   {
-
-    "<%INVERT": "\x1b[7m",
-    "</INVERT": "\x1b[27m",
-
-    "<%UINVERT": "\x1b[1;7m",
-    "</UINVERT": "\x1b[22;27m",
-
-    "<%BOLD"  : "", #\x1b[1;24m
-    "</BOLD"  : "", #\x1b[22;24m
-    "<%UNDER" : "\x1b[4m",
-    "</UNDER" : "\x1b[24m",
-    "<%BLINK" : "\x1b[5m",
-    "</BLINK" : "\x1b[25m",
-
-                                            };
-
 def DISCOUNT_ESCAPES(S, DIFF):
 
     old_length = DIFF; DIFF=0; i=0;
@@ -209,7 +192,7 @@ class KEYBOARD_CONTROLLER:
 
         char = getch().upper(); x = ord(char);
 
-        KEYBOARD_CONTROLLER.LOG = x;
+        KEYBOARD_CONTROLLER.LOG  = x;
         KEYBOARD_CONTROLLER.SPEC = 0;
         KEYBOARD_CONTROLLER.TPWT = 0;
 
@@ -225,6 +208,10 @@ class KEYBOARD_CONTROLLER:
             if key in spec_cases:
                 return spec_cases[key][0](*spec_cases[key][1]);
 
+        elif callable(typewriter) and x not in [8, 9, 13, 26, 27, 167]:
+            KEYBOARD_CONTROLLER.TPWT = 1;
+            return typewriter();
+
         elif typewriter and (90 >= x >= 65):
             KEYBOARD_CONTROLLER.TPWT = 1;
             return chr(x);
@@ -239,7 +226,7 @@ class KEYBOARD_CONTROLLER:
             if key in cases:
                 return cases[key][0](*cases[key][1]);
 
-        return 7;
+        return 0;
 
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
@@ -591,15 +578,7 @@ class REGION:
             if DOJUMP[0] or DOJUMP[1]: CURSOR.UPDATE();
 
             if ";>" in sub:
-                com, sub = sub.split(";>");
-
-                if com.startswith("<"):
-                    # quickfix for ANSI sequences changing the intensity flag
-                    #add = self.COLOR if "INVERT" in com else "";
-                    sub = f"{ANSIPESO[com]}{sub}";
-
-                else:
-                    eval(com);
+                com, sub = sub.split(";>"); eval(com);
 
             CPRINT(sub);
 
@@ -705,7 +684,7 @@ class REGION:
     def spitBuff(self, y):
 
         tjump  = f"$:CURSOR.JUMP{self.RECT.tx+1, y};>"
-        sub    = "$:<%BOLD;>"+self.BUFF[self.BUFF_PTR:self.BUFF_PTR+self.pad]+"$:</BOLD;>";
+        sub    = PALETTE["BACK"]+self.BUFF[self.BUFF_PTR:self.BUFF_PTR+self.pad];
         s      = tjump + sub; self.BUFF_PTR += self.pad;
 
         return s;
@@ -820,10 +799,25 @@ def GETKVRSOR(): return CURSOR;
 class KVNSL:
 
     def __init__(self):
-        self.S       = None;
-        self.SCREENS = {};
+        self.S         = None;
+        self.SCREENS   = {};
+
+        self.INTCALLS  = {};
+        self.KINTCALLS = {};
 
         CURSOR.JUMP(1,22);
+
+    def AP_INTCALL(self, ID, call, args, k=0):
+        if k:
+            self.KINTCALLS[ID] = (call, args);
+        else:
+            self.INTCALLS[ID]  = (call, args);
+
+    def DL_INTCALL(self, ID, k=0):
+        if k:
+            del self.KINTCALLS[ID];
+        else:
+            del self.INTCALLS[ID];
 
     def NEW_SCREEN(self, ID, layout):
         self.SCREENS[ID] = layout;
@@ -936,6 +930,8 @@ class KVNSL:
 
         CURSOR.LOAD(); shift=0; animframe=0.0; animrate=frametime*6;
 
+#   ---     ---     ---     ---     ---
+
         while True:
 
             framestart = rnow();
@@ -943,53 +939,69 @@ class KVNSL:
 
             CURSOR.SAVE();
 
+#   ---     ---     ---     ---     ---
+
             if kbhit():
 
-                spec_cases = {
+                if not self.KINTCALLS:
+                    spec_cases = {
 
-                    "ARROWUP"   : [ self.RNAVIGATE, [REGION_ITEMS_UP   ] ],
-                    "ARROWLEFT" : [ self.RNAVIGATE, [REGION_ITEMS_LEFT ] ],
-                    "ARROWDOWN" : [ self.RNAVIGATE, [REGION_ITEMS_DOWN ] ],
-                    "ARROWRIGHT": [ self.RNAVIGATE, [REGION_ITEMS_RIGHT] ],
+                        "ARROWUP"   : [ self.RNAVIGATE, [REGION_ITEMS_UP   ] ],
+                        "ARROWLEFT" : [ self.RNAVIGATE, [REGION_ITEMS_LEFT ] ],
+                        "ARROWDOWN" : [ self.RNAVIGATE, [REGION_ITEMS_DOWN ] ],
+                        "ARROWRIGHT": [ self.RNAVIGATE, [REGION_ITEMS_RIGHT] ],
 
-                };
+                    };
 
-                cases = {
+                    cases = {
 
-                    "RETURN"    : [ self.REXEC,     []                   ]
+                        "RETURN"    : [ self.REXEC,     []                   ]
 
-                };
+                    };
 
-                x = KEYBOARD_CONTROLLER.RUN(cases, spec_cases, 1);
+                    x = KEYBOARD_CONTROLLER.RUN(cases, spec_cases, 1);
 
-                if isinstance(x, str):
-                    if KEYBOARD_CONTROLLER.TPWT:
-                        CURSOR.JUMP(2+shift, 21);
-                        CPRINT(x); shift+=1;
+#   ---     ---     ---     ---     ---
 
-                elif KEYBOARD_CONTROLLER.SPEC:
+                    if isinstance(x, str):
+                        if KEYBOARD_CONTROLLER.TPWT:
+                            CURSOR.JUMP(2+shift, 21);
+                            CPRINT(x); shift+=1;
 
-                    if isinstance(x, tuple):
-                        itm, info  = x;
-                        inforegion = self.CUR_SCREEN.INFO;
+                    elif KEYBOARD_CONTROLLER.SPEC:
 
-                        self.OUT(itm,                     flush=0);
-                        self.OUT(info, region=inforegion, flush=0);
+                        if isinstance(x, tuple):
+                            itm, info  = x;
+                            inforegion = self.CUR_SCREEN.INFO;
 
-                elif KEYBOARD_CONTROLLER.LOG == 27: break;
+                            self.OUT(itm,                     flush=0);
+                            self.OUT(info, region=inforegion, flush=0);
+
+                    elif KEYBOARD_CONTROLLER.LOG == 27: break;
+
+#   ---     ---     ---     ---     ---
+
+                else:
+                    x = "";
+                    for func, args in self.KINTCALLS.values():
+                        x = x + func(*args);
+
+                    self.OUT(x);
+
+#   ---     ---     ---     ---     ---
 
             CURSOR.JUMP(2, 23);
 
             if animframe >= animrate:
 
                 if ptr < 3:
-                    ptr += 1; CPRINT(f"\x1b[1G{PALETTE['SEL1']}{ANSIPESO['<%BOLD']}"\
-                                     f" {s[ptr]}{ANSIPESO['</BOLD']}");
+                    ptr += 1; CPRINT(f"\x1b[1G{PALETTE['SEL1']}"\
+                                     f" {s[ptr]}");
                 elif ptr == 3:
                     ptr += 1;
                 else:
-                    ptr = 0; CPRINT(f"\x1b[1G{PALETTE['SEL1']}{ANSIPESO['<%BOLD']}"\
-                                     f" {s[ptr]}{ANSIPESO['</BOLD']}");
+                    ptr = 0; CPRINT(f"\x1b[1G{PALETTE['SEL1']}"\
+                                     f" {s[ptr]}");
 
                 animframe = animframe - animrate;
 
@@ -1589,6 +1601,7 @@ def STARTUP(SETTINGS):
     PALETTE["BOX"  ] = ANSIC(UI_COL1,    UI_BKG    );
     PALETTE["PTR"  ] = ANSIC(UI_COL0+10, UI_BKG    );
     PALETTE["BACK" ] = ANSIC(UI_FRG,     UI_BKG    );
+    PALETTE["KVRSE"] = ANSIC(UI_BKG,     UI_FRG    );
 
     PALETTE[-1     ] = ANSIC(11,  4);
     PALETTE[ 0     ] = ANSIC(16,  4);
@@ -1649,10 +1662,6 @@ def SYSREAD(i=0, clear=1):
 
 def SYSDUMP():
     pass;
-
-#   ---     ---     ---     ---     ---
-
-
 
 #   ---     ---     ---     ---     ---
 
@@ -1968,81 +1977,89 @@ class ASCIBOX:
 class INPUTFIELD:
 
     @staticmethod
-    def MAKE(length=hxDRAWSPACE_X, col="IN", prompt='$:'):
+    def MAKE(x=1, y=1, length=hxDRAWSPACE_X, buff="", col="BACK", col_i="KVRSE", prompt='$:'):
 
         self        = INPUTFIELD();
 
-        self.col    = PALETTE[col];
+        self.pos    = (x, y);
+        self.buff   = buff;
+        self.ptr    = len(buff);
+
+        self.col    = PALETTE[col  ];
+        self.col_i  = PALETTE[col_i];
         self.prompt = prompt;
         self.length = length;
 
-        self.WIPE(); self.FCOLUMN();
-        CPRINT("\x1b[?25l", 1);
-        return self.RUN();
+        self.state  = 0;
+
+        KVNSL_H.OUT(self.CCOLUMN());
+        return self;
 
     @property
     def ch(self):
         if not len(self.buff): return " ";
         return self.buff[self.ptr] if self.ptr < len(self.buff) else " ";
 
-    def KILL(self):
-        self.LCOLUMN(); CPRINT(f"\x1b[27m{self.col}{self.ch}\x1b[D");
-        CPRINT("\x1b[?25h\x1b[0m\n");
-
     def RUN(self):
 
         spec_cases =                        {
 
-            "ARROWLEFT" : self.RIGHT,
-            "ARROWRIGHT": self.LEFT,
-            "DELETE"    : self.DELCUR,
-            "START"     : self.FCOLUMN,
-            "END"       : self.LCOLUMN
+            "ARROWLEFT" : [self.RIGHT,     ()],
+            "ARROWRIGHT": [self.LEFT,      ()],
+            "DELETE"    : [self.DELCUR,    ()],
+            "START"     : [self.FCOLUMN,   ()],
+            "END"       : [self.LCOLUMN,   ()]
 
                                             };
 
         cases =                             {
 
-            "RETURN"    : self.SELECT,
-            "ESCAPE"    : self.CANCEL,
-            "EXIT"      : self.CANCEL,
-            "ORDM"      : self.CANCEL,
+            "RETURN"    : [self.END,       ()],
+            "ESCAPE"    : [self.END,       ()],
+            "EXIT"      : [self.END,       ()],
+            "ORDM"      : [self.END,       ()],
 
-            "SPACE"     : self.PASTECHAR,
-            "SEMICOLON" : self.PASTECHAR,
-            "BACKSPACE" : self.DELPREV,
+            "SPACE"     : [self.PASTECHAR, ()],
+            "SEMICOLON" : [self.PASTECHAR, ()],
+            "BACKSPACE" : [self.DELPREV,   ()]
 
                                             };
 
-        return KEYBOARD_CONTROLLER.RUN(cases, spec_cases, self.PASTECHAR);
+        s = KEYBOARD_CONTROLLER.RUN(cases, spec_cases, self.PASTECHAR);
+        if isinstance(s, int): s = "";
+        return self.CCOLUMN()+s;
 
     def WIPE(self):
         self.ptr = 0; self.buff = ""; self.LINEDRAW();
 
     def LINEDRAW(self):
-        CPRINT(f"\x1b[G{self.col}{self.prompt}{self.buff}"\
-               f"{' ' * (self.length - len(self.buff))}"  );
+        return ( f"$:CURSOR.XJUMP({self.pos[0]});>"+self.col+self.prompt+self.buff
+               + ' ' * (self.length - len(self.buff)) );
 
     def RIGHT(self):
-        if self.ptr == len(self.buff): return;
-        CPRINT(f"\x1b[27m{self.col}{self.ch}\x1b[7m"); self.ptr += 1;
-        CPRINT(f"\x1b[7m{self.col}{self.ch}\x1b[27m\x1b[D");
+        if self.ptr == len(self.buff): return "";
+        s = self.col+self.ch; self.ptr += 1;
+        return s +self.col_i+self.ch+self.col+"$:CURSOR.GOLEFT();>";
 
     def LEFT(self):
-        if self.ptr == 0: return;
-        CPRINT(f"\x1b[27m{self.col}{self.ch}\x1b[2D"); self.ptr -= 1;
-        CPRINT(f"\x1b[7m{self.col}{self.ch}\x1b[27m\x1b[D");
+        if self.ptr == 0: return "";
+        s = "$:CURSOR.GORIGHT(2);>"+self.col+self.ch;
+        self.ptr -= 1; return s;
+
+    def CCOLUMN(self):
+        s = f"$:CURSOR.JUMP({self.pos[0] + self.ptr}, {self.pos[1]});>";
+        return s + self.col_i+self.ch+self.col+"$:CURSOR.GOLEFT(2);>";
 
     def FCOLUMN(self):
-        CPRINT(f"\x1b[27m{self.col}{self.ch}\x1b[7m"); self.ptr = 0;
-        CPRINT(f"\x1b[{len(self.prompt) + 1}G");
-        CPRINT(f"\x1b[7m{self.col}{self.ch}\x1b[27m\x1b[D");
+        s = f"$:CURSOR.XJUMP({self.pos[0]+self.ptr});>"+self.col+self.ch; self.ptr = 0;
+        s = s + f"$:CURSOR.XJUMP({self.pos[0] + len(self.prompt)});>";
+        return s + self.col_i+self.ch+self.col+"$:CURSOR.GOLEFT();>";
 
     def LCOLUMN(self):
-
-        CPRINT(f"\x1b[27m{self.col}{self.ch}\x1b[7m"); self.ptr = len(self.buff);
-        CPRINT(f"\x1b[{len(self.prompt)+ 1 + len(self.buff)}G");
-        CPRINT(f"\x1b[7m{self.col}{self.ch}\x1b[27m\x1b[D");
+        s = f"$:CURSOR.XJUMP({self.pos[0]+self.ptr});>"+self.col+self.ch;
+        self.ptr = len(self.buff);
+        s = s + f"$:CURSOR.XJUMP({self.pos[0] + len(self.prompt) + len(self.buff)});>";
+        return s + self.col_i+self.ch+self.col+"$:CURSOR.GOLEFT();>";
 
     def PASTECHAR(self):
 
@@ -2050,23 +2067,29 @@ class INPUTFIELD:
         if len(self.buff) < self.length:
             ch = chr(x)
             self.buff = self.buff[:self.ptr] + ch + self.buff[self.ptr:]; self.ptr += 1;
-            CPRINT(f"\x1b[27m{self.col}{ch}\x1b[7m");
-            CPRINT(f"\x1b[7m{self.col}{self.ch}\x1b[27m\x1b[D");
+            s = self.col+ch;
+            return s + self.col_i+self.ch+self.col+"$:CURSOR.GOLEFT();>";
+
+        return "";
 
     def DELPREV(self):
 
         if self.ptr > 0:
+            s = self.LEFT();
 
-            self.ptr -= 1; self.buff = self.buff[:self.ptr] + self.buff[self.ptr+1:] + " ";
-            tail      = self.buff[self.ptr:];
+            old_length   = len(self.buff);
+            self.buff    = self.buff[:self.ptr] + self.buff[self.ptr+1:] + " ";
+            tail         = self.buff[self.ptr:];
 
-            CPRINT(f"\x1b[27m{self.col}{self.ch}\x1b[2D\x1b[7m");
-            CPRINT(f" \b\x1b[27m{self.col}{tail}"); CPRINT(f"\x1b[{len(tail)}D");
-            CPRINT(f"\x1b[7m{self.col}{self.ch}\x1b[27m\x1b[D");
+            if self.ptr  == old_length:
+                self.ptr -= 1;
+
+            s = s + f"$:CURSOR.GOLEFT(2);>"+self.col+tail+f"$:CURSOR.GOLEFT({len(tail)});>";
             self.buff = self.buff[:-1];
 
-        else:
-            self.DELCUR();
+            return s + self.col_i+self.ch+self.col+"$:CURSOR.GOLEFT();>"
+
+        else: return self.DELCUR();
 
     def DELCUR(self):
 
@@ -2079,19 +2102,15 @@ class INPUTFIELD:
             if self.ptr  == old_length:
                 self.ptr -= 1;
 
-            CPRINT(f"\x1b[27m{self.col}{tail}\x1b[{len(tail)}D\x1b[7m");
+            s = f"$:CURSOR.GORIGHT();>"+self.col+tail+f"$:CURSOR.GOLEFT({len(tail)});>";
             self.buff = self.buff[:-1];
 
-            CPRINT(f"\x1b[7m{self.col}{self.ch}\x1b[27m\x1b[D");
+            return s + self.col_i+self.ch+self.col+"$:CURSOR.GOLEFT();>"
 
-    def CANCEL(self):
-        self.buff = "EXIT"; self.ptr = len(self.buff);
-        self.LINEDRAW(); self.KILL(); return "EXIT";
+        return "";
 
-    def SELECT(self):
-        self.KILL(); return self.buff;
+    def END(self):
+        self.state = -1; self.ptr = len(self.buff);
+        return self.LINEDRAW() + self.LCOLUMN() + self.col+self.ch+"$:CURSOR.GOLEFT();>"
 
 #   ---     ---     ---     ---     ---
-
-def PEIN():
-    return INPUTFIELD.MAKE();

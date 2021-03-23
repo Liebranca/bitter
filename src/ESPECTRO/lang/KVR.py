@@ -6,7 +6,6 @@
 #                                       #
 #   ---     ---     ---     ---     --- #
 
-from  ESPECTRO import PEIN;
 from .DTMANG   import (
 
     DTYPES,

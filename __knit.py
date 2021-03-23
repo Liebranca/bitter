@@ -113,44 +113,6 @@ from time import sleep;
 
 STARTUP(LSET);
 PXUI(); KVNSL = GETKVNSL();
-#KVNSL.OUT("DEBUG " * 20);
-
-"""
-ptr = 0; s = "►▼◄▲♦";
-CPRINT("\x1b[23;0H\x1b[2K\x1b[?25lWait");
-
-
-while True:
-
-    if kbhit():
-        CPRINT(" FUCK!", 1); break;
-
-    if ptr < 3:
-        CPRINT(f"\x1b[{5+ptr}G."); ptr += 1;
-        CPRINT(f"\x1b[8G {s[ptr]}");
-
-    elif ptr == 3:
-        ptr += 1;
-
-    else:
-        CPRINT("\x1b[5G   \x1b[5G"); ptr = 0;
-        CPRINT(f"\x1b[8G {s[ptr]}");
-
-    sleep(1/10); CPRINT("", 1);
-
-#STARTUP(LSET);
-CPRINT("\x1b[f", 1); getch();
-"""
-
-"""
-MULTICHOICE("BOX ONE", [str(x) for x in (0,1,2,3)], 1);
-MULTICHOICE("BOX TWO", [str(x) for x in (0,1,2,3)], 2);
-MULTICHOICE("BOX THREE", [str(x) for x in (0,1,2,3)], 3);
-
-while(True):
-    ret = INTPRT();
-    if "EXIT" in ret: break;
-"""
 
 KVNSL.RUN();
 

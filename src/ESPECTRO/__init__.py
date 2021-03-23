@@ -20,9 +20,10 @@ from .utils.lyos import (
     REGION,
     LAYOUT,
 
+    INPUTFIELD,
+
     DOS,
     CLS,
-    PEIN,
 
     CPRINT,
     ERRPRINT,

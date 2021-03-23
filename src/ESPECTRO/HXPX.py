@@ -14,11 +14,13 @@ from ESPECTRO import (
     TARGET,
 
     CPRINT,
+    INPUTFIELD,
 
     COORD,
     REGION,
     LAYOUT,
     GETKVNSL,
+    GETKVRSOR,
 
     DOS,
 
@@ -70,7 +72,7 @@ from ESPECTRO import (
 
 );
 
-build_opt = ["Executable", "Static library", "Dynamic library"];
+build_opt = ["EXE", "LIB", "DLL"];
 PX        = None;
 
 #   ---     ---     ---     ---     ---
@@ -160,7 +162,10 @@ class hxSRC:
 
 class hxMOD:
 
-    def __init__(self, name = 'MOD', subdirs = {}, lib=[], lib64=[], mode = 1):
+    def __init__(self, name = 'MOD', subdirs=None, lib=None, lib64=None, mode = 1):
+
+        if not lib  : lib  =[];
+        if not lib64: lib64=[];
 
         self.name  = name;
         self.mode  = mode;
@@ -838,6 +843,8 @@ class hxPX:
 
 #   ---     ---     ---     ---     ---
 
+new_mod=None; new_src=None;
+
 def PXUI():
 
     # default project hardcoded while we work on it
@@ -890,15 +897,63 @@ def SAVEPX():
     global PX; PX.save();
 
 def ADDMODPX():
-    global PX; KVNSL = GETKVNSL();
+    global PX, new_mod; KVNSL = GETKVNSL();
     KVNSL.CHREGION("OPTIONS"); INFO = KVNSL.CUR_SCREEN.INFO;
 
+    if not new_mod: new_mod=hxMOD();
+
     region = KVNSL.CUR_REGION;
-    region.addItem(2, 1, "Testy0", style=2, info="Testing additem", func=KVNSL.SWAPWIPE, args={'src':"OPTIONS", 'tgt':"ACTIONS"});
-    region.addItem(2, 2, "Testy1", style=2, info="Another additem", func=KVNSL.SWAPWIPE, args={'src':"OPTIONS", 'tgt':"ACTIONS"});
+    region.addItem(2, 1, f"Name: {new_mod.name}", style=2, info="Name for this module",
+                   func=SETFIELD_CINPUT, args={'ob':new_mod, 'field':"name", 'idex':0});
+
+    region.addItem(2, 2, f"Mode: {build_opt[new_mod.mode]}", style=2,
+                   info="Filetype this module compiles to",
+                   func=KVNSL.SWAPWIPE, args={'src':"OPTIONS", 'tgt':"ACTIONS"});
+
+    region.addItem(2, 4, "Accept", style=1, info="Create module with these settings",
+                   func=KVNSL.SWAPWIPE, args={'src':"OPTIONS", 'tgt':"ACTIONS"});
+    region.addItem(2, 5, "Cancel", style=1, info="Discard and return",
+                   func=KVNSL.SWAPWIPE, args={'src':"OPTIONS", 'tgt':"ACTIONS"});
 
     for elem in region.ITEMS:
         KVNSL.OUT(region.drawMid(elem['y']));
 
     itm, info = KVNSL.RNAVIGATE(0);
     KVNSL.OUT(itm, flush=0); KVNSL.OUT(info, region=INFO, flush=1);
+
+CINPUT_REG=None;
+def SETFIELD_CINPUT(ob, field, idex):
+    KVNSL = GETKVNSL(); CURSOR = GETKVRSOR();
+    region = KVNSL.CUR_REGION; elem = region.ITEMS[idex];
+    x, y = elem['x'], elem['y'];
+
+    field_name, value = elem['label'].split(": ");
+    in_x = x + (len(field_name) + 2); CURSOR.JUMP(in_x, y);
+
+    PEIN = INPUTFIELD.MAKE(x=in_x, y=y, length=region.pad-in_x, buff=value, prompt='');
+    global CINPUT_REG; CINPUT_REG={'PEIN':PEIN, 'ob':ob, 'field':field, 'idex':idex};
+
+    KVNSL.AP_INTCALL("SETFIELD_CINPUT_INT", SETFIELD_CINPUT_INT, (), 1);
+
+def SETFIELD_CINPUT_INT():
+    global CINPUT_REG; PEIN, ob, field, idex = CINPUT_REG.values();
+    CURSOR = GETKVRSOR(); CURSOR.JUMP(PEIN.pos[0]+PEIN.ptr, PEIN.pos[1]);
+
+    x = PEIN.RUN();
+
+    if PEIN.state:
+        KVNSL = GETKVNSL();
+        x = x + f"$:KVNSL_H.DL_INTCALL('SETFIELD_CINPUT_INT', 1);>";
+
+        if PEIN.state == -1:
+            pass;
+        else:
+            pass;
+
+        print("\n\x1b[K"+PEIN.buff);
+
+        del PEIN; CINPUT_REG=None;
+    else:
+        CINPUT_REG={'PEIN':PEIN, 'ob':ob, 'field':field, 'idex':idex};
+
+    return x;
