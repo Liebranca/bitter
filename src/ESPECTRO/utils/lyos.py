@@ -29,8 +29,8 @@ ANSIPESO=                                   {
     "<%UINVERT": "\x1b[1;7m",
     "</UINVERT": "\x1b[22;27m",
 
-    "<%BOLD"  : "\x1b[1;24m",
-    "</BOLD"  : "\x1b[22;24m",
+    "<%BOLD"  : "", #\x1b[1;24m
+    "</BOLD"  : "", #\x1b[22;24m
     "<%UNDER" : "\x1b[4m",
     "</UNDER" : "\x1b[24m",
     "<%BLINK" : "\x1b[5m",
@@ -172,6 +172,7 @@ class KEYBOARD_CONTROLLER:
     KEYS =                                  {
 
         "BACKSPACE" :  8,
+        "TAB"       :  9,
         "RETURN"    : 13,
         "EXIT"      : 26,
         "ESCAPE"    : 27,
@@ -296,19 +297,7 @@ ERRLEVELS =                                 {
 
                                             };
 
-PALETTE   =                                 {
-
-   "IN"     : "\x1b[0m",
-   "BX"     : "\x1b[0m",
-   "DF"     : "\x1b[0m",
-
-   -1       : "\x1b[0m",
-    0       : "\x1b[0m",
-    1       : "\x1b[0m",
-    2       : "\x1b[0m",
-    3       : "\x1b[0m"
-
-                                            };
+PALETTE   = {};                             # color dict. filled @STARTUP
 
 import inspect;
 
@@ -393,12 +382,10 @@ class REGION:
 
     def __init__(self, name, mode="BLANKOUT", items=None, items_ptr=-1, buff=None,
                  rect=COORD(1,1,76,22,22,23), borders=(1,1,1,1), corners=(12,6,9,3),
-                 labels_top=None, labels_butt=None, align=(0,0,0)):
+                 labels=None, align=(0,0,0)                                       ):
 
-        if not labels_top:
-            labels_top = [];
-        if not labels_butt:
-            labels_butt = [];
+        if not labels:
+            labels = ["", ""];
 
         if not items:
             items = [];
@@ -414,14 +401,14 @@ class REGION:
         self.RECT      = rect;
         self.CORNERS   = corners;
 
-        self.COLOR     = PALETTE["DF"];
         self.BUFF      = buff if isinstance(buff, str) else "";
         self.BUFF_PTR  = 0;
 
         self.ALIGN     = align;
-        self.LABELS    = [labels_top, labels_butt];
+        self.LABELS    = labels;
 
         self.pad       = (self.RECT.bx-1) - (self.RECT.tx+1);
+        self.isCurrent = 0;
 
 #   ---     ---     ---     ---     ---
 
@@ -434,16 +421,18 @@ class REGION:
             else:
                 self.ITEMS_MAP[ elem['y'] ][ elem['x'] ] = elem["i"];
 
-    def addItem(self, x, y, label, info="", func=None):
+    def addItem(self, x, y, label, style=0, info="", func=None, args={}):
 
-        self.ITEMS_PTR      += 1;
+        #self.ITEMS_PTR      += 1;
         new_elem = { "x"    : self.RECT.tx+(self.BORDERS[1]&1)+x,
                      "y"    : self.RECT.ty+(self.BORDERS[0]&1)+y,
-                     "i"    : self.ITEMS_PTR,                   #
+                     "i"    : len(self.ITEMS),                  #
                                                                 #
                      "label": label,                            #
+                     "style": style,                            #
                      "info" : info,                             #
-                     "func" : func                              };
+                     "func" : func,                             #
+                     "args" : args                              };
 
         self.ITEMS.append(new_elem);
         if new_elem['y'] not in self.ITEMS_MAP:
@@ -486,22 +475,11 @@ class REGION:
                     elif h_idex < 0:
                         h_idex = arrtop;
 
-                    yvalues = list(self.ITEMS_MAP.keys());
-
-                    closest = y;
-                    dist    = hxDRAWSPACE_Y;
-                    for new_y in yvalues:
-                        new_dist = abs(new_y - y);
-                        if new_dist < dist:
-                            dist    = new_dist;
-                            closest = new_y;
-
-                    y       = closest;
                     idex    = self.ITEMS_MAP[y][xvalues[h_idex]];
 
                 else:
 
-                    yvalues    = sorted( list(self.ITEMS_MAP.keys()) );
+                    yvalues = sorted( list(self.ITEMS_MAP.keys()) );
 
                     v_idex  = yvalues.index(y);
                     v_idex += 1 if idex == REGION_ITEMS_DOWN else -1;
@@ -513,55 +491,72 @@ class REGION:
                         v_idex = arrtop;
 
                     xvalues = list(self.ITEMS_MAP[yvalues[v_idex]].keys());
-                    dist    = hxDRAWSPACE_X;
-
-                    closest = x;
-                    #if x not in xvalues: x -> current value;
-                    for new_x in xvalues:
-                        new_dist = abs(new_x - x);
-                        if new_dist < dist:
-                            dist    = new_dist;
-                            closest = new_x;
-                            if not dist: break;
-
-                    x       = closest;
-                    idex    = self.ITEMS_MAP[yvalues[v_idex]][x];
-
-                self.ITEMS_PTR = idex;
+                    if x in xvalues:
+                        idex = self.ITEMS_MAP[yvalues[v_idex]][x];
+                    else:
+                        idex = self.ITEMS_PTR;
 
             elif idex >= len(self.ITEMS) or idex < -7:
                 return ERROR;
 
+            self.ITEMS_PTR = idex;
             return REGION.ITEM_FUNCS[func_id](self, self.ITEMS[idex]);
 
         return ERROR;
 
     def popItem(self, elem):
-        return self.ITEMS.pop(elem);
+
+        hasptr    = elem["style"] > 1;
+
+        ptrchar_s = f"{BOXCHARS['PTR_S']}" if self.ALIGN[1] in (1, 2) and hasptr else "";
+        ptrchar_e =    BOXCHARS['PTR_E']   if self.ALIGN[1] in (0, 2) and hasptr else "";
+        SEL       = "SEL%s"%elem["style"];
+
+        s         = f"$:CURSOR.JUMP{elem['x']-len(ptrchar_s), elem['y']};>"\
+                  + PALETTE['BACK']\
+                  + " " * (len(ptrchar_s) + len(elem['label']) + len(ptrchar_e))
+
+        del self.ITEMS_MAP[elem['y']][elem['x']];
+        elem = self.ITEMS.pop(elem['i']);
+
+        for item in self.ITEMS[elem['i']:]:
+            item['i'] -= 1;
+
+        self.buildItemMap();
+        return (s, elem);
 
     def selectItem(self, elem):
 
-        ptrchar_s = f"{BOXCHARS['PTR_S']}" if self.ALIGN[1] in (1, 2) else "";
-        ptrchar_e =    BOXCHARS['PTR_E']   if self.ALIGN[1] in (0, 2) else "";
+        hasptr    = elem["style"] > 1;
+
+        ptrchar_s = f"{BOXCHARS['PTR_S']}" if self.ALIGN[1] in (1, 2) and hasptr else "";
+        ptrchar_e =    BOXCHARS['PTR_E']   if self.ALIGN[1] in (0, 2) and hasptr else "";
+        SEL       = "SEL%s"%elem["style"];
 
         return f"$:CURSOR.JUMP{elem['x']-len(ptrchar_s), elem['y']};>"\
-               f"$:<%BOLD;>{ptrchar_s}$:</BOLD;>"\
-               f"$:<%UINVERT;>{elem['label']}$:</UINVERT;>{ptrchar_e}";
+               + PALETTE['PTR'] + ptrchar_s\
+               + PALETTE[SEL] + elem['label']\
+               + PALETTE['PTR'] + ptrchar_e;
 
     def deselectItem(self, elem):
+
+        hasptr    = elem["style"] > 1;
 
         length_s  = len(BOXCHARS['PTR_S']);
         length_e  = len(BOXCHARS['PTR_E']);
 
-        ptrchar_s = " "*length_s if self.ALIGN[1] in (1, 2) else "";
-        ptrchar_e = " "*length_e if self.ALIGN[1] in (0, 2) else "";
+        ptrchar_s = " "*length_s if self.ALIGN[1] in (1, 2) and hasptr else "";
+        ptrchar_e = " "*length_e if self.ALIGN[1] in (0, 2) and hasptr else "";
+        DSEL      = "DSEL%s"%elem["style"];
 
         return f"$:CURSOR.JUMP{elem['x']-len(ptrchar_s), elem['y']};>"\
-               f"{ptrchar_s}$:</INVERT;>{elem['label']}{ptrchar_e}";
+               + PALETTE['BOX'] + ptrchar_s\
+               + PALETTE[DSEL] + elem['label']\
+               + PALETTE['BOX'] + ptrchar_e;
 
     def callItem(self, elem):
         if elem['func']:
-            return elem['func']();
+            return elem['func'](**elem['args']);
 
         return None;
 
@@ -590,8 +585,6 @@ class REGION:
         LENGTH = DISCOUNT_ESCAPES(S, len(S));
         BUFF   = S[:LENGTH].split("$:" );
 
-        CPRINT(self.COLOR);
-
         for sub in BUFF:
 
             DOJUMP = self.RECT.WRAP(CURSOR);
@@ -602,8 +595,8 @@ class REGION:
 
                 if com.startswith("<"):
                     # quickfix for ANSI sequences changing the intensity flag
-                    add = self.COLOR if "INVERT" in com else "";
-                    sub = f"{ANSIPESO[com]+add}{sub}";
+                    #add = self.COLOR if "INVERT" in com else "";
+                    sub = f"{ANSIPESO[com]}{sub}";
 
                 else:
                     eval(com);
@@ -634,33 +627,30 @@ class REGION:
         key = CORNERDICT[x];
         return BOXCHARS[key][thick];
 
-    def drawLabels(self, top=1, sel=0):
+    def drawLabels(self, top=1):
 
         if top:
             thick  = self.BORDERS[0]
             hchar  = (BOXCHARS["HH"][thick] if thick < 7 else BOXCHARS["TR"][7]);
-            labels = self.LABELS[0];
+            label  = self.LABELS[0];
             align  = self.ALIGN[0];
         else:
             thick  = self.BORDERS[2]
             hchar  = BOXCHARS["HH"][thick] if thick < 7 else BOXCHARS["BR"][7];
-            labels = self.LABELS[1];
+            label  = self.LABELS[1];
             align  = self.ALIGN[2];
 
-        pdchr_s = BOXCHARS["LABEL_S"]; lpdc_s = len(pdchr_s);
-        pdchr_e = BOXCHARS["LABEL_E"]; lpdc_e = len(pdchr_e);
+        if label:
+            pdchr_s = BOXCHARS["LABEL_S"]; lpdc_s = len(pdchr_s);
+            pdchr_e = BOXCHARS["LABEL_E"]; lpdc_e = len(pdchr_e);
+            length  = (lpdc_s + len(label) + lpdc_e);
 
-        label = ""; length = 0; i = 1;
-        for x in labels:
-
-            length += (lpdc_s + len(x) + lpdc_e)
-
-            if i == sel:
-                label = label + (f"{pdchr_s}$:<%UINVERT;>{x}$:</UINVERT;>{pdchr_e}");
+            if top and self.isCurrent:
+                label = (f"{pdchr_s}{PALETTE['SEL1']+label+PALETTE['BOX']}{pdchr_e}");
             else:
-                label = label + (f"{pdchr_s}$:<%BOLD;>{x}$:</BOLD;>{pdchr_e}");
-
-            i += 1;
+                label = (f"{pdchr_s}{PALETTE['DSEL0']+label+PALETTE['BOX']}{pdchr_e}");
+        else:
+            length = 0;
 
         space = self.pad;
         if align == 1:
@@ -679,8 +669,13 @@ class REGION:
 
     def drawTop(self):
         return  ( f"$:CURSOR.JUMP{self.RECT.tx, self.RECT.ty};>"
+
+                + PALETTE["BOX"]
                 + self.getCornerChar(self.CORNERS[0], 0, 1      )
-                + self.drawLabels   (sel=0                      )
+
+                + self.drawLabels   (                           )
+
+                + PALETTE["BOX"]
                 + self.getCornerChar(self.CORNERS[1], 0, 3      ) );
 
     def drawMid(self, y):
@@ -705,7 +700,7 @@ class REGION:
 
                 s       = s + label;
 
-        return vchar_s + s + vchar_e;
+        return vchar_s + s + PALETTE["BOX"] + vchar_e;
 
     def spitBuff(self, y):
 
@@ -721,7 +716,7 @@ class REGION:
         new_length = len(new_s    );
 
         for y in range(self.RECT.ty+1, self.RECT.by):
-            CPRINT(f"\x1b[{y};{self.RECT.tx+1}H" + f"{self.COLOR}" + (" "*self.pad));
+            CPRINT(f"\x1b[{y};{self.RECT.tx+1}H" + (" "*self.pad));
 
         s = ""; self.BUFF_PTR = 0; 
 
@@ -751,8 +746,13 @@ class REGION:
 
     def drawBottom(self):
         return  ( f"$:CURSOR.JUMP{self.RECT.tx, self.RECT.by};>"
+
+                + PALETTE["BOX"]
                 + self.getCornerChar(self.CORNERS[2], 2, 1            )
+
                 + self.drawLabels   (top=0                            )
+
+                + PALETTE["BOX"]
                 + self.getCornerChar(self.CORNERS[3], 2, 3            ) );
 
 class LAYOUT:
@@ -829,6 +829,9 @@ class KVNSL:
         self.SCREENS[ID] = layout;
         self.S           = ID;
 
+        region = self.CUR_REGION;
+        region.isCurrent = 1;
+
     @property
     def CUR_SCREEN(self):
         return self.SCREENS[self.S];
@@ -838,9 +841,20 @@ class KVNSL:
         return self.CUR_SCREEN.ACTIVE_REGION;
 
     def CHREGION(self, new_ID):
+
+        region = self.CUR_REGION;
+        region.isCurrent = 0;
+
+        self.OUT(region.drawTop());
+
         self.ID    = new_ID;
         SCREEN     = self.CUR_SCREEN;
         SCREEN.SEL = self.ID;
+
+        region = self.CUR_REGION;
+        region.isCurrent = 1;
+
+        self.OUT(region.drawTop());
 
     def FILL(self, ID=None):
 
@@ -861,13 +875,14 @@ class KVNSL:
 
     def CLS(self):
         for y in range(1, hxDRAWSPACE_Y):
-            CPRINT(f"{PALETTE['DF']}\x1b[{y};1H\x1b[K");
+            CPRINT(f"{PALETTE['BACK']}\x1b[{y};1H\x1b[K");
 
         CPRINT("", 1);
 
     def OUT(self, s, region=None, flush=1):
 
         if not region: region = self.CUR_REGION;
+        if not isinstance(s, str): s = str(s);
         while s: s = region.WRITE(s);
 
         #self.NO_YSCROLL();
@@ -884,46 +899,36 @@ class KVNSL:
 
         region = self.CUR_REGION;
         info   = self.CUR_SCREEN.INFO;
-
         oldlen = len(info.BUFF);
         s      = "";
 
-        if dirn == REGION_ITEMS_UP:
-            s = s + region.ITEM_ACCESS("deselect", REGION_ITEMS_CURR );
-            s = s + region.ITEM_ACCESS("select",   REGION_ITEMS_UP   );
-
-        elif dirn == REGION_ITEMS_LEFT:
-            s = s + region.ITEM_ACCESS("deselect", REGION_ITEMS_CURR );
-            s = s + region.ITEM_ACCESS("select",   REGION_ITEMS_LEFT );
-
-        elif dirn == REGION_ITEMS_DOWN:
-            s = s + region.ITEM_ACCESS("deselect", REGION_ITEMS_CURR );
-            s = s + region.ITEM_ACCESS("select",   REGION_ITEMS_DOWN );
-
-        elif dirn == REGION_ITEMS_RIGHT:
-            s = s + region.ITEM_ACCESS("deselect", REGION_ITEMS_CURR );
-            s = s + region.ITEM_ACCESS("select",   REGION_ITEMS_RIGHT);
-
-        elif dirn == REGION_ITEMS_NEXT:
-            s = s + region.ITEM_ACCESS("deselect", REGION_ITEMS_CURR );
-            s = s + region.ITEM_ACCESS("select",   REGION_ITEMS_NEXT );
-
-        elif dirn == REGION_ITEMS_PREV:
-            s = s + region.ITEM_ACCESS("deselect", REGION_ITEMS_CURR );
-            s = s + region.ITEM_ACCESS("select",   REGION_ITEMS_PREV );
-        else:
-            s = s + region.ITEM_ACCESS("select",   REGION_ITEMS_CURR );
-
+        s      = s + region.ITEM_ACCESS("deselect", REGION_ITEMS_CURR );
+        s      = s + region.ITEM_ACCESS("select",   dirn              );
         info_s = info.updateBuff(region.ITEMS[region.ITEMS_PTR]["info"]);
 
         return s, info_s;
+
+    def SWAPWIPE(self, src, tgt):
+
+        INFO    = self.CUR_SCREEN.INFO;
+        region  = self.CUR_SCREEN.REGIONS[src];
+        yvalues = [elem['y'] for elem in region.ITEMS];
+        ws      = "";
+
+        for i in range(len(region.ITEMS)):
+            s, elem = region.ITEM_ACCESS("pop", 0);
+            ws      = ws + s;
+
+        self.OUT(ws); self.CHREGION(tgt);
+        itm, info = self.RNAVIGATE(self.CUR_REGION.ITEMS_PTR);
+        self.OUT(itm, flush=0); self.OUT(info, region=INFO, flush=1);
 
     def RUN(self):
 
         ptr = 0; s = "►▼◄▲";
 
         CURSOR.SAVE(); CURSOR.JUMP(1, 23);
-        CPRINT(f"\x1b[?25l{PALETTE['DF']}\x1b[K");
+        CPRINT(f"\x1b[?25l{PALETTE['BACK']}\x1b[K");
 
         # TODO: make an actual clock to propertly handle this loop
         FPS=60; frametime=(1/FPS); framedelta=0.0;
@@ -978,12 +983,12 @@ class KVNSL:
             if animframe >= animrate:
 
                 if ptr < 3:
-                    ptr += 1; CPRINT(f"\x1b[1G{PALETTE['DF']}{ANSIPESO['<%BOLD']}"\
+                    ptr += 1; CPRINT(f"\x1b[1G{PALETTE['SEL1']}{ANSIPESO['<%BOLD']}"\
                                      f" {s[ptr]}{ANSIPESO['</BOLD']}");
                 elif ptr == 3:
                     ptr += 1;
                 else:
-                    ptr = 0; CPRINT(f"\x1b[1G{PALETTE['DF']}{ANSIPESO['<%BOLD']}"\
+                    ptr = 0; CPRINT(f"\x1b[1G{PALETTE['SEL1']}{ANSIPESO['<%BOLD']}"\
                                      f" {s[ptr]}{ANSIPESO['</BOLD']}");
 
                 animframe = animframe - animrate;
@@ -1571,28 +1576,40 @@ def CLEANUP():
 
 def STARTUP(SETTINGS):
 
-    PALETTE["IN"]   = ANSIC(12,  4);
-    PALETTE["BX"]   = ANSIC(17,  0);
-    PALETTE["DF"]   = ANSIC( 1,  0);
+    UI_BKG=10; UI_FRG=7; UI_COL0=1; UI_COL1=0;
 
-    PALETTE[-1  ]   = ANSIC(11,  4);
-    PALETTE[ 0  ]   = ANSIC(16,  4);
-    PALETTE[ 1  ]   = ANSIC(18,  3);
-    PALETTE[ 2  ]   = ANSIC(13,  1);
-    PALETTE[ 3  ]   = ANSIC(17, 11);
+    PALETTE["SEL0" ] = ANSIC(UI_FRG,     UI_COL0   );
+    PALETTE["SEL1" ] = ANSIC(UI_COL0+10, UI_BKG    );
+    PALETTE["SEL2" ] = ANSIC(UI_FRG,     UI_BKG    );
 
-    r               = SETTINGS[ 0]; ROOT           (r              );
+    PALETTE["DSEL0"] = ANSIC(UI_FRG,     UI_BKG    );
+    PALETTE["DSEL1"] = ANSIC(UI_COL0,    UI_BKG    );
+    PALETTE["DSEL2"] = ANSIC(UI_COL1,    UI_BKG    );
 
-    ccd             = SETTINGS[ 2];
-    ccd64           = SETTINGS[ 3];
-    p               = SETTINGS[ 4]; CC             (ccd, ccd64, p  );
+    PALETTE["BOX"  ] = ANSIC(UI_COL1,    UI_BKG    );
+    PALETTE["PTR"  ] = ANSIC(UI_COL0+10, UI_BKG    );
+    PALETTE["BACK" ] = ANSIC(UI_FRG,     UI_BKG    );
 
-    read_size       = SETTINGS[ 5]; READSIZE       (read_size      ); 
-    warnfatal       = SETTINGS[ 6]; FATAL_WARNINGS (warnfatal      );
-    debugprnt       = SETTINGS[ 7]; DEBUG_PRINT    (debugprnt      );
-    disblprnt       = SETTINGS[ 8]; DISABLE_EPRINT (not disblprnt  );
-    nvrask          = SETTINGS[ 9]; DISABLE_CONFIRM(nvrask         );
-    fkwall          = SETTINGS[10]; FKWALL         (fkwall         );
+    PALETTE[-1     ] = ANSIC(11,  4);
+    PALETTE[ 0     ] = ANSIC(16,  4);
+    PALETTE[ 1     ] = ANSIC(18,  3);
+    PALETTE[ 2     ] = ANSIC(13,  1);
+    PALETTE[ 3     ] = ANSIC(17, 11);
+
+#   ---     ---     ---     ---     ---
+
+    r         = SETTINGS[ 0]; ROOT           (r              );
+
+    ccd       = SETTINGS[ 2];
+    ccd64     = SETTINGS[ 3];
+    p         = SETTINGS[ 4]; CC             (ccd, ccd64, p  );
+
+    read_size = SETTINGS[ 5]; READSIZE       (read_size      ); 
+    warnfatal = SETTINGS[ 6]; FATAL_WARNINGS (warnfatal      );
+    debugprnt = SETTINGS[ 7]; DEBUG_PRINT    (debugprnt      );
+    disblprnt = SETTINGS[ 8]; DISABLE_EPRINT (not disblprnt  );
+    nvrask    = SETTINGS[ 9]; DISABLE_CONFIRM(nvrask         );
+    fkwall    = SETTINGS[10]; FKWALL         (fkwall         );
 
     global KVRLOG, KVRIN;
 
@@ -1604,54 +1621,9 @@ def STARTUP(SETTINGS):
     KVRLOG     = logpath + "\\KVNSLOG"; MKFILE(KVRLOG, ask=0);
     KVRIN      = logpath + "\\KVNSIN";  MKFILE(KVRIN,  ask=0);
 
-    INFOFIELD  = REGION ( "INFO",                           #
-                          rect=COORD( 1,  1, 76, 18, 18, 22 ),
-                          borders=(0,1,1,1),
-                          corners=(1,1,9,3),
-                          labels_butt=["BACK"],
-                          align=(0,0,1));
-
-    MAINFIELD  = REGION ( "MAIN",                           #
-                          rect=COORD( 1,  1, 64,  1,  1, 18 ),
-                          borders=(1,1,3,5),
-                          corners=(12,14,13,11),
-                          labels_top =["ESPECTRO PY"],
-                          labels_butt=["INFO"],
-                          align=(0,1,0));
-
-    PANEL_A    = REGION ( "PANEL_A",                        #
-                          rect=COORD(64, 64, 76,  1,  1, 18 ),
-                          borders=(1,0,3,1),
-                          corners=(2,6,2,7));
-
-    MAINFIELD.addItem( 2, 1, "ITEM0", func=TESTCALL, info="wit kind of artifact that fuk"*3);
-    MAINFIELD.addItem( 2, 2, "ITEM1", info="This is not");
-    MAINFIELD.addItem( 2, 3, "ITEM2", info="Is perhaps a better item");
-    MAINFIELD.addItem( 2, 4, "ITEM3", info="Not this one, it's cursed!");
-
-    MAINFIELD.addItem(10, 1, "ITEM4", info="Smiley face☻");
-    MAINFIELD.addItem(10, 2, "ITEM5", info="Semi-Cheeky face :>");
-    MAINFIELD.addItem(10, 3, "ITEM6", info="PE$O");
-    MAINFIELD.addItem(10, 4, "ITEM7", info="Whatevah mang");
-
-    MAINFIELD.ITEMS_PTR = 0;
-
-    DEFLAY     = LAYOUT ([INFOFIELD, MAINFIELD, PANEL_A]);
-
-    DOS("@ECHO OFF && CLS");
-    KVNSL_H.CLS();
-    KVNSL_H.NEW_SCREEN("HELLO", DEFLAY); KVNSL_H.FILLSCREEN();
-    DOS('TITLE %__SLAVE%%_PLATFORM% (ESPECTRO)');
-    KVNSL_H.CHREGION("MAIN"); itm, info = KVNSL_H.RNAVIGATE(REGION_ITEMS_CURR);
-    KVNSL_H.OUT(itm, flush=0); KVNSL_H.OUT(info, region=KVNSL_H.CUR_SCREEN.INFO, flush=1);
-    CPRINT("\x1b[0m");
-
     atexit.register(CLEANUP);
 
 def GETKVNSL(): return KVNSL_H;
-
-def TESTCALL():
-    CPRINT("YEY");
 
 def LOGOS():
     global KVRLOG; return KVRLOG;

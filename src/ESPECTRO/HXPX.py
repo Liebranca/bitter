@@ -13,6 +13,13 @@ from ESPECTRO import (
     CC,
     TARGET,
 
+    CPRINT,
+
+    COORD,
+    REGION,
+    LAYOUT,
+    GETKVNSL,
+
     DOS,
 
     clnstr,
@@ -830,3 +837,68 @@ class hxPX:
         print(s);
 
 #   ---     ---     ---     ---     ---
+
+def PXUI():
+
+    # default project hardcoded while we work on it
+    global PX; PX = hxPX.load("KVR");
+
+    KVNSL = GETKVNSL();
+
+    INFO       = REGION ( "INFO",                           #
+                          rect=COORD( 1,  1, 76, 18, 18, 22 ),
+                          borders=(0,1,1,1),
+                          corners=(1,1,9,3),
+                          labels=["", "BACK"],
+                          align=(0,0,1));
+
+    ACTIONS    = REGION ( "ACTIONS",                        #
+                          rect=COORD( 1,  1, 16,  1,  1, 18 ),
+                          borders=(1,1,3,5),
+                          corners=(12,14,13,11),
+                          labels =["ACTIONS", "INFO"],
+                          align=(0,1,0));
+
+    OPTIONS    = REGION ( "OPTIONS",                        #
+                          rect=COORD(16, 16, 76,  1,  1, 18 ),
+                          borders=(1,0,3,1),
+                          align=(0,1,0),
+                          labels=["OPTIONS", ""],
+                          corners=(2,6,2,7));
+
+    ACTIONS.addItem(1, 2, "SAVE", style=0, info="", func=SAVEPX);
+
+    ACTIONS.addItem(1, 4, "NEW MODULE", style=0, info="", func=ADDMODPX);
+    ACTIONS.addItem(1, 5, "NEW FILE", style=0, info="", func=None);
+
+    ACTIONS.addItem(1, 7, "LIBS", style=0, info="", func=None);
+    ACTIONS.addItem(1, 8, "ORDER", style=0, info="", func=None);
+
+    ACTIONS.addItem(1, 10, "BUILD", style=0, info="Compiles the current project", func=None);
+
+    ACTIONS.ITEMS_PTR = 0;
+    PX_LAYOUT = LAYOUT ([INFO, ACTIONS, OPTIONS]);
+
+    DOS("@ECHO OFF && CLS");
+    KVNSL.CLS();
+    KVNSL.NEW_SCREEN("USER", PX_LAYOUT); KVNSL.CHREGION("ACTIONS"); KVNSL.FILLSCREEN();
+    DOS('TITLE %__SLAVE%%_PLATFORM% (ESPECTRO)'); itm, info = KVNSL.RNAVIGATE(0);
+    KVNSL.OUT(itm, flush=0); KVNSL.OUT(info, region=INFO, flush=1);
+    CPRINT("\x1b[0m");
+
+def SAVEPX():
+    global PX; PX.save();
+
+def ADDMODPX():
+    global PX; KVNSL = GETKVNSL();
+    KVNSL.CHREGION("OPTIONS"); INFO = KVNSL.CUR_SCREEN.INFO;
+
+    region = KVNSL.CUR_REGION;
+    region.addItem(2, 1, "Testy0", style=2, info="Testing additem", func=KVNSL.SWAPWIPE, args={'src':"OPTIONS", 'tgt':"ACTIONS"});
+    region.addItem(2, 2, "Testy1", style=2, info="Another additem", func=KVNSL.SWAPWIPE, args={'src':"OPTIONS", 'tgt':"ACTIONS"});
+
+    for elem in region.ITEMS:
+        KVNSL.OUT(region.drawMid(elem['y']));
+
+    itm, info = KVNSL.RNAVIGATE(0);
+    KVNSL.OUT(itm, flush=0); KVNSL.OUT(info, region=INFO, flush=1);

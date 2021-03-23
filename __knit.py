@@ -111,7 +111,8 @@ from ESPECTRO import *;
 
 from time import sleep;
 
-STARTUP(LSET); KVNSL = GETKVNSL();
+STARTUP(LSET);
+PXUI(); KVNSL = GETKVNSL();
 #KVNSL.OUT("DEBUG " * 20);
 
 """

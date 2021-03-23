@@ -16,6 +16,10 @@ from .utils.lyos import (
     GETKVNSL,
     GETKVRSOR,
 
+    COORD,
+    REGION,
+    LAYOUT,
+
     DOS,
     CLS,
     PEIN,
@@ -93,7 +97,7 @@ from .builder import (
 
 );
 
-from .HXPX            import hxPX;
+from .HXPX            import hxPX, PXUI;
 from .lang.KVR        import INTPRT;
 
 #   ---     ---     ---     ---     ---
