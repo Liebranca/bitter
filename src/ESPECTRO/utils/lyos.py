@@ -30,7 +30,12 @@ def DISCOUNT_ESCAPES(S, DIFF):
         if len(S[i:]) > 2:
             if S[i:i+2] == "$:":
                 i+=2; scp = 1;
-                while(S[i:i+2] != ";>"): i+=1;
+                while(S[i:i+2] != ";>"):
+                    i+=1;
+                    if i > len(S):
+                        print(S+" MISSING __;>__ DELIMITER");
+                        break;
+
                 i+=2;
 
         if not scp:
@@ -160,8 +165,8 @@ class KEYBOARD_CONTROLLER:
         "EXIT"      : 26,
         "ESCAPE"    : 27,
 
-        "ARROWLEFT" : 77,
-        "ARROWRIGHT": 75,
+        "ARROWLEFT" : 75,
+        "ARROWRIGHT": 77,
         "ARROWUP"   : 72,
         "ARROWDOWN" : 80,
 
@@ -2004,8 +2009,8 @@ class INPUTFIELD:
 
         spec_cases =                        {
 
-            "ARROWLEFT" : [self.RIGHT,     ()],
-            "ARROWRIGHT": [self.LEFT,      ()],
+            "ARROWLEFT" : [self.LEFT,      ()],
+            "ARROWRIGHT": [self.RIGHT,     ()],
             "DELETE"    : [self.DELCUR,    ()],
             "START"     : [self.FCOLUMN,   ()],
             "END"       : [self.LCOLUMN,   ()]
@@ -2110,7 +2115,78 @@ class INPUTFIELD:
         return "";
 
     def END(self):
-        self.state = -1; self.ptr = len(self.buff);
+        self.state = 1; self.ptr = len(self.buff);
         return self.LINEDRAW() + self.LCOLUMN() + self.col+self.ch+"$:CURSOR.GOLEFT();>"
 
 #   ---     ---     ---     ---     ---
+
+class TOGGLEFIELD:
+
+    def __init__(self, items, x=1, y=1, ptr=0, col="BACK", col_i="KVRSE", push="SEL1"):
+
+        pad = 0;
+        for s in items:
+            length = len(str(s));
+            if length > pad:
+                pad = length;
+
+        self.pad   = pad;
+
+        self.pos   = (x, y);
+
+        self.col   = PALETTE[col  ];
+        self.col_i = PALETTE[col_i];
+        self.push  = PALETTE[push ];
+
+        self.items = items;
+        self.ptr   = ptr;
+        self.state = 0;
+
+        KVNSL_H.OUT(self.HIGHLIGHT());
+
+    @property
+    def CURRENT(self):
+        return str(self.items[self.ptr]);
+
+    def HIGHLIGHT(self, d=0):
+        s     = str(self.CURRENT);
+        pad   = " " * int((self.pad-len(s)));
+        s     = s+pad;
+        arr_s = self.push+"◄"+self.col_i if d == -1 else "◄"+self.col_i;
+        arr_e = self.push+"►"+self.col   if d ==  1 else self.col+"►";
+
+        return f"$:CURSOR.JUMP({self.pos[0]-1}, {self.pos[1]});>"+arr_s+s+arr_e;
+
+    def END(self):
+        self.state = 1; s = str(self.CURRENT); pad = " " * int((self.pad-len(s)));
+        return f"$:CURSOR.JUMP({self.pos[0]-1}, {self.pos[1]});> "+self.col+s+pad+" ";
+
+    def RIGHT(self):
+        self.ptr = self.ptr+1 if self.ptr < (len(self.items)-1) else 0;
+        return self.HIGHLIGHT(1);
+
+    def LEFT(self):
+        self.ptr = self.ptr-1 if self.ptr > 0 else (len(self.items)-1);
+        return self.HIGHLIGHT(-1);
+
+    def RUN(self):
+
+        spec_cases =                        {
+
+            "ARROWLEFT" : [self.LEFT,      ()],
+            "ARROWRIGHT": [self.RIGHT,     ()],
+
+                                            };
+
+        cases =                             {
+
+            "RETURN"    : [self.END,       ()],
+            "ESCAPE"    : [self.END,       ()],
+            "EXIT"      : [self.END,       ()],
+            "ORDM"      : [self.END,       ()]
+
+                                            };
+
+        s = KEYBOARD_CONTROLLER.RUN(cases, spec_cases, False);
+        if isinstance(s, int): s = "";
+        return s;

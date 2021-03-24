@@ -21,6 +21,7 @@ from .utils.lyos import (
     LAYOUT,
 
     INPUTFIELD,
+    TOGGLEFIELD,
 
     DOS,
     CLS,

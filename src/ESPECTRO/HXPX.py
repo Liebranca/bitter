@@ -15,6 +15,7 @@ from ESPECTRO import (
 
     CPRINT,
     INPUTFIELD,
+    TOGGLEFIELD,
 
     COORD,
     REGION,
@@ -72,7 +73,7 @@ from ESPECTRO import (
 
 );
 
-build_opt = ["EXE", "LIB", "DLL"];
+build_opt = ["EXEE", "LIB", "DLL"];
 PX        = None;
 
 #   ---     ---     ---     ---     ---
@@ -908,7 +909,8 @@ def ADDMODPX():
 
     region.addItem(2, 2, f"Mode: {build_opt[new_mod.mode]}", style=2,
                    info="Filetype this module compiles to",
-                   func=KVNSL.SWAPWIPE, args={'src':"OPTIONS", 'tgt':"ACTIONS"});
+                   func=SETFIELD_TOGGLE, args={'ob':new_mod, 'field':"mode", 'idex':1,
+                                                'l':build_opt});
 
     region.addItem(2, 4, "Accept", style=1, info="Create module with these settings",
                    func=KVNSL.SWAPWIPE, args={'src':"OPTIONS", 'tgt':"ACTIONS"});
@@ -931,18 +933,17 @@ def SETFIELD_CINPUT(ob, field, idex):
     in_x = x + (len(field_name) + 2); CURSOR.JUMP(in_x, y);
 
     PEIN = INPUTFIELD.MAKE(x=in_x, y=y, length=region.pad-in_x, buff=value, prompt='');
-    global CINPUT_REG; CINPUT_REG={'PEIN':PEIN, 'ob':ob, 'field':field, 'idex':idex};
+    global CINPUT_REG; CINPUT_REG={'PEIN':PEIN, 'ob':ob, 'field':field,
+                                   'field_name':field_name, 'idex':idex};
 
     KVNSL.AP_INTCALL("SETFIELD_CINPUT_INT", SETFIELD_CINPUT_INT, (), 1);
 
 def SETFIELD_CINPUT_INT():
-    global CINPUT_REG; PEIN, ob, field, idex = CINPUT_REG.values();
-    CURSOR = GETKVRSOR(); CURSOR.JUMP(PEIN.pos[0]+PEIN.ptr, PEIN.pos[1]);
-
-    x = PEIN.RUN();
+    global CINPUT_REG; PEIN, ob, field, field_name, idex = CINPUT_REG.values();
+    KVNSL = GETKVNSL(); CURSOR = GETKVRSOR();
+    x = PEIN.RUN(); elem = KVNSL.CUR_REGION.ITEMS[idex];
 
     if PEIN.state:
-        KVNSL = GETKVNSL();
         x = x + f"$:KVNSL_H.DL_INTCALL('SETFIELD_CINPUT_INT', 1);>";
 
         if PEIN.state == -1:
@@ -950,10 +951,41 @@ def SETFIELD_CINPUT_INT():
         else:
             pass;
 
-        print("\n\x1b[K"+PEIN.buff);
+        if not PEIN.buff:
+            PEIN.buff = getattr(ob, field);
+            x = x + PEIN.buff;
+
+        setattr(ob, field, PEIN.buff); elem['label'] = field_name+": "+PEIN.buff;
 
         del PEIN; CINPUT_REG=None;
-    else:
-        CINPUT_REG={'PEIN':PEIN, 'ob':ob, 'field':field, 'idex':idex};
+
+    return x;
+
+
+def SETFIELD_TOGGLE(ob, field, idex, l):
+    KVNSL = GETKVNSL(); CURSOR = GETKVRSOR();
+    region = KVNSL.CUR_REGION; elem = region.ITEMS[idex];
+    x, y = elem['x'], elem['y'];
+
+    field_name, value = elem['label'].split(": ");
+    in_x = x + (len(field_name) + 2); CURSOR.JUMP(in_x, y);
+
+    PEIN = TOGGLEFIELD(l, ptr=getattr(ob, field), x=in_x, y=y);
+    global CINPUT_REG; CINPUT_REG={'PEIN':PEIN, 'ob':ob, 'field':field,
+                                   'field_name':field_name, 'idex':idex};
+
+    KVNSL.AP_INTCALL("SETFIELD_TOGGLE_INT", SETFIELD_TOGGLE_INT, (), 1);
+
+def SETFIELD_TOGGLE_INT():
+    global CINPUT_REG; PEIN, ob, field, field_name, idex = CINPUT_REG.values();
+    KVNSL = GETKVNSL(); CURSOR = GETKVRSOR();
+
+    x = PEIN.RUN(); elem = KVNSL.CUR_REGION.ITEMS[idex];
+
+    if PEIN.state:
+        x = x + f"$:KVNSL_H.DL_INTCALL('SETFIELD_TOGGLE_INT', 1);>";
+        setattr(ob, field, PEIN.ptr); elem['label'] = field_name+": "+PEIN.CURRENT;
+
+        del PEIN; CINPUT_REG=None;
 
     return x;
