@@ -627,12 +627,19 @@ class REGION:
         if label:
             pdchr_s = BOXCHARS["LABEL_S"]; lpdc_s = len(pdchr_s);
             pdchr_e = BOXCHARS["LABEL_E"]; lpdc_e = len(pdchr_e);
-            length  = (lpdc_s + len(label) + lpdc_e);
+
+            rlength = len(label); space = (self.pad-(lpdc_s+lpdc_e+(len(hchar)*2)))
+            if rlength > space:
+                label   = label[:(space-2)]+"..";
+                rlength = len(label);
+
+            length  = (lpdc_s + rlength + lpdc_e);
 
             if top and self.isCurrent:
                 label = (f"{pdchr_s}{PALETTE['SEL1']+label+PALETTE['BOX']}{pdchr_e}");
             else:
                 label = (f"{pdchr_s}{PALETTE['DSEL0']+label+PALETTE['BOX']}{pdchr_e}");
+
         else:
             length = 0;
 
@@ -684,7 +691,7 @@ class REGION:
 
                 s       = s + label;
 
-        return vchar_s + s + PALETTE["BOX"] + vchar_e;
+        return PALETTE["BOX"] + vchar_s + s + PALETTE["BOX"] + vchar_e;
 
     def spitBuff(self, y):
 
@@ -855,6 +862,42 @@ class KVNSL:
 
         self.OUT(region.drawTop());
 
+    def CLREGION(self, ID=None, title=None):
+
+        if not ID:
+            region = self.CUR_REGION;
+        else:
+            region = self.CUR_SCREEN.REGIONS[ID];
+
+        if not title:
+            title = region.LABELS[0];
+
+        yvalues = [elem['y'] for elem in region.ITEMS];
+        ws      = "";
+
+        for i in range(len(region.ITEMS)):
+            s, elem = region.ITEM_ACCESS("pop", 0);
+            ws      = ws + s;
+
+        region.LABELS[0] = title;
+        self.OUT(ws + region.drawTop());
+
+    def FLREGION(self, ID=None):
+        if not ID:
+            region = self.CUR_REGION;
+        else:
+            region = self.CUR_SCREEN.REGIONS[ID];
+
+        region.ITEMS_PTR = 0;
+        INFO = self.CUR_SCREEN.INFO;
+
+        s = "";
+        for elem in region.ITEMS:
+            s = s + region.drawMid(elem['y']);
+
+        itm, info = self.RNAVIGATE(0);
+        self.OUT(s+itm, flush=0); self.OUT(info, region=INFO, flush=1);
+
     def FILL(self, ID=None):
 
         if ID:
@@ -911,7 +954,6 @@ class KVNSL:
 
         INFO    = self.CUR_SCREEN.INFO;
         region  = self.CUR_SCREEN.REGIONS[src];
-        yvalues = [elem['y'] for elem in region.ITEMS];
         ws      = "";
 
         for i in range(len(region.ITEMS)):
@@ -2141,6 +2183,7 @@ class TOGGLEFIELD:
         self.items = items;
         self.ptr   = ptr;
         self.state = 0;
+        self.spit  = 1;
 
         KVNSL_H.OUT(self.HIGHLIGHT());
 
@@ -2158,7 +2201,12 @@ class TOGGLEFIELD:
         return f"$:CURSOR.JUMP({self.pos[0]-1}, {self.pos[1]});>"+arr_s+s+arr_e;
 
     def END(self):
-        self.state = 1; s = str(self.CURRENT); pad = " " * int((self.pad-len(s)));
+        self.state = 1;
+        if self.spit:
+            s = str(self.CURRENT); pad = " " * int((self.pad-len(s)));
+        else:
+            s = " "*self.pad; pad="";
+
         return f"$:CURSOR.JUMP({self.pos[0]-1}, {self.pos[1]});> "+self.col+s+pad+" ";
 
     def RIGHT(self):
@@ -2190,3 +2238,24 @@ class TOGGLEFIELD:
         s = KEYBOARD_CONTROLLER.RUN(cases, spec_cases, False);
         if isinstance(s, int): s = "";
         return s;
+
+
+#   ---     ---     ---     ---     ---
+
+class PSEUDOPOP:
+
+    def __init__(self, call, args, valid=[0]):
+
+        object.__setattr__(self, "state", 0);
+
+        self.call  = call;
+        self.args  = args;
+        self.valid = valid;
+
+    def __setattr__(self, attr, value):
+
+        if attr == "state":
+            self.call(value in self.valid, *self.args);
+
+        else:
+            object.__setattr__(self, attr, value);

@@ -16,6 +16,7 @@ from ESPECTRO import (
     CPRINT,
     INPUTFIELD,
     TOGGLEFIELD,
+    PSEUDOPOP,
 
     COORD,
     REGION,
@@ -73,7 +74,7 @@ from ESPECTRO import (
 
 );
 
-build_opt = ["EXEE", "LIB", "DLL"];
+build_opt = ["EXE", "LIB", "DLL"];
 PX        = None;
 
 #   ---     ---     ---     ---     ---
@@ -184,7 +185,7 @@ class hxMOD:
 
         self.makecur();
 
-    def __repr__(self): return f"MODULE {self.name}";
+    def __repr__(self): return f"{self.name}" if self.name != '__main__' else "MAIN";
 
 #   ---     ---     ---     ---     ---
 
@@ -214,12 +215,7 @@ class hxMOD:
 
         mdpath       = self.path;
 
-        if not OKPATH(mdpath):
-            MKDIR(mdpath);
 
-        else:
-            r = CHOICE                      ("Found module directory. Scan?"           );
-            if r == 1: self.scandir();
 
         PX.curmod = self;
         return self;
@@ -846,6 +842,16 @@ class hxPX:
 
 new_mod=None; new_src=None;
 
+def CONFIM_CLEAR(DO, CALL0, ARGS0, CALL1, ARGS1):
+
+    if DO:
+        CALL0(*ARGS0);
+
+    CALL1(*ARGS1);
+
+def PXDRAWMENU(CALL):
+    KVNSL = GETKVNSL(); ID = CALL(); KVNSL.FLREGION(ID);
+
 def PXUI():
 
     # default project hardcoded while we work on it
@@ -860,46 +866,98 @@ def PXUI():
                           labels=["", "BACK"],
                           align=(0,0,1));
 
-    ACTIONS    = REGION ( "ACTIONS",                        #
+    LPANEL     = REGION ( "LPANEL",                         #
                           rect=COORD( 1,  1, 16,  1,  1, 18 ),
                           borders=(1,1,3,5),
                           corners=(12,14,13,11),
-                          labels =["ACTIONS", "INFO"],
+                          labels =[PX.name, "INFO"],
                           align=(0,1,0));
 
-    OPTIONS    = REGION ( "OPTIONS",                        #
+    RPANEL     = REGION ( "RPANEL",                         #
                           rect=COORD(16, 16, 76,  1,  1, 18 ),
                           borders=(1,0,3,1),
                           align=(0,1,0),
-                          labels=["OPTIONS", ""],
+                          labels=["", ""],
                           corners=(2,6,2,7));
 
-    ACTIONS.addItem(1, 2, "SAVE", style=0, info="", func=SAVEPX);
-
-    ACTIONS.addItem(1, 4, "NEW MODULE", style=0, info="", func=ADDMODPX);
-    ACTIONS.addItem(1, 5, "NEW FILE", style=0, info="", func=None);
-
-    ACTIONS.addItem(1, 7, "LIBS", style=0, info="", func=None);
-    ACTIONS.addItem(1, 8, "ORDER", style=0, info="", func=None);
-
-    ACTIONS.addItem(1, 10, "BUILD", style=0, info="Compiles the current project", func=None);
-
-    ACTIONS.ITEMS_PTR = 0;
-    PX_LAYOUT = LAYOUT ([INFO, ACTIONS, OPTIONS]);
+    PX_LAYOUT = LAYOUT ([INFO, LPANEL, RPANEL]);
 
     DOS("@ECHO OFF && CLS");
     KVNSL.CLS();
-    KVNSL.NEW_SCREEN("USER", PX_LAYOUT); KVNSL.CHREGION("ACTIONS"); KVNSL.FILLSCREEN();
+    KVNSL.NEW_SCREEN("USER", PX_LAYOUT);
+    KVNSL.CHREGION("LPANEL"); PXMAINMENU(); KVNSL.FILLSCREEN();
     DOS('TITLE %__SLAVE%%_PLATFORM% (ESPECTRO)'); itm, info = KVNSL.RNAVIGATE(0);
     KVNSL.OUT(itm, flush=0); KVNSL.OUT(info, region=INFO, flush=1);
     CPRINT("\x1b[0m");
 
+def PXMAINMENU():
+    global PX; KVNSL = GETKVNSL();
+    region = KVNSL.CUR_REGION;
+
+    KVNSL.CLREGION("LPANEL", PX.name);
+
+    region.addItem(1, 2, "SAVE", style=0, info="", func=SAVEPX);
+
+    region.addItem(1, 4, "MODULES", style=0, info="", func=PXMODMENU);
+    region.addItem(1, 5, "NEW FILE", style=0, info="", func=None);
+
+    region.addItem(1, 7, "LIBS", style=0, info="", func=None);
+    region.addItem(1, 8, "ORDER", style=0, info="", func=None);
+
+    region.addItem(1, 10, "BUILD", style=0, info="Compiles the current project", func=None);
+
+    return "LPANEL";
+
+def PXMODMENU():
+    global PX; KVNSL = GETKVNSL();
+    region = KVNSL.CUR_REGION; INFO = KVNSL.CUR_SCREEN.INFO;
+
+    KVNSL.CLREGION("LPANEL", f"{PX.name}/MODULES");
+
+    region.addItem(1, 2, "NEW", style=0, info="Create a new module", func=ADDMODPX);
+    region.addItem(1, 3, "SELECT", style=0,
+                   info=f"Select a module to edit (current: {PX.curmod})",
+                   func=SELMODPX);
+
+    region.addItem(1, 5, "BACK", style=0, info="Return to main menu",
+                   func=PXDRAWMENU, args={'CALL':PXMAINMENU});
+
+    s = "";
+    for elem in region.ITEMS:
+        s = s + region.drawMid(elem['y']);
+
+    itm, info = KVNSL.RNAVIGATE(0);
+    KVNSL.OUT(s+itm, flush=0); KVNSL.OUT(info, region=INFO, flush=1);
+
 def SAVEPX():
     global PX; PX.save();
 
+def SELMODPX_INT(m):
+    KVNSL = GETKVNSL();
+    m.makecur();
+
+    region = KVNSL.CUR_SCREEN.REGIONS['LPANEL'];
+    elem   = region.ITEMS[1];
+    elem['info'] = f"Select a module to edit (current: {PX.curmod})";
+
+    KVNSL.SWAPWIPE('RPANEL', 'LPANEL');
+
+def SELMODPX():
+    global PX; KVNSL = GETKVNSL();
+    KVNSL.CHREGION("RPANEL");
+    region = KVNSL.CUR_REGION;
+
+    i = 0;
+    for m in PX.modules:
+        name = m.name if m.name != "__main__" else "MAIN";
+        region.addItem(2, 1+i, name, style=2, func=SELMODPX_INT, args={"m":m});
+        i+=1;
+
+    KVNSL.FLREGION();
+
 def ADDMODPX():
     global PX, new_mod; KVNSL = GETKVNSL();
-    KVNSL.CHREGION("OPTIONS"); INFO = KVNSL.CUR_SCREEN.INFO;
+    KVNSL.CHREGION("RPANEL");
 
     if not new_mod: new_mod=hxMOD();
 
@@ -913,15 +971,41 @@ def ADDMODPX():
                                                 'l':build_opt});
 
     region.addItem(2, 4, "Accept", style=1, info="Create module with these settings",
-                   func=KVNSL.SWAPWIPE, args={'src':"OPTIONS", 'tgt':"ACTIONS"});
+                   func=ADDMODPX_SEND, args={'accept':1});
     region.addItem(2, 5, "Cancel", style=1, info="Discard and return",
-                   func=KVNSL.SWAPWIPE, args={'src':"OPTIONS", 'tgt':"ACTIONS"});
+                   func=ADDMODPX_SEND, args={'accept':0});
 
-    for elem in region.ITEMS:
-        KVNSL.OUT(region.drawMid(elem['y']));
+    KVNSL.FLREGION();
 
-    itm, info = KVNSL.RNAVIGATE(0);
-    KVNSL.OUT(itm, flush=0); KVNSL.OUT(info, region=INFO, flush=1);
+def ADDMODPX_SEND(accept=1):
+    global PX, new_mod; KVNSL = GETKVNSL();
+    if accept:
+
+        repeat = [m for m in PX.modules if new_mod.name == m.name];
+        if not repeat:
+            PX.modules.append(new_mod); PX.curmod = PX.modules[-1];
+        else:
+            PX.curmod = repeat[0];
+
+        if not OKPATH(PX.curmod.path):
+            MKDIR(PX.curmod.path);
+
+        else:
+            KVNSL.CLREGION(); region = KVNSL.CUR_REGION;
+            region.addItem(1, 1, "Module directory found. Scan?  ", style=0,);
+            KVNSL.FLREGION();
+
+            SETFIELD_TOGGLE(PSEUDOPOP(CONFIM_CLEAR,
+                            (PX.curmod.scandir, (),
+                             KVNSL.SWAPWIPE, ("RPANEL", "LPANEL"))),
+
+                            "state", 0, ["YES", "NO"]);
+
+            CINPUT_REG['PEIN'].spit = 0; new_mod = None;
+            return;
+
+    new_mod = None;
+    KVNSL.SWAPWIPE("RPANEL", "LPANEL");
 
 CINPUT_REG=None;
 def SETFIELD_CINPUT(ob, field, idex):
@@ -961,30 +1045,30 @@ def SETFIELD_CINPUT_INT():
 
     return x;
 
-
 def SETFIELD_TOGGLE(ob, field, idex, l):
     KVNSL = GETKVNSL(); CURSOR = GETKVRSOR();
     region = KVNSL.CUR_REGION; elem = region.ITEMS[idex];
     x, y = elem['x'], elem['y'];
 
-    field_name, value = elem['label'].split(": ");
+    schar = ": " if ": " in elem['label'] else "? ";
+    field_name, value = elem['label'].split(schar);
     in_x = x + (len(field_name) + 2); CURSOR.JUMP(in_x, y);
 
     PEIN = TOGGLEFIELD(l, ptr=getattr(ob, field), x=in_x, y=y);
     global CINPUT_REG; CINPUT_REG={'PEIN':PEIN, 'ob':ob, 'field':field,
-                                   'field_name':field_name, 'idex':idex};
+                                   'field_name':field_name, 'idex':idex, 'schar':schar};
 
     KVNSL.AP_INTCALL("SETFIELD_TOGGLE_INT", SETFIELD_TOGGLE_INT, (), 1);
 
 def SETFIELD_TOGGLE_INT():
-    global CINPUT_REG; PEIN, ob, field, field_name, idex = CINPUT_REG.values();
+    global CINPUT_REG; PEIN, ob, field, field_name, idex, schar = CINPUT_REG.values();
     KVNSL = GETKVNSL(); CURSOR = GETKVRSOR();
 
     x = PEIN.RUN(); elem = KVNSL.CUR_REGION.ITEMS[idex];
 
     if PEIN.state:
         x = x + f"$:KVNSL_H.DL_INTCALL('SETFIELD_TOGGLE_INT', 1);>";
-        setattr(ob, field, PEIN.ptr); elem['label'] = field_name+": "+PEIN.CURRENT;
+        setattr(ob, field, PEIN.ptr); elem['label'] = field_name+schar+PEIN.CURRENT;
 
         del PEIN; CINPUT_REG=None;
 
