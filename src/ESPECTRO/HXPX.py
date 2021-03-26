@@ -946,9 +946,9 @@ def SAVEPX():
 
 def SELMODPX_INT(m):
     KVNSL = GETKVNSL();
-    m.makecur();
+    m.makecur(); KVNSL.CUR_REGION.PAGE=0;
 
-    region = KVNSL.CUR_SCREEN.REGIONS['LPANEL'];
+    region = KVNSL.CUR_SCREEN.REGIONS['LPANEL']; region.onPagHit=None;
     elem   = region.ITEMS[1];
     elem['info'] = f"Select a module to edit (current: {PX.curmod})";
 
@@ -956,33 +956,42 @@ def SELMODPX_INT(m):
 
 def SELMODPX():
     global PX; KVNSL = GETKVNSL();
-    KVNSL.CHREGION("RPANEL");
-    region = KVNSL.CUR_REGION;
+    if KVNSL.CUR_REGION.NAME != "RPANEL": KVNSL.CHREGION("RPANEL");
+    else: KVNSL.CLREGION();
 
-    i = 0;
-    for m in PX.modules:
+    region = KVNSL.CUR_REGION; region.onPagHit = SELMODPX;
+    i=0; j=0; region.PAGES=int(len(PX.modules))/region.PAGESIZE;
+    for m in PX.modules[region.getPageOffset():]:
         name = m.name if m.name != "__main__" else "MAIN";
-        region.addItem(2, 1+i, name, style=2, func=SELMODPX_INT, args={"m":m});
+        region.addItem(2+(j*region.ITEMSIZE+2), 1+i,
+                       name, style=2, func=SELMODPX_INT, args={"m":m});
         i+=1;
 
-    KVNSL.FLREGION();
+        if i >= int(region.PAGESIZE/2):
+            j+=1; i=0;
+            if j > 1:
+                break;
+
+    if region.ITEMS: KVNSL.FLREGION();
 
 def POPMODPX():
     global PX; KVNSL = GETKVNSL();
-    KVNSL.CHREGION("RPANEL");
-    region = KVNSL.CUR_REGION;
+    if KVNSL.CUR_REGION.NAME != "RPANEL": KVNSL.CHREGION("RPANEL");
+    else: KVNSL.CLREGION();
 
-    i = 0;
-    for m in PX.modules:
-        if m.name != "__main__":
-            region.addItem(2, 1+i, m.name, style=2, func=POPMODPX_INT, args={"m":m});
-            i+=1;
+    region = KVNSL.CUR_REGION; region.onPagHit = POPMODPX;
+    i=0; j=0; region.PAGES=int(len(PX.modules))/region.PAGESIZE;
+    for m in PX.modules[region.getPageOffset():]:
+        region.addItem(2+(j*region.ITEMSIZE+2), 1+i,
+                        m.name, style=2, func=POPMODPX_INT, args={"m":m});
+        i+=1;
 
-    KVNSL.FLREGION();
+        if i >= int(region.PAGESIZE/2):
+            j+=1; i=0;
+            if j > 1:
+                break;
 
-    region = KVNSL.CUR_SCREEN.REGIONS['LPANEL'];
-    elem   = region.ITEMS[1];
-    elem['info'] = f"Select a module to edit (current: {PX.curmod})";
+    if region.ITEMS: KVNSL.FLREGION();
 
 def POPMODPX_END():
     global PX; KVNSL = GETKVNSL();
@@ -995,17 +1004,31 @@ def POPMODPX_END():
 
 def POPMODPX_INT(m):
     global PX; KVNSL = GETKVNSL();
-    KVNSL.CLREGION(); region = KVNSL.CUR_REGION;
-    region.addItem(1, 1, f"Remove module {m.name}?  ", style=0);
-    KVNSL.FLREGION();
+    region = KVNSL.CUR_REGION; region.onPagHit=None; region.PAGE=0;
 
-    SETFIELD_TOGGLE(PSEUDOPOP(CONFIM_CLEAR,
-                    (PX.popModule, [m],
-                     POPMODPX_END, [ ] )),
+    if m.name != "__main__":
+        KVNSL.CLREGION(); region.addItem(1, 1, f"Remove module?  ", style=0);
+        KVNSL.FLREGION(); SETFIELD_TOGGLE(PSEUDOPOP(CONFIM_CLEAR,
+                                          (PX.popModule, [m],
+                                           POPMODPX_END, [ ] )),
 
-                    "state", 0, ["YES", "NO"]);
+                                           "state", 0, ["YES", "NO"]);
 
-    CINPUT_REG['PEIN'].spit = 0;
+        KVNSL.OUT(KVNSL.CUR_SCREEN.INFO.updateBuff(f"Removing module {m.name}"));
+        CINPUT_REG['PEIN'].spit = 0;
+
+    else:
+        KVNSL.CLREGION(); region = KVNSL.CUR_REGION; region.onPagHit=None;
+        region.addItem(1, 1, f"MAIN cannot be deleted. Got it?  ", style=0);
+        KVNSL.FLREGION();
+
+        SETFIELD_TOGGLE(PSEUDOPOP(CONFIM_CLEAR,
+                        (None, [],
+                         POPMODPX_END, [ ] ), valid=[1]),
+
+                        "state", 0, ["OK"]);
+
+        CINPUT_REG['PEIN'].spit = 0;
 
 def ADDMODPX():
     global PX, new_mod; KVNSL = GETKVNSL();

@@ -172,6 +172,8 @@ class KEYBOARD_CONTROLLER:
 
         "SPACE"     : 32,
 
+        "REPAG"     : 73,
+        "AVPAG"     : 81,
         "DELETE"    : 83,
         "START"     : 71,
         "END"       : 79,
@@ -374,7 +376,7 @@ class REGION:
 
     def __init__(self, name, mode="BLANKOUT", items=None, items_ptr=-1, buff=None,
                  rect=COORD(1,1,76,22,22,23), borders=(1,1,1,1), corners=(12,6,9,3),
-                 labels=None, align=(0,0,0)                                       ):
+                 labels=None, align=(0,0,0),                                        ):
 
         if not labels:
             labels = ["", ""];
@@ -384,7 +386,6 @@ class REGION:
 
         self.BORDERS   = borders;
         self.ITEMS     = items; self.buildItemMap();
-
         self.ITEMS_PTR = items_ptr;
 
         self.MODE      = mode;
@@ -400,9 +401,36 @@ class REGION:
         self.LABELS    = labels;
 
         self.pad       = (self.RECT.bx-1) - (self.RECT.tx+1);
+
+        self.PAGE      = 0;
+        self.PAGES     = 0;
+        self.PAGESIZE  = ( (self.RECT.by-1) - (self.RECT.ty+1) - 1 ) * 2;
+        self.ITEMSIZE  = int( (self.pad-6)/2 )
+
         self.isCurrent = 0;
 
+        self.onPagHit  = None;
+
 #   ---     ---     ---     ---     ---
+
+    def getPageOffset(self):
+        return self.PAGE * self.PAGESIZE;
+
+    def AVPAG(self):
+        if self.PAGE < (self.PAGES-1):
+            self.PAGE+=1;
+        else:
+            self.PAGE =0;
+
+        if self.onPagHit: self.onPagHit();
+
+    def REPAG(self):
+        if self.PAGE > 0:
+            self.PAGE-=1;
+        else:
+            self.PAGE =(self.PAGES-1);
+
+        if self.onPagHit: self.onPagHit();
 
     def buildItemMap(self):
 
@@ -520,6 +548,11 @@ class REGION:
     def selectItem(self, elem):
 
         hasptr    = elem["style"] > 1;
+        label     = elem["label"];
+        maxlen    = self.ITEMSIZE-4 if len(self.ITEMS) > int(self.PAGESIZE/2) else self.pad-6;
+
+        if (len(label) > maxlen):
+            label = elem['label'] = label[:maxlen]+"..";
 
         ptrchar_s = f"{BOXCHARS['PTR_S']}" if self.ALIGN[1] in (1, 2) and hasptr else "";
         ptrchar_e =    BOXCHARS['PTR_E']   if self.ALIGN[1] in (0, 2) and hasptr else "";
@@ -527,12 +560,17 @@ class REGION:
 
         return f"$:CURSOR.JUMP{elem['x']-len(ptrchar_s), elem['y']};>"\
                + PALETTE['PTR'] + ptrchar_s\
-               + PALETTE[SEL] + elem['label']\
+               + PALETTE[SEL] + label\
                + PALETTE['PTR'] + ptrchar_e;
 
     def deselectItem(self, elem):
 
         hasptr    = elem["style"] > 1;
+        label     = elem["label"];
+        maxlen    = self.ITEMSIZE-4 if len(self.ITEMS) > int(self.PAGESIZE/2) else self.pad-6;
+
+        if (len(label) > maxlen):
+            label = elem['label'] = label[:maxlen]+"..";
 
         length_s  = len(BOXCHARS['PTR_S']);
         length_e  = len(BOXCHARS['PTR_E']);
@@ -543,7 +581,7 @@ class REGION:
 
         return f"$:CURSOR.JUMP{elem['x']-len(ptrchar_s), elem['y']};>"\
                + PALETTE['BOX'] + ptrchar_s\
-               + PALETTE[DSEL] + elem['label']\
+               + PALETTE[DSEL] + label\
                + PALETTE['BOX'] + ptrchar_e;
 
     def callItem(self, elem):
@@ -997,6 +1035,9 @@ class KVNSL:
                         "ARROWLEFT" : [ self.RNAVIGATE, [REGION_ITEMS_LEFT ] ],
                         "ARROWDOWN" : [ self.RNAVIGATE, [REGION_ITEMS_DOWN ] ],
                         "ARROWRIGHT": [ self.RNAVIGATE, [REGION_ITEMS_RIGHT] ],
+
+                        "AVPAG"     : [ self.CUR_REGION.AVPAG, []  ],
+                        "REPAG"     : [ self.CUR_REGION.REPAG, []  ],
 
                     };
 
@@ -2198,7 +2239,10 @@ class TOGGLEFIELD:
         arr_s = self.push+"◄"+self.col_i if d == -1 else "◄"+self.col_i;
         arr_e = self.push+"►"+self.col   if d ==  1 else self.col+"►";
 
-        return f"$:CURSOR.JUMP({self.pos[0]-1}, {self.pos[1]});>"+arr_s+s+arr_e;
+        return f"$:CURSOR.JUMP({self.pos[0]-1}, {self.pos[1]});> "+arr_s+s+arr_e;
+
+    def CANCEL(self):
+        self.ptr = -1; return self.END();
 
     def END(self):
         self.state = 1;
@@ -2207,7 +2251,7 @@ class TOGGLEFIELD:
         else:
             s = " "*self.pad; pad="";
 
-        return f"$:CURSOR.JUMP({self.pos[0]-1}, {self.pos[1]});> "+self.col+s+pad+" ";
+        return f"$:CURSOR.JUMP({self.pos[0]-1}, {self.pos[1]});> "+self.col+s+pad+"  ";
 
     def RIGHT(self):
         self.ptr = self.ptr+1 if self.ptr < (len(self.items)-1) else 0;
@@ -2229,9 +2273,9 @@ class TOGGLEFIELD:
         cases =                             {
 
             "RETURN"    : [self.END,       ()],
-            "ESCAPE"    : [self.END,       ()],
-            "EXIT"      : [self.END,       ()],
-            "ORDM"      : [self.END,       ()]
+            "ESCAPE"    : [self.CANCEL,    ()],
+            "EXIT"      : [self.CANCEL,    ()],
+            "ORDM"      : [self.CANCEL,    ()]
 
                                             };
 
