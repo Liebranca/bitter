@@ -594,6 +594,14 @@ class hxPX:
     def addModule(self):
         return self.modules.append(hxMOD.new());
 
+    def popModule(self, m):
+        self.modules.pop(self.modules.index(m));
+
+        if len(self.modules):
+            self.curmod = self.modules[-1]; self.curmod.makecur();
+        else:
+            self.curmod=None; self.cursub=None;
+
 #   ---     ---     ---     ---     ---
 
     def addFile(self):
@@ -919,7 +927,11 @@ def PXMODMENU():
                    info=f"Select a module to edit (current: {PX.curmod})",
                    func=SELMODPX);
 
-    region.addItem(1, 5, "BACK", style=0, info="Return to main menu",
+    region.addItem(1, 4, "REMOVE", style=0,
+                   info=f"Remove a module from project",
+                   func=POPMODPX);
+
+    region.addItem(1, 14, "BACK", style=0, info="Return to main menu",
                    func=PXDRAWMENU, args={'CALL':PXMAINMENU});
 
     s = "";
@@ -954,6 +966,46 @@ def SELMODPX():
         i+=1;
 
     KVNSL.FLREGION();
+
+def POPMODPX():
+    global PX; KVNSL = GETKVNSL();
+    KVNSL.CHREGION("RPANEL");
+    region = KVNSL.CUR_REGION;
+
+    i = 0;
+    for m in PX.modules:
+        if m.name != "__main__":
+            region.addItem(2, 1+i, m.name, style=2, func=POPMODPX_INT, args={"m":m});
+            i+=1;
+
+    KVNSL.FLREGION();
+
+    region = KVNSL.CUR_SCREEN.REGIONS['LPANEL'];
+    elem   = region.ITEMS[1];
+    elem['info'] = f"Select a module to edit (current: {PX.curmod})";
+
+def POPMODPX_END():
+    global PX; KVNSL = GETKVNSL();
+
+    region = KVNSL.CUR_SCREEN.REGIONS['LPANEL'];
+    elem   = region.ITEMS[1];
+    elem['info'] = f"Select a module to edit (current: {PX.curmod})";
+
+    KVNSL.SWAPWIPE('RPANEL', 'LPANEL');
+
+def POPMODPX_INT(m):
+    global PX; KVNSL = GETKVNSL();
+    KVNSL.CLREGION(); region = KVNSL.CUR_REGION;
+    region.addItem(1, 1, f"Remove module {m.name}?  ", style=0);
+    KVNSL.FLREGION();
+
+    SETFIELD_TOGGLE(PSEUDOPOP(CONFIM_CLEAR,
+                    (PX.popModule, [m],
+                     POPMODPX_END, [ ] )),
+
+                    "state", 0, ["YES", "NO"]);
+
+    CINPUT_REG['PEIN'].spit = 0;
 
 def ADDMODPX():
     global PX, new_mod; KVNSL = GETKVNSL();
