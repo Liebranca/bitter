@@ -23,6 +23,7 @@ from .utils.lyos import (
     INPUTFIELD,
     TOGGLEFIELD,
     PSEUDOPOP,
+    SHUFFLER,
 
     DOS,
     CLS,

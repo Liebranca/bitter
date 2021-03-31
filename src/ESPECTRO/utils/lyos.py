@@ -410,6 +410,7 @@ class REGION:
         self.isCurrent = 0;
 
         self.onPagHit  = None;
+        self.onEscHit  = ();
 
 #   ---     ---     ---     ---     ---
 
@@ -431,6 +432,9 @@ class REGION:
             self.PAGE =(self.PAGES-1);
 
         if self.onPagHit: self.onPagHit();
+
+    def ESC(self):
+        if self.onEscHit: self.onEscHit[0](*self.onEscHit[1]);
 
     def buildItemMap(self):
 
@@ -741,6 +745,9 @@ class REGION:
 
     def updateBuff(self, new_s):
 
+        if new_s == self.BUFF:
+            return "";
+
         old_length = len(self.BUFF);
         new_length = len(new_s    );
 
@@ -976,7 +983,6 @@ class KVNSL:
         return region.ITEM_ACCESS("call", REGION_ITEMS_CURR);
 
     def RNAVIGATE(self, dirn):
-
         region = self.CUR_REGION;
         info   = self.CUR_SCREEN.INFO;
         oldlen = len(info.BUFF);
@@ -987,6 +993,15 @@ class KVNSL:
         info_s = info.updateBuff(region.ITEMS[region.ITEMS_PTR]["info"]);
 
         return s, info_s;
+
+    def RNAVIGATE_NI(self, dirn):
+        region = self.CUR_REGION;
+        s      = "";
+
+        s      = s + region.ITEM_ACCESS("deselect", REGION_ITEMS_CURR );
+        s      = s + region.ITEM_ACCESS("select",   dirn              );
+
+        return s;
 
     def SWAPWIPE(self, src, tgt):
 
@@ -1065,7 +1080,17 @@ class KVNSL:
                             self.OUT(itm,                     flush=0);
                             self.OUT(info, region=inforegion, flush=0);
 
-                    elif KEYBOARD_CONTROLLER.LOG == 27: break;
+                    elif KEYBOARD_CONTROLLER.LOG == 27:
+
+                        if self.CUR_REGION.NAME=="RPANEL":
+                            self.CUR_REGION.LABELS[0]="";
+                            self.SWAPWIPE("RPANEL", "LPANEL");
+
+                        elif self.CUR_REGION.onEscHit:
+                            self.CUR_REGION.ESC(); self.CUR_REGION.onEscHit = [];
+
+                        else:
+                            break;
 
 #   ---     ---     ---     ---     ---
 
@@ -1681,10 +1706,12 @@ def STARTUP(SETTINGS):
     PALETTE["SEL0" ] = ANSIC(UI_FRG,     UI_COL0   );
     PALETTE["SEL1" ] = ANSIC(UI_COL0+10, UI_BKG    );
     PALETTE["SEL2" ] = ANSIC(UI_FRG,     UI_BKG    );
+    PALETTE["SEL3" ] = ANSIC(UI_COL0+10, UI_BKG    );
 
     PALETTE["DSEL0"] = ANSIC(UI_FRG,     UI_BKG    );
     PALETTE["DSEL1"] = ANSIC(UI_COL0,    UI_BKG    );
     PALETTE["DSEL2"] = ANSIC(UI_COL1,    UI_BKG    );
+    PALETTE["DSEL3"] = ANSIC(UI_COL1,    UI_BKG    );
 
     PALETTE["BOX"  ] = ANSIC(UI_COL1,    UI_BKG    );
     PALETTE["PTR"  ] = ANSIC(UI_COL0+10, UI_BKG    );
@@ -2283,6 +2310,118 @@ class TOGGLEFIELD:
         if isinstance(s, int): s = "";
         return s;
 
+
+#   ---     ---     ---     ---     ---
+
+class SHUFFLER:
+
+    def __init__(self, items, elems, idex, col="BACK", col_i="KVRSE"):
+
+        self.elems  = elems;
+
+        self.items  = items;
+        self.idex   = idex;
+        self.top    = len(items)-1;
+
+        self.col    = PALETTE[col  ];
+        self.col_i  = PALETTE[col_i];
+
+        self.state  = 0;
+
+        KVNSL_H.OUT(self.HIGHLIGHT());
+
+    def HIGHLIGHT(self):
+
+        s=""; i=0;
+        for elem in self.elems:
+            s = s+KVNSL_H.CUR_REGION.ITEM_ACCESS('deselect', i);
+            elem['style'] = 3;
+            s = s+KVNSL_H.CUR_REGION.ITEM_ACCESS('deselect', i);
+            i+=1;
+
+        s = s+KVNSL_H.CUR_REGION.ITEM_ACCESS('select', self.idex);
+        return s;
+
+    def SHUP(self):
+
+        if self.idex != 0:
+            i = self.idex;
+            self.items[i-1], self.items[i] = self.items[i], self.items[i-1];
+
+            labels = [self.elems[i]['label'], self.elems[i-1]['label']];
+            length = len(labels[0]);
+            if len(labels[1]) > length:
+                length    = len(labels[1]);
+                labels[0] = labels[0]+(" "*(length-len(labels[0])))
+            else:
+                labels[1] = labels[1]+(" "*(length-len(labels[1])))
+
+            self.elems[i-1]['label'], self.elems[i]['label'] = labels;
+            self.elems[i-1]['args'], self.elems[i]['args'] = (
+                self.elems[i]['args'], self.elems[i-1]['args']
+            )
+
+            self.idex -=1; return KVNSL_H.RNAVIGATE_NI(REGION_ITEMS_PREV);
+
+        return "";
+
+    def SHDOWN(self):
+
+        if self.idex != self.top:
+            i = self.idex;
+            self.items[i+1], self.items[i] = self.items[i], self.items[i+1];
+
+            labels = [self.elems[i]['label'], self.elems[i+1]['label']];
+            length = len(labels[0]);
+            if len(labels[1]) > length:
+                length    = len(labels[1]);
+                labels[0] = labels[0]+(" "*(length-len(labels[0])))
+            else:
+                labels[1] = labels[1]+(" "*(length-len(labels[1])))
+
+            self.elems[i+1]['label'], self.elems[i]['label'] = labels;
+            self.elems[i+1]['args'], self.elems[i]['args'] = (
+                self.elems[i]['args'], self.elems[i+1]['args']
+            )
+
+            self.idex +=1; return KVNSL_H.RNAVIGATE_NI(REGION_ITEMS_NEXT);
+
+        return "";
+
+    def RUN(self):
+
+        spec_cases =                        {
+
+            "ARROWUP"  : [self.SHUP,      ()],
+            "ARROWDOWN": [self.SHDOWN,    ()],
+
+                                            };
+
+        cases =                             {
+
+            "RETURN"    : [self.END,       ()],
+            "ESCAPE"    : [self.END,       ()],
+            "EXIT"      : [self.END,       ()],
+            "ORDM"      : [self.END,       ()]
+
+                                            };
+
+        s = KEYBOARD_CONTROLLER.RUN(cases, spec_cases, False);
+        if isinstance(s, int): s = "";
+        return s;
+
+    def END(self):
+
+        s=""; i=0;
+        for elem in self.elems:
+            s = s+KVNSL_H.CUR_REGION.ITEM_ACCESS('deselect', i);
+            elem['style'] = 2;
+            s = s+KVNSL_H.CUR_REGION.ITEM_ACCESS('deselect', i);
+            i+=1;
+
+        s = s+KVNSL_H.CUR_REGION.ITEM_ACCESS('select', self.idex);
+
+        self.state = 1; return s;
 
 #   ---     ---     ---     ---     ---
 
