@@ -111,11 +111,10 @@ from ESPECTRO import *;
 
 from time import sleep;
 
-STARTUP(LSET);
-PXUI(); KVNSL = GETKVNSL();
+STARTUP(LSET); err=SCANLIBS();
+if not err:
+    PXUI(); KVNSL = GETKVNSL();
+    KVNSL.RUN();
 
-KVNSL.RUN();
-
-CLEANUP();
-os._exit(1);
+CLEANUP(); os._exit(1);
 

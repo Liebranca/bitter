@@ -101,7 +101,7 @@ from .builder import (
 
 );
 
-from .HXPX            import hxPX, PXUI;
+from .HXPX            import hxPX, SCANLIBS, PXUI;
 from .lang.KVR        import INTPRT;
 
 #   ---     ---     ---     ---     ---

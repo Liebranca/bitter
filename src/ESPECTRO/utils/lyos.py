@@ -21,27 +21,24 @@ sys.ps2    = '-';
 FATAL      = -255;
 ERROR      = -254;
 
-def DISCOUNT_ESCAPES(S, DIFF):
+def DISCOUNT_ESCAPES(S, space):
 
-    old_length = DIFF; DIFF=0; i=0;
-    while DIFF < old_length:
+    old_length = len(S); DIFF=0; i=0;
+    while (DIFF < space) and (i < old_length):
 
         scp = 0;
-        if len(S[i:]) > 2:
-            if S[i:i+2] == "$:":
-                i+=2; scp = 1;
-                while(S[i:i+2] != ";>"):
-                    i+=1;
-                    if i > len(S):
-                        print(S+" MISSING __;>__ DELIMITER");
-                        break;
+        if S[i:i+2] == "$:":
+            i+=2; scp = 1;
+            while(S[i:i+2] != ";>"):
+                i+=1;
+                if i > old_length: break;
 
-                i+=2;
+            i+=2;
 
         if not scp:
             DIFF+=1; i+=1;
 
-    return i;
+    return (DIFF, i);
 
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
@@ -67,18 +64,30 @@ WCHROMA =                                   {
 
                                             };
 
+def MSCPX(s):
+    result=""; coms=s.split("$:");
+    for com in coms:
+        if com:
+            com=com[:-2];nt=eval(com);
+            if nt: result=result+nt;
+
+    return result;
+
+def SCPX(s):
+    return f"\x1b{s}";
+
 def ANSIC(f=1, b=1):
 
     if f > 17:
-        f = "\x1b[39m";
+        f = "$:SCPX('39m');>";
     else:
-        f = f"\x1b[38{WCHROMA[f]}";
+        f = f"$:SCPX('[38{WCHROMA[f]}');>";
 
     if b > 17:
-        b = "\x1b[49m";
+        b = "$:SCPX('[49m');>";
 
     else:
-        b = f"\x1b[48{WCHROMA[b]}";
+        b = f"$:SCPX('[48{WCHROMA[b]}');>";
 
     return f + b;
 
@@ -135,7 +144,6 @@ CORNERDICT =                                {
    13: "VR",                                # up|down|right         0b1101
    14: "HD",                                # left|down|right       0b1110
    15: "CC"                                 # up|left|down|right    0b1111
-
                                             };
 
 BOX_CORNER_W = 0x01;
@@ -283,11 +291,11 @@ def DISABLE_CONFIRM(d=None):
 
 ERRLEVELS =                                 {
 
-   -1: "SATANIC",
+   -1: "LBK",
     0: "SYS",
-    1: "WRNG",
+    1: "WRN",
     2: "ERR",
-    3: "FTL_ERR"
+    3: "FTL"
 
                                             };
 
@@ -361,6 +369,90 @@ class COORD:
 
         return changed;
 
+class CSTR:
+
+    def __init__(self, buff="", linenum=20, linesize=74, pages=4):
+
+        self.buff   =[ "" for i in range(linesize*linenum*pages)  ];
+        self.escapes=[                                            ];
+
+        if buff:
+            i=0; j=0; k=0; escape=0;
+            while j < len(buff):
+
+                char=buff[j];
+
+                if char=="$":
+                    if buff[j:j+2] == "$:":
+                        escape=1; self.escapes.append([i, "$:"]); j+=2;
+                        continue;
+
+                elif char==";":
+                    if buff[j:j+2] == ";>":
+                        escape=0; self.escapes[k][1] = self.escapes[k][1]+";>"; k+=1; j+=2;
+                        continue;
+
+                if not escape:
+                    self.buff[i]=char; i+=1;
+
+                else:
+                    self.escapes[k][1]=self.escapes[k][1]+char;
+
+                j+=1;
+
+        self.linesize = linesize;
+        self.linenum  = linenum;
+        self.pages    = pages;
+        self.pagesize = linesize*linenum;
+
+    def COPY(self, buff):
+        return CSTR(buff=buff, linesize=self.linesize, linenum=self.linenum, pages=self.pages);
+
+    def __len__(self):
+        return len("".join(self.buff));
+
+    def __iter__(self):
+        return self.buff.__iter__();
+
+    def __getitem__(self, idex):
+
+        if isinstance(idex, slice):
+            l=[ i for i in range( *idex.indices(self.pagesize*self.pages) ) ];
+            if len(l)>1: start, stop=l[0], l[-1];
+            else: start, stop=0,1;
+        else:
+            start, stop=idex, idex+1;
+
+        if self.escapes:
+            i=0; j=start; s="";
+            for escape in self.escapes:
+                i, code=escape;
+                if stop>=i>=start:
+                    s=s+"".join(ch for ch in self.buff[j:i])+code; j=i;
+
+            return s+"".join(ch for ch in self.buff[j:stop]);
+
+        else:
+            return "".join(self.buff[start:stop]);
+
+    def __setitem__(self, idex, value):
+        self.buff[idex] = value;
+
+    def __contains__(self, value):
+        return item in self.buff;
+
+    def __repr__(self):
+
+        if self.escapes:
+            i=0; j=0; s="";
+            for escape in self.escapes:
+                i, code=escape; s=s+"".join(ch for ch in self.buff[j:i])+code; j=i;
+
+            return s+"".join(ch for ch in self.buff[j:]);
+
+        else:
+            return "".join(self.buff[:]);
+
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 REGION_ITEMS_NEXT  = -1;
@@ -394,8 +486,9 @@ class REGION:
         self.RECT      = rect;
         self.CORNERS   = corners;
 
-        self.BUFF      = buff if isinstance(buff, str) else "";
+        self.BUFF      = buff if buff != None else "";
         self.BUFF_PTR  = 0;
+        self.BUFF_WRIT = 0;
 
         self.ALIGN     = align;
         self.LABELS    = labels;
@@ -417,21 +510,21 @@ class REGION:
     def getPageOffset(self):
         return self.PAGE * self.PAGESIZE;
 
-    def AVPAG(self):
+    def AVPAG(self, trigger=1):
         if self.PAGE < (self.PAGES-1):
             self.PAGE+=1;
         else:
             self.PAGE =0;
 
-        if self.onPagHit: self.onPagHit();
+        if self.onPagHit and trigger: self.onPagHit();
 
-    def REPAG(self):
+    def REPAG(self, trigger=1):
         if self.PAGE > 0:
             self.PAGE-=1;
         else:
             self.PAGE =(self.PAGES-1);
 
-        if self.onPagHit: self.onPagHit();
+        if self.onPagHit and trigger: self.onPagHit();
 
     def ESC(self):
         if self.onEscHit: self.onEscHit[0](*self.onEscHit[1]);
@@ -616,8 +709,8 @@ class REGION:
         if S == "$B":
             S  = self.GETBOXLINE();
 
-        LENGTH = DISCOUNT_ESCAPES(S, len(S));
-        BUFF   = S[:LENGTH].split("$:" );
+        LENGTH = DISCOUNT_ESCAPES(S, len(S))[1];
+        BUFF   = S[:LENGTH].split("$:");
 
         for sub in BUFF:
 
@@ -625,7 +718,8 @@ class REGION:
             if DOJUMP[0] or DOJUMP[1]: CURSOR.UPDATE();
 
             if ";>" in sub:
-                com, sub = sub.split(";>"); eval(com);
+                com, sub = sub.split(";>"); nt=eval(com);
+                if nt: sub=nt+sub;
 
             CPRINT(sub);
 
@@ -656,13 +750,13 @@ class REGION:
     def drawLabels(self, top=1):
 
         if top:
-            thick  = self.BORDERS[0]
-            hchar  = (BOXCHARS["HH"][thick] if thick < 7 else BOXCHARS["TR"][7]);
+            thick  = self.BORDERS[0];
+            hchar  = (BOXCHARS["HH"][thick] if thick < 8 else BOXCHARS["TR"][8]);
             label  = self.LABELS[0];
             align  = self.ALIGN[0];
         else:
-            thick  = self.BORDERS[2]
-            hchar  = BOXCHARS["HH"][thick] if thick < 7 else BOXCHARS["BR"][7];
+            thick  = self.BORDERS[2];
+            hchar  = BOXCHARS["HH"][thick] if thick < 8 else BOXCHARS["BR"][8];
             label  = self.LABELS[1];
             align  = self.ALIGN[2];
 
@@ -735,11 +829,74 @@ class REGION:
 
         return PALETTE["BOX"] + vchar_s + s + PALETTE["BOX"] + vchar_e;
 
+    @property
+    def VSPACE(self):
+        return ( self.RECT.by - (self.RECT.ty+1) );
+
     def spitBuff(self, y):
 
+        color  = PALETTE["BACK"] if not isinstance(self.BUFF, CSTR) else "";
+
+        space  = self.pad;
         tjump  = f"$:CURSOR.JUMP{self.RECT.tx+1, y};>"
-        sub    = PALETTE["BACK"]+self.BUFF[self.BUFF_PTR:self.BUFF_PTR+self.pad];
-        s      = tjump + sub; self.BUFF_PTR += self.pad;
+        sub    = color+self.BUFF[self.BUFF_PTR:self.BUFF_PTR+space];
+        s      = tjump + sub; self.BUFF_PTR += space;
+
+        return s;
+
+    def addBuff(self, new_s):
+
+        frmtd = ""; cur=0; PAGESIZE=self.VSPACE*self.pad;
+        for y in range( (self.VSPACE*self.PAGES) ):
+
+            new_s=CSTR(buff=new_s, linenum=1, linesize=len(new_s), pages=1);
+            line=[]; space=self.pad;
+
+            for sub in new_s[cur:cur+space].split(" "):
+                sub = CSTR(sub + " ", linenum=1, linesize=len(new_s), pages=1);
+                length=len(sub);
+
+                if (length-1) < space:
+                    line.append(repr(sub)); space-=length; cur+=length;
+
+            line.append(" "*(space));
+            frmtd = frmtd + ("".join(line));
+            if cur > len(new_s): break;
+
+        BUFFMAX=PAGESIZE*self.PAGES;
+        while (len(self.BUFF) + len(new_s)) > BUFFMAX:
+            self.BUFF=self.BUFF.COPY(self.BUFF[PAGESIZE:]); self.REPAG(0);
+
+        new_s=CSTR(buff=frmtd, linenum=1, linesize=len(frmtd), pages=1);
+        self.BUFF=self.BUFF.COPY(self.BUFF[:]+new_s[:]); trigger=0; ptr=self.PAGE*PAGESIZE;
+        while (ptr+PAGESIZE) < len(self.BUFF):
+            ptr+=PAGESIZE; self.AVPAG(0); trigger=1;
+
+        return trigger;
+
+    def appBuff(self):
+        s=""; length=len(self.BUFF);
+        self.BUFF_PTR=(self.VSPACE*self.pad*self.PAGE)+(self.pad*self.BUFF_WRIT);
+        for y in range(self.RECT.ty+1+self.BUFF_WRIT, self.RECT.by):
+            s = s + self.spitBuff(y); self.BUFF_WRIT+=1;
+            if self.BUFF_PTR >= length: break;
+
+        return s;
+
+    def refBuff(self):
+
+        for y in range(self.RECT.ty+1, self.RECT.by):
+            CPRINT(f"\x1b[{y};{self.RECT.tx+1}H" + (" "*self.pad));
+
+        s=""; self.BUFF_PTR=(self.VSPACE*self.pad)*self.PAGE;
+
+        i=0;length=len(self.BUFF);
+        for y in range(self.RECT.ty+1, self.RECT.by):
+            s = s + self.spitBuff(y);
+            if self.BUFF_PTR >= length: break;
+            i+=1;
+
+        self.BUFF_WRIT=i;
 
         return s;
 
@@ -754,8 +911,7 @@ class REGION:
         for y in range(self.RECT.ty+1, self.RECT.by):
             CPRINT(f"\x1b[{y};{self.RECT.tx+1}H" + (" "*self.pad));
 
-        s = ""; self.BUFF_PTR = 0; 
-
+        s = ""; self.BUFF_PTR = 0;
         if len(new_s) > self.pad:
 
             frmtd = ""; cur=0;
@@ -861,6 +1017,8 @@ class KVNSL:
 
         self.INTCALLS  = {};
         self.KINTCALLS = {};
+        self.DEBUGREG  = None;
+        self.PREVSCR   = "";
 
         CURSOR.JUMP(1,22);
 
@@ -961,8 +1119,9 @@ class KVNSL:
         CPRINT("", 1);
 
     def CLS(self):
+        col=MSCPX(PALETTE['BACK']);
         for y in range(1, hxDRAWSPACE_Y):
-            CPRINT(f"{PALETTE['BACK']}\x1b[{y};1H\x1b[K");
+            CPRINT(f"{col}\x1b[{y};1H\x1b[K");
 
         CPRINT("", 1);
 
@@ -984,6 +1143,8 @@ class KVNSL:
 
     def RNAVIGATE(self, dirn):
         region = self.CUR_REGION;
+        if not region.ITEMS: return "", "";
+
         info   = self.CUR_SCREEN.INFO;
         oldlen = len(info.BUFF);
         s      = "";
@@ -1017,12 +1178,45 @@ class KVNSL:
         itm, info = self.RNAVIGATE(self.CUR_REGION.ITEMS_PTR);
         self.OUT(itm, flush=0); self.OUT(info, region=INFO, flush=1);
 
+    def DEBUG_TOGGLE(self):
+
+        self.CLS();
+
+        if not self.PREVSCR:
+            self.PREVSCR=self.S;
+            self.S="DEBUGWIN";
+            self.DEBUGREG.isCurrent=1;
+        else:
+            self.S=self.PREVSCR;
+            self.PREVSCR=""; self.DEBUGREG.isCurrent=0;
+
+        self.FILLSCREEN();
+        region=self.CUR_REGION;
+
+        if self.PREVSCR:
+            self.OUT(self.DEBUGREG.refBuff());
+
+        else:
+            for region in self.CUR_SCREEN.REGIONS.values():
+                if region.ITEMS:
+                    itm, info = self.RNAVIGATE(region.ITEMS_PTR);
+                    self.OUT(itm, flush=0);
+                    if region.isCurrent: self.OUT(info, region=self.CUR_SCREEN.INFO, flush=0);
+
+    def DEBUG_OUT(self, args, kwargs):
+        for s in args:
+            if not isinstance(s, str): s=str(s);
+
+        ERRPRINT(*args, **kwargs); self.OUT(self.DEBUGREG.appBuff());
+
     def RUN(self):
 
         ptr = 0; s = "►▼◄▲";
 
         CURSOR.SAVE(); CURSOR.JUMP(1, 23);
-        CPRINT(f"\x1b[?25l{PALETTE['BACK']}\x1b[K");
+        col0=MSCPX(PALETTE['BACK']); col1=MSCPX(PALETTE['SEL1']);
+
+        CPRINT(f"\x1b[?25l{col0}\x1b[K");
 
         # TODO: make an actual clock to propertly handle this loop
         FPS=60; frametime=(1/FPS); framedelta=0.0;
@@ -1051,14 +1245,16 @@ class KVNSL:
                         "ARROWDOWN" : [ self.RNAVIGATE, [REGION_ITEMS_DOWN ] ],
                         "ARROWRIGHT": [ self.RNAVIGATE, [REGION_ITEMS_RIGHT] ],
 
-                        "AVPAG"     : [ self.CUR_REGION.AVPAG, []  ],
-                        "REPAG"     : [ self.CUR_REGION.REPAG, []  ],
+                        "AVPAG"     : [ self.CUR_REGION.AVPAG, []            ],
+                        "REPAG"     : [ self.CUR_REGION.REPAG, []            ],
 
                     };
 
                     cases = {
 
-                        "RETURN"    : [ self.REXEC,     []                   ]
+                        "RETURN"    : [ self.REXEC,        []                ],
+                        "TAB"       : [ self.DEBUG_TOGGLE, []                ],
+                        "ORDM"      : [ self.DEBUG_OUT,    [["test debug"], {'err':-1} ]]
 
                     };
 
@@ -1108,12 +1304,12 @@ class KVNSL:
             if animframe >= animrate:
 
                 if ptr < 3:
-                    ptr += 1; CPRINT(f"\x1b[1G{PALETTE['SEL1']}"\
+                    ptr += 1; CPRINT(f"\x1b[1G{col1}"\
                                      f" {s[ptr]}");
                 elif ptr == 3:
                     ptr += 1;
                 else:
-                    ptr = 0; CPRINT(f"\x1b[1G{PALETTE['SEL1']}"\
+                    ptr = 0; CPRINT(f"\x1b[1G{col1}"\
                                      f" {s[ptr]}");
 
                 animframe = animframe - animrate;
@@ -1134,7 +1330,25 @@ class KVNSL:
 
 #   ---     ---     ---     ---     ---
 
-KVNSL_H = KVNSL();
+KVNSL_H  = KVNSL();
+DEBUGREG = REGION ( "DEBUG",
+
+                    rect=COORD( 1,  1, 76, 1, 1, 22 ),
+                    labels=["DEBUG", "1/4"],
+                    borders=tuple(PKBORDER(1,1,1) for i in range(4)),
+                    align=(0,0,1),
+
+                    buff=CSTR(linenum=20, linesize=74, pages=4));
+
+KVNSL_H.NEW_SCREEN("DEBUGWIN", LAYOUT([DEBUGREG]));
+
+def DEBUG_ONPAG():
+    DEBUGREG.LABELS[1]=f"{DEBUGREG.PAGE+1}/{DEBUGREG.PAGES}"
+    KVNSL_H.OUT(DEBUGREG.drawBottom()+DEBUGREG.refBuff());
+
+DEBUGREG.PAGES=4; DEBUGREG.onPagHit=DEBUG_ONPAG; KVNSL_H.DEBUGREG=DEBUGREG;
+
+#   ---     ---     ---     ---     ---
 
 def QLNAME(frame):
 
@@ -1204,14 +1418,19 @@ def ERRPRINT(*args, err=0, rec=1, sep=' ', end=''):
             file = file[-1];
 
         line   = prev.f_lineno;
-        mess   = f"{GETERR(err)}: {caller} on {file} @{line}\n" + mess;
+        mess   = f"{GETERR(err)}: {caller} on {file} @{line} " + mess;
 
     else:
         mess = f"{GETERR(err)}: {mess}"
 
 #   ---     ---     ---     ---     ---
 
-    #print(mess + "\x1b[0m");
+    # for automatic AVPAG
+    if KVNSL_H.DEBUGREG.addBuff(mess + "\x1b[0m"):
+        if DEBUGREG.isCurrent:
+            DEBUG_ONPAG();
+        else:
+            DEBUGREG.LABELS[1]=f"{DEBUGREG.PAGE+1}/{DEBUGREG.PAGES}";
 
 hxWARNS = True;
 
@@ -1351,6 +1570,8 @@ def LISTDIR(path, exts=[]):
         for e in exts:
             l = [f for f in flist if f".{e}" in f];
             if len(l): select.extend(l);
+
+        return select;
 
     return os.listdir(path);
 
@@ -1718,11 +1939,11 @@ def STARTUP(SETTINGS):
     PALETTE["BACK" ] = ANSIC(UI_FRG,     UI_BKG    );
     PALETTE["KVRSE"] = ANSIC(UI_BKG,     UI_FRG    );
 
-    PALETTE[-1     ] = ANSIC(11,  4);
-    PALETTE[ 0     ] = ANSIC(16,  4);
-    PALETTE[ 1     ] = ANSIC(18,  3);
-    PALETTE[ 2     ] = ANSIC(13,  1);
-    PALETTE[ 3     ] = ANSIC(17, 11);
+    PALETTE[-1     ] = ANSIC(15, UI_BKG);
+    PALETTE[ 0     ] = ANSIC(16, UI_BKG);
+    PALETTE[ 1     ] = ANSIC(12, UI_BKG);
+    PALETTE[ 2     ] = ANSIC(13, UI_BKG);
+    PALETTE[ 3     ] = ANSIC(11, UI_BKG);
 
 #   ---     ---     ---     ---     ---
 
@@ -1740,7 +1961,6 @@ def STARTUP(SETTINGS):
     fkwall    = SETTINGS[10]; FKWALL         (fkwall         );
 
     global KVRLOG, KVRIN;
-
     logpath = ROOT() + "\\KVR\\trashcan\\log";
     if not OKPATH(logpath): MKDIR(logpath);
 
@@ -1777,315 +1997,6 @@ def SYSREAD(i=0, clear=1):
 
 def SYSDUMP():
     pass;
-
-#   ---     ---     ---     ---     ---
-
-prevbox = None;
-
-class ASCIBOX:
-
-
-
-    @staticmethod
-    def MAKE(items, title="BOX", c_butt="X", ptrchar_l='♦', ptrchar_r='♦', offset=0, chain=0,
-            pad=0, sel=0, thick=2, col="IN", rev=1, align=2, t_align=0, c_align=1, p_align=2):
-
-        self       = ASCIBOX();
-
-        global prevbox;
-        self.thick = min(thick, 5);
-        self.col   = PALETTE[col];
-
-        if not pad:
-            pad = len(title) + 4;
-
-        newpad = 0;
-        for s in items:
-            if len(s) > pad:
-                pad = len(s);
-                newpad = 1;
-
-        if newpad:
-            pad += 4;
-            if pad%2: pad += 1;
-
-#   ---     ---     ---     ---     ---
-
-        if chain:
-
-            global hxDRAWSPACE_X, hxDRAWUSED, hxDRAWHEIGHT;
-
-            if (hxDRAWUSED + pad + 2) > hxDRAWSPACE_X:
-
-                CHARS = ASCIBOX.CHARS; CPRINT(f"\x1b[G\x1b[{hxDRAWUSED}C");
-                CPRINT(self.col + CHARS["TR"][self.thick] + "\x1b[E");
-
-                for i in range(len(items) + 2):
-                    CPRINT(f"\x1b[G\x1b[{hxDRAWUSED}C{self.col}"\
-                          + CHARS["VV"][self.thick] + "\x1b[B");
-
-                CPRINT(f"\x1b[G\x1b[{hxDRAWUSED}C" + self.col
-                      + CHARS["BR"][self.thick] + "\x1b[E");
-
-                offset = 0; hxDRAWUSED = 0;
-                chain = 0 if chain == 3 else 1;
-
-            if (len(items) + 4) > hxDRAWHEIGHT:
-                hxDRAWHEIGHT = len(items) + 4;
-
-            offset = hxDRAWUSED + (chain > 1);
-            hxDRAWUSED += pad + 1;
-
-#   ---     ---     ---     ---     ---
-
-        self.chain     = chain;
-
-        self.title     = title;
-        self.c_butt    = c_butt;
-        self.pad       = pad;
-
-        self.items     = items;
-        self.sel       = items[sel];
-        self.ptr       = sel;
-        self.rev       = rev;
-
-        CPRINT(self.col);
-
-        self.ioffset   = offset;
-        self.align     = align;
-
-        self.t_align   = t_align;
-        self.c_align   = c_align;
-        self.p_align   = p_align;
-
-        self.ptrchar_l = ptrchar_l;
-        self.ptrchar_r = ptrchar_r;
-
-#   ---     ---     ---     ---     ---
-
-        #CPRINT("\x1b[?25l");
-
-        # get position of first char
-        CPRINT(f"\x1b[0;{self.ioffset+1}H", 1);
-        KVNSL.RFBUFF(); self.co_t = KVNSL.CURSOR_CO();
-
-        self.drawTop(); self.drawMid("");
-
-        for i in items:
-            self.drawMid(i);
-
-        self.drawMid(""); self.drawBottom();
-
-        # go back one, then get position of last char
-        CPRINT("\x1b[D"); KVNSL.RFBUFF(); self.co_b = KVNSL.CURSOR_CO();
-        #self.GOTOP(1);
-
-        x, y = self.INSPACE(11,5); CPRINT(f"\x1b[{y};{x}H");
-        CPRINT(f"\x1b[23;0H{[self.co_t, self.co_b]}"); self.GOTOP(1);
-
-        CPRINT("", 1);
-        return self.RUN();
-
-#   ---     ---     ---     ---     ---
-
-    def INSPACE(self, x, y):
-        return ( min((self.co_t[0] + 2) + x, self.co_b[0] - 1),
-                 max((self.co_t[1] + 2) + y, self.co_b[1] - 2) );
-
-    def GOTOP(self, mod=0):
-        CPRINT(f"\x1b[{self.co_t[1]};{self.co_t[0]}H")
-        if mod: CPRINT(f"\x1b[2E");
-
-    def GOBUTT(self, mod=0):
-        CPRINT(f"\x1b[{self.co_b[1]+1};{self.co_b[0]}H")
-        if mod: CPRINT(f"\x1b[2F");
-
-    def RUN(self):
-
-        spec_cases =                        {
-
-            "ARROWUP"  : self.UP,
-            "ARROWDOWN": self.DOWN,
-                                            };
-
-        cases =                             {
-
-            "RETURN"   : self.SELECT,
-            "ESCAPE"   : self.CANCEL,
-            "EXIT"     : self.CANCEL,
-            "ORDM"     : self.CANCEL,
-
-                                            };
-
-        return KEYBOARD_CONTROLLER.RUN(cases, spec_cases);
-
-#   ---     ---     ---     ---     ---
-
-    def KILL(self):
-
-        if (not self.chain) or (self.chain == 3):
-            CPRINT(f"\x1b[?25h\x1b[{(len(self.items) + 2) - self.ptr}E");
-
-        else:
-
-            if self.ptr == -1:
-                self.GOTOP();
-
-            else:
-                self.GOTOP();
-
-    @property
-    def start_line(self):
-        return self.col;
-
-    @property
-    def close_line(self):
-        return "\x1b[0m\x1b[E";
-
-    def itemAligned_sel(self, i):
-
-        length = len(i);
-
-        pdch_s = self.ptrchar_l if self.p_align in [2, 0] else " ";
-        pdch_e = self.ptrchar_r if self.p_align in [2, 1] else " ";
-
-        space = self.pad;
-        if   self.align == 1:
-            wsp_e = f"\x1b[27m{self.col}" + pdch_e + " "; space -= 2;
-            space -= length; wsp_s = " " + pdch_s + f"\x1b[7m{self.col}"\
-                                   + (" " * (space - 2));
-
-        elif self.align == 2:
-            w = int((self.pad)/2) - int(length/2);
-            wsp_s  = " " + pdch_s + f"\x1b[7m{self.col}" + (" " * (w - 2));
-            space -= w;
-            space -= length; wsp_e = (" " * (space - 2)) + f"\x1b[27m{self.col}" + pdch_e + " ";
-
-        else:
-            wsp_s = " " + pdch_s + "\x1b[7m"; space -= 2;
-            space -= length; wsp_e = f"\x1b[27m{self.col}"\
-                                   + (" " * (space - 2)) + pdch_e + " ";
-
-        return wsp_s + self.col + i + wsp_e;
-
-    def itemAligned(self, i):
-
-        space = self.pad; length = len(i);
-        if   self.align == 1:
-            wsp_e = "  "; space -= 2;
-            space -= length; wsp_s = " " * space;
-
-        elif self.align == 2:
-            w = int((self.pad)/2) - int(length/2);
-            wsp_s = " " * (w); space -= w;
-            space -= length; wsp_e = " " * space;
-
-        else:
-            wsp_s = "  "; space -= 2;
-            space -= length; wsp_e = " " * space;
-
-        return "\x1b[27m"+ self.col + wsp_s + i + wsp_e;
-
-    def buttAligned_sel(self):
-
-        space = self.pad; hchar = " ";
-        if   self.c_align == 1:
-            wsp_e = "]" ; space -= 1;
-            space -= len(self.c_butt); wsp_s = (hchar * (space - 1)) + ("[");
-
-        elif self.c_align == 2:
-            w = int((self.pad)/2) - int(len(self.c_butt)/2);
-            wsp_s = (hchar * (w-2)) + ("["); space -= (w-1);
-            space -= len(self.c_butt); wsp_e = ("]") + (hchar * (space - 1));
-
-        else:
-            wsp_s = "["; space -= 1;
-            space -= len(self.c_butt); wsp_e = ("]") + (hchar * (space - 1));
-
-        return f"\x1b[{len(wsp_s)}C\x1b[7m{self.col}{self.c_butt}\x1b[27m{self.col}"
-
-    def buttAligned(self):
-
-        space = self.pad; hchar = " ";
-        if   self.c_align == 1:
-            wsp_e = "]" ; space -= 1;
-            space -= len(self.c_butt); wsp_s = (hchar * (space - 1)) + ("[");
-
-        elif self.c_align == 2:
-            w = int((self.pad)/2) - int(len(self.c_butt)/2);
-            wsp_s = (hchar * (w-2)) + ("["); space -= (w-1);
-            space -= len(self.c_butt); wsp_e = ("]") + (hchar * (space - 1));
-
-        else:
-            wsp_s = "["; space -= 1;
-            space -= len(self.c_butt); wsp_e = ("]") + (hchar * (space - 1));
-
-        return f"\x1b[{len(wsp_s)}C\x1b[27m{self.col}{self.c_butt}";
-
-    def UP(self):
-
-        if self.ptr > 0:
-
-            CPRINT(f"\x1b[G\x1b[{self.ioffset}C");
-            CPRINT(self.start_line + self.itemAligned(self.sel) + "\x1b[0m");
-            
-            self.ptr -= 1; self.sel = self.items[self.ptr];
-            CPRINT(f"\x1b[F\x1b[{self.ioffset}C");
-            CPRINT(self.start_line + self.itemAligned_sel(self.sel) + "\x1b[0m");
-
-        elif self.ptr != -1:
-
-            CPRINT(f"\x1b[G\x1b[{self.ioffset}C");
-            CPRINT(self.start_line + self.itemAligned(self.sel) + "\x1b[0m");
-
-            self.sel = "CANCEL"; self.GOBUTT(); self.ptr = -1;
-            CPRINT(f"\x1b[{self.pad}D");
-            CPRINT(self.start_line + self.buttAligned_sel() + "\x1b[0m");
-
-        else:
-            CPRINT(f"\x1b[G\x1b[{self.ioffset}C");
-            CPRINT(self.start_line + self.buttAligned() + "\x1b[0m");
-
-            self.ptr = len(self.items)-1; self.GOBUTT(1);
-            self.sel = self.items[self.ptr];
-
-            CPRINT(f"\x1b[{self.ioffset}C");
-            CPRINT(self.start_line + self.itemAligned_sel(self.sel) + "\x1b[0m");
-
-    def DOWN(self):
-
-        if -1 < self.ptr < (len(self.items) - 1):
-
-            CPRINT(f"\x1b[G\x1b[{self.ioffset}C");
-            CPRINT(self.start_line + self.itemAligned(self.sel) + "\x1b[0m");
-
-            self.ptr += 1; self.sel = self.items[self.ptr];
-            CPRINT(f"\x1b[E\x1b[{self.ioffset}C");
-            CPRINT(self.start_line + self.itemAligned_sel(self.sel) + "\x1b[0m");
-
-        elif self.ptr != -1:
-
-            CPRINT(f"\x1b[G\x1b[{self.ioffset}C");
-            CPRINT(self.start_line + self.itemAligned(self.sel) + "\x1b[0m");
-
-            self.ptr = -1; self.sel = "CANCEL";
-            CPRINT(f"\x1b[2E\x1b[{self.ioffset}C");
-            CPRINT(self.start_line + self.buttAligned_sel() + "\x1b[0m");
-
-        else:
-            CPRINT(f"\x1b[G\x1b[{self.ioffset}C");
-            CPRINT(self.start_line + self.buttAligned() + "\x1b[0m");
-
-            self.ptr = 0; self.GOTOP(1); self.sel = self.items[self.ptr];
-            CPRINT(f"\x1b[{self.ioffset}C");
-            CPRINT(self.start_line + self.itemAligned_sel(self.sel) + "\x1b[0m");
-
-    def SELECT(self):
-        if self.ptr == -1: return self.CANCEL();
-        self.KILL(); return self.ptr + 1;
-
-    def CANCEL(self):
-        self.KILL(); return -1;
 
 #   ---     ---     ---     ---     ---
 

@@ -47,10 +47,10 @@ def AVTO_SETINC(s):
     global INCLUDES; INCLUDES = " ".join("-I%s"%fold for fold in s);
 
 def AVTO_LIBDIR(s):
-    global LIBPATH; LIBPATH  = f"-L{s}";
+    global LIBPATH; LIBPATH = f"-L{s}";
 
 def AVTO_LIBBIN(s):
-    global LIBBIN;  LIBBIN   = " ".join("-l%s"%lib  for lib  in s);
+    global LIBBIN; LIBBIN = " ".join("-l%s"%lib for lib in s);
 
 #   ---     ---     ---     ---     ---
 
@@ -108,7 +108,7 @@ def AVTO_CHKDEPS(m, name):
     AVTO_LIBBIN(libs);
 
     lp    = LIBPATH.lstrip("-L");
-    files = LISTDIR(lp, [".lib", ".dll"]);
+    files = LISTDIR(lp, ["lib"]);
 
     ref   = f"{OBJFOLD}\\{name}"
     if not OKFILE(ref): return 1;

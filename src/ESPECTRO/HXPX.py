@@ -44,6 +44,7 @@ from ESPECTRO import (
     READSIZE,
 
     WALK,
+    LISTDIR,
 
     MKDIR,
     MKFILE,
@@ -77,6 +78,37 @@ from ESPECTRO import (
 
 build_opt = ["EXE", "LIB", "DLL"];
 PX        = None;
+
+#   ---     ---     ---     ---     ---
+
+class hxLIB:
+
+    def __init__(self, name, used=0):
+        self.name    = name;
+        self.used    = used;
+        self.include = "-I"+CATPATH(ROOT(), "_include", name);
+        self.nited   = 1;
+
+    def __setattr__(self, attr, value):
+        if hasattr(self, "nited"):
+            if attr == "used":
+                if value:
+                    if self.name not in PX.libs:
+                        PX.libs.append(self.name);
+                else:
+                    if self.name in PX.libs:
+                        PX.libs.remove(self.name);
+
+        object.__setattr__(self, attr, value);
+
+    @property
+    def path():
+        return CATPATH(ROOT(), "_lib", TARGET(), self.name);
+
+    @property
+    def buildstr():
+        p=self.path; l=LISTDIR(p, exts=["lib"]);
+        return "-L"+self.path+" "+(" ".join(["-l"+(lib.split(".")[0]) for lib in l]));
 
 #   ---     ---     ---     ---     ---
 
@@ -165,16 +197,10 @@ class hxSRC:
 
 class hxMOD:
 
-    def __init__(self, name = 'MOD', subdirs=None, lib=None, lib64=None, mode = 1):
-
-        if not lib  : lib  =[];
-        if not lib64: lib64=[];
+    def __init__(self, name = 'MOD', subdirs=None, mode = 1):
 
         self.name  = name;
         self.mode  = mode;
-
-        self.lib   = lib;
-        self.lib64 = lib64;
 
         if subdirs:
             for sd in subdirs:
@@ -367,7 +393,7 @@ class hxMOD:
 
 class hxPX:
 
-    def __init__(self, name="", includes=[], modules=[], order=[], mode=0):
+    def __init__(self, name="", libs=None, modules=None, mode=0):
 
         self.name         = name;
         self.mode         = mode;
@@ -375,13 +401,13 @@ class hxPX:
         self.curmod       = "";
         self.cursub       = "";
 
-        self.add_includes = includes;
-        self.build_order  = order;
-
         global PX; PX     = self;
 
-        if modules: self.modules = [ hxMOD(**m) for m in modules ];
-        else      : self.modules = [                             ];
+        if libs: self.libs=libs;
+        else   : self.libs=[];
+
+        if modules : self.modules = [ hxMOD(**m) for m in modules ];
+        else       : self.modules = [                             ];
 
 #   ---     ---     ---     ---     ---
 
@@ -391,12 +417,9 @@ class hxPX:
 
             "name"    : self.name,
             "mode"    : self.mode,
+            "libs"    : self.libs,
 
-            "includes": self.add_includes,
-
-            "order"   : self.build_order,
-
-            "modules" : []
+            "modules" : [],
 
                                             };
 
@@ -409,9 +432,6 @@ class hxPX:
                 "name"   : m.name,
                 "mode"   : m.mode,
                 "subdirs": {},
-
-                "lib"    : m.lib,
-                "lib64"  : m.lib64
 
                                             };
 
@@ -463,7 +483,7 @@ class hxPX:
 
     @property
     def libdir(self):
-        return CATPATH(self.path, "lib", TARGET());
+        return CATPATH(ROOT(), "_lib", TARGET());
 
     @property
     def intdir(self):
@@ -519,10 +539,8 @@ class hxPX:
                 ERRPRINT("Path creation failed: you're in deep shit", err=3, rec=1);
                 return None;
 
-        folds = [ f"{p}\\src",                f"{p}\\include",
-
-                  f"{p}\\lib\\x64",           f"{p}\\lib\\Win32",
-                  f"{p}\\release\\x64\\bin",  f"{p}\\release\\Win32\\bin",
+        folds = [ f"{p}\\src",
+                  f"{p}\\bin\\x64",           f"{p}\\bin\\Win32\\",
                   f"{p}\\trashcan\\x64",      f"{p}\\trashcan\\Win32" ];
 
         for f in folds:
@@ -751,6 +769,7 @@ class hxPX:
 
     def run(self):
         if self.mode == 0:
+            DOS(f"SET PATH={CATPATH(ROOT(), '_run', TARGET())};%PATH%");
             DOS(f"{self.outdir}\\{self.name}.exe");
 
         else:
@@ -849,7 +868,19 @@ class hxPX:
 
 #   ---     ---     ---     ---     ---
 
-new_mod=None; new_src=None;
+LIBS=None; new_lib=None; new_mod=None; new_src=None;
+
+def SCANLIBS():
+
+    # default project hardcoded while we work on it
+    global PX; PX = hxPX.load("KVR");
+    global LIBS; LIBS=[]; err=0;
+
+    libfiles = LISTDIR( CATPATH(ROOT(), "_lib", "Win32") );
+    for lib in libfiles:
+        LIBS.append(hxLIB(lib, lib in PX.libs));
+
+    return err;
 
 def CONFIM_CLEAR(DO, CALL0, ARGS0, CALL1, ARGS1):
 
@@ -883,10 +914,40 @@ def PXLISTMODS(func, pghit, tgt):
 
     if region.ITEMS: KVNSL.FLREGION();
 
-def PXUI():
+def PXLISTLIBS(pghit, tgt):
 
-    # default project hardcoded while we work on it
-    global PX; PX = hxPX.load("KVR");
+    global PX, LIBS; KVNSL = GETKVNSL();
+    if KVNSL.CUR_REGION.NAME != tgt: KVNSL.CHREGION(tgt);
+    else: KVNSL.CLREGION();
+
+    pad=len(LIBS[0].name);
+    for lib in LIBS[1:]:
+        length=len(LIBS[0].name);
+        if pad < length:
+            pad = length;
+
+    pad+=5;
+
+    region = KVNSL.CUR_REGION; region.onPagHit = pghit;
+    i=0; j=0; region.PAGES=int(len(LIBS))/region.PAGESIZE; k=region.getPageOffset();
+    for lib in LIBS[region.getPageOffset():]:
+        name = lib.name;
+        name = name+(" "*(pad-len(name)))+": "+("YES" if lib.used else "NO");
+        region.addItem(2+(j*region.ITEMSIZE+2), 1+i,
+                       name, style=2, func=SETFIELD_TOGGLE, args={'ob':lib, 'field':"used",
+                       'idex':k, 'l':['NO', 'YES']});
+        i+=1; k+=1;
+
+        if i >= int(region.PAGESIZE/2):
+            j+=1; i=0;
+            if j > 1:
+                break;
+
+    if region.ITEMS: KVNSL.FLREGION();
+
+#   ---     ---     ---     ---     ---
+
+def PXUI():
 
     KVNSL = GETKVNSL();
 
@@ -930,9 +991,8 @@ def PXMAINMENU():
     region.addItem(1, 2, "SAVE", style=0, info="", func=SAVEPX);
 
     region.addItem(1, 4, "MODULES", style=0, info="", func=PXMODMENU);
-    region.addItem(1, 5, "NEW FILE", style=0, info="", func=None);
-
-    region.addItem(1, 7, "LIBS", style=0, info="", func=None);
+    region.addItem(1, 5, "FILES", style=0, info="", func=None);
+    region.addItem(1, 6, "LIBS", style=0, info="", func=PXLIBSEL);
 
     region.addItem(1, 10, "BUILD", style=0, info="Compiles the current project", func=None);
 
@@ -957,6 +1017,14 @@ def PXMODMENU():
                    info=f"Set the build order for modules",
                    func=ORDMODPX);
 
+    region.addItem(1, 7, "ADDSUB", style=0,
+                   info=f"Create a subdirectory within current module ({PX.curmod})",
+                   func=ORDMODPX);
+
+    region.addItem(1, 8, "POPSUB", style=0,
+                   info=f"Remove a subdirectory from current module ({PX.curmod})",
+                   func=ORDMODPX);
+
     region.addItem(1, 14, "BACK", style=0, info="Return to main menu",
                    func=PXDRAWMENU, args={'CALL':PXMAINMENU});
 
@@ -968,6 +1036,21 @@ def PXMODMENU():
     KVNSL.OUT(s+itm, flush=0); KVNSL.OUT(info, region=INFO, flush=1);
     region.onEscHit = (PXDRAWMENU, [PXMAINMENU]);
 
+def GLOBALINFO(s):
+    KVNSL = GETKVNSL(); KVNSL.OUT(KVNSL.CUR_SCREEN.INFO.updateBuff(s),
+                                  region=KVNSL.CUR_SCREEN.INFO)
+
+    for elem in KVNSL.CUR_REGION.ITEMS:
+        elem['info']=s;
+
+#   ---     ---     ---     ---     ---
+
+def PXLIBSEL():
+    KVNSL = GETKVNSL(); KVNSL.CUR_SCREEN.REGIONS["RPANEL"].LABELS[0]="LIBRARIES";
+    PXLISTLIBS(PXLIBSEL, "RPANEL");
+
+#   ---     ---     ---     ---     ---
+
 def SAVEPX():
     global PX; PX.save();
 
@@ -976,8 +1059,15 @@ def SELMODPX_INT(m):
     m.makecur(); KVNSL.CUR_REGION.PAGE=0;
 
     region = KVNSL.CUR_SCREEN.REGIONS['LPANEL']; region.onPagHit=None;
+
     elem   = region.ITEMS[1];
     elem['info'] = f"Select a module to edit (current: {PX.curmod})";
+
+    elem   = region.ITEMS[4];
+    elem['info'] = f"Create a subdirectory within current module ({PX.curmod})";
+
+    elem   = region.ITEMS[5];
+    elem['info'] = f"Remove a subdirectory from current module ({PX.curmod})";
 
     KVNSL.CUR_SCREEN.REGIONS["RPANEL"].LABELS[0]="";
     KVNSL.SWAPWIPE('RPANEL', 'LPANEL');
@@ -985,6 +1075,8 @@ def SELMODPX_INT(m):
 def SELMODPX():
     KVNSL = GETKVNSL(); KVNSL.CUR_SCREEN.REGIONS["RPANEL"].LABELS[0]="MODULE SELECT";
     PXLISTMODS(SELMODPX_INT, SELMODPX, "RPANEL");
+
+#   ---     ---     ---     ---     ---
 
 def ORDMODPX_INT(m):
     global PX; KVNSL = GETKVNSL();
@@ -1009,12 +1101,7 @@ def ORDMODPX():
     PXLISTMODS(ORDMODPX_INT, ORDMODPX, "RPANEL");
     GLOBALINFO("Press ENTER to relocate a module, ESCAPE to go back");
 
-def GLOBALINFO(s):
-    KVNSL = GETKVNSL(); KVNSL.OUT(KVNSL.CUR_SCREEN.INFO.updateBuff(s),
-                                  region=KVNSL.CUR_SCREEN.INFO)
-
-    for elem in KVNSL.CUR_REGION.ITEMS:
-        elem['info']=s;
+#   ---     ---     ---     ---     ---
 
 def POPMODPX():
     KVNSL = GETKVNSL(); KVNSL.CUR_SCREEN.REGIONS["RPANEL"].LABELS[0]="REMOVE MODULE";
@@ -1024,8 +1111,15 @@ def POPMODPX_END():
     global PX; KVNSL = GETKVNSL();
 
     region = KVNSL.CUR_SCREEN.REGIONS['LPANEL'];
+
     elem   = region.ITEMS[1];
     elem['info'] = f"Select a module to edit (current: {PX.curmod})";
+
+    elem   = region.ITEMS[4];
+    elem['info'] = f"Create a subdirectory within current module ({PX.curmod})";
+
+    elem   = region.ITEMS[5];
+    elem['info'] = f"Remove a subdirectory from current module ({PX.curmod})";
 
     KVNSL.CUR_SCREEN.REGIONS["RPANEL"].LABELS[0]="";
     KVNSL.SWAPWIPE('RPANEL', 'LPANEL');
@@ -1057,6 +1151,8 @@ def POPMODPX_INT(m):
                         "state", 0, ["OK"]);
 
         CINPUT_REG['PEIN'].spit = 0;
+
+#   ---     ---     ---     ---     ---
 
 def ADDMODPX():
     global PX, new_mod; KVNSL = GETKVNSL();
@@ -1113,6 +1209,8 @@ def ADDMODPX_SEND(accept=1):
     KVNSL.CUR_SCREEN.REGIONS["RPANEL"].LABELS[0]="";
     KVNSL.SWAPWIPE("RPANEL", "LPANEL");
 
+#   ---     ---     ---     ---     ---
+
 CINPUT_REG=None;
 def SETFIELD_CINPUT(ob, field, idex):
     KVNSL = GETKVNSL(); CURSOR = GETKVRSOR();
@@ -1151,6 +1249,8 @@ def SETFIELD_CINPUT_INT():
 
     return x;
 
+#   ---     ---     ---     ---     ---
+
 def SETFIELD_TOGGLE(ob, field, idex, l):
     KVNSL = GETKVNSL(); CURSOR = GETKVRSOR();
     region = KVNSL.CUR_REGION; elem = region.ITEMS[idex];
@@ -1179,6 +1279,8 @@ def SETFIELD_TOGGLE_INT():
         del PEIN; CINPUT_REG=None;
 
     return x;
+
+#   ---     ---     ---     ---     ---
 
 def SHUFFIELD_INT():
     global CINPUT_REG; PEIN, INFO = CINPUT_REG.values();
