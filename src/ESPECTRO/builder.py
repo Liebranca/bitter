@@ -34,8 +34,7 @@ from ESPECTRO import (
 OBJFOLD  = "";
 SRCFOLD  = "";
 INCLUDES = "";
-LIBPATH  = "";
-LIBBIN   = "";
+LIBS     = "";
 
 def AVTO_SETOUT(s):
     global OBJFOLD; OBJFOLD = s;
@@ -43,14 +42,19 @@ def AVTO_SETOUT(s):
 def AVTO_SETIN (s):
     global SRCFOLD; SRCFOLD = s;
 
-def AVTO_SETINC(s):
-    global INCLUDES; INCLUDES = " ".join("-I%s"%fold for fold in s);
+def AVTO_INCLUDES(s, ap=0):
+    global INCLUDES;
+    if ap:
+        INCLUDES = INCLUDES+" "+s;
+    else:
+        INCLUDES = s;
 
-def AVTO_LIBDIR(s):
-    global LIBPATH; LIBPATH = f"-L{s}";
-
-def AVTO_LIBBIN(s):
-    global LIBBIN; LIBBIN = " ".join("-l%s"%lib for lib in s);
+def AVTO_LIBS(s, ap=0):
+    global LIBS;
+    if ap:
+        LIBS = LIBS+" "+s;
+    else:
+        LIBS = s;
 
 #   ---     ---     ---     ---     ---
 
@@ -60,17 +64,14 @@ def AVTO_CLEAN(ext):
 def AVTO_SRCBUILD(src, obj, gcc):
 
     if OKFILE(obj): DOS(f"@del {obj}");     # delete pre-existing .o
-    print(src.split("\\")[-1]); _w = " -Wall " if FKWALL() else " "
+    ERRPRINT(src.split("\\")[-1], err=-1); _w = " -Wall " if FKWALL() else " "
 
     s = f"@{gcc}{_w}-MMD {INCLUDES} -c {src} -o {obj} 2> {LOGOS()}";
     DOS(s); mess = SYSREAD();
 
     if mess:
-
         isWarning = OKFILE(obj);            # if file was created, it was just a warning
-
-        mess = f"\n{mess}";
-        ERRPRINT(mess, err=1 if isWarning else 3, rec=3);
+        ERRPRINT(mess, err=1 if isWarning else 2, rec=3);
 
         if not isWarning       : return 3;  # stop compile; error flag
         elif   FATAL_WARNINGS(): return 2;  # stop compile; warning flag
@@ -100,15 +101,9 @@ def AVTO_CHKFILE(f, gcc, brute=0):
 
 #   ---     ---     ---     ---     ---
 
-def AVTO_CHKDEPS(m, name):
+def AVTO_CHKDEPS(m, name, libs=None):
 
-    libs  = m.lib if TARGET() == 'x32' else m.lib64;
     if not libs: return 0;
-
-    AVTO_LIBBIN(libs);
-
-    lp    = LIBPATH.lstrip("-L");
-    files = LISTDIR(lp, ["lib"]);
 
     ref   = f"{OBJFOLD}\\{name}"
     if not OKFILE(ref): return 1;
@@ -116,23 +111,7 @@ def AVTO_CHKDEPS(m, name):
 #   ---     ---     ---     ---     ---
 
     for lib in libs:
-
-        full = ""; i = 0;
-        for f in files:
-
-            if EXTSOLVE(lib, f):
-                full = files.pop(i);
-                break;
-
-            i += 1;
-
-        if not full:
-            ERRPRINT(f"{m.name} missing dependency {lib} in <{lp}>", err=3, rec=3);
-            return 1;
-
-        f = f"{lp}\\{full}"
-        x = MTIMELT([f, ref]);
-
+        x = MTIMELT([lib, ref]);
         if x == ref:
             return 1;
 
@@ -146,18 +125,16 @@ def AVTO_MKEXE(olist, gcc, name):
     if OKFILE(exe): DOS(f"@del {exe}");
 
     olist = " ".join(fname for fname in olist); _w = " -Wall " if FKWALL() else " "
-    DOS(f"@{gcc}{_w}{olist} -o {exe} {LIBPATH} {LIBBIN} 2> {LOGOS()}");
+    DOS(f"@{gcc}{_w}{olist} -o {exe} {LIBS} 2> {LOGOS()}");
 
     mess = SYSREAD();
     if mess:
-
         isWarning = OKFILE(exe);
-
-        mess = f"\n{mess}";
-        ERRPRINT(mess, err=1 if isWarning else 3, rec=3);
+        ERRPRINT(mess, err=1 if isWarning else 2, rec=3);
 
         if not isWarning or FATAL_WARNINGS():
-            DOS(f"@del {exe}"); ERRPRINT("BAD EXE; terminated.", err=3, rec=3);
+            if OKFILE(exe): DOS(f"@del {exe}");
+            ERRPRINT("BAD EXE; terminated.", err=3, rec=3);
             return (exe, 1);
 
     return (exe, 0);
@@ -172,14 +149,12 @@ def AVTO_MKLIB(olist, ar, name):
 
     mess = SYSREAD();
     if mess:
-
         isWarning = OKFILE(lib);
-
-        mess = f"\n{mess}";
-        ERRPRINT(mess, err=1 if isWarning else 3, rec=3);
+        ERRPRINT(mess, err=1 if isWarning else 2, rec=3);
 
         if not isWarning or FATAL_WARNINGS():
-            DOS(f"@del {lib}"); ERRPRINT("BAD LIB; terminated.", err=3, rec=3);
+            if OKFILE(lib): DOS(f"@del {lib}");
+            ERRPRINT("BAD LIB; terminated.", err=3, rec=3);
             return (lib, 1);
 
     return (lib, 0);
@@ -194,14 +169,12 @@ def AVTO_MKDLL(olist, gcc, name):
 
     mess = SYSREAD();
     if mess:
-
         isWarning = OKFILE(dll);
-
-        mess = f"\n{mess}";
-        ERRPRINT(mess, err=1 if isWarning else 3, rec=3);
+        ERRPRINT(mess, err=1 if isWarning else 2, rec=3);
 
         if not isWarning or FATAL_WARNINGS():
-            DOS(f"@del {dll}"); ERRPRINT("BAD DLL; terminated.", err=3, rec=3);
+            if OKFILE(dll): DOS(f"@del {dll}");
+            ERRPRINT("BAD DLL; terminated.", err=3, rec=3);
             return (dll, 1);
 
     return (dll, 0);

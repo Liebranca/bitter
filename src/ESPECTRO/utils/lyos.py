@@ -379,7 +379,6 @@ class CSTR:
         if buff:
             i=0; j=0; k=0; escape=0;
             while j < len(buff):
-
                 char=buff[j];
 
                 if char=="$":
@@ -394,7 +393,6 @@ class CSTR:
 
                 if not escape:
                     self.buff[i]=char; i+=1;
-
                 else:
                     self.escapes[k][1]=self.escapes[k][1]+char;
 
@@ -404,6 +402,7 @@ class CSTR:
         self.linenum  = linenum;
         self.pages    = pages;
         self.pagesize = linesize*linenum;
+        self.maxsize  = self.pagesize*self.pages;
 
     def COPY(self, buff):
         return CSTR(buff=buff, linesize=self.linesize, linenum=self.linenum, pages=self.pages);
@@ -418,7 +417,7 @@ class CSTR:
 
         if isinstance(idex, slice):
             l=[ i for i in range( *idex.indices(self.pagesize*self.pages) ) ];
-            if len(l)>1: start, stop=l[0], l[-1];
+            if len(l)>1: start, stop=l[0], l[-1]+1;
             else: start, stop=0,1;
         else:
             start, stop=idex, idex+1;
@@ -846,19 +845,30 @@ class REGION:
 
     def addBuff(self, new_s):
 
+        if not new_s: return 0;
+
         frmtd = ""; cur=0; PAGESIZE=self.VSPACE*self.pad;
         for y in range( (self.VSPACE*self.PAGES) ):
 
-            new_s=CSTR(buff=new_s, linenum=1, linesize=len(new_s), pages=1);
-            line=[]; space=self.pad;
+            new_s=CSTR(buff=new_s, linenum=20, linesize=74, pages=4);
+            line=[]; space=self.pad; breakline=0;
 
             for sub in new_s[cur:cur+space].split(" "):
-                sub = CSTR(sub + " ", linenum=1, linesize=len(new_s), pages=1);
+
+                if "\n" in sub:
+                    breakline=1; sub=sub.replace("\n", "");
+
+                sub = CSTR(sub + " ", linenum=20, linesize=74, pages=4);
+
                 length=len(sub);
 
                 if (length-1) < space:
                     line.append(repr(sub)); space-=length; cur+=length;
 
+                else        : break;
+                if breakline: break;
+
+            if not len([sub for sub in line if sub.replace(" ", "")]): continue;
             line.append(" "*(space));
             frmtd = frmtd + ("".join(line));
             if cur > len(new_s): break;
@@ -1208,6 +1218,9 @@ class KVNSL:
             if not isinstance(s, str): s=str(s);
 
         ERRPRINT(*args, **kwargs); self.OUT(self.DEBUGREG.appBuff());
+
+    def DEBUG_SPIT(self):
+        self.OUT(self.DEBUGREG.appBuff(), region=self.DEBUGREG);
 
     def RUN(self):
 
@@ -1987,9 +2000,10 @@ def SYSREAD(i=0, clear=1):
     F = [KVRLOG, KVRIN][i];
 
     global hxEPRINT; hxEPRINT = 0;
+    log="";
 
     try:
-        log = RDFILE(F, rl=1, trunc=clear, ask=0)[0];
+        log = RDFILE(F, rl=1, rl_sep=" ", trunc=clear, ask=0)[0];
     finally:
         hxEPRINT = 1;
 

@@ -87,9 +87,8 @@ from .builder import (
 
     AVTO_SETOUT,
     AVTO_SETIN,
-    AVTO_SETINC,
-    AVTO_LIBDIR,
-    AVTO_LIBBIN,
+    AVTO_INCLUDES,
+    AVTO_LIBS,
 
     AVTO_CHKFILE,
     AVTO_CHKDEPS,

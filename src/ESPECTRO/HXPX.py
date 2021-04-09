@@ -7,7 +7,8 @@
 #                                         #
 #   ---     ---     ---     ---     ---   #
 
-from ESPECTRO import (
+from dataclasses import dataclass
+from ESPECTRO    import (
 
     ROOT,
     CC,
@@ -26,6 +27,7 @@ from ESPECTRO import (
     GETKVRSOR,
 
     DOS,
+    ERRPRINT,
 
     clnstr,
     clnpth,
@@ -62,9 +64,8 @@ from ESPECTRO import (
 
     AVTO_SETOUT,
     AVTO_SETIN,
-    AVTO_SETINC,
-    AVTO_LIBDIR,
-    AVTO_LIBBIN,
+    AVTO_INCLUDES,
+    AVTO_LIBS,
 
     AVTO_CHKFILE,
     AVTO_CHKDEPS,
@@ -83,11 +84,16 @@ PX        = None;
 
 class hxLIB:
 
-    def __init__(self, name, used=0):
-        self.name    = name;
-        self.used    = used;
-        self.include = "-I"+CATPATH(ROOT(), "_include", name);
-        self.nited   = 1;
+    def __init__(self, name, used=0, ext=1):
+
+        self.name = name;
+        self.used = used;
+        self.ext  = ext;
+
+        if ext==1: self.include = "-I"+CATPATH(ROOT(), "_include", name);
+        else     : self.include = "-I"+CATPATH(ROOT(), ext, "src", name);
+
+        self.nited = 1;
 
     def __setattr__(self, attr, value):
         if hasattr(self, "nited"):
@@ -102,11 +108,12 @@ class hxLIB:
         object.__setattr__(self, attr, value);
 
     @property
-    def path():
-        return CATPATH(ROOT(), "_lib", TARGET(), self.name);
+    def path(self):
+        if self.ext==1: return CATPATH(ROOT(), "_lib", TARGET(), self.name);
+        else          : return CATPATH(ROOT(), ext, "trashcan", TARGET(), name);
 
     @property
-    def buildstr():
+    def buildstr(self):
         p=self.path; l=LISTDIR(p, exts=["lib"]);
         return "-L"+self.path+" "+(" ".join(["-l"+(lib.split(".")[0]) for lib in l]));
 
@@ -304,10 +311,8 @@ class hxMOD:
         
         if sub in self.subdirs:
             del self.subdirs[sub];
-
-            PX.cursub = sub; fdpath = PX.at;
-            r = CHOICE("Delete submodule %s?"%sub);
-            if r == 1: DELD(fdpath);
+            PX.cursub=sub; fdpath=PX.at;
+            DELD(fdpath);
 
             self.makecur();
 
@@ -491,7 +496,7 @@ class hxPX:
 
     @property
     def outdir(self):
-        return CATPATH(self.path, "release", TARGET());
+        return CATPATH(self.path, "bin", TARGET());
 
 #   ---     ---     ---     ---     ---
 
@@ -635,53 +640,11 @@ class hxPX:
 
 #   ---     ---     ---     ---     ---
 
-    def setBuildOrder(self):
-
-        tmp = [ m for m in self.modules if m.name != '__main__' ]; tmp.append(0);
-
-        if len(self.build_order) != len(self.modules):
-            self.build_order = [ i for i in range(len(self.modules)) ];
-
-        x = 0;
-        for m in self.modules:
-
-            if len([t for t in tmp if t]) == 1:
-
-                                            # solid competitor for ugliest shit ever written
-                                            # worst part is i understand why it works
-
-                self.build_order[x] =       (
-
-                                            self.modules.index(                              #
-                                                [ m for m, t in zip(self.modules, tmp)       #
-                                                    if  m == t and m.name != '__main__' ][0] #
-                                            )                                                );
-
-                continue;
-
-            if m.name == '__main__': continue;
-
-            i = MULTICHOICE(f"SLOT {x}", [m for m in tmp if m]);
-            if not i: break;
-
-            self.build_order[x] = i-1; tmp[i-1] = 0; x += 1;
-
-        self.build_order[-1] = self.modules.index( [ m for m in self.modules
-                                                       if  m.name == '__main__' ][0] );
-
-    def orderedModules(self):
-
-        if len(self.build_order) != len(self.modules):
-            print(f"Set the build order for {self.name}")
-            self.setBuildOrder();
-
-        return [self.modules[x] for x in self.build_order];
-
-#   ---     ---     ---     ---     ---
-
     def build(self, brute=0):
 
         global PX; PX = self;
+        KVNSL=GETKVNSL(); KVNSL.DEBUG_TOGGLE();
+        KVNSL.DEBUG_OUT(["Compilation started"], {"err":0});
 
         BTIME('rnow');                      # sets time value for all timestamps to right now
                                             # ensures there's no variance in mod/access time
@@ -696,12 +659,13 @@ class hxPX:
         gcc     = cc + "gcc.exe";
         ar      = cc + "ar.exe"
 
-        abort   = 0;
+        abort   = 0; i=0; intfiles=[];
 
-        AVTO_SETINC(self.includes);
-        AVTO_LIBDIR(libdir       );
+        for lib in LIBS:
+            AVTO_INCLUDES(lib.include,  i!=0);
+            AVTO_LIBS    (lib.buildstr, i!=0); i=1;
 
-        for m in self.orderedModules():
+        for m in self.modules:
 
             self.curmod = m;
             outdir = outbase + "\\" + m.name
@@ -720,9 +684,13 @@ class hxPX:
 
                 for f in _files:            # compile into .o if necessary
                     ofile, cf = AVTO_CHKFILE(f, gcc, brute);
+                    if cf > 0:
+                        KVNSL.DEBUG_SPIT();
                     if cf in [2, 3]:
-                        if   cf == 2: print("ABORT: Compile warnings (FATAL_WARNINGS is ON)");
-                        elif cf == 3: print("ABORT: Compile errors");
+                        if   cf == 2:
+                            ERRPRINT("Compile warnings (FATAL_WARNINGS is ON)");
+                        elif cf == 3:
+                            ERRPRINT("Compile errors");
 
                         abort = True; break;
 
@@ -734,18 +702,16 @@ class hxPX:
 
             if abort: break;
 
-            if m.name == '__main__':
-                n = self.name; AVTO_SETOUT(release);
-                DEPS = AVTO_CHKDEPS(m, f"{n}.exe");
-
-            elif m.mode == 0:
-                n = m.name; AVTO_SETOUT(f"{release}\\bin");
-                DEPS = AVTO_CHKDEPS(m, f"{n}.exe");
+            if m.name == '__main__' or m.mode == 0:
+                n = self.name; outdir=release;
+                if m.mode==0: DEPS = AVTO_CHKDEPS(m, f"{n}.exe", intfiles);
 
             else:
                 n = m.name; DEPS = 0;
-                AVTO_SETOUT(libdir);
+                if m.name == '__main__': outdir=release;
+                else: outdir=outbase + "\\" + m.name;
 
+            AVTO_SETOUT(outdir);
             if len(mfiles) or DEPS:
 
                 if fcount != -len(mfiles) or brute or DEPS:
@@ -759,11 +725,22 @@ class hxPX:
                         break;
 
                 else:
-                    print(f"{m.name} is up to date");
+                    ERRPRINT(f"{m.name} is up to date");
+
+            if m.mode == 1 and OKFILE(CATPATH(outdir, m.name+".lib")):
+                AVTO_INCLUDES(f"-I{m.path}",            1);
+                AVTO_LIBS    (f"-L{outdir} -l{m.name}", 1);
+
+                intfiles.append(CATPATH(outdir, m.name+".lib"));
 
 #   ---     ---     ---     ---     ---
 
+        KVNSL.DEBUG_SPIT();
+        #KVNSL.DEBUG_TOGGLE();
+
         if self.mode == 0 and not abort:    # ask run after compile
+
+            # send this block to an intermediate call
             i = CHOICE("\nBuild ready. Run?")
             if i == 1: self.run();
 
@@ -796,7 +773,7 @@ class hxPX:
             AVTO_CLEAN("o"); AVTO_CLEAN("d");
 
             if m.mode in (1, 2):
-                AVTO_SETOUT(libbase);
+                AVTO_SETOUT(outbase);
                 AVTO_CLEAN(".lib"); AVTO_CLEAN(".dll");
 
             else:
@@ -868,7 +845,7 @@ class hxPX:
 
 #   ---     ---     ---     ---     ---
 
-LIBS=None; new_lib=None; new_mod=None; new_src=None;
+LIBS=None; new_sub=None; new_mod=None; new_src=None;
 
 def SCANLIBS():
 
@@ -905,6 +882,29 @@ def PXLISTMODS(func, pghit, tgt):
 
         region.addItem(2+(j*region.ITEMSIZE+2), 1+i,
                        name, style=2, func=func, args={"m":m});
+        i+=1;
+
+        if i >= int(region.PAGESIZE/2):
+            j+=1; i=0;
+            if j > 1:
+                break;
+
+    if region.ITEMS: KVNSL.FLREGION();
+
+def PXLISTSUBS(func, pghit, tgt):
+
+    global PX; KVNSL = GETKVNSL();
+    if KVNSL.CUR_REGION.NAME != tgt: KVNSL.CHREGION(tgt);
+    else: KVNSL.CLREGION();
+
+    region = KVNSL.CUR_REGION; region.onPagHit = pghit;
+    i=0; j=0; region.PAGES=int(len(PX.curmod.subdirs))/region.PAGESIZE;
+
+    for sd in list(PX.curmod.subdirs.keys())[region.getPageOffset():]:
+        name = sd if sd != "__main__" else "MAIN";
+
+        region.addItem(2+(j*region.ITEMSIZE+2), 1+i,
+                       name, style=2, func=func, args={"sd":sd});
         i+=1;
 
         if i >= int(region.PAGESIZE/2):
@@ -974,8 +974,7 @@ def PXUI():
 
     PX_LAYOUT = LAYOUT ([INFO, LPANEL, RPANEL]);
 
-    DOS("@ECHO OFF && CLS");
-    KVNSL.CLS();
+    DOS("@ECHO OFF && CLS"); KVNSL.CLS();
     KVNSL.NEW_SCREEN("USER", PX_LAYOUT);
     KVNSL.CHREGION("LPANEL"); PXMAINMENU(); KVNSL.FILLSCREEN();
     DOS('TITLE %__SLAVE%%_PLATFORM% (ESPECTRO)'); itm, info = KVNSL.RNAVIGATE(0);
@@ -994,7 +993,8 @@ def PXMAINMENU():
     region.addItem(1, 5, "FILES", style=0, info="", func=None);
     region.addItem(1, 6, "LIBS", style=0, info="", func=PXLIBSEL);
 
-    region.addItem(1, 10, "BUILD", style=0, info="Compiles the current project", func=None);
+    region.addItem(1, 10, "BUILD", style=0,
+                   info="Compiles the current project", func=PX.build, args={"brute":0});
 
     return "LPANEL";
 
@@ -1005,25 +1005,25 @@ def PXMODMENU():
     KVNSL.CLREGION("LPANEL", f"{PX.name}/MODULES");
 
     region.addItem(1, 2, "NEW", style=0, info="Create a new module", func=ADDMODPX);
-    region.addItem(1, 3, "SELECT", style=0,
+    region.addItem(1, 4, "SELECT", style=0,
                    info=f"Select a module to edit (current: {PX.curmod})",
                    func=SELMODPX);
 
-    region.addItem(1, 4, "REMOVE", style=0,
+    region.addItem(1, 5, "REMOVE", style=0,
                    info=f"Remove a module from project",
                    func=POPMODPX);
 
-    region.addItem(1, 5, "ORDER", style=0,
+    region.addItem(1, 6, "ORDER", style=0,
                    info=f"Set the build order for modules",
                    func=ORDMODPX);
 
-    region.addItem(1, 7, "ADDSUB", style=0,
+    region.addItem(1, 8, "ADDSUB", style=0,
                    info=f"Create a subdirectory within current module ({PX.curmod})",
-                   func=ORDMODPX);
+                   func=ADDSUBPX);
 
-    region.addItem(1, 8, "POPSUB", style=0,
+    region.addItem(1, 9, "POPSUB", style=0,
                    info=f"Remove a subdirectory from current module ({PX.curmod})",
-                   func=ORDMODPX);
+                   func=POPSUBPX);
 
     region.addItem(1, 14, "BACK", style=0, info="Return to main menu",
                    func=PXDRAWMENU, args={'CALL':PXMAINMENU});
@@ -1208,6 +1208,110 @@ def ADDMODPX_SEND(accept=1):
     new_mod = None;
     KVNSL.CUR_SCREEN.REGIONS["RPANEL"].LABELS[0]="";
     KVNSL.SWAPWIPE("RPANEL", "LPANEL");
+
+#   ---     ---     ---     ---     ---
+
+@dataclass
+class hxSUB:                                # has no real reason to exist;
+    name: str;
+
+def ADDSUBPX():
+    global PX, new_sub; KVNSL = GETKVNSL();
+    KVNSL = GETKVNSL(); KVNSL.CUR_SCREEN.REGIONS["RPANEL"].LABELS[0]="NEW MODULE";
+    KVNSL.CHREGION("RPANEL");
+
+    if not new_sub: new_sub=hxSUB("SUB");
+
+    region = KVNSL.CUR_REGION;
+    region.addItem(2, 1, f"Name: {new_sub.name}", style=2, info="Name for this submodule",
+                   func=SETFIELD_CINPUT, args={'ob':new_sub, 'field':"name", 'idex':0});
+
+    region.addItem(2, 3, "Accept", style=1, info="Create submodule",
+                   func=ADDSUBPX_SEND, args={'accept':1});
+    region.addItem(2, 4, "Cancel", style=1, info="Discard and return",
+                   func=ADDSUBPX_SEND, args={'accept':0});
+
+    KVNSL.FLREGION();
+
+def ADDSUBPX_SEND(accept=1):
+    global PX, new_sub; KVNSL = GETKVNSL();
+    if accept:
+
+        repeat = [sd for sd in PX.curmod.subdirs if new_sub.name == sd];
+        if not repeat:
+            PX.curmod.subdirs[new_sub.name]={};
+
+        PX.cursub=new_sub.name; fdpath=PX.at;
+
+        if not OKPATH(fdpath):
+            MKDIR(fdpath);
+
+        else:
+            KVNSL.CLREGION(); region = KVNSL.CUR_REGION;
+            region.addItem(1, 1, "Submodule directory found. Scan?  ", style=0,);
+            KVNSL.FLREGION();
+
+            KVNSL.CUR_SCREEN.REGIONS["RPANEL"].LABELS[0]="";
+            SETFIELD_TOGGLE(PSEUDOPOP(CONFIM_CLEAR,
+                            (PX.curmod.scanfold, [fdpath],
+                             KVNSL.SWAPWIPE, ("RPANEL", "LPANEL"))),
+
+                            "state", 0, ["YES", "NO"]);
+
+            CINPUT_REG['PEIN'].spit = 0; new_sub = None;
+            return;
+
+    new_sub = None;
+    KVNSL.CUR_SCREEN.REGIONS["RPANEL"].LABELS[0]="";
+    KVNSL.SWAPWIPE("RPANEL", "LPANEL");
+
+#   ---     ---     ---     ---     ---
+
+
+def POPSUBPX():
+    KVNSL = GETKVNSL(); KVNSL.CUR_SCREEN.REGIONS["RPANEL"].LABELS[0]="REMOVE SUBMODULE";
+    PXLISTSUBS(POPSUBPX_INT, POPSUBPX, "RPANEL");
+
+def POPSUBPX_END():
+    global PX; KVNSL = GETKVNSL();
+
+    region = KVNSL.CUR_SCREEN.REGIONS['LPANEL'];
+
+    """ replace this with cur submodule mambo later
+    elem   = region.ITEMS[1];
+    elem['info'] = f"Select a module to edit (current: {PX.curmod})";
+    """
+
+    KVNSL.CUR_SCREEN.REGIONS["RPANEL"].LABELS[0]="";
+    KVNSL.SWAPWIPE('RPANEL', 'LPANEL');
+
+def POPSUBPX_INT(sd):
+    global PX; KVNSL = GETKVNSL();
+    region = KVNSL.CUR_REGION; region.onPagHit=None; region.PAGE=0;
+
+    if sd != "__main__":
+        KVNSL.CLREGION(); region.addItem(1, 1, f"Remove submodule?  ", style=0);
+        KVNSL.FLREGION(); SETFIELD_TOGGLE(PSEUDOPOP(CONFIM_CLEAR,
+                                          (PX.curmod.popfold, [sd],
+                                           POPMODPX_END, [ ] )),
+
+                                           "state", 0, ["YES", "NO"]);
+
+        KVNSL.OUT(KVNSL.CUR_SCREEN.INFO.updateBuff(f"Removing submodule {sd}"));
+        CINPUT_REG['PEIN'].spit = 0;
+
+    else:
+        KVNSL.CLREGION(); region = KVNSL.CUR_REGION; region.onPagHit=None;
+        region.addItem(1, 1, f"MAIN cannot be deleted. Got it?  ", style=0);
+        KVNSL.FLREGION();
+
+        SETFIELD_TOGGLE(PSEUDOPOP(CONFIM_CLEAR,
+                        (None, [],
+                         POPSUBPX_END, [ ] ), valid=[1]),
+
+                        "state", 0, ["OK"]);
+
+        CINPUT_REG['PEIN'].spit = 0;
 
 #   ---     ---     ---     ---     ---
 
