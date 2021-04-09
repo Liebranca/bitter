@@ -7,6 +7,7 @@
 #                                         #
 #   ---     ---     ---     ---     ---   #
 
+from threading   import Thread;
 from dataclasses import dataclass
 from ESPECTRO    import (
 
@@ -19,6 +20,7 @@ from ESPECTRO    import (
     TOGGLEFIELD,
     PSEUDOPOP,
     SHUFFLER,
+    CONFIRMER,
 
     COORD,
     REGION,
@@ -640,6 +642,52 @@ class hxPX:
 
 #   ---     ---     ---     ---     ---
 
+    def build_wrap(self, brute=0):
+
+        KVNSL = GETKVNSL(); self.ABORT_BUILD=0;
+
+        # just numbers for the progress bar
+        tasks=[ [1,0], [2,0] ];
+        for m in self.modules:
+            for sd in m.subdirs:
+                _files = [ f for f in m.listfiles(sd)     # this is ugly
+                           if f[1].ext in COMP_LANG    ]; # if fdata.ext reqs compile
+
+                num=len(_files); tasks[0][1]+=num; tasks[1][1]+=int(num!=0);
+
+        KVNSL.MAKEPROG(tasks);
+        t1=Thread(target=KVNSL.SYNC_CLOCKBAR, args=['PROGBAR']); t1.start();
+        t2=Thread(target=self.build, args=[brute]); t2.start();
+
+        t2.join(); t1.join();
+
+        KVNSL.AP_INTCALL("ENDBUILD", self.ENDBUILD, (), 1);
+        global CINPUT_REG; CINPUT_REG={'PEIN':CONFIRMER(), 'CALL':None};
+
+        if self.ABORT_BUILD or self.mode!=0:
+            ERRPRINT("Press ESC or ENTER to go back... ");
+        elif self.mode==0:
+            ERRPRINT(f"Press ENTER to run {self.name} or ESC to go back... ");
+            CINPUT_REG["CALL"]=self.run;
+
+        KVNSL.DEBUG_SPIT();
+        del self.ABORT_BUILD;
+
+    def ENDBUILD(self):
+
+        global CINPUT_REG; PEIN, CALL = CINPUT_REG.values();
+        KVNSL=GETKVNSL(); x=PEIN.RUN();
+
+        if x:
+
+            if CALL and "!" in x:
+                x=x[:-1]; CALL(); KVNSL.CLOCK.wait(0);
+
+            x = x+f"$:KVNSL_H.DL_INTCALL('ENDBUILD', 1);>";
+            KVNSL.PROGBAR.wipe(); del KVNSL.PROGBAR; KVNSL.PROGBAR=None;
+
+        return x;
+
     def build(self, brute=0):
 
         global PX; PX = self;
@@ -660,18 +708,6 @@ class hxPX:
         ar      = cc + "ar.exe"
 
         abort   = 0; i=0; intfiles=[];
-
-        # just numbers for the progress bar
-        tasks=[ [1,0], [2,0] ];
-        for m in self.modules:
-            for sd in m.subdirs:
-                _files = [ f for f in m.listfiles(sd)     # this is ugly
-                           if f[1].ext in COMP_LANG    ]; # if fdata.ext reqs compile
-
-                num=len(_files); tasks[0][1]+=num;
-                if num: tasks[1][1]+=1;
-
-        KVNSL.MAKEPROG(tasks);
 
         for lib in LIBS:
             AVTO_INCLUDES(lib.include,  i!=0);
@@ -695,8 +731,9 @@ class hxPX:
                            if f[1].ext in COMP_LANG    ];
 
                 for f in _files:            # compile into .o if necessary
-                    ofile, cf = AVTO_CHKFILE(f, gcc, brute); KVNSL.PROGBAR.taskDone(0);
-                    KVNSL.DEBUG_SPIT();
+
+                    ofile, cf = AVTO_CHKFILE(f, gcc, brute);
+                    KVNSL.PROGBAR.taskDone(0); KVNSL.DEBUG_SPIT();
 
                     if cf in [2, 3]:
                         if   cf == 2:
@@ -748,16 +785,15 @@ class hxPX:
 
 #   ---     ---     ---     ---     ---
 
-        if not abort: KVNSL.PROGBAR.finish();
-        KVNSL.DEBUG_SPIT(); #KVNSL.PROGBAR.wipe(); 
-        del KVNSL.PROGBAR; KVNSL.PROGBAR=None;
-        #KVNSL.DEBUG_TOGGLE();
+        KVNSL.PROGBAR.finish();
+        self.ABORT_BUILD=abort;
 
-        if self.mode == 0 and not abort:    # ask run after compile
+        if abort:
+            ERRPRINT("Compilation failed", err=3);
+        else:
+            ERRPRINT("Compilation succeeded");
 
-            # send this block to an intermediate call
-            i = CHOICE("\nBuild ready. Run?")
-            if i == 1: self.run();
+        KVNSL.DEBUG_SPIT();
 
     def run(self):
         if self.mode == 0:
@@ -1009,7 +1045,7 @@ def PXMAINMENU():
     region.addItem(1, 6, "LIBS", style=0, info="", func=PXLIBSEL);
 
     region.addItem(1, 10, "BUILD", style=0,
-                   info="Compiles the current project", func=PX.build, args={"brute":1});
+                   info="Compiles the current project", func=PX.build_wrap, args={"brute":0});
 
     return "LPANEL";
 
@@ -1281,7 +1317,6 @@ def ADDSUBPX_SEND(accept=1):
     KVNSL.SWAPWIPE("RPANEL", "LPANEL");
 
 #   ---     ---     ---     ---     ---
-
 
 def POPSUBPX():
     KVNSL = GETKVNSL(); KVNSL.CUR_SCREEN.REGIONS["RPANEL"].LABELS[0]="REMOVE SUBMODULE";

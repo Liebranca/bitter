@@ -7,6 +7,6 @@
 
 void main() {
 
-    ;
+    printf("I RAN\n");
 
 }

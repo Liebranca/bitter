@@ -24,6 +24,7 @@ from .utils.lyos import (
     TOGGLEFIELD,
     PSEUDOPOP,
     SHUFFLER,
+    CONFIRMER,
 
     DOS,
     CLS,

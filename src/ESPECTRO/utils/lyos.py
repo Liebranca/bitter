@@ -15,11 +15,14 @@ from   time           import time as rnow, sleep;
 
 import os, sys, atexit, time;
 
+fBy        = 0.0;
 sys.ps1    = '>';
 sys.ps2    = '-';
 
 FATAL      = -255;
 ERROR      = -254;
+
+#   ---     ---     ---     ---     ---
 
 def DISCOUNT_ESCAPES(S, space):
 
@@ -885,12 +888,14 @@ class REGION:
         return trigger;
 
     def appBuff(self):
-        s=""; length=len(self.BUFF);
+        s=""; length=len(self.BUFF); i=0;
         self.BUFF_PTR=(self.VSPACE*self.pad*self.PAGE)+(self.pad*self.BUFF_WRIT);
         for y in range(self.RECT.ty+1+self.BUFF_WRIT, self.RECT.by):
-            s = s + self.spitBuff(y); self.BUFF_WRIT+=1;
+            s = s + self.spitBuff(y);
             if self.BUFF_PTR >= length: break;
+            i+=1;
 
+        self.BUFF_WRIT=i;
         return s;
 
     def refBuff(self):
@@ -1031,6 +1036,7 @@ class KVNSL:
         self.PREVSCR   = "";
 
         self.PROGBAR   = None;
+        self.CLOCK     = None;
 
         CURSOR.JUMP(1,22);
 
@@ -1224,32 +1230,31 @@ class KVNSL:
     def DEBUG_SPIT(self):
         self.OUT(self.DEBUGREG.appBuff(), region=self.DEBUGREG);
 
+    def SYNC_CLOCKBAR(self, attr):
+
+        self.CLOCK.wait(1);
+        while not self.PROGBAR.DONE:
+            self.CLOCK.FRAME_BEGIN();
+            self.PROGBAR.update(); self.CLOCK.DRAW();
+            self.CLOCK.FRAME_END();
+
+        self.CLOCK.wait(0);
+
     def MAKEPROG(self, tasks):
         self.PROGBAR=PROGBAR( tasks, (3,23), 72 );
 
     def RUN(self):
 
-        ptr = 0; s = "►▼◄▲";
-
         CURSOR.SAVE(); CURSOR.JUMP(1, 23);
         col0=MSCPX(PALETTE['BACK']); col1=MSCPX(PALETTE['SEL1']);
 
-        CPRINT(f"\x1b[?25l{col0}\x1b[K");
-
-        # TODO: make an actual clock to propertly handle this loop
-        FPS=60; frametime=(1/FPS); framedelta=0.0;
-        framestart=0.0; framestop=0.0; fBy = 0.0;
-
-        CURSOR.LOAD(); shift=0; animframe=0.0; animrate=frametime*6;
+        CPRINT(f"\x1b[?25l{col0}\x1b[K"); CURSOR.LOAD();
 
 #   ---     ---     ---     ---     ---
 
         while True:
 
-            framestart = rnow();
-            if framestop: framedelta += (framestart - framestop);
-
-            CURSOR.SAVE();
+            CURSOR.SAVE(); self.CLOCK.FRAME_BEGIN();
 
 #   ---     ---     ---     ---     ---
 
@@ -1280,12 +1285,7 @@ class KVNSL:
 
 #   ---     ---     ---     ---     ---
 
-                    if isinstance(x, str):
-                        if KEYBOARD_CONTROLLER.TPWT:
-                            CURSOR.JUMP(2+shift, 21);
-                            CPRINT(x); shift+=1;
-
-                    elif KEYBOARD_CONTROLLER.SPEC:
+                    if KEYBOARD_CONTROLLER.SPEC:
 
                         if isinstance(x, tuple):
                             itm, info  = x;
@@ -1317,28 +1317,8 @@ class KVNSL:
 
 #   ---     ---     ---     ---     ---
 
-            CURSOR.JUMP(2, 23);
-
-            if animframe >= animrate:
-
-                if ptr < 3:
-                    ptr += 1; CPRINT(f"\x1b[1G{col1}"\
-                                     f" {s[ptr]}");
-                elif ptr == 3:
-                    ptr += 1;
-                else:
-                    ptr = 0; CPRINT(f"\x1b[1G{col1}"\
-                                     f" {s[ptr]}");
-
-                animframe = animframe - animrate;
-
-            framestop = rnow(); framedelta += (framestop - framestart);
-            fBy = 1.0 * framedelta; animframe += fBy;
-
-            if framedelta < frametime:
-                sleep((frametime - framedelta)); framedelta = 0;
-            else:
-                framedelta = framedelta - frametime;
+            self.CLOCK.DRAW();
+            self.CLOCK.FRAME_END();
 
             CPRINT("\x1b[0m", 1);
             CURSOR.LOAD();
@@ -1987,6 +1967,8 @@ def STARTUP(SETTINGS):
     KVRLOG     = logpath + "\\KVNSLOG"; MKFILE(KVRLOG, ask=0);
     KVRIN      = logpath + "\\KVNSIN";  MKFILE(KVRIN,  ask=0);
 
+    KVNSL_H.CLOCK=CLOCK();
+
     atexit.register(CLEANUP);
 
 def GETKVNSL(): return KVNSL_H;
@@ -2372,37 +2354,84 @@ class PROGBAR:
         CURSOR.JUMP(self.x, self.y); CPRINT(f"{self.col}[", 1);
         CURSOR.JUMP(self.x+self.space-5, self.y); CPRINT(f"{self.col}]", 1);
 
+    @property
+    def DONE(self):
+        return self.nblock==(self.space-6);
+
     def taskDone(self, idex):
-
-        if self.nblock==(self.space-5):
-            return;
-
         worth=self.tasks[idex];
-        self.prog+=worth; self.update();
+        self.prog+=worth;
 
     def finish(self):
         self.prog=self.tgt+1; self.percent=100;
-        block=(self.prog/self.tgt)*(self.space-6);
-        while (block>self.nblock) and (self.nblock<(self.space-5)):
-            self.printBlock(); self.nblock+=1; sleep(0.05);
 
     def update(self):
-        self.percent=min(int((self.prog/self.tgt)*100), 100);
+        self.percent=min(int((self.prog/self.tgt)*100), 100); self.draw();
+
+    def draw(self):
+
         block=(self.prog/self.tgt)*(self.space-6);
-        while (block>self.nblock) and (self.nblock<(self.space-5)):
-            self.printBlock(); self.nblock+=1; sleep(0.05);
+        if (block>self.nblock) and (self.nblock<(self.space-6)):
+            self.nblock+=1;
+            if self.nblock:
+                CURSOR.JUMP(self.x+1+(self.nblock-1), self.y); CPRINT(f"{self.col}■", 1);
+            if self.nblock<(self.space-6):
+                CURSOR.JUMP(self.x+1+self.nblock, self.y); CPRINT(f"{self.col}♦", 1);
 
-    def printBlock(self):
-        if self.nblock:
-            CURSOR.JUMP(self.x+1+(self.nblock-1), self.y); CPRINT(f"{self.col}■", 1);
-        if self.nblock<(self.space-6):
-            CURSOR.JUMP(self.x+1+self.nblock, self.y); CPRINT(f"{self.col}♦", 1);
+            pad=" "*(3-len(str(self.percent)));
+            CURSOR.JUMP(self.x+self.space-4, self.y);
+            CPRINT(f"{pad}{self.percent}%\x1b[0m", 1);
 
-        pad=" "*(3-len(str(self.percent)));
-        CURSOR.JUMP(self.x+self.space-4, self.y); CPRINT(f"{pad}{self.percent}%\x1b[0m", 1);
+        sleep(0.01);
 
     def wipe(self):
         CURSOR.JUMP(self.x, self.y); CPRINT(" "*self.space, 1);
+
+class CLOCK:
+
+    def __init__(self, FPS=60, animrate=6):
+        self.col=MSCPX(PALETTE['SEL1']);
+        self.frametime=(1/FPS); self.ptr=0; self.ch="►▼◄▲";
+        self.animframe=0.0; self.animrate=self.frametime*animrate;
+        self.framedelta=0.0; self.framestart=0.0; self.framestop=0.0;
+
+    def wait(self, on=0):
+        if on:
+            self.ch="·•*☼";
+        else:
+            self.ch="►▼◄▲"; self.framedelta=0.0;
+            self.framestop=0.0; self.animframe=0.0;
+
+    def FRAME_BEGIN(self):
+        self.framestart=rnow();
+        if self.framestop: self.framedelta+=(self.framestart - self.framestop);
+
+    def DRAW(self):
+
+        CURSOR.JUMP(2, 23);
+        if self.animframe>=self.animrate:
+            if self.ptr<3:
+                self.ptr+=1; CPRINT(f"\x1b[1G{self.col}"   \
+                                    f" {self.ch[self.ptr]}");
+            elif self.ptr==3:
+                self.ptr+=1;
+            else:
+                self.ptr=0; CPRINT(f"\x1b[1G{self.col}"   \
+                                   f" {self.ch[self.ptr]}");
+
+            self.animframe=(self.animframe - self.animrate);
+
+    def FRAME_END(self):
+        self.framestop=rnow();
+        self.framedelta+=(self.framestop - self.framestart);
+        global fBy; fBy=(1.0*self.framedelta); self.animframe+=fBy;
+
+        if self.framedelta<self.frametime:
+            sleep((self.frametime - self.framedelta)); self.framedelta=0;
+        else:
+            self.framedelta=(self.framedelta - self.frametime);
+
+#   ---     ---     ---     ---     ---
 
 class PSEUDOPOP:
 
@@ -2421,3 +2450,27 @@ class PSEUDOPOP:
 
         else:
             object.__setattr__(self, attr, value);
+
+class CONFIRMER:
+
+    def __init__(self):
+        self.state=0;
+
+    def CANCEL(self):
+        return "$:KVNSL_H.DEBUG_TOGGLE();>";
+
+    def ACCEPT(self):
+        return "!"; #return "$:KVNSL_H.DEBUG_TOGGLE();>!";
+
+    def RUN(self):
+
+        cases =                             {
+
+            "RETURN"    : [self.ACCEPT, ()],
+            "ESCAPE"    : [self.CANCEL, ()],
+
+                                            };
+
+        s = KEYBOARD_CONTROLLER.RUN(cases, {}, False);
+        if isinstance(s, int): s = "";
+        return s;

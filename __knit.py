@@ -116,5 +116,6 @@ if not err:
     PXUI(); KVNSL = GETKVNSL();
     KVNSL.RUN();
 
+KVNSL.DEBUG_SPIT();
 CLEANUP(); os._exit(1);
 
