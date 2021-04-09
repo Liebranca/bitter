@@ -661,6 +661,18 @@ class hxPX:
 
         abort   = 0; i=0; intfiles=[];
 
+        # just numbers for the progress bar
+        tasks=[ [1,0], [2,0] ];
+        for m in self.modules:
+            for sd in m.subdirs:
+                _files = [ f for f in m.listfiles(sd)     # this is ugly
+                           if f[1].ext in COMP_LANG    ]; # if fdata.ext reqs compile
+
+                num=len(_files); tasks[0][1]+=num;
+                if num: tasks[1][1]+=1;
+
+        KVNSL.MAKEPROG(tasks);
+
         for lib in LIBS:
             AVTO_INCLUDES(lib.include,  i!=0);
             AVTO_LIBS    (lib.buildstr, i!=0); i=1;
@@ -679,13 +691,13 @@ class hxPX:
 
                 self.cursub = sd;
                 AVTO_SETIN(self.at);
-                _files = [ f for f in m.listfiles(sd)     # this is ugly
-                           if f[1].ext in COMP_LANG    ]; # if fdata.ext reqs compile
+                _files = [ f for f in m.listfiles(sd)     # again, ugly
+                           if f[1].ext in COMP_LANG    ];
 
                 for f in _files:            # compile into .o if necessary
-                    ofile, cf = AVTO_CHKFILE(f, gcc, brute);
-                    if cf > 0:
-                        KVNSL.DEBUG_SPIT();
+                    ofile, cf = AVTO_CHKFILE(f, gcc, brute); KVNSL.PROGBAR.taskDone(0);
+                    KVNSL.DEBUG_SPIT();
+
                     if cf in [2, 3]:
                         if   cf == 2:
                             ERRPRINT("Compile warnings (FATAL_WARNINGS is ON)");
@@ -713,7 +725,6 @@ class hxPX:
 
             AVTO_SETOUT(outdir);
             if len(mfiles) or DEPS:
-
                 if fcount != -len(mfiles) or brute or DEPS:
 
                     if    m.mode == 0: inc, failure = AVTO_MKEXE(mfiles, gcc, n);
@@ -722,11 +733,13 @@ class hxPX:
 
                     if failure:
                         abort = 1;
-                        break;
 
                 else:
                     ERRPRINT(f"{m.name} is up to date");
 
+                KVNSL.PROGBAR.taskDone(1);
+
+            if abort: break;
             if m.mode == 1 and OKFILE(CATPATH(outdir, m.name+".lib")):
                 AVTO_INCLUDES(f"-I{m.path}",            1);
                 AVTO_LIBS    (f"-L{outdir} -l{m.name}", 1);
@@ -735,7 +748,9 @@ class hxPX:
 
 #   ---     ---     ---     ---     ---
 
-        KVNSL.DEBUG_SPIT();
+        if not abort: KVNSL.PROGBAR.finish();
+        KVNSL.DEBUG_SPIT(); #KVNSL.PROGBAR.wipe(); 
+        del KVNSL.PROGBAR; KVNSL.PROGBAR=None;
         #KVNSL.DEBUG_TOGGLE();
 
         if self.mode == 0 and not abort:    # ask run after compile
@@ -994,7 +1009,7 @@ def PXMAINMENU():
     region.addItem(1, 6, "LIBS", style=0, info="", func=PXLIBSEL);
 
     region.addItem(1, 10, "BUILD", style=0,
-                   info="Compiles the current project", func=PX.build, args={"brute":0});
+                   info="Compiles the current project", func=PX.build, args={"brute":1});
 
     return "LPANEL";
 

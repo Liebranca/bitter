@@ -1030,6 +1030,8 @@ class KVNSL:
         self.DEBUGREG  = None;
         self.PREVSCR   = "";
 
+        self.PROGBAR   = None;
+
         CURSOR.JUMP(1,22);
 
     def AP_INTCALL(self, ID, call, args, k=0):
@@ -1221,6 +1223,9 @@ class KVNSL:
 
     def DEBUG_SPIT(self):
         self.OUT(self.DEBUGREG.appBuff(), region=self.DEBUGREG);
+
+    def MAKEPROG(self, tasks):
+        self.PROGBAR=PROGBAR( tasks, (3,23), 72 );
 
     def RUN(self):
 
@@ -2349,6 +2354,55 @@ class SHUFFLER:
         self.state = 1; return s;
 
 #   ---     ---     ---     ---     ---
+
+class PROGBAR:
+    def __init__(self, tasks, pos, space):
+
+        self.x, self.y=pos;
+        self.space=space;
+
+        self.prog=0; self.tgt=0; self.tasks=[];
+        for task in tasks:
+            worth, total=task; self.tgt+=worth*total;
+            self.tasks.append(worth);
+
+        self.percent=0; self.nblock=0;
+        self.col=MSCPX(PALETTE['SEL1']);
+
+        CURSOR.JUMP(self.x, self.y); CPRINT(f"{self.col}[", 1);
+        CURSOR.JUMP(self.x+self.space-5, self.y); CPRINT(f"{self.col}]", 1);
+
+    def taskDone(self, idex):
+
+        if self.nblock==(self.space-5):
+            return;
+
+        worth=self.tasks[idex];
+        self.prog+=worth; self.update();
+
+    def finish(self):
+        self.prog=self.tgt+1; self.percent=100;
+        block=(self.prog/self.tgt)*(self.space-6);
+        while (block>self.nblock) and (self.nblock<(self.space-5)):
+            self.printBlock(); self.nblock+=1; sleep(0.05);
+
+    def update(self):
+        self.percent=min(int((self.prog/self.tgt)*100), 100);
+        block=(self.prog/self.tgt)*(self.space-6);
+        while (block>self.nblock) and (self.nblock<(self.space-5)):
+            self.printBlock(); self.nblock+=1; sleep(0.05);
+
+    def printBlock(self):
+        if self.nblock:
+            CURSOR.JUMP(self.x+1+(self.nblock-1), self.y); CPRINT(f"{self.col}■", 1);
+        if self.nblock<(self.space-6):
+            CURSOR.JUMP(self.x+1+self.nblock, self.y); CPRINT(f"{self.col}♦", 1);
+
+        pad=" "*(3-len(str(self.percent)));
+        CURSOR.JUMP(self.x+self.space-4, self.y); CPRINT(f"{pad}{self.percent}%\x1b[0m", 1);
+
+    def wipe(self):
+        CURSOR.JUMP(self.x, self.y); CPRINT(" "*self.space, 1);
 
 class PSEUDOPOP:
 
