@@ -20,8 +20,8 @@ extern "C" {
 
 //   ---     ---     ---     ---     ---
 
-#define KCOM_MAXVAL 8                       /* maximum number of tokens per command        */
-#define KCOM_VALW   8                       /* maximum token length                        */
+#define KCOM_MAXVAL 64                      /* maximum number of tokens per command        */
+#define KCOM_VALW   64                      /* maximum token length                        */
 #define KCOM_INLEN  KCOM_MAXVAL * KCOM_VALW
 
 #define ARRSIZE(arr) sizeof(arr) / sizeof(*arr)
@@ -30,8 +30,8 @@ typedef struct KVR_COM {                    // a command
 
     int   order;                            // SGL || VERB_FIRST || SUBJ_FIRST
     int   ids[2];                           // indices for key tokens
-    int   token_count;                      // return state of the command
-    char  tokens[KCOM_MAXVAL][KCOM_VALW];   // handle to datablock or NULL
+    int   token_count;
+    char  tokens[KCOM_MAXVAL][KCOM_VALW];
 
 } COM;
 

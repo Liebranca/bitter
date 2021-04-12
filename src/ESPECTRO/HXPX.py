@@ -12,8 +12,12 @@ from dataclasses import dataclass
 from ESPECTRO    import (
 
     ROOT,
+    CHDIR,
+    CWD,
+
     CC,
     TARGET,
+    SYSREAD,
 
     CPRINT,
     INPUTFIELD,
@@ -86,14 +90,10 @@ PX        = None;
 
 class hxLIB:
 
-    def __init__(self, name, used=0, ext=1):
+    def __init__(self, name, used=0):
 
         self.name = name;
         self.used = used;
-        self.ext  = ext;
-
-        if ext==1: self.include = "-I"+CATPATH(ROOT(), "_include", name);
-        else     : self.include = "-I"+CATPATH(ROOT(), ext, "src", name);
 
         self.nited = 1;
 
@@ -111,8 +111,7 @@ class hxLIB:
 
     @property
     def path(self):
-        if self.ext==1: return CATPATH(ROOT(), "_lib", TARGET(), self.name);
-        else          : return CATPATH(ROOT(), ext, "trashcan", TARGET(), name);
+        return CATPATH(ROOT(), "_lib", TARGET(), self.name);
 
     @property
     def buildstr(self):
@@ -680,8 +679,11 @@ class hxPX:
 
         if x:
 
-            if CALL and "!" in x:
-                x=x[:-1]; CALL(); KVNSL.CLOCK.wait(0);
+            if "!" in x:
+                x=x[:-1];
+
+                if CALL:
+                    CALL(); KVNSL.CLOCK.wait(0);
 
             x = x+f"$:KVNSL_H.DL_INTCALL('ENDBUILD', 1);>";
             KVNSL.PROGBAR.wipe(); del KVNSL.PROGBAR; KVNSL.PROGBAR=None;
@@ -709,8 +711,9 @@ class hxPX:
 
         abort   = 0; i=0; intfiles=[];
 
+        AVTO_INCLUDES("-I"+CATPATH(ROOT(), "_include"), 0);
+
         for lib in LIBS:
-            AVTO_INCLUDES(lib.include,  i!=0);
             AVTO_LIBS    (lib.buildstr, i!=0); i=1;
 
         for m in self.modules:
@@ -797,8 +800,12 @@ class hxPX:
 
     def run(self):
         if self.mode == 0:
-            DOS(f"SET PATH={CATPATH(ROOT(), '_run', TARGET())};%PATH%");
+            OLD_PATH=CWD();
+            CHDIR(CATPATH(ROOT(), '_run', TARGET()));
             DOS(f"{self.outdir}\\{self.name}.exe");
+            CHDIR(OLD_PATH);
+
+            ERRPRINT(SYSREAD(), err=-1); GETKVNSL().DEBUG_SPIT();
 
         else:
             ERRPRINT(f"Cannot run {self.name}: it is a library", rec=1);

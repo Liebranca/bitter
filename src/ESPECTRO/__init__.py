@@ -10,6 +10,8 @@ from . import PYZJC;
 from .utils.lyos import (
 
     getch,
+    CHDIR,
+    CWD,
 
     ROOT,
     BTIME,

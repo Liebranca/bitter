@@ -282,6 +282,12 @@ def DISABLE_EPRINT(d=None):
 
 hxNVRASK = 0;
 
+def CHDIR(S):
+    os.chdir(S);
+
+def CWD():
+     return os.getcwd();
+
 def DISABLE_CONFIRM(d=None):
 
     global hxNVRASK;

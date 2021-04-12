@@ -9,9 +9,11 @@ extern "C" {
 
 //   ---     ---     ---     ---     ---
 
-void GTIN(COM* com);                        // console input
-void TKIN(COM* com, char* buff);            // lexer
-RET  RDIN(COM* com            );            // parser
+void SETINBUFF(char* src);                  // for testing
+void SETINCOM(COM* c);
+
+void GTIN();                                // console input
+void TKIN();                                // lexer
 
 //   ---     ---     ---     ---     ---
 
