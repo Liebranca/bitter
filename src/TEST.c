@@ -8,14 +8,21 @@
 
 #define COMLEN 70
 
+typedef struct TEST_S { int x; } TEST;
+
 void main() {
 
-    COM c; SETINCOM(&c); SETINBUFF("IF x<y THEN x<5 { x++; } "); TKIN();
-    FILE* fp;
+    // FOR<TEST*> t, T(0,10)
+    // 1: for
+    // 2: (TYPE name=ARR+start; name<ARR+end;
+    // for(TEST* t=T+0; t<T+10; t++)
 
-    fp = fopen ("D:\\lieb_git\\KVR\\trashcan\\log\\KVNSLOG", "w+");
-    for(int i=0; i<c.token_count;i++) { fprintf(fp, "%s ", c.tokens[i]); }
+    COM c; SETINCOM(&c); SETINBUFF("FOR<int> t, (0,5,2) { x++; } "); TKIN();
+    FILE* log;
 
-    fclose(fp);
+    log = fopen ("D:\\lieb_git\\KVR\\trashcan\\log\\KVNSLOG", "w+");
+    for(int i=0; i<c.token_count;i++) { fprintf(log, "%s ", c.tokens[i]); }
+
+    fclose(log);
 
 }

@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
+#include <math.h>
 
 //   ---     ---     ---     ---     ---
 
@@ -116,3 +117,8 @@ void __terminator (int errcode, char* info) {
 };
 
 //   ---     ---     ---     ---     ---
+
+int qstoi(char* buff) {
+    int x=0; int i=0; for(char* ptr=buff+0; (*ptr)!='\0'; ptr++)
+    { x+=((*ptr)-48); if(i) { x+=((int)pow(10, i)); } } return x;
+}

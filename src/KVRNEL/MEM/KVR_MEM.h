@@ -35,7 +35,7 @@ void  FCMEM(MEM* m       );                 // force valid block
 #define MEMBUFF(m, type, offset)            /* get type-casted ptr to MEM @offset          */\
     ((type*) (NVMEM(m, offset)))
 
-#define MEMGET(m, buff, type)               {                                                \
+#define MEMGET(m, type)                     {                                                \
                                                                                              \
     FCMEM(m);                                 /* ensure block is valid                     */\
                                                                                              \

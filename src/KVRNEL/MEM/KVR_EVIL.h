@@ -20,8 +20,8 @@ extern "C" {
 
 //   ---     ---     ---     ---     ---
 
-#define KCOM_MAXVAL 64                      /* maximum number of tokens per command        */
-#define KCOM_VALW   64                      /* maximum token length                        */
+#define KCOM_MAXVAL 32                      /* maximum number of tokens per command        */
+#define KCOM_VALW   96                      /* maximum token length                        */
 #define KCOM_INLEN  KCOM_MAXVAL * KCOM_VALW
 
 #define ARRSIZE(arr) sizeof(arr) / sizeof(*arr)
@@ -75,6 +75,7 @@ static char* __shpath(char* path)           {
 
 void __writoa  (int x, char* buff, int rdx);// wraps itoa
 int  __wrstrcmp(char* s0, char* s1        );// wraps strcmp
+int  qstoi     (char* buff                );// quick string to int (100% diarrhea)
 
 //   ---     ---     ---     ---     ---
 
