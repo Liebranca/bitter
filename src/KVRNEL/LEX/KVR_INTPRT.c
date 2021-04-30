@@ -7,9 +7,9 @@
  *                                          *
  *   ---     ---     ---     ---     ---    */
 
-#include "KVR_INTPRT.h"
-#include "../MEM/KVR_BIN.h"
-#include "../MEM/KVR_MEM.h"
+#include "kvr_intprt.h"
+#include "../MEM/kvr_bin.h"
+#include "../MEM/kvr_mem.h"
 
 #include <string.h>
 #include <conio.h>

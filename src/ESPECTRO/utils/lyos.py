@@ -1422,19 +1422,26 @@ def ERRPRINT(*args, err=0, rec=1, sep=' ', end=''):
             file = file[-1];
 
         line   = prev.f_lineno;
-        mess   = f"{GETERR(err)}: {caller} on {file} @{line} " + mess;
+        prem   = f"{caller} on {file} @{line} ";
 
     else:
-        mess = f"{GETERR(err)}: {mess}"
+        prem   = "";
 
 #   ---     ---     ---     ---     ---
-
     # for automatic AVPAG
-    if KVNSL_H.DEBUGREG.addBuff(mess + "\x1b[0m"):
-        if DEBUGREG.isCurrent:
-            DEBUG_ONPAG();
+
+    first_run=1;
+    for sub in mess.split("\n"):
+        if first_run:
+            sub=f"{GETERR(err)}: "+sub; first_run=0;
         else:
-            DEBUGREG.LABELS[1]=f"{DEBUGREG.PAGE+1}/{DEBUGREG.PAGES}";
+            sub=PALETTE[err]+sub;
+
+        if KVNSL_H.DEBUGREG.addBuff(sub + "\x1b[0m"):
+            if DEBUGREG.isCurrent:
+                DEBUG_ONPAG();
+            else:
+                DEBUGREG.LABELS[1]=f"{DEBUGREG.PAGE+1}/{DEBUGREG.PAGES}";
 
 hxWARNS = True;
 

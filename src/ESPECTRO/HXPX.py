@@ -594,8 +594,6 @@ class hxPX:
             new_module.scandir();
             result.append(new_module);
 
-            self.build_order.append(i);
-
         files      = WALK(srcpath)[0][2];
         new_module = hxMOD("__main__", mode=self.mode);
         _files     = hxSRC.from_list(files);
@@ -604,6 +602,15 @@ class hxPX:
         result.append(new_module);
 
         return result;
+
+    def lscan(self):
+        modules=self.scanmods();
+        current={m.name: self.modules.index(m) for m in self.modules};
+        for m in modules:
+            if m.name in current:
+                self.modules[current[m.name]] = m;
+            else:
+                self.modules.append(m);
 
     def modSelect(self):
 
@@ -712,6 +719,7 @@ class hxPX:
         abort   = 0; i=0; intfiles=[];
 
         AVTO_INCLUDES("-I"+CATPATH(ROOT(), "_include"), 0);
+        AVTO_INCLUDES("-I"+CATPATH(self.path, "src"  ), 1);
 
         for lib in LIBS:
             AVTO_LIBS    (lib.buildstr, i!=0); i=1;
@@ -908,7 +916,7 @@ LIBS=None; new_sub=None; new_mod=None; new_src=None;
 def SCANLIBS():
 
     # default project hardcoded while we work on it
-    global PX; PX = hxPX.load("KVR");
+    global PX; PX = hxPX.load("KVR"); PX.lscan();
     global LIBS; LIBS=[]; err=0;
 
     libfiles = LISTDIR( CATPATH(ROOT(), "_lib", "Win32") );

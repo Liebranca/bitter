@@ -1,7 +1,7 @@
 #ifndef __KVR_INTPRT_H__
 #define __KVR_INTPRT_H__
 
-#include "../MEM/KVR_EVIL.h"
+#include "../zjc_evil.h"
 
 #ifdef __cplusplus
 extern "C" {

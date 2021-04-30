@@ -1,7 +1,7 @@
 #ifndef __KVR_BIN_H__
 #define __KVR_BIN_H__
 
-#include "KVR_EVIL.h"
+#include "../zjc_evil.h"
 #include <stdio.h>
 
 #ifdef __cplusplus

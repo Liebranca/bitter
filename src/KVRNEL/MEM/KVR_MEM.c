@@ -7,7 +7,7 @@
  *                                          *
  *   ---     ---     ---     ---     ---    */
 
-#include "KVR_MEM.h"
+#include "kvr_mem.h"
 
 #include <stdlib.h>
 #include <stddef.h>
@@ -36,39 +36,43 @@ void* __kvrmalloc(int count, int size)      {
 
 //   ---     ---     ---     ---     ---
 
-int MKMEM(MEM* m)                           { m->buff = __kvrmalloc(m->count, m->size);
+int MKMEM(MEM* m)                           { if(m->buff) { DLMEM(m, NULL); } // dont leak
+
+    m->buff = __kvrmalloc(m->count, m->size);
     if(m->buff != NULL)                     { MEMSET (m, +   ) return 0;                    };
     return FATAL;                                                                           };
 
-void DLMEM(MEM* m)                          {
-    if(m->buff != NULL)                     { m->free(m->buff); m->buff = NULL;
-                                              MEMSET (m, -   );                             };
+void DLMEM(MEM* m, void* buff)              {
+
+    if(buff    != NULL && m->free)          { m->free(buff);                                };
+    if(m->buff != NULL           )          { free(m->buff); m->buff = NULL; MEMSET(m, -);  };
                                                                                             };
 
 void FCMEM(MEM* m)                          {
 
-    if(!m->size ) { m->size  = 1;     }
-    if(!m->count) { m->count = 1;     }
-    if(!m->free ) { m->free  = &free; }                                                     };
+    if(!m->size ) { m->size  = 1;          };
+    if(!m->count) { m->count = 1;          };
+    if(!m->free ) { m->free  = &free;      };                                               };
 
 //   ---     ---     ---     ---     ---
 
 void* NVMEM(MEM* m, int p)                  {
 
+    int ptr=0;
     if(p < 0)                               // negative indexing (last element first)
     {
-        if  (-p <= m->count)                { m->ptr = m->count + p;                        }
-        else                                { m->ptr = 0;                                   };
+        if  (-p <= m->count)                { ptr = m->count + p;                           }
+        else                                { ptr = 0;                                      };
     }
 
     else                                    // positive indexing (first element first)
     {
-        if  ( p <  m->count)                { m->ptr = p;                                   }
-        else                                { m->ptr = m->count - 1;                        };
+        if  ( p <  m->count)                { ptr = p;                                      }
+        else                                { ptr = m->count - 1;                           };
     };
 
                                             // cast to char and return buff @ptr
-    return                                  ((char*) m->buff) + (m->ptr * m->size);         };
+    return                                  ((char*) m->buff) + (ptr * m->size);            };
 
 //   ---     ---     ---     ---     ---
 

@@ -1,5 +1,5 @@
-#include "KVR_BIN.h"
-#include "KVR_MEM.h"
+#include "kvr_bin.h"
+#include "kvr_mem.h"
 
 #include <string.h>
 
@@ -43,7 +43,7 @@ int MKBIN(BIN* bin)                         {
             m.size     = sizeof             (char                                           );
 
                                             // ask for block
-            MEMGET                          ((&m),  buff, char                              );
+            MEMGET                          ((&m), buff, char                               );
 
                                             // read & compare
             BINREAD                         (bin, rb,  char, 1, buff                        );

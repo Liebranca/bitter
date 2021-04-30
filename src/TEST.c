@@ -12,11 +12,6 @@ typedef struct TEST_S { int x; } TEST;
 
 void main() {
 
-    // FOR<TEST*> t, T(0,10)
-    // 1: for
-    // 2: (TYPE name=ARR+start; name<ARR+end;
-    // for(TEST* t=T+0; t<T+10; t++)
-
     COM c; SETINCOM(&c); SETINBUFF("FOR<int> t, (0,5,2) { x++; } "); TKIN();
     FILE* log;
 
