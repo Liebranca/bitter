@@ -1,23 +1,36 @@
-#include "KVRNEL/LEX/KVR_INTPRT.h"
+#include "KVRNEL/LEX/kvr_intprt.h"
+#include "KVRNEL/TYPES/zjc_hash.h"
 
 #ifdef main
 #undef main
 #endif
 
-#include <stdio.h>
-
-#define COMLEN 70
-
 typedef struct TEST_S { int x; } TEST;
 
 void main() {
 
-    COM c; SETINCOM(&c); SETINBUFF("FOR<int> t, (0,5,2) { x++; } "); TKIN();
-    FILE* log;
+    __openlog();
 
-    log = fopen ("D:\\lieb_git\\KVR\\trashcan\\log\\KVNSLOG", "w+");
+    // testing hash tables
+
+    HASH h; MKHASH(&h, 64, "TABLE0");
+    int x=666;
+    for(int i=0; i<9; i++) { ADHASH(&h, "x", &x); }; // TODO: catch full
+
+    int* p=(int*) GTHASH(&h, "x", 0);
+
+    if(!p) { CALOUT("FAIL");        }
+    else   { CALOUT("p is %i", *p); };
+
+    /* testing interpreter
+
+    COM c; SETINCOM(&c); SETINBUFF("FOR<int> t, (0,5,2) { x++; } "); TKIN();
+
     for(int i=0; i<c.token_count;i++) { fprintf(log, "%s ", c.tokens[i]); }
 
-    fclose(log);
+    */
+
+    MEMFREE(byref(h.m), byref(h));
+    __closelog();
 
 }

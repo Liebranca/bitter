@@ -7,9 +7,9 @@
 
 void MKHASH(HASH* h, uint size, char* id)   {
 
-    //h->m       = {0};
-    h->m.id    = id;
+    h->m       = (MEM){0};
 
+    h->m.id    = id;
     h->m.size  = sizeof(HSLOT);
     h->m.count = size;
     h->m.free  = &DLHASH;
@@ -22,14 +22,15 @@ void MKHASH(HASH* h, uint size, char* id)   {
 
         slot=(h->table)+x;
 
-        //slot->m       = {0};
         slot->m.id    = "HASHSLOT";
         slot->m.size  = sizeof(HNODE);
         slot->m.count = REHASH_STEP;
 
         MEMGET(byref(slot->m), slot->nodes, HNODE);
+
         MKSTK (byref(slot->stack), REHASH_STEP, "HASHSSTK");
-        for(uint y=slot->m.count-1; y>-1; y--) { STACKPUSH(byref(slot->stack), y); }
+        for(uint y=slot->m.count; y>0; y--)
+        { STACKPUSH(byref(slot->stack), y-1); }
 
         slot->head=slot->nodes+0;
         slot->head->next=NULL;
@@ -58,7 +59,7 @@ uint HASHIT(HASH* h, char* k)               {
 
     do {
 
-        x=((int) *k)+1; x*=x;
+        x=((uint) *k)+1; x*=x;
         idex+=x+y; y+=1;
 
     } while(*k++);
@@ -73,7 +74,9 @@ void ADHASH(HASH* h, char* key, void* data) {
     uint   subidex = 0;
 
     HSLOT* slot    = h->table+idex;
+
     STACKPOP(byref(slot->stack), subidex);
+    if(subidex==(uint) ERROR) { return; }   // throw list full
 
     HNODE* node    = slot->nodes+subidex;
     node->data     = data;
@@ -82,14 +85,15 @@ void ADHASH(HASH* h, char* key, void* data) {
 
     HNODE* tail    = slot->head;
     if(!tail) { slot->head=node; return; };
-    while(tail->next) { tail=tail->next; };
+
+    uint failsafe=0;
+    while(tail->next && failsafe < slot->stack.m.count) { tail=tail->next; failsafe++; };
 
     tail->next     = node;                                                                  };
 
-void* RMHASH(HASH* h, char* key)            {
+void* GTHASH(HASH* h, char* key, int rm)    {
 
     uint   idex    = HASHIT(h, key);
-    uint   subidex = 0;
     uint   found   = 0;
 
     HSLOT* slot    = h->table+idex;
@@ -99,19 +103,22 @@ void* RMHASH(HASH* h, char* key)            {
 
     if(!tail) { return NULL; }
 
+    uint failsafe=0;
     do {
 
         if(!__wrstrcmp(tail->key, key)) { found=1; break; };
-        prev=tail; tail=tail->next;
+        prev=tail; tail=tail->next; failsafe++;
 
-    } while(tail->next);
+    } while(tail && failsafe < slot->stack.m.count);
 
     if(found)
     {
-        STACKPUSH(byref(slot->stack), tail->idex);
-        if(prev) { prev->next=NULL; }
+        if(rm) {
+            STACKPUSH(byref(slot->stack), tail->idex);
+            if(prev) { prev->next=NULL; }
+            else     { slot->head=NULL; };
 
-        return tail->data;
+        }; return tail->data;
 
     }; return NULL;                                                                         };
 

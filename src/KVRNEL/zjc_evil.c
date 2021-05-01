@@ -1,6 +1,7 @@
 #include "ZJC_EVIL.h"
 
 #include <stdio.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
@@ -8,11 +9,40 @@
 
 //   ---     ---     ---     ---     ---
 
-static       int  CALDEPTH   = 0;           // call depth counter
-static       int  CALREG_I   = 0;           // current idex into locreg
-static       int  ERRSTATE   = 0x00;        // global errorstate
+static       int    CALDEPTH   = 0;         // call depth counter
+static       int    CALREG_I   = 0;         // current idex into locreg
+static       int    ERRSTATE   = 0x00;      // global errorstate
 
-static       DANG CALREG[64];               // call register; a call dump
+static       FILE*  CALLOG;                 // handle to the log dump
+
+static       DANG   CALREG[64];             // call register; a call dump
+
+//   ---     ---     ---     ---     ---
+
+void CALOUT(char *format, ...)              {
+
+    va_list args;
+
+    va_start(args, format);
+    vfprintf(stderr, format, args);
+    va_end(args);
+
+    };
+
+//   ---     ---     ---     ---     ---
+
+void __openlog()                            {
+
+    // hardcoded for now. pass in ROOT later or something to make this a relative path
+    CALLOG=freopen("D:\\lieb_git\\KVR\\trashcan\\log\\KVNSLOG", "w+", stderr);
+
+    };
+
+void __closelog() {
+
+    fclose(CALLOG);
+
+    };
 
 //   ---     ---     ---     ---     ---
 
@@ -50,7 +80,7 @@ DANG* __geterrloc(const char* p,
 
                                             // paste everything into the errloc itself
     snprintf                                (cal->location, 255,
-                                            "%s%i: <%s> on func %s line %i\n",
+                                            "%s%i: <%s> on func %s line %i\n\b",
                                             callbranch, CALREG_I, p, f, l    );
 
     CALREG_I++;                             // move to next entry in register
@@ -58,7 +88,7 @@ DANG* __geterrloc(const char* p,
 
 void __printcalreg(int flush)               {
 
-    for(int i = 0; i < CALREG_I; i++)       { fprintf(stderr, CALREG[i].location);
+    for(int i = 0; i < CALREG_I; i++)       { CALOUT("%s", CALREG[i].location);
         if (flush)                          { CALREG[i].location[0] = '\0';     };          };
 
     if(flush)                               { CALREG_I = 0;                     };          };
@@ -79,7 +109,7 @@ void __terminator (int errcode, char* info) {
 
     if (errcode < 0x40)                     { mstart = "FATAL EXCEPTION"; ERRSTATE = FATAL; }
     else                                    { mstart = "EXCEPTION";       ERRSTATE = ERROR; };
-    printf                                  ("%s [ERRCODE %u]: ", mstart, errcode           );
+    CALOUT                                  ("%s [ERRCODE %u]: ", mstart, errcode           );
 
     switch(errcode)                         {
 
@@ -109,12 +139,12 @@ void __terminator (int errcode, char* info) {
 
                                             };
 
-    printf                                  (mbody, info                                    );
-    printf                                  ("\n\nERRLOC TRACKER: %i ENTRIES\n", CALREG_I   );
+    CALOUT                                  (mbody, info                                    );
+    CALOUT                                  ("\n\bERRLOC TRACKER: %i ENTRIES\n", CALREG_I   );
 
     __printcalreg(0);
 
-    if(ERRSTATE == FATAL)                   { printf("TERMINATED"); exit(ERRSTATE);         }
+    if(ERRSTATE == FATAL)                   { CALOUT("TERMINATED"); exit(ERRSTATE);         }
     else                                    { /*?*/;                                        };
                                                                                             };
 

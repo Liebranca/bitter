@@ -4,7 +4,6 @@
 
 void MKSTK(STK* s, uint size, char* id)     {
 
-    //s->m       = {0};
     s->m.id    = id;
 
     s->m.size  = sizeof(uint);
@@ -17,8 +16,8 @@ void MKSTK(STK* s, uint size, char* id)     {
 
 sint PSHSTK(STK* s, uint x)                 {
 
-    if  (s->top == (s->m.count-1)) { return ERROR; }
-    elif(s->top ==  s->m.count   ) { s->top=0;     };
+    if  (s->top == (s->m.count  )) { return ERROR; }
+    elif(s->top == (s->m.count+1)) { s->top=0;     };
 
     s->ptr[s->top]=x;
     s->top++;
@@ -27,12 +26,13 @@ sint PSHSTK(STK* s, uint x)                 {
 
 uint POPSTK(STK* s)                         {
 
-    if(s->top == s->m.count) { return ERROR; }
+    if  (s->top == s->m.count+1) { return ERROR;        }
+    elif(s->top == s->m.count  ) { s->top=s->m.count-1; }
 
     uint value=s->ptr[s->top];
 
-    if  (s->top  > 0) { s->top--;          }
-    elif(s->top == 0) { s->top=s->m.count; };
+    if  (s->top  > 0) { s->top--;            }
+    elif(s->top == 0) { s->top=s->m.count+1; };
 
     return value;                                                                           };
 

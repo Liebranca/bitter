@@ -31,7 +31,7 @@ uint POPSTK(STK* s);                        // pop from stack
     CALL(PSHSTK(stack, value), retx, 70, stack->m.id); /* throws full stack  */             }
 
 #define STACKPOP(stack, value)              {                                                \
-    CALL(POPSTK(stack), value, 71, stack->m.id);  /* throws empty stack */             }
+    CALL(POPSTK(stack), value, 71, stack->m.id);       /* throws empty stack */             }
 
 //  - --- - --- - --- - --- -
 

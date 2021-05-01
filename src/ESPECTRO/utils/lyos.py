@@ -902,7 +902,7 @@ class REGION:
             i+=1;
 
         self.BUFF_WRIT=i;
-        return s;
+        return s.lstrip();
 
     def refBuff(self):
 

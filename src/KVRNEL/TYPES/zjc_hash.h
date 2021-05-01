@@ -47,7 +47,7 @@ void MKHASH(HASH* h, uint size, char* id);  // build a new hash table
 void DLHASH(void* buff);                    // free a hash table
 
 void ADHASH(HASH* h, char* key, void* data);// insert key:data into hash
-void* RMHASH(HASH* h, char* key);           // remove key:data from hash, return data
+void* GTHASH(HASH* h, char* key, int rm);   // remove key:data from hash, return data
 
 //   ---     ---     ---     ---     ---
 
