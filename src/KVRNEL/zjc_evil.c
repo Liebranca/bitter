@@ -55,7 +55,7 @@ DANG* __geterrloc(const char* p,
                   int         l)            {
 
     DANG* cal = &(CALREG[CALREG_I]);
-    char callbranch[66];
+    char callbranch[66]; callbranch[0]='\b'; callbranch[1]='\0';
     if(CALDEPTH) {
 
                                             // avoid recursion or you'll see this one
@@ -134,6 +134,8 @@ void __terminator (int errcode, char* info) {
 
         case 70: mbody =                    "Stack <%s> is full; can't push";           break;
         case 71: mbody =                    "Stack <%s> is empty; can't pop";           break;
+        case 72: mbody =                    "Can't insert key <%s>";                    break;
+        case 73: mbody =                    "Key <%s> not found";                       break;
 
         default: mbody =                    "UNRECOGNIZED %s";                          break;
 

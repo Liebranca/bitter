@@ -14,13 +14,19 @@ void main() {
     // testing hash tables
 
     HASH h; MKHASH(&h, 64, "TABLE0");
-    int x=666;
-    for(int i=0; i<9; i++) { ADHASH(&h, "x", &x); }; // TODO: catch full
+    int x[8]={0}; char* keys[8]={ "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7" };
+    for(int i=0; i<8; i++) { x[i]=i; HASHSET(byref(h), keys[i], x+i); };
 
-    int* p=(int*) GTHASH(&h, "x", 0);
+    int* p;
+    for(int i=7; i>-1; i--)                 { HASHGET(byref(h), keys[i], p, int, 1);
+        if(!p)                              { CALOUT("%s\n\b", "FAIL");                     }
+        else                                { CALOUT("%s is %i\n\b", keys[i], *p);          };
+                                                                                            };
 
-    if(!p) { CALOUT("FAIL");        }
-    else   { CALOUT("p is %i", *p); };
+    for(int i=0; i<8; i++)                  { HASHGET(byref(h), keys[i], p, int, 0);
+        if(!p)                              { CALOUT("%s\n\b", "FAIL");                     }
+        else                                { CALOUT("%s is %i\n\b", keys[i], *p);          };
+                                                                                            };
 
     /* testing interpreter
 

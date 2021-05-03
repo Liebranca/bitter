@@ -1,7 +1,17 @@
 #include "zjc_hash.h"
 #include <math.h>
+#include <stdio.h>
+
+//   ---     ---     ---     ---     ---
 
 #define REHASH_STEP 8
+
+static uint   ZJC_LIDX_HASH  = 0;
+static char*  ZJC_LKEY_HASH  = NULL;
+
+static HSLOT* ZJC_CURR_HSLOT = NULL;
+static HNODE* ZJC_CURR_HNODE = NULL;
+static HNODE* ZJC_PREV_HNODE = NULL;
 
 //   ---     ---     ---     ---     ---
 
@@ -50,12 +60,13 @@ void DLHASH(void* buff)                     {
 
 //   ---     ---     ---     ---     ---
 
-uint HASHIT(HASH* h, char* k)               {
+void HASHIT(HASH* h, char* k)               {
 
-    uint idex = 0;
+    ZJC_LKEY_HASH = k;
+    uint idex     = 0;
 
-    uint x    = 0;
-    uint y    = 0;
+    uint x        = 0;
+    uint y        = 0;
 
     do {
 
@@ -64,62 +75,64 @@ uint HASHIT(HASH* h, char* k)               {
 
     } while(*k++);
 
-    return x%(h->m.count);                                                                  };
+    ZJC_CURR_HSLOT=h->table+(idex%(h->m.count));                                            };
+
+int KINHSLOT()                              {
+
+    ZJC_CURR_HNODE=ZJC_CURR_HSLOT->head;
+    if(!ZJC_CURR_HNODE->key) { return 0; }
+
+    ZJC_PREV_HNODE=NULL;
+    do {                                    // loop through list until key is found
+
+        if(!__wrstrcmp(ZJC_CURR_HNODE->key, ZJC_LKEY_HASH))    { return 1; }
+
+        elif(ZJC_PREV_HNODE)                { // if both nodes are empty assume empty list
+            if(!ZJC_CURR_HNODE->idex && !ZJC_PREV_HNODE->idex) { return 0; }                };
+
+        ZJC_PREV_HNODE=ZJC_CURR_HNODE; ZJC_CURR_HNODE=ZJC_CURR_HNODE->next;
+
+    } while(ZJC_CURR_HNODE); return 0;                                                      };
+
+int INHASH(HASH* h, char* key)              { HASHIT(h, key); return KINHSLOT();            };
+
+int NK4HSLOT()                              {
+
+    STACKPOP(byref(ZJC_CURR_HSLOT->stack), ZJC_LIDX_HASH);
+    if(ZJC_LIDX_HASH==(uint) ERROR) { return ERROR; } // throw list full
+
+    ZJC_CURR_HNODE       = (ZJC_CURR_HSLOT->nodes)+ZJC_LIDX_HASH;
+    ZJC_CURR_HNODE->key  = ZJC_LKEY_HASH;
+    ZJC_CURR_HNODE->idex = ZJC_LIDX_HASH;
+
+    if(ZJC_PREV_HNODE) { ZJC_PREV_HNODE->next = ZJC_CURR_HNODE; }
+    else               { ZJC_CURR_HSLOT->head = ZJC_CURR_HNODE; };
+
+    ZJC_LIDX_HASH=0; return 0;                                                              };
 
 //   ---     ---     ---     ---     ---
 
-void ADHASH(HASH* h, char* key, void* data) {
+int STHASH(void* data)                      { ZJC_CURR_HNODE->data=data;                    };
 
-    uint   idex    = HASHIT(h, key);
-    uint   subidex = 0;
+void* GTHASH(int pop)                       {
 
-    HSLOT* slot    = h->table+idex;
+    if(pop) {
 
-    STACKPOP(byref(slot->stack), subidex);
-    if(subidex==(uint) ERROR) { return; }   // throw list full
+        STACKPUSH(byref(ZJC_CURR_HSLOT->stack), ZJC_CURR_HNODE->idex);
 
-    HNODE* node    = slot->nodes+subidex;
-    node->data     = data;
-    node->key      = key;
-    node->idex     = subidex;
+        /* if not first node, connect next to prev **
+        ** if first node and next, make next head  **
+        ** else list is empty                      */
 
-    HNODE* tail    = slot->head;
-    if(!tail) { slot->head=node; return; };
+        if  (ZJC_PREV_HNODE      )          { ZJC_PREV_HNODE->next=ZJC_CURR_HNODE->next;    }
+        elif(ZJC_CURR_HNODE->next)          { ZJC_CURR_HSLOT->head=ZJC_CURR_HNODE->next;    }
+        else                                { ZJC_CURR_HSLOT->head=ZJC_CURR_HSLOT->nodes+0; };
 
-    uint failsafe=0;
-    while(tail->next && failsafe < slot->stack.m.count) { tail=tail->next; failsafe++; };
+        ZJC_CURR_HNODE->key=NULL; ZJC_CURR_HNODE->next=NULL;
+        void* data=ZJC_CURR_HNODE->data; ZJC_CURR_HNODE->data=NULL;
 
-    tail->next     = node;                                                                  };
+        ZJC_CURR_HNODE=NULL; return data;
 
-void* GTHASH(HASH* h, char* key, int rm)    {
-
-    uint   idex    = HASHIT(h, key);
-    uint   found   = 0;
-
-    HSLOT* slot    = h->table+idex;
-    HNODE* tail    = slot->head;
-
-    HNODE* prev    = NULL;
-
-    if(!tail) { return NULL; }
-
-    uint failsafe=0;
-    do {
-
-        if(!__wrstrcmp(tail->key, key)) { found=1; break; };
-        prev=tail; tail=tail->next; failsafe++;
-
-    } while(tail && failsafe < slot->stack.m.count);
-
-    if(found)
-    {
-        if(rm) {
-            STACKPUSH(byref(slot->stack), tail->idex);
-            if(prev) { prev->next=NULL; }
-            else     { slot->head=NULL; };
-
-        }; return tail->data;
-
-    }; return NULL;                                                                         };
+    }; return ZJC_CURR_HNODE->data;                                                         };
 
 //   ---     ---     ---     ---     ---

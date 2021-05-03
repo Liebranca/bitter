@@ -43,11 +43,24 @@ typedef struct ZJC_HASHTABLE {
 
 //   ---     ---     ---     ---     ---
 
-void MKHASH(HASH* h, uint size, char* id);  // build a new hash table
-void DLHASH(void* buff);                    // free a hash table
+void  MKHASH(HASH* h, uint size, char* id); // build a new hash table
+void  DLHASH(void* buff);                   // free a hash table
 
-void ADHASH(HASH* h, char* key, void* data);// insert key:data into hash
-void* GTHASH(HASH* h, char* key, int rm);   // remove key:data from hash, return data
+int   STHASH(void* data);                   // insert key:data into hash
+void* GTHASH(int pop);                      // remove key:data from hash, return data
+
+int   INHASH(HASH* h, char* key);           // return key is in table
+int   NK4HSLOT();                           // pop slot idex from subarray
+
+//   ---     ---     ---     ---     ---
+
+#define HASHSET(h, key, data)               { int key_in_hash=INHASH(h, key); int retx=0;    \
+    if(!key_in_hash) { CALL(NK4HSLOT(), retx, 72, key); h->nitems++; };                      \
+    if(!retx       ) { STHASH(data);                                 };                     }
+
+#define HASHGET(h, key, to, type, pop)      { int key_in_hash=0;                             \
+    CALL(INHASH(h, key), key_in_hash, 73, key);                                              \
+    if(key_in_hash) { to=(type*) GTHASH(pop); h->nitems-=pop; } else { to=NULL; };          }
 
 //   ---     ---     ---     ---     ---
 

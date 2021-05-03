@@ -26,7 +26,7 @@ sint PSHSTK(STK* s, uint x)                 {
 
 uint POPSTK(STK* s)                         {
 
-    if  (s->top == s->m.count+1) { return ERROR;        }
+    if  (s->top == s->m.count+1) { return (uint) ERROR; }
     elif(s->top == s->m.count  ) { s->top=s->m.count-1; }
 
     uint value=s->ptr[s->top];
