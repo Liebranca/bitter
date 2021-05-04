@@ -81,6 +81,8 @@ from ESPECTRO    import (
     AVTO_MKLIB,
     AVTO_MKDLL,
 
+    TCHHEDS,
+
 );
 
 build_opt = ["EXE", "LIB", "DLL"];
@@ -652,6 +654,10 @@ class hxPX:
 
         KVNSL = GETKVNSL(); self.ABORT_BUILD=0;
 
+        BTIME('rnow');                      # sets time value for all timestamps to right now
+                                            # ensures there's no variance in mod/access time
+                                            # for all files built by this call
+
         # just numbers for the progress bar
         tasks=[ [1,0], [2,0] ];
         for m in self.modules:
@@ -675,6 +681,9 @@ class hxPX:
         elif self.mode==0:
             ERRPRINT(f"Press ENTER to run {self.name} or ESC to go back... ");
             CINPUT_REG["CALL"]=self.run;
+
+        if not self.ABORT_BUILD:
+            TCHHEDS();
 
         KVNSL.DEBUG_SPIT();
         del self.ABORT_BUILD;
@@ -702,10 +711,6 @@ class hxPX:
         global PX; PX = self;
         KVNSL=GETKVNSL(); KVNSL.DEBUG_TOGGLE();
         KVNSL.DEBUG_OUT(["Compilation started"], {"err":0});
-
-        BTIME('rnow');                      # sets time value for all timestamps to right now
-                                            # ensures there's no variance in mod/access time
-                                            # for all files built by this call
 
         outbase = self.intdir;
         release = self.outdir;

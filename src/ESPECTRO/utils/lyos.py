@@ -275,7 +275,7 @@ def DISABLE_EPRINT(d=None):
     global hxEPRINT;
 
     if d:
-        hxEPRINT = d;
+        hxEPRINT = not d;
         return None;
 
     return hxEPRINT;
@@ -1683,7 +1683,7 @@ def FLFILE(path, ask=1):
 
 #   ---     ---     ---     ---     ---
 
-def RDFILE(path, b=0, rh=0, rl=0, dec=0, rl_sep="\n", trunc=0, ask=1):
+def RDFILE(path, b=0, rh=0, rl=0, dec=0, rl_sep="\n", trunc=0, ask=1, mute=0):
 
     global hxNVRASK;
     if hxNVRASK: ask=0;
@@ -1718,7 +1718,9 @@ def RDFILE(path, b=0, rh=0, rl=0, dec=0, rl_sep="\n", trunc=0, ask=1):
 
 #   ---     ---     ---     ---     ---
 
-        file = None; ERRPRINT(f"Opened file <{SHPATH(path)}>", rec=2);
+        file = None;
+        if not mute: ERRPRINT(f"Opened file <{SHPATH(path)}>", rec=2);
+
         if rh:
 
             file = open(path, m);
@@ -1762,7 +1764,9 @@ def RDFILE(path, b=0, rh=0, rl=0, dec=0, rl_sep="\n", trunc=0, ask=1):
 
 #   ---     ---     ---     ---     ---
 
-    file  = None; ERRPRINT(f"Opened file <{SHPATH(path)}>", rec=2);
+    file  = None;
+
+    if not mute: ERRPRINT(f"Opened file <{SHPATH(path)}>", rec=2);
     file  = open(path, 'r+');
     lines = rl_sep.join(line for line in file);
 
@@ -1771,7 +1775,7 @@ def RDFILE(path, b=0, rh=0, rl=0, dec=0, rl_sep="\n", trunc=0, ask=1):
 
     if not rh:
         file.close();
-        ERRPRINT(f"Closed file <{SHPATH(path)}>", rec=2);
+        if not mute: ERRPRINT(f"Closed file <{SHPATH(path)}>", rec=2);
 
     return (lines, file);
 
@@ -1891,10 +1895,11 @@ def TOUCH(f):
     Path(f).touch();
 
 def MODTIME(path):
-    return os.path.getmtime(path);
+    return int(os.path.getmtime(path));
 
 def MTIMEVS(f1, f2):
     return MODTIME(f1) != MODTIME(f2);
+
 
 def MTIMELT(flist):
 
@@ -1967,7 +1972,7 @@ def STARTUP(SETTINGS):
     read_size = SETTINGS[ 5]; READSIZE       (read_size      ); 
     warnfatal = SETTINGS[ 6]; FATAL_WARNINGS (warnfatal      );
     debugprnt = SETTINGS[ 7]; DEBUG_PRINT    (debugprnt      );
-    disblprnt = SETTINGS[ 8]; DISABLE_EPRINT (not disblprnt  );
+    disblprnt = SETTINGS[ 8]; DISABLE_EPRINT (disblprnt      );
     nvrask    = SETTINGS[ 9]; DISABLE_CONFIRM(nvrask         );
     fkwall    = SETTINGS[10]; FKWALL         (fkwall         );
 

@@ -17,6 +17,9 @@ from ESPECTRO import (
     MTIMEGT,
 
     OKFILE,
+    RDFILE,
+    SHPATH,
+
     LISTDIR,
     EXTSOLVE,
     CATPATH,
@@ -35,6 +38,7 @@ OBJFOLD  = "";
 SRCFOLD  = "";
 INCLUDES = "";
 LIBS     = "";
+HEDS     = [];
 
 def AVTO_SETOUT(s):
     global OBJFOLD; OBJFOLD = s;
@@ -76,13 +80,37 @@ def AVTO_SRCBUILD(src, obj, gcc):
         if not isWarning       : return 3;  # stop compile; error flag
         elif   FATAL_WARNINGS(): return 2;  # stop compile; warning flag
 
-    else:                                   # files that produce warnings will not be touched
-        FKTOUCH(src); FKTOUCH(obj);         # this is so the warn nags you till you fix it
-
     if mess: return 1;                      # 'success' with warnings
     return 0;                               # actual success
 
 #   ---     ---     ---     ---     ---
+
+def TCHHEDS():
+    global HEDS;
+    for hed in HEDS:
+        FKTOUCH(hed);
+
+    del HEDS; HEDS=[];
+
+def CHKHEDS(src, f):
+
+    f=RDFILE(f, rl=1, rl_sep=" ", ask=0, mute=1)[0];
+    deps=f.replace("\n", "").replace("/", "\\").replace("\\\\", "\\").split(" ");
+
+    if len(deps) > 1:
+        deps=deps[1:];
+        deps=[path for path in deps if OKFILE(path)];
+        global HEDS; HEDS.extend([dep for dep in deps if dep not in HEDS]);
+
+        if src not in HEDS:
+            HEDS.append(src);
+
+        for dep in deps:
+
+            if MTIMEVS(dep, src):
+                return 1;
+
+    return 0;
 
 def AVTO_CHKFILE(f, gcc, brute=0):
 
@@ -90,12 +118,20 @@ def AVTO_CHKFILE(f, gcc, brute=0):
 
     src = SRCFOLD + "\\" + fname + "." + fdata.ext;
     obj = OBJFOLD + "\\" + fname + ".o";
+    hed = OBJFOLD + "\\" + fname + ".d";
+
+    for f in [src, obj, hed]:
+        if f not in HEDS: HEDS.append(f);
 
     if not OKFILE(obj) or brute:
         return (obj, AVTO_SRCBUILD(src, obj, gcc));
 
     elif MTIMEVS(src, obj):
         return (obj, AVTO_SRCBUILD(src, obj, gcc));
+
+    elif OKFILE(hed):
+        if CHKHEDS(src, hed):
+            return (obj, AVTO_SRCBUILD(src, obj, gcc));
 
     return (obj, -1);
 

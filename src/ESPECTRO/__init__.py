@@ -33,6 +33,7 @@ from .utils.lyos import (
 
     CPRINT,
     ERRPRINT,
+    DISABLE_EPRINT,
 
     WALK,
     LISTDIR,
@@ -100,6 +101,8 @@ from .builder import (
     AVTO_MKEXE,
     AVTO_MKLIB,
     AVTO_MKDLL,
+
+    TCHHEDS
 
 );
 
