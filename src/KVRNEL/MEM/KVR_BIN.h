@@ -27,26 +27,26 @@ int RMBIN(BIN* bin);                        // removes a bin file from disk
 
                                             // catch if error on open
 #define BINOPEN(bin, retx)                  { retx = 0;                                      \
-    CALL(MKBIN(bin), retx, 0x40, bin->path);                                                }
+    ERRCATCH(MKBIN(bin), retx, 0x40, bin->path);                                            }
 
                                             // catch if error on close
 #define BINCLOSE(bin)                       { int retx = 0;                                  \
-    CALL(DLBIN(bin), retx , 0x41, bin->path);                                               }
+    ERRCATCH(DLBIN(bin), retx , 0x41, bin->path);                                           }
 
                                             // catch if we don't write as many bytes
 #define BINWRITE(bin, wb, type, count, buff){ wb = sizeof(type) * count;                     \
-    CALL(fwrite(buff, sizeof(type), count, bin->file), wb, 0x42, bin->path);                }
+    ERRCATCH(fwrite(buff, sizeof(type), count, bin->file), wb, 0x42, bin->path);            }
 
                                             // catch if we don't read as many bytes
 #define BINREAD(bin, rb, type, count, buff) { rb = sizeof(type) * count;                     \
-    CALL(fread(buff, sizeof(type), count, bin->file), rb, 0x43, bin->path);                 }
+    ERRCATCH(fread(buff, sizeof(type), count, bin->file), rb, 0x43, bin->path);             }
 
                                             // catch if file signatures don't match
 #define BINSIG(bin, sig)                    { int retx = 0;                                  \
-    CALL(__wrstrcmp(bin->sign, sig), retx, 0x44, bin->path);                                }
+    ERRCATCH(__wrstrcmp(bin->sign, sig), retx, 0x44, bin->path);                            }
 
 #define BINREMOVE(bin)                      { int retx = 0;                                  \
-    CALL(RMBIN(bin), retx, 0x45, bin->path);                                                }
+    ERRCATCH(RMBIN(bin), retx, 0x45, bin->path);                                            }
 
 //   ---     ---     ---     ---     ---
 

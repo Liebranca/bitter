@@ -2,22 +2,21 @@
 
 //  - --- - --- - --- - --- -
 
-void MKSTK(STK* s, uint size, char* id)     {
+void MKSTK(STK* s, uint bounds)             {
 
-    s->m.id    = id;
+    s->bounds = bounds;
+    s->top    = 0;
 
-    s->m.size  = sizeof(uint);
-    s->m.count = size;
-    s->top     = 0;
+    s->ptr    = (uint*) (((char*) s) + sizeof(STK));
 
-    MEMGET(byref(s->m), s->ptr, uint);                                                      };
+    };
 
 //  - --- - --- - --- - --- -
 
 sint PSHSTK(STK* s, uint x)                 {
 
-    if  (s->top == (s->m.count  )) { return ERROR; }
-    elif(s->top == (s->m.count+1)) { s->top=0;     };
+    if  (s->top == (s->bounds  )) { return ERROR; }
+    elif(s->top == (s->bounds+1)) { s->top=0;     };
 
     s->ptr[s->top]=x;
     s->top++;
@@ -26,13 +25,13 @@ sint PSHSTK(STK* s, uint x)                 {
 
 uint POPSTK(STK* s)                         {
 
-    if  (s->top == s->m.count+1) { return (uint) ERROR; }
-    elif(s->top == s->m.count  ) { s->top=s->m.count-1; }
+    if  (s->top == s->bounds+1) { return (uint) ERROR; }
+    elif(s->top == s->bounds  ) { s->top=s->bounds-1;  }
 
     uint value=s->ptr[s->top];
 
-    if  (s->top  > 0) { s->top--;            }
-    elif(s->top == 0) { s->top=s->m.count+1; };
+    if  (s->top  > 0) { s->top--;           }
+    elif(s->top == 0) { s->top=s->bounds+1; };
 
     return value;                                                                           };
 

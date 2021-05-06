@@ -42,7 +42,7 @@ void  FCMEM(MEM* m       );                 // force valid block
     static char sizestr[33]; int retx = 0;    /* requested size to char array              */\
     __writoa(m->size * m->count, sizestr, 10);                                               \
                                                                                              \
-    CALL(MKMEM(m), retx, 0x00, sizestr);      /* catch malloc fail                         */\
+    ERRCATCH(MKMEM(m), retx, 0x00, sizestr);  /* catch malloc fail                         */\
     buff = MEMBUFF(m, type, 0);               /* set buff to first element in array        */}
 
 #define MEMFREE(m, buff)                      /* just a macro for prettycode's sake        */\

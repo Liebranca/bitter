@@ -9,6 +9,9 @@ extern "C" {
 
 //   ---     ---     ---     ---     ---
 
+void PESONIT();                             // fire up the PE$O translator
+void PESOEND();                             // cleanup
+
 void SETINBUFF(char* src);                  // for testing
 void SETINCOM(COM* c);
 

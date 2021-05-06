@@ -13,7 +13,8 @@ void main() {
 
     // testing hash tables
 
-    HASH h; MKHASH(&h, 64, "TABLE0");
+    HASH h; MKHASH(&h, 6, "TABLE0");
+
     int x[8]={0}; char* keys[8]={ "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7" };
     for(int i=0; i<8; i++) { x[i]=i; HASHSET(byref(h), keys[i], x+i); };
 

@@ -8,8 +8,7 @@
  *   ---     ---     ---     ---     ---    */
 
 #include "kvr_intprt.h"
-#include "../MEM/kvr_bin.h"
-#include "../MEM/kvr_mem.h"
+#include "../TYPES/zjc_hash.h"
 
 #include <string.h>
 #include <conio.h>
@@ -24,6 +23,8 @@ static int  KVR_INITER[3]={0,0,0};
 static COM* KVR_INCOM    = NULL;
 
 static char LBRACE='{'; static char RBRACE='}';
+
+static HASH KVR_LNAMES={0};
 
 //   ---     ---     ---     ---     ---
 
@@ -53,6 +54,18 @@ enum RDMODES                                {
    DEFAULT {}
 
 */
+
+//   ---     ---     ---     ---     ---
+
+void PESONIT()                              {
+
+    MKHASH(&KVR_LNAMES, 64, "LNAMES");
+    };
+
+void PESOEND()                              {
+
+    MEMFREE(byref(KVR_LNAMES.m), byref(KVR_LNAMES));
+    };
 
 //   ---     ---     ---     ---     ---
 

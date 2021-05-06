@@ -111,7 +111,7 @@ void CALOUT(char* format, ...);
 
 #define GETLOC __geterrloc(ERRLOC)          /* spam wherever something may go wrong        */
 
-#define CALL(func, retx, errcode, info)     { DANG* cal = GETLOC;                            \
+#define ERRCATCH(func, retx, errcode, info) { DANG* cal = GETLOC;                            \
                                                                                              \
     cal->state            = func;                                                            \
     if  ( (cal->state    == FATAL        )                                                   \

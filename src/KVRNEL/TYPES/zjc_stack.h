@@ -11,8 +11,7 @@ extern "C" {
 
 typedef struct ZJC_STACK_UINT {             // common LIFO stack to hold uints
 
-    MEM   m;                                // memory block header
-
+    uint  bounds;                           // max elements
     uint  top;                              // current top idex
     uint* ptr;                              // ptr to MEM buff
 
@@ -20,7 +19,7 @@ typedef struct ZJC_STACK_UINT {             // common LIFO stack to hold uints
 
 //  - --- - --- - --- - --- -
 
-void MKSTK(STK* s, uint size, char* id);    // make a new stack
+void MKSTK(STK* s, uint bounds);            // make a new stack
 
 sint PSHSTK(STK* s, uint x);                // push to stack
 uint POPSTK(STK* s);                        // pop from stack
@@ -28,10 +27,10 @@ uint POPSTK(STK* s);                        // pop from stack
 //  - --- - --- - --- - --- -
 
 #define STACKPUSH(stack, value)             { int retx=0;                                    \
-    CALL(PSHSTK(stack, value), retx, 70, stack->m.id); /* throws full stack  */             }
+    ERRCATCH(PSHSTK(stack, value), retx,  70, ""); /* throws full stack  */                 }
 
 #define STACKPOP(stack, value)              {                                                \
-    CALL(POPSTK(stack), value, 71, stack->m.id);       /* throws empty stack */             }
+    ERRCATCH(POPSTK(stack       ), value, 71, ""); /* throws empty stack */                 }
 
 //  - --- - --- - --- - --- -
 

@@ -51,8 +51,7 @@ void DLMEM(MEM* m, void* buff)              {
 void FCMEM(MEM* m)                          {
 
     if(!m->size ) { m->size  = 1;          };
-    if(!m->count) { m->count = 1;          };
-    if(!m->free ) { m->free  = &free;      };                                               };
+    if(!m->count) { m->count = 1;          };                                               };
 
 //   ---     ---     ---     ---     ---
 
