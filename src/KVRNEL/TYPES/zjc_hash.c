@@ -4,7 +4,7 @@
 //   ---     ---     ---     ---     ---
 
 static uint   ZJC_LIDX_HASH  = 0;
-static char*  ZJC_LKEY_HASH  = NULL;
+static LKUP*  ZJC_LKEY_HASH  = NULL;
 
 static HSLOT* ZJC_CURR_HSLOT = NULL;
 static HNODE* ZJC_CURR_HNODE = NULL;
@@ -59,7 +59,6 @@ void MKHASH(HASH* h, uint mag, char* id)    {
 
 void HASHIT(HASH* h, char* k)               {
 
-    ZJC_LKEY_HASH = k;
     uint idex     = 0;
 
     uint x        = 0;
@@ -72,35 +71,51 @@ void HASHIT(HASH* h, char* k)               {
 
     } while(*k++);
 
-    ZJC_CURR_HSLOT=MEMBUFF(byref(h->m), HSLOT, h->jmp*(idex%(h->nslots)));                  };
+    ZJC_LKEY_HASH->idex=idex%(h->nslots);
+    ZJC_CURR_HSLOT=MEMBUFF(byref(h->m), HSLOT, h->jmp*(ZJC_LKEY_HASH->idex));               };
 
 int KINHSLOT()                              {
 
     ZJC_CURR_HNODE=ZJC_CURR_HSLOT->head;
-    if(!ZJC_CURR_HNODE->key) { return 0; }
-
     ZJC_PREV_HNODE=NULL;
+
+    if(!ZJC_CURR_HNODE->lkp) { return 0; }
+
     do {                                    // loop through list until key is found
 
-        if(!__wrstrcmp(ZJC_CURR_HNODE->key, ZJC_LKEY_HASH))    { return 1; }
+        if(!__wrstrcmp(ZJC_CURR_HNODE->lkp->key, ZJC_LKEY_HASH->key)) { return 1; }
 
-        elif(ZJC_PREV_HNODE)                { // if both nodes are empty assume empty list
-            if(!ZJC_CURR_HNODE->idex && !ZJC_PREV_HNODE->idex) { return 0; }                };
+        elif(ZJC_PREV_HNODE)                // if both nodes are empty assume empty list
+        {
+            if( ZJC_CURR_HNODE->lkp->subidex<0
+             && ZJC_PREV_HNODE->lkp->subidex<0) { return 0; }
 
-        ZJC_PREV_HNODE=ZJC_CURR_HNODE; ZJC_CURR_HNODE=ZJC_CURR_HNODE->next;
+        }; ZJC_PREV_HNODE=ZJC_CURR_HNODE; ZJC_CURR_HNODE=ZJC_CURR_HNODE->next;
+        if(!ZJC_CURR_HNODE->lkp) { return 0; }
 
     } while(ZJC_CURR_HNODE); return 0;                                                      };
 
-int INHASH(HASH* h, char* key)              { HASHIT(h, key); return KINHSLOT();            };
+int INHASH(HASH* h, LKUP* lkp)              {
+
+    if(lkp->subidex>=0)
+    {
+        ZJC_CURR_HSLOT=MEMBUFF(byref(h->m), HSLOT, h->jmp*lkp->idex);
+        ZJC_CURR_HNODE=ZJC_CURR_HSLOT->nodes+ZJC_LKEY_HASH->subidex;
+        ZJC_PREV_HNODE=ZJC_CURR_HNODE->prev; return 1;
+    }
+
+    ZJC_LKEY_HASH=lkp; HASHIT(h, lkp->key);
+    return KINHSLOT();                                                                      };
 
 int NK4HSLOT()                              {
 
     STACKPOP(ZJC_CURR_HSLOT->stack, ZJC_LIDX_HASH);
     if(ZJC_LIDX_HASH==(uint) ERROR) { return ERROR; } // throw list full
 
-    ZJC_CURR_HNODE       = (ZJC_CURR_HSLOT->nodes)+ZJC_LIDX_HASH;
-    ZJC_CURR_HNODE->key  = ZJC_LKEY_HASH;
-    ZJC_CURR_HNODE->idex = ZJC_LIDX_HASH;
+    ZJC_LKEY_HASH->subidex = ZJC_LIDX_HASH;
+
+    ZJC_CURR_HNODE         = (ZJC_CURR_HSLOT->nodes)+ZJC_LKEY_HASH->subidex;
+    ZJC_CURR_HNODE->lkp    = ZJC_LKEY_HASH;
 
     if(ZJC_PREV_HNODE) { ZJC_PREV_HNODE->next = ZJC_CURR_HNODE; }
     else               { ZJC_CURR_HSLOT->head = ZJC_CURR_HNODE; };
@@ -115,17 +130,25 @@ void* GTHASH(int pop)                       {
 
     if(pop) {
 
-        STACKPUSH(ZJC_CURR_HSLOT->stack, ZJC_CURR_HNODE->idex);
+        STACKPUSH(ZJC_CURR_HSLOT->stack, ZJC_CURR_HNODE->lkp->idex);
+        ZJC_CURR_HNODE->lkp->subidex=-1;
 
         /* if not first node, connect next to prev **
         ** if first node and next, make next head  **
         ** else list is empty                      */
 
-        if  (ZJC_PREV_HNODE      )          { ZJC_PREV_HNODE->next=ZJC_CURR_HNODE->next;    }
+        if  (ZJC_PREV_HNODE) {
+            ZJC_PREV_HNODE->next=ZJC_CURR_HNODE->next;
+            if(ZJC_CURR_HNODE->next) {
+                ZJC_CURR_HNODE->next->prev=ZJC_PREV_HNODE;
+            };
+
+        }
+
         elif(ZJC_CURR_HNODE->next)          { ZJC_CURR_HSLOT->head=ZJC_CURR_HNODE->next;    }
         else                                { ZJC_CURR_HSLOT->head=ZJC_CURR_HSLOT->nodes+0; };
 
-        ZJC_CURR_HNODE->key=NULL; ZJC_CURR_HNODE->next=NULL;
+        ZJC_CURR_HNODE->lkp=NULL; ZJC_CURR_HNODE->next=NULL; ZJC_CURR_HNODE->prev=NULL;
         void* data=ZJC_CURR_HNODE->data; ZJC_CURR_HNODE->data=NULL;
 
         ZJC_CURR_HNODE=NULL; return data;

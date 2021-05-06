@@ -19,7 +19,7 @@
 
 #define MEMSET(m, op)                       /* a counter. goes up on MKMEM, down on DLMEM  */\
     USED_MEMORY op##= (m->size * m->count)                                                   \
-                    + sizeof(MEM);
+                    + sizeof(MEM); CALOUT("%u KB USED\n\b", (USED_MEMORY/1024))
 
 static uint64_t USED_MEMORY = 0;            // total bytes used by MEM instances
 
@@ -39,7 +39,7 @@ void* __kvrmalloc(int count, int size)      {
 int MKMEM(MEM* m)                           { if(m->buff) { DLMEM(m, NULL); } // dont leak
 
     m->buff = __kvrmalloc(m->count, m->size);
-    if(m->buff != NULL)                     { MEMSET (m, +   ) return 0;                    };
+    if(m->buff != NULL)                     { MEMSET (m, +   ); return 0;                   };
     return FATAL;                                                                           };
 
 void DLMEM(MEM* m, void* buff)              {
@@ -58,16 +58,17 @@ void FCMEM(MEM* m)                          {
 void* NVMEM(MEM* m, int p)                  {
 
     int ptr=0;
-    if(p < 0)                               // negative indexing (last element first)
-    {
-        if  (-p <= m->count)                { ptr = m->count + p;                           }
-        else                                { ptr = 0;                                      };
-    }
 
-    else                                    // positive indexing (first element first)
+
+    if(p >= 0)                              // positive indexing (first element first)
     {
         if  ( p <  m->count)                { ptr = p;                                      }
         else                                { ptr = m->count - 1;                           };
+    }
+    else                                    // negative indexing (last element first)
+    {
+        if  (-p <= m->count)                { ptr = m->count + p;                           }
+        else                                { ptr = 0;                                      };
     };
 
                                             // cast to char and return buff @ptr

@@ -12,11 +12,10 @@ extern "C" {
 typedef struct ZJC_HASHNODE {
 
     void* data;                             // ptr to block, typecasted by table get
-    char* key;                              // key that generated the table index
+    LKUP* lkp;                              // cache'd lookup data
 
-    uint  idex;                             // idex into subarray
-
-    struct ZJC_HASHNODE* next;              // jump-to
+    struct ZJC_HASHNODE* next;              // fwd jump-to
+    struct ZJC_HASHNODE* prev;              // back jump-to
 
 } HNODE;
 
@@ -49,17 +48,17 @@ void  DLHASH(void* buff);                   // free a hash table
 int   STHASH(void* data);                   // insert key:data into hash
 void* GTHASH(int pop);                      // remove key:data from hash, return data
 
-int   INHASH(HASH* h, char* key);           // return key is in table
+int   INHASH(HASH* h, LKUP* key);           // return key is in table
 int   NK4HSLOT();                           // pop slot idex from subarray
 
 //   ---     ---     ---     ---     ---
 
-#define HASHSET(h, key, data)               { int key_in_hash=INHASH(h, key); int retx=0;    \
-    if(!key_in_hash) { ERRCATCH(NK4HSLOT(), retx, 72, key); h->nitems++; };                  \
+#define HASHSET(h, lkp, data)               { int key_in_hash=INHASH(h, lkp); int retx=0;    \
+    if(!key_in_hash) { ERRCATCH(NK4HSLOT(), retx, 72, lkp->key); h->nitems++; };             \
     if(!retx       ) { STHASH(data);                                     };                 }
 
-#define HASHGET(h, key, to, type, pop)      { int key_in_hash=1;                             \
-    ERRCATCH(INHASH(h, key), key_in_hash, 73, key);                                          \
+#define HASHGET(h, lkp, to, type, pop)        { int key_in_hash=1;                           \
+    ERRCATCH(INHASH(h, lkp), key_in_hash, 73, lkp->key);                                     \
     if(key_in_hash) { to=(type*) GTHASH(pop); h->nitems-=pop; } else { to=NULL; };          }
 
 //   ---     ---     ---     ---     ---

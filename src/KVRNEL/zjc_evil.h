@@ -28,6 +28,16 @@ extern "C" {
 
 #define ARRSIZE(arr) sizeof(arr) / sizeof(*arr)
 
+typedef struct ZJC_TLOOKUP {                // a str:int:int truple to store table indices
+
+    char* key;
+    int   idex;
+    int   subidex;
+
+} LKUP;
+
+LKUP NITKEY(char* key);
+
 typedef struct ZJC_COM {                    // a command
 
     int   order;                            // SGL || VERB_FIRST || SUBJ_FIRST
