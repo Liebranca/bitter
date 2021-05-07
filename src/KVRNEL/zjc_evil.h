@@ -28,11 +28,12 @@ extern "C" {
 
 #define ARRSIZE(arr) sizeof(arr) / sizeof(*arr)
 
-typedef struct ZJC_TLOOKUP {                // a str:int:int truple to store table indices
+typedef struct ZJC_TLOOKUP {                // table lookup token, used for fetching
 
-    char* key;
-    int   idex;
-    int   subidex;
+    char* key;                              // name to associate with value
+
+    int  idex;                              // index into the table
+    int  mod;                               // collision shift
 
 } LKUP;
 

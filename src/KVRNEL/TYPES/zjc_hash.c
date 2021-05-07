@@ -3,19 +3,18 @@
 
 //   ---     ---     ---     ---     ---
 
-static uint   ZJC_LIDX_HASH  = 0;
-static LKUP*  ZJC_LKEY_HASH  = NULL;
+static uint       ZJC_LIDX_HASH  = 0;
+static LKUP*      ZJC_LKEY_HASH  = NULL;
 
-static HSLOT* ZJC_CURR_HSLOT = NULL;
-static HNODE* ZJC_CURR_HNODE = NULL;
-static HNODE* ZJC_PREV_HNODE = NULL;
+static HSLOT*     ZJC_CURR_HSLOT = NULL;
+static void**     ZJC_CURR_HNODE = NULL;
 
 //   ---     ---     ---     ---     ---
 
 void MKHASH(HASH* h, uint mag, char* id)    {
 
-    h->nslots=1; uint stklen=1;
-    for(uint x=0; x<mag; x++) { h->nslots*=2; stklen+=1; }
+    h->nslots=1; uint stklen=9;
+    for(uint x=0; x<mag; x++) { h->nslots*=2; }
 
     h->m        = (MEM){0};
 
@@ -23,8 +22,10 @@ void MKHASH(HASH* h, uint mag, char* id)    {
     h->m.size   = 1;
 
     h->jmp      = ( (sizeof(HSLOT)                          ) \
+                  + (sizeof(void*)                 * stklen ) \
                   + (sizeof(STK  ) + (sizeof(uint) * stklen)) \
-                  + (sizeof(HNODE)                 * stklen ) );
+                  + (sizeof(LKUP )                 * stklen ) );
+
 
     h->m.count  = h->jmp*h->nslots;
     h->m.free   = NULL;
@@ -41,17 +42,23 @@ void MKHASH(HASH* h, uint mag, char* id)    {
         offset      = x*h->jmp;
 
         slot        = MEMBUFF(byref(h->m), HSLOT, offset); offset+=sizeof(HSLOT);
-        slot->stack = MEMBUFF(byref(h->m), STK,   offset);
-        offset+=sizeof(STK); MKSTK(slot->stack, stklen);
 
+        slot->nodes = MEMBUFF(byref(h->m), void*, offset); offset+=sizeof(void*)*stklen;
+        slot->stack = MEMBUFF(byref(h->m), STK,   offset); offset+=sizeof(STK);
+
+        MKSTK(slot->stack, stklen);
         for(uint y=stklen; y>0; y--)
         {
             STACKPUSH(slot->stack, y-1);
 
         }; offset+=sizeof(uint)*stklen;
 
-        slot->nodes=MEMBUFF(byref(h->m), HNODE, offset);
-        slot->head=slot->nodes+0; slot->head->next=NULL;
+        slot->keycache=MEMBUFF(byref(h->m), LKUP,  offset);
+        for(uint y=stklen; y<0; y++)
+        {
+            slot->keycache[y]=NITKEY(NULL);
+
+        };
 
     };                                                                                      };
 
@@ -74,85 +81,63 @@ void HASHIT(HASH* h, char* k)               {
     ZJC_LKEY_HASH->idex=idex%(h->nslots);
     ZJC_CURR_HSLOT=MEMBUFF(byref(h->m), HSLOT, h->jmp*(ZJC_LKEY_HASH->idex));               };
 
-int KINHSLOT()                              {
+int KINHSLOT(void)                          {
 
-    ZJC_CURR_HNODE=ZJC_CURR_HSLOT->head;
-    ZJC_PREV_HNODE=NULL;
+    ZJC_CURR_HNODE=ZJC_CURR_HSLOT->nodes;
+    if(!(*ZJC_CURR_HNODE)) { return 0; }
 
-    if(!ZJC_CURR_HNODE->lkp) { return 0; }
+    LKUP* lkp=ZJC_CURR_HSLOT->keycache;
+    if(ZJC_LKEY_HASH->mod==-2)
+    {
 
-    do {                                    // loop through list until key is found
+        if(!(lkp->key)) { return 0; }
 
-        if(!__wrstrcmp(ZJC_CURR_HNODE->lkp->key, ZJC_LKEY_HASH->key)) { return 1; }
-
-        elif(ZJC_PREV_HNODE)                // if both nodes are empty assume empty list
+        do
         {
-            if( ZJC_CURR_HNODE->lkp->subidex<0
-             && ZJC_PREV_HNODE->lkp->subidex<0) { return 0; }
+            if(!__wrstrcmp(lkp->key, ZJC_LKEY_HASH->key))
+            { ZJC_LKEY_HASH->mod=lkp->mod; return 1; }
 
-        }; ZJC_PREV_HNODE=ZJC_CURR_HNODE; ZJC_CURR_HNODE=ZJC_CURR_HNODE->next;
-        if(!ZJC_CURR_HNODE->lkp) { return 0; }
+            ZJC_CURR_HNODE++; lkp++;
 
-    } while(ZJC_CURR_HNODE); return 0;                                                      };
+        } while(*ZJC_CURR_HNODE && lkp->key); return 0;
+    };
+
+    do { ZJC_CURR_HNODE++; } while(*ZJC_CURR_HNODE); return 0;                              };
 
 int INHASH(HASH* h, LKUP* lkp)              {
 
-    if(lkp->subidex>=0)
+    ZJC_LKEY_HASH=lkp;
+    if(lkp->mod>=0 && lkp->idex>=0)
     {
         ZJC_CURR_HSLOT=MEMBUFF(byref(h->m), HSLOT, h->jmp*lkp->idex);
-        ZJC_CURR_HNODE=ZJC_CURR_HSLOT->nodes+ZJC_LKEY_HASH->subidex;
-        ZJC_PREV_HNODE=ZJC_CURR_HNODE->prev; return 1;
+        ZJC_CURR_HNODE=ZJC_CURR_HSLOT->nodes+lkp->mod; return 1;
     }
 
-    ZJC_LKEY_HASH=lkp; HASHIT(h, lkp->key);
-    return KINHSLOT();                                                                      };
+    HASHIT(h, lkp->key); return KINHSLOT();                                                 };
 
-int NK4HSLOT()                              {
+int NK4HSLOT(void)                          {
 
     STACKPOP(ZJC_CURR_HSLOT->stack, ZJC_LIDX_HASH);
     if(ZJC_LIDX_HASH==(uint) ERROR) { return ERROR; } // throw list full
 
-    ZJC_LKEY_HASH->subidex = ZJC_LIDX_HASH;
-
-    ZJC_CURR_HNODE         = (ZJC_CURR_HSLOT->nodes)+ZJC_LKEY_HASH->subidex;
-    ZJC_CURR_HNODE->lkp    = ZJC_LKEY_HASH;
-
-    if(ZJC_PREV_HNODE) { ZJC_PREV_HNODE->next = ZJC_CURR_HNODE; }
-    else               { ZJC_CURR_HSLOT->head = ZJC_CURR_HNODE; };
+    ZJC_LKEY_HASH->mod     = ZJC_LIDX_HASH;
+    ZJC_CURR_HNODE         = (ZJC_CURR_HSLOT->nodes)+ZJC_LKEY_HASH->mod;
 
     ZJC_LIDX_HASH=0; return 0;                                                              };
 
 //   ---     ---     ---     ---     ---
 
-int STHASH(void* data)                      { ZJC_CURR_HNODE->data=data;                    };
+void STHASH(void* data)                     { *ZJC_CURR_HNODE=data;                         };
 
-void* GTHASH(int pop)                       {
+void GTHASH(void** to, int pop)             {
 
+    *to=*ZJC_CURR_HNODE;
     if(pop) {
 
-        STACKPUSH(ZJC_CURR_HSLOT->stack, ZJC_CURR_HNODE->lkp->idex);
-        ZJC_CURR_HNODE->lkp->subidex=-1;
+        STACKPUSH(ZJC_CURR_HSLOT->stack, ZJC_LKEY_HASH->mod);
+        *ZJC_CURR_HNODE=NULL;
 
-        /* if not first node, connect next to prev **
-        ** if first node and next, make next head  **
-        ** else list is empty                      */
-
-        if  (ZJC_PREV_HNODE) {
-            ZJC_PREV_HNODE->next=ZJC_CURR_HNODE->next;
-            if(ZJC_CURR_HNODE->next) {
-                ZJC_CURR_HNODE->next->prev=ZJC_PREV_HNODE;
-            };
-
-        }
-
-        elif(ZJC_CURR_HNODE->next)          { ZJC_CURR_HSLOT->head=ZJC_CURR_HNODE->next;    }
-        else                                { ZJC_CURR_HSLOT->head=ZJC_CURR_HSLOT->nodes+0; };
-
-        ZJC_CURR_HNODE->lkp=NULL; ZJC_CURR_HNODE->next=NULL; ZJC_CURR_HNODE->prev=NULL;
-        void* data=ZJC_CURR_HNODE->data; ZJC_CURR_HNODE->data=NULL;
-
-        ZJC_CURR_HNODE=NULL; return data;
-
-    }; return ZJC_CURR_HNODE->data;                                                         };
+    };
+};
 
 //   ---     ---     ---     ---     ---

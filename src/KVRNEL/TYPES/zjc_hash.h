@@ -9,22 +9,12 @@ extern "C" {
 
 //   ---     ---     ---     ---     ---
 
-typedef struct ZJC_HASHNODE {
-
-    void* data;                             // ptr to block, typecasted by table get
-    LKUP* lkp;                              // cache'd lookup data
-
-    struct ZJC_HASHNODE* next;              // fwd jump-to
-    struct ZJC_HASHNODE* prev;              // back jump-to
-
-} HNODE;
-
 typedef struct ZJC_HASHSLOT {
 
-    STK*   stack;                           // available indices
+    void** nodes;                           // addresses to data
 
-    HNODE* head;                            // ptr to first block
-    HNODE* nodes;                           // array of key:data pairs
+    STK*   stack;                           // available indices
+    LKUP*  keycache;                        // stored keys for faster access
 
 } HSLOT;
 
@@ -42,14 +32,14 @@ typedef struct ZJC_HASHTABLE {
 
 //   ---     ---     ---     ---     ---
 
-void  MKHASH(HASH* h, uint mag, char* id);  // build a new hash table
-void  DLHASH(void* buff);                   // free a hash table
+void MKHASH(HASH* h, uint mag, char* id);   // build a new hash table
+void DLHASH(void* buff);                    // free a hash table
 
-int   STHASH(void* data);                   // insert key:data into hash
-void* GTHASH(int pop);                      // remove key:data from hash, return data
+void STHASH(void* data);                    // insert data into hash @key
+void GTHASH(void** to, int pop);            // retrieve data @key
 
-int   INHASH(HASH* h, LKUP* key);           // return key is in table
-int   NK4HSLOT();                           // pop slot idex from subarray
+int  INHASH(HASH* h, LKUP* key);            // return key is in table
+int  NK4HSLOT(void);                        // pop slot idex from subarray
 
 //   ---     ---     ---     ---     ---
 
@@ -57,9 +47,9 @@ int   NK4HSLOT();                           // pop slot idex from subarray
     if(!key_in_hash) { ERRCATCH(NK4HSLOT(), retx, 72, lkp->key); h->nitems++; };             \
     if(!retx       ) { STHASH(data);                                     };                 }
 
-#define HASHGET(h, lkp, to, type, pop)        { int key_in_hash=1;                           \
-    ERRCATCH(INHASH(h, lkp), key_in_hash, 73, lkp->key);                                     \
-    if(key_in_hash) { to=(type*) GTHASH(pop); h->nitems-=pop; } else { to=NULL; };          }
+#define HASHGET(h, lkp, to, type, pop)        { int key_in_hash=INHASH(h, lkp);             \
+    if(!key_in_hash) { ERRCATCH(ERROR, key_in_hash, 73, lkp->key); }                        \
+    else             { GTHASH((void**) &to, pop); h->nitems-=pop;; }                        }
 
 //   ---     ---     ---     ---     ---
 
