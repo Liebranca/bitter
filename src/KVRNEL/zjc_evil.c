@@ -6,6 +6,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <math.h>
+#include <time.h>
 
 //   ---     ---     ---     ---     ---
 
@@ -192,3 +193,17 @@ int qstoi(char* buff) {
         x+=y;
 
     } return x;                                                                             };
+
+//   ---     ---     ---     ---     ---
+/* random timing stuff, find somewhere    **
+** else to drop this into. likely         **
+** zjc_time when we get around to         **
+** porting that from dsm                  */
+
+static clock_t framestart;
+static clock_t frameend;
+static float   CPS=1.0f/CLOCKS_PER_SEC;
+
+void  timer_start(void)                     { framestart = clock();                         };
+float deltaCalc  (void)                     { return (frameend-framestart) * CPS;           };
+float timer_end  (void)                     { frameend   = clock(); return deltaCalc();     };

@@ -5,7 +5,7 @@
 void MKSTK(STK* s, uint bounds)             {
 
     s->bounds = bounds;
-    s->top    = 0;
+    s->top    = -1;
 
     s->ptr    = (uint*) (((char*) s) + sizeof(STK));
 
@@ -13,25 +13,22 @@ void MKSTK(STK* s, uint bounds)             {
 
 //  - --- - --- - --- - --- -
 
-sint PSHSTK(STK* s, uint x)                 {
+int PSHSTK(STK* s, uint x)                  {
 
-    if  (s->top == (s->bounds  )) { return ERROR; }
-    elif(s->top == (s->bounds+1)) { s->top=0;     };
+    if  (s->top == (s->bounds)) { return ERROR; }
 
-    s->ptr[s->top]=x;
     s->top++;
+    s->ptr[s->top]=x;
 
     return 0;                                                                               };
 
 uint POPSTK(STK* s)                         {
 
-    if  (s->top == s->bounds+1) { return (uint) ERROR; }
-    elif(s->top == s->bounds  ) { s->top=s->bounds-1;  }
+    if  (s->top == -1       ) { return (uint) ERROR; }
+    elif(s->top == s->bounds) { s->top=s->bounds-1;  }
 
     uint value=s->ptr[s->top];
-
-    if  (s->top  > 0) { s->top--;           }
-    elif(s->top == 0) { s->top=s->bounds+1; };
+    s->top--;
 
     return value;                                                                           };
 

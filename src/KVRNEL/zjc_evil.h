@@ -28,6 +28,8 @@ extern "C" {
 
 #define ARRSIZE(arr) sizeof(arr) / sizeof(*arr)
 
+//   ---     ---     ---     ---     ---
+
 typedef struct ZJC_TLOOKUP {                // table lookup token, used for fetching
 
     char* key;                              // name to associate with value
@@ -37,7 +39,9 @@ typedef struct ZJC_TLOOKUP {                // table lookup token, used for fetc
 
 } LKUP;
 
-LKUP NITKEY(char* key);
+LKUP NITKEY(char* key);                     // fast token init, only for convenience
+
+//   ---     ---     ---     ---     ---
 
 typedef struct ZJC_COM {                    // a command
 
@@ -122,6 +126,7 @@ void CALOUT(char* format, ...);
 
 #define GETLOC __geterrloc(ERRLOC)          /* spam wherever something may go wrong        */
 
+// this one is naughty slow, wrap it in checks if used in a loop
 #define ERRCATCH(func, retx, errcode, info) { DANG* cal = GETLOC;                            \
                                                                                              \
     cal->state            = func;                                                            \
@@ -132,6 +137,10 @@ void CALOUT(char* format, ...);
     retx = cal->state; __popcalreg();                                                       }
 
 //   ---     ---     ---     ---     ---
+
+// move these somewhere else
+void  timer_start(void);
+float timer_end  (void);
 
 #ifdef __cplusplus
 }

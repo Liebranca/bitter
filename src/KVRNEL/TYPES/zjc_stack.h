@@ -21,7 +21,7 @@ typedef struct ZJC_STACK_UINT {             // common LIFO stack to hold uints
 
 void MKSTK(STK* s, uint bounds);            // make a new stack
 
-sint PSHSTK(STK* s, uint x);                // push to stack
+int  PSHSTK(STK* s, uint x);                // push to stack
 uint POPSTK(STK* s);                        // pop from stack
 
 //  - --- - --- - --- - --- -
