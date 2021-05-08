@@ -103,10 +103,11 @@ int KINHSLOT(void)                          {
         if(!(lkp->key)) { return 0; }
 
         do {
+
+            // skip deleted node on fetch
             if(*ZJC_CURR_HNODE == &ZJC_HASH_GRAVE)
             {
                 if(ZJC_HASH_FLAGS & ZJC_HASH_FINSRT) { return 0; }
-                else { asm("nop"); }
 
             } elif(!__wrstrcmp(lkp->key, ZJC_LKEY_HASH->key))
             { ZJC_LKEY_HASH->mod=lkp->mod; return 1; }
@@ -118,12 +119,22 @@ int KINHSLOT(void)                          {
 
     do {
 
+        // skip deleted node on fetch
         if(*ZJC_CURR_HNODE==&ZJC_HASH_GRAVE)
         {
             if(ZJC_HASH_FLAGS & ZJC_HASH_FINSRT) { return 0; }
-            else { asm("nop"); }
 
-        }; ZJC_CURR_HNODE++;
+        }
+
+        // new lookup token for existing key
+        elif( !(ZJC_HASH_FLAGS & ZJC_HASH_FINSRT) \
+        &&     (ZJC_LKEY_HASH->mod<0            ) )
+        {
+            // if keys match, copy data to token
+            if(!__wrstrcmp(lkp->key, ZJC_LKEY_HASH->key))
+            { *ZJC_LKEY_HASH=*lkp; return 1; }
+
+        }; ZJC_CURR_HNODE++; lkp++;
 
     } while(*ZJC_CURR_HNODE);
 

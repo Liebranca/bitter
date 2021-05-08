@@ -20,25 +20,16 @@ void main() {
     };
 
     for(int i=0; i<8; i++) {
-        x[i]=i; HASHSET(byref(h), byref(keys[i]), x+i);
+        x[i]=i; STR_HASHSET(byref(h), keys[i].key, x+i);
 
     };
 
-    HASHGET(byref(h), byref(keys[5]), p, 1); int z=9;
-    LKUP k2=NITKEY("x9"); STR_HASHSET(byref(h), k2.key, &z);
-    keys[5]=k2; int y=0; int runs=10000000;
+    for(int i=0; i<8; i++) {
+        HASHGET(byref(h), byref(keys[i]), p, 1);
+        CALOUT("%i: %i %i\n\b", keys[i].idex, keys[i].mod, *p);
 
-    timer_start();
-    for(int i=0; i<runs; i++) {
-        STR_HASHGET(byref(h), keys[y].key, p, 0); if(y>7) { y=0; }
+    };
 
-    }; CALOUT("STR_HASHGET:    %fsec\n\b", timer_end());
-
-    timer_start();
-    for(int i=0; i<runs; i++) {
-        HASHGET(byref(h), byref(keys[y]), p, 0); if(y>7) { y=0; }
-
-    }; CALOUT("HASHGET:        %fsec\n\b", timer_end());
 
     /* testing interpreter
 
