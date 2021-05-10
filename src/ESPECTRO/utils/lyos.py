@@ -2412,6 +2412,12 @@ class CLOCK:
         self.frametime=(1/FPS); self.ptr=0; self.ch="►▼◄▲";
         self.animframe=0.0; self.animrate=self.frametime*animrate;
         self.framedelta=0.0; self.framestart=0.0; self.framestop=0.0;
+        self.halted=0;
+
+    def reset(self):
+        self.animframe=0.0; self.framedelta=0.0;
+        self.framestart=0.0; self.framestop=0.0;
+        self.halted=1;
 
     def wait(self, on=0):
         if on:
@@ -2421,6 +2427,7 @@ class CLOCK:
             self.framestop=0.0; self.animframe=0.0;
 
     def FRAME_BEGIN(self):
+        if self.halted: self.halted=0;
         self.framestart=rnow();
         if self.framestop: self.framedelta+=(self.framestart - self.framestop);
 
@@ -2440,6 +2447,9 @@ class CLOCK:
             self.animframe=(self.animframe - self.animrate);
 
     def FRAME_END(self):
+
+        if self.halted: return;
+
         self.framestop=rnow();
         self.framedelta+=(self.framestop - self.framestart);
         global fBy; fBy=(1.0*self.framedelta); self.animframe+=fBy;

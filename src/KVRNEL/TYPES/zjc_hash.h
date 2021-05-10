@@ -9,12 +9,14 @@ extern "C" {
 
 //   ---     ---     ---     ---     ---
 
+#define ZJC_HASH_STKLEN 8
+
 typedef struct ZJC_HASHSLOT {
 
-    STK*   stack;                           // available indices
-    LKUP*  keycache;                        // stored keys for faster access
+    LKUP  keycache[ZJC_HASH_STKLEN];        // stored keys for faster access
+    void* nodes   [ZJC_HASH_STKLEN];        // addresses to data
 
-    void** nodes;                           // addresses to data
+    STK   stack;                            // available indices
 
 } HSLOT;
 
@@ -22,18 +24,18 @@ typedef struct ZJC_HASHSLOT {
 
 typedef struct ZJC_HASHTABLE {
 
-    MEM    m;                               // mem header
+    MEM  m;                                 // mem header
 
-    uint   nslots;                          // number of slots; table bounds
-    uint   nitems;                          // number of inserted items
-    uint   jmp;                             // space between table entries, in bytes
+    uint nslots;                            // number of slots; table bounds
+    uint nitems;                            // number of inserted items
 
 } HASH;
 
 //   ---     ---     ---     ---     ---
 
-void MKHASH(HASH* h, uint mag, char* id);   // build a new hash table
+HASH* MKHASH(uint mag, char* id);           // build a new hash table
 void DLHASH(void* buff);                    // free a hash table
+void CLHASH(HASH* h);                       // wipe a hash clean
 
 void STHASH(void* data);                    // insert data into hash @key
 void GTHASH(void** to, int pop);            // retrieve data @key

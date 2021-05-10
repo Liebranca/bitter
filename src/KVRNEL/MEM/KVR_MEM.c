@@ -17,62 +17,56 @@
 
 //   ---     ---     ---     ---     ---
 
-#define MEMSET(m, op)                       /* a counter. goes up on MKMEM, down on DLMEM  */\
-    USED_MEMORY op##= (m->size * m->count)                                                   \
-                    + sizeof(MEM); CALOUT("%u KB USED\n\b", (USED_MEMORY/1024))
+#define MEMCNT(size, op)                    /* a counter. goes up on MKMEM, down on DLMEM  */\
+    USED_MEMORY op##=size; CALOUT("%u bytes USED\n\b", USED_MEMORY)
 
 static uint64_t USED_MEMORY = 0;            // total bytes used by MEM instances
 
 //   ---     ---     ---     ---     ---
 
-void* __kvrmalloc(int count, int size)      {
-
-    void* buff = malloc                     ( count * size          );
-    if(!buff)                               { return NULL;          };
-
-    memset                                  ( buff, 0, count * size );
-
-    return buff;                                                                            };
+void* __kvrmalloc(uint size)                {
+    void* buff=malloc(size); if(!buff) { return NULL; };
+    memset(buff, 0, size); return buff;                                                     };
 
 //   ---     ---     ---     ---     ---
 
-int MKMEM(MEM* m)                           { if(m->buff) { DLMEM(m, NULL); } // dont leak
+MEM* MKMEM(uint size, char* id)             { void* buff = __kvrmalloc(size);
 
-    m->buff = __kvrmalloc(m->count, m->size);
-    if(m->buff != NULL)                     { MEMSET (m, +   ); return 0;                   };
-    return FATAL;                                                                           };
+    if(buff != NULL)
+    {
+        MEM* m=(MEM*) buff; int i=0;
+        do {
+            m->id[i]=id[i]; i++;
+            if(i==15) { m->id[i]='\0'; break; }
 
-void DLMEM(MEM* m, void* buff)              {
+        } while(*id++);
 
-    if(buff    != NULL && m->free)          { m->free(buff);                                };
-    if(m->buff != NULL           )          { free(m->buff); m->buff = NULL; MEMSET(m, -);  };
-                                                                                            };
+        m->fsize=size;
+        MEMCNT(size, +); return m;
 
-void FCMEM(MEM* m)                          {
+    }; return NULL;                                                                         };
 
-    if(!m->size ) { m->size  = 1;          };
-    if(!m->count) { m->count = 1;          };                                               };
+void DLMEM(MEM* m)                          { if(m){ MEMCNT(m->fsize, -); free((void*) m); }};
+void CLMEM(MEM* m)                          { memset(m->buff, 0, (m->fsize));               };
 
 //   ---     ---     ---     ---     ---
 
-void* NVMEM(MEM* m, int p)                  {
-
-    int ptr=0;
-
+void* NVMEM(MEM* m, int p)                  { uint ptr=0;
 
     if(p >= 0)                              // positive indexing (first element first)
     {
-        if  ( p <  m->count)                { ptr = p;                                      }
-        else                                { ptr = m->count - 1;                           };
+        if  ( p < m->bsize)                 { ptr = p;                                      }
+        else                                { ptr = m->bsize - 1;                           };
     }
+
     else                                    // negative indexing (last element first)
     {
-        if  (-p <= m->count)                { ptr = m->count + p;                           }
+        if  (-p <= m->bsize)                { ptr = m->bsize + p;                           }
         else                                { ptr = 0;                                      };
     };
 
                                             // cast to char and return buff @ptr
-    return                                  ((char*) m->buff) + (ptr * m->size);            };
+    return                                  ((char*) m->buff) + ptr;                        };
 
 //   ---     ---     ---     ---     ---
 

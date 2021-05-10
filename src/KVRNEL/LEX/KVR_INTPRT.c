@@ -18,13 +18,13 @@
 
 //   ---     ---     ---     ---     ---
 
-static char KVR_INBUFF[KCOM_INLEN];
-static int  KVR_INITER[3]={0,0,0};
-static COM* KVR_INCOM    = NULL;
+static char  KVR_INBUFF[KCOM_INLEN];
 
-static char LBRACE='{'; static char RBRACE='}';
+static int   KVR_INITER[3] = {0,0,0};
+static COM*  KVR_INCOM     = NULL;
+static HASH* KVR_LNAMES    = NULL;
 
-static HASH KVR_LNAMES={0};
+static char  LBRACE='{'; static char RBRACE='}';
 
 //   ---     ---     ---     ---     ---
 
@@ -57,15 +57,8 @@ enum RDMODES                                {
 
 //   ---     ---     ---     ---     ---
 
-void PESONIT()                              {
-
-    MKHASH(&KVR_LNAMES, 64, "LNAMES");
-    };
-
-void PESOEND()                              {
-
-    MEMFREE(byref(KVR_LNAMES.m), byref(KVR_LNAMES));
-    };
+void PESONIT()                              { KVR_LNAMES=MKHASH(8, "LNAMES");               };
+void PESOEND()                              { DLMEM(byref(KVR_LNAMES->m));                  };
 
 //   ---     ---     ---     ---     ---
 

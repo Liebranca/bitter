@@ -819,6 +819,7 @@ class hxPX:
             CHDIR(OLD_PATH);
 
             ERRPRINT(SYSREAD(), err=-1); GETKVNSL().DEBUG_SPIT();
+            GETKVNSL().CLOCK.reset();
 
         else:
             ERRPRINT(f"Cannot run {self.name}: it is a library", rec=1);

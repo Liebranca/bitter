@@ -11,6 +11,9 @@ static void** ZJC_CURR_HNODE = NULL;
 static int    ZJC_HASH_GRAVE = -4;
 static int    ZJC_HASH_FLAGS = 0;
 
+static cuint  ZJC_HASH_JMP   = (sizeof(HSLOT)                    )  // header
+                             + (sizeof(uint ) * (ZJC_HASH_STKLEN)); // slotstack
+
 //   ---     ---     ---     ---     ---
 /* for now, insert is our only check...   **
 ** in the future we can use this to have  **
@@ -21,56 +24,39 @@ void FLHASH(int flags)                      { ZJC_HASH_FLAGS=flags;             
 
 //   ---     ---     ---     ---     ---
 
-void MKHASH(HASH* h, uint mag, char* id)    {
-
-    h->nslots=1; uint stklen=8;
-    for(uint x=0; x<mag; x++) { h->nslots*=2; }
-
-    h->m        = (MEM){0};
-
-    h->m.id     = id;
-    h->m.size   = 1;
-
-    h->jmp      = ( (sizeof(HSLOT)                          ) \
-                  + (sizeof(void*)                 * stklen ) \
-                  + (sizeof(STK  ) + (sizeof(uint) * stklen)) \
-                  + (sizeof(LKUP )                 * stklen ) );
-
-
-    h->m.count  = h->jmp*h->nslots;
-    h->m.free   = NULL;
-
-    h->nitems   = 0;
-
-    uint offset = 0;
-    HSLOT* slot = NULL;
-
-    MEMGET(byref(h->m), slot, HSLOT);
+void NITHASH(HASH* h)                       {
 
     for(uint x=0; x<h->nslots; x++)
     {
-        offset      = x*h->jmp;
+        uint offset=x*ZJC_HASH_JMP;
+        HSLOT* slot=MEMBUFF(byref(h->m), HSLOT, offset);
 
-        slot        = MEMBUFF(byref(h->m), HSLOT, offset); offset+=sizeof(HSLOT);
-
-        slot->nodes = MEMBUFF(byref(h->m), void*, offset); offset+=sizeof(void*)*stklen;
-        slot->stack = MEMBUFF(byref(h->m), STK,   offset); offset+=sizeof(STK);
-
-        MKSTK(slot->stack, stklen);
-        for(uint y=stklen; y>0; y--)
+        MKSTK(byref(slot->stack), ZJC_HASH_STKLEN);
+        for(uint y=ZJC_HASH_STKLEN; y>0; y--)
         {
-            STACKPUSH(slot->stack, y-1);
+            STACKPUSH(byref(slot->stack), y-1);
 
-        }; offset+=sizeof(uint)*stklen;
+        };
 
-        slot->keycache=MEMBUFF(byref(h->m), LKUP,  offset);
-        for(uint y=stklen; y<0; y++)
+        for(uint y=ZJC_HASH_STKLEN; y<0; y++)
         {
             slot->keycache[y]=NITKEY(NULL);
 
         };
 
     };                                                                                      };
+
+//   ---     ---     ---     ---     ---
+
+HASH* MKHASH(uint mag, char* id)            {
+
+    uint nslots=1;
+    for(uint x=0; x<mag; x++) { nslots*=2; }
+
+    HASH* h; MEMGET(HASH, h, (nslots*ZJC_HASH_JMP), id);
+    h->nslots=nslots; NITHASH(h); return h;                                                 };
+
+void CLHASH(HASH* h)                        { h->nitems=0; CLMEM(byref(h->m)); NITHASH(h);  };
 
 //   ---     ---     ---     ---     ---
 
@@ -89,14 +75,17 @@ void HASHIT(HASH* h, char* k)               {
     } while(*k++);
 
     ZJC_LKEY_HASH->idex=idex%(h->nslots);
-    ZJC_CURR_HSLOT=MEMBUFF(byref(h->m), HSLOT, h->jmp*(ZJC_LKEY_HASH->idex));               };
+    ZJC_CURR_HSLOT=MEMBUFF(byref(h->m), HSLOT, ZJC_HASH_JMP*(ZJC_LKEY_HASH->idex));         };
 
 int KINHSLOT(void)                          {
 
-    ZJC_CURR_HNODE=ZJC_CURR_HSLOT->nodes;
+    ZJC_CURR_HNODE=&(ZJC_CURR_HSLOT->nodes[0]);
     if(!(*ZJC_CURR_HNODE)) { return 0; }
 
-    LKUP* lkp=ZJC_CURR_HSLOT->keycache;
+    LKUP* lkp=&(ZJC_CURR_HSLOT->keycache[0]);
+
+//   ---     ---     ---     ---     ---    STR_* get & set
+
     if(ZJC_LKEY_HASH->mod==-2)
     {
 
@@ -116,6 +105,8 @@ int KINHSLOT(void)                          {
 
         } while(*ZJC_CURR_HNODE && lkp->key); return 0;
     };
+
+//   ---     ---     ---     ---     ---    common get & set
 
     do {
 
@@ -140,29 +131,29 @@ int KINHSLOT(void)                          {
 
     return 0;                                                                               };
 
+//   ---     ---     ---     ---     ---
+
 int INHASH(HASH* h, LKUP* lkp)              {
 
     ZJC_LKEY_HASH=lkp;
+
     if(lkp->mod>=0 && lkp->idex>=0)
     {
-        ZJC_CURR_HSLOT=MEMBUFF(byref(h->m), HSLOT, h->jmp*lkp->idex);
-        ZJC_CURR_HNODE=ZJC_CURR_HSLOT->nodes+lkp->mod;
-
+        ZJC_CURR_HSLOT=MEMBUFF(byref(h->m), HSLOT, ZJC_HASH_JMP*lkp->idex);
+        ZJC_CURR_HNODE=&(ZJC_CURR_HSLOT->nodes[lkp->mod]);
         return *ZJC_CURR_HNODE!=&ZJC_HASH_GRAVE;
-    }
 
-    HASHIT(h, lkp->key); return KINHSLOT();                                                 };
+    }; HASHIT(h, lkp->key); return KINHSLOT();                                              };
 
 int NK4HSLOT(void)                          {
 
-    STACKPOP(ZJC_CURR_HSLOT->stack, ZJC_LIDX_HASH);
+    STACKPOP(byref(ZJC_CURR_HSLOT->stack), ZJC_LIDX_HASH);
     if(ZJC_LIDX_HASH==(uint) ERROR) { return ERROR; } // throw list full
 
     ZJC_LKEY_HASH->mod     = ZJC_LIDX_HASH;
-    ZJC_CURR_HNODE         = (ZJC_CURR_HSLOT->nodes)+ZJC_LKEY_HASH->mod;
+    ZJC_CURR_HNODE         = &(ZJC_CURR_HSLOT->nodes[ZJC_LKEY_HASH->mod]);
 
-    LKUP* lkp=ZJC_CURR_HSLOT->keycache+ZJC_LIDX_HASH;
-    *lkp=*ZJC_LKEY_HASH;
+    ZJC_CURR_HSLOT->keycache[ZJC_LIDX_HASH]=*ZJC_LKEY_HASH;
 
     ZJC_LIDX_HASH=0; return 0;                                                              };
 
@@ -174,7 +165,7 @@ void GTHASH(void** to, int pop)             { *to=*ZJC_CURR_HNODE;
 
     if(pop) {
 
-        STACKPUSH(ZJC_CURR_HSLOT->stack, ZJC_LKEY_HASH->mod);
+        STACKPUSH(byref(ZJC_CURR_HSLOT->stack), ZJC_LKEY_HASH->mod);
         *ZJC_CURR_HNODE=&ZJC_HASH_GRAVE;
 
     };                                                                                      };

@@ -11,9 +11,9 @@ extern "C" {
 
 typedef struct ZJC_STACK_UINT {             // common LIFO stack to hold uints
 
-    uint  bounds;                           // max elements
-    uint  top;                              // current top idex
-    uint* ptr;                              // ptr to MEM buff
+    uint bounds;                            // max elements
+    uint top;                               // current top idex
+    uint buff[];
 
 } STK;
 

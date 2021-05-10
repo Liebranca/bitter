@@ -9,27 +9,25 @@ void main() {
 
     __openlog();
 
-    // testing hash tables
+    HASH* h=MKHASH(1, "TABLE");
+    int* p=NULL; int values[16];
 
-    HASH h; MKHASH(&h, 8, "TABLE0");
+    char* keys[16]={"x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7",
+                    "y0", "y1", "y2", "y3", "y4", "y5", "y6", "y7"};
 
-    int x[8]={0}; int* p;
-    LKUP keys[8]={
-        NITKEY("x0"), NITKEY("x1"), NITKEY("x2"), NITKEY("x3"),
-        NITKEY("x4"), NITKEY("x5"), NITKEY("x6"), NITKEY("x7")
-    };
+    for(int i=0; i<16; i++) {
 
-    for(int i=0; i<8; i++) {
-        x[i]=i; STR_HASHSET(byref(h), keys[i].key, x+i);
+        values[i]=i;
 
-    };
+        STR_HASHSET(h, keys[i], values+i);
+        STR_HASHGET(h, keys[i], p, 1);
 
-    for(int i=0; i<8; i++) {
-        HASHGET(byref(h), byref(keys[i]), p, 1);
-        CALOUT("%i: %i %i\n\b", keys[i].idex, keys[i].mod, *p);
+        STR_HASHSET(h, keys[i], values+i);
+        STR_HASHGET(h, keys[i], p, 0);
 
-    };
+        if(p) { CALOUT("%i\n\b", *p); }
 
+    }
 
     /* testing interpreter
 
@@ -39,7 +37,7 @@ void main() {
 
     */
 
-    MEMFREE(byref(h.m), byref(h));
+    DLMEM(byref(h->m));
     __closelog();
 
 }

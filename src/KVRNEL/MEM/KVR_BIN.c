@@ -34,23 +34,15 @@ int MKBIN(BIN* bin)                         {
 
         if(!isnew)                          // not new? then check it's a valid file
         {
-            MEM m      = {0};
+            MEM* m;
 
-            char* buff = NULL;              // read to this
-            int   rb;                       // bytes read
-
-            m.count    = strlen             (bin->sign                                      );
-            m.size     = sizeof             (char                                           );
-
-                                            // ask for block
-            MEMGET                          ((&m), buff, char                               );
+            char buff[64];                  // read to this
+            int  rb;                        // bytes read
 
                                             // read & compare
             BINREAD                         (bin, rb,  char, 1, buff                        );
             BINSIG                          (bin, buff                                      );
 
-                                            // cleanup
-            MEMFREE                         ((&m), buff                                     );
         }
 
 //   ---     ---     ---     ---     ---

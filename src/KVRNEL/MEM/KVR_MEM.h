@@ -10,43 +10,48 @@ extern "C" {
 
 //   ---     ---     ---     ---     ---
 
-typedef struct KVR_MEM {                    // generic holding some dynamic memory address
+typedef struct KVR_MEM {                    // generic holding dynamic memory
 
-    char* id;                               // name for this block
+    char  id[16];                           // name for this block
 
-    void* buff;                             // malloc'd memory location
-    STARK free;                             // pointer to a free func
+    uint  fsize;                            // total space used
+    uint  bsize;                            // usable, non-header space
 
-    int   count;                            // element count
-    int   size;                             // element size
+    void* buff;                             // start of non-header memory
 
-} MEM;
+} MEM; CASSERT                              ( sizeof(MEM)==      \
 
-//   ---     ---     ---     ---     ---
+                                                (sizeof(char )*16)
+                                            +   (sizeof(uint )* 2)
+                                            +   (sizeof(void*)   ),
 
-int   MKMEM(MEM* m       );                 // allocates buffer of a MEM block
-void  DLMEM(MEM* m, void* buff );           // frees a MEM block
-void* NVMEM(MEM* m, int p);                 // get ptr to MEM @offset
-
-void  FCMEM(MEM* m       );                 // force valid block
+                                            "Bad MEM size"       );
 
 //   ---     ---     ---     ---     ---
 
-#define MEMBUFF(m, type, offset)            /* get type-casted ptr to MEM @offset          */\
+MEM*  MKMEM(uint size, char* id);           // create a new MEM block
+void  DLMEM(MEM* m             );           // frees a MEM block
+void* NVMEM(MEM* m, int p      );           // get ptr to MEM @offset
+void  CLMEM(MEM* m             );           // flood a block with zeroes
+
+//   ---     ---     ---     ---     ---
+
+#define MEMBUFF(m, type, offset)              /* get type-casted ptr to MEM @offset        */\
     ((type*) (NVMEM(m, offset)))
 
-#define MEMGET(m, buff, type)               {                                                \
+#define MEMGET(type, to, size, id)          { uint mem_reqsize=(size)+sizeof(type);          \
                                                                                              \
-    FCMEM(m);                                 /* ensure block is valid                     */\
                                                                                              \
     static char sizestr[33]; int retx = 0;    /* requested size to char array              */\
-    __writoa(m->size * m->count, sizestr, 10);                                               \
+    __writoa(mem_reqsize, sizestr, 10);                                                      \
                                                                                              \
-    ERRCATCH(MKMEM(m), retx, 0x00, sizestr);  /* catch malloc fail                         */\
-    buff = MEMBUFF(m, type, 0);               /* set buff to first element in array        */}
-
-#define MEMFREE(m, buff)                      /* just a macro for prettycode's sake        */\
-    DLMEM(m, buff);
+    MEM* new_mem=MKMEM(mem_reqsize, id); if(!new_mem)                                        \
+    { ERRCATCH(FATAL, retx, 0x00, sizestr); } /* catch malloc fail                         */\
+                                                                                             \
+    new_mem->buff=((char*) new_mem) + sizeof(type);                                          \
+    new_mem->bsize=new_mem->fsize-sizeof(type);                                              \
+    to=(type*) new_mem;                                                                      \
+                                                                                            }
 
 //   ---     ---     ---     ---     ---
 
