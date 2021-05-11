@@ -2,7 +2,7 @@
 #define __KVR_MEM_H__
 
 #include "../zjc_evil.h"
-#include "../zjc_CommonTypes.h"
+#include "../TYPES/zjc_id.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -12,7 +12,7 @@ extern "C" {
 
 typedef struct KVR_MEM {                    // generic holding dynamic memory
 
-    char  id[16];                           // name for this block
+    ID    id;                               // universal block header
 
     uint  fsize;                            // total space used
     uint  bsize;                            // usable, non-header space
@@ -21,7 +21,7 @@ typedef struct KVR_MEM {                    // generic holding dynamic memory
 
 } MEM; CASSERT                              ( sizeof(MEM)==      \
 
-                                                (sizeof(char )*16)
+                                                (sizeof(ID   )   )
                                             +   (sizeof(uint )* 2)
                                             +   (sizeof(void*)   ),
 
@@ -29,10 +29,10 @@ typedef struct KVR_MEM {                    // generic holding dynamic memory
 
 //   ---     ---     ---     ---     ---
 
-MEM*  MKMEM(uint size, char* id);           // create a new MEM block
-void  DLMEM(MEM* m             );           // frees a MEM block
-void* NVMEM(MEM* m, int p      );           // get ptr to MEM @offset
-void  CLMEM(MEM* m             );           // flood a block with zeroes
+MEM*  MKMEM(uint size, ID* id    );         // create a new MEM block
+void  DLMEM(void* p              );         // frees a MEM block
+void* NVMEM(MEM* m, int p        );         // get ptr to MEM @offset
+void  CLMEM(MEM* m               );         // flood a block with zeroes
 
 //   ---     ---     ---     ---     ---
 

@@ -30,19 +30,6 @@ extern "C" {
 
 //   ---     ---     ---     ---     ---
 
-typedef struct ZJC_TLOOKUP {                // table lookup token, used for fetching
-
-    char* key;                              // name to associate with value
-
-    int  idex;                              // index into the table
-    int  mod;                               // collision shift
-
-} LKUP;
-
-LKUP NITKEY(char* key);                     // fast token init, only for convenience
-
-//   ---     ---     ---     ---     ---
-
 typedef struct ZJC_COM {                    // a command
 
     int   order;                            // SGL || VERB_FIRST || SUBJ_FIRST

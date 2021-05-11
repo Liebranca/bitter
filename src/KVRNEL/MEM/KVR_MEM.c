@@ -30,24 +30,29 @@ void* __kvrmalloc(uint size)                {
 
 //   ---     ---     ---     ---     ---
 
-MEM* MKMEM(uint size, char* id)             { void* buff = __kvrmalloc(size);
+MEM* MKMEM(uint size, ID* id)               { void* buff = __kvrmalloc(size);
 
     if(buff != NULL)
     {
-        MEM* m=(MEM*) buff; int i=0;
-        do {
-            m->id[i]=id[i]; i++;
-            if(i==15) { m->id[i]='\0'; break; }
+        MEM* m=(MEM*) buff;
 
-        } while(*id++);
+        m->id=*id;
+        m->fsize=size; MEMCNT(size, +);
 
-        m->fsize=size;
-        MEMCNT(size, +); return m;
+        return m;
 
     }; return NULL;                                                                         };
 
-void DLMEM(MEM* m)                          { if(m){ MEMCNT(m->fsize, -); free((void*) m); }};
-void CLMEM(MEM* m)                          { memset(m->buff, 0, (m->fsize));               };
+void DLMEM(void* p)                         {
+
+    if(p) {
+        MEM* m=(MEM*) p;
+        MEMCNT(m->fsize, -);
+        free(p);
+
+    }                                                                                       };
+
+void CLMEM(MEM* m)                          { memset(m->buff, 0, m->bsize);                 };
 
 //   ---     ---     ---     ---     ---
 

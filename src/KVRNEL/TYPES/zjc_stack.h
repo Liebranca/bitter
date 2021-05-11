@@ -13,7 +13,7 @@ typedef struct ZJC_STACK_UINT {             // common LIFO stack to hold uints
 
     uint bounds;                            // max elements
     uint top;                               // current top idex
-    uint buff[];
+    uint buff[];                            // value array
 
 } STK;
 
@@ -26,11 +26,11 @@ uint POPSTK(STK* s);                        // pop from stack
 
 //  - --- - --- - --- - --- -
 
-#define STACKPUSH(stack, value)             { int retx=0;                                    \
-    ERRCATCH(PSHSTK(stack, value), retx,  70, ""); /* throws full stack  */                 }
+#define STACKPUSH(stack, value)             { int retx=PSHSTK(stack, value);                 \
+    if(retx) { ERRCATCH(ERROR, retx,  70, ""); }           /* throws full stack  */         }
 
-#define STACKPOP(stack, value)              {                                                \
-    ERRCATCH(POPSTK(stack       ), value, 71, ""); /* throws empty stack */                 }
+#define STACKPOP(stack, value)              { value=POPSTK(stack);                           \
+    if(value==(uint) ERROR) { ERRCATCH(ERROR, value, 71, ""); } /* throws empty stack */    }
 
 //  - --- - --- - --- - --- -
 

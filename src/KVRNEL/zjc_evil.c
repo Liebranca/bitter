@@ -58,7 +58,6 @@ void __closelog() {
 
 //   ---     ---     ---     ---     ---
 
-LKUP NITKEY    (char* key                 ) { LKUP lkp={key, -1, -1}; return lkp;           };
 void __writoa  (int x, char* buff, int rdx) { _itoa(x, buff, rdx);                          };
 int  __wrstrcmp(char* s0, char* s1        ) { return strcmp(s0, s1);                        };
 
