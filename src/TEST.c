@@ -16,7 +16,7 @@ void main() {
 
     __openlog();
 
-    HASH* h=MKHASH(16, "TABLE");
+    HASH* h=MKHASH(6, "TABLE");
     T* p=NULL; T values[16];
 
     char* keys[16]={"x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7",

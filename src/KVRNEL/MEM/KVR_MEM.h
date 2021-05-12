@@ -39,19 +39,29 @@ void  CLMEM(MEM* m               );         // flood a block with zeroes
 #define MEMBUFF(m, type, offset)              /* get type-casted ptr to MEM @offset        */\
     ((type*) (NVMEM(m, offset)))
 
-#define MEMGET(type, to, size, id)          { uint mem_reqsize=(size)+sizeof(type);          \
+#if KVR_DEBUG                                 /* checks for allocation failure             */
+    #define MEMGET(type, to, size, id)      { uint mem_reqsize=(size)+sizeof(type);          \
                                                                                              \
                                                                                              \
-    static char sizestr[33]; int retx = 0;    /* requested size to char array              */\
-    __writoa(mem_reqsize, sizestr, 10);                                                      \
+        static char sizestr[33]; int retx = 0;    /* requested size to char array          */\
+        __writoa(mem_reqsize, sizestr, 10);                                                  \
                                                                                              \
-    MEM* new_mem=MKMEM(mem_reqsize, id); if(!new_mem)                                        \
-    { ERRCATCH(FATAL, retx, 0x00, sizestr); } /* catch malloc fail                         */\
+        MEM* new_mem=MKMEM(mem_reqsize, id); if(!new_mem)                                    \
+        { ERRCATCH(FATAL, retx, 0x00, sizestr); } /* catch malloc fail                     */\
                                                                                              \
-    new_mem->buff=((char*) new_mem) + sizeof(type);                                          \
-    new_mem->bsize=new_mem->fsize-sizeof(type);                                              \
-    to=(type*) new_mem;                                                                      \
-                                                                                            }
+        new_mem->buff=((char*) new_mem) + sizeof(type);                                      \
+        new_mem->bsize=new_mem->fsize-sizeof(type);                                          \
+        to=(type*) new_mem;                                                                 }
+
+#else
+    #define MEMGET(type, to, size, id)      { uint mem_reqsize=(size)+sizeof(type);          \
+                                                                                             \
+        MEM* new_mem=MKMEM(mem_reqsize, id);                                                 \
+        new_mem->buff=((char*) new_mem) + sizeof(type);                                      \
+        new_mem->bsize=new_mem->fsize-sizeof(type);                                          \
+        to=(type*) new_mem;                                                                 }
+
+#endif
 
 //   ---     ---     ---     ---     ---
 

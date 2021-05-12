@@ -7,6 +7,8 @@
 extern "C" {
 #endif
 
+#define KVR_DEBUG 1                         /* set to zero to disable errcatch             */
+
 //   ---     ---     ---     ---     ---
 // some shorthands
 

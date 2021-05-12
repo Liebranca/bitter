@@ -73,6 +73,15 @@ def AVTO_SRCBUILD(src, obj, gcc):
     s = f"@{gcc}{_w}-MMD {INCLUDES} -c {src} -o {obj} 2> {LOGOS()}";
     DOS(s); mess = SYSREAD();
 
+    #---------------------------
+    # added this here so i can look at the disassembly
+    # make a flag to disable or maybe put it somewhere else
+    # i'd prefer having it always on, but yknow: things
+    asm=obj.replace(".o", ".s");
+    s = f"@{gcc}{_w} {INCLUDES} -S -fverbose-asm -O2 {src} -o {asm} 2> {LOGOS()}";
+    DOS(s); mess=mess+SYSREAD();
+    #---------------------------
+
     if mess:
         isWarning = OKFILE(obj);            # if file was created, it was just a warning
         ERRPRINT(mess, err=1 if isWarning else 2, rec=3);

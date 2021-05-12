@@ -26,11 +26,23 @@ uint POPSTK(STK* s);                        // pop from stack
 
 //  - --- - --- - --- - --- -
 
-#define STACKPUSH(stack, value)             { int retx=PSHSTK(stack, value);                 \
-    if(retx) { ERRCATCH(ERROR, retx,  70, ""); }           /* throws full stack  */         }
+#if KVR_DEBUG                               /* catch full stack                            */
+    #define STACKPUSH(stack, value)         { int retx=PSHSTK(stack, value);                 \
+        if(retx) { ERRCATCH(ERROR, retx,  70, ""); }                                        }
 
-#define STACKPOP(stack, value)              { value=POPSTK(stack);                           \
-    if(value==(uint) ERROR) { ERRCATCH(ERROR, value, 71, ""); } /* throws empty stack */    }
+#else
+    #define STACKPUSH(stack, value) PSHSTK(stack, value);
+
+#endif
+
+#if KVR_DEBUG                               /* catch empty stack                           */
+    #define STACKPOP(stack, value)          { value=POPSTK(stack);                           \
+        if(value==(uint) ERROR) { ERRCATCH(ERROR, value, 71, ""); }                         }
+
+#else
+    #define STACKPOP(stack, value) value=POPSTK(stack)
+
+#endif
 
 //  - --- - --- - --- - --- -
 

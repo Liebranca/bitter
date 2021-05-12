@@ -173,6 +173,11 @@ int INHASH(HASH* h, ID* lkp)                {
 
     }; HASHIT(h, lkp->key); return KINHSLOT();                                              };
 
+int KINHASH(HASH* h, char* key)             { FLHASH(0); ID lkp=IDNEW("LKP_", key); lkp.y=-2;
+                                              return INHASH(h, &lkp);                       };
+
+//   ---     ---     ---     ---     ---
+
 int NK4HSLOT(void)                          {
 
     STACKPOP(byref(ZJC_CURR_HSLOT->stack), ZJC_LIDX_HASH);

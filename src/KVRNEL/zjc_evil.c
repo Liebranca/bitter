@@ -71,7 +71,8 @@ DANG* __geterrloc(const char* p,
     if(CALDEPTH) {
 
                                             // avoid recursion or you'll see this one
-        if(CALDEPTH > 63)                   { CALOUT("%s", "CALL DEPTH EXCEEDED!\n"); return NULL;};
+        if(CALDEPTH > 63)                   { CALOUT("%s", "CALL DEPTH EXCEEDED!\n\b");
+                                              return NULL;                                  };
 
                                             /* fill callbranch so that it reads like so:   *
                                              *                                             *
