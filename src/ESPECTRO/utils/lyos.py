@@ -2012,6 +2012,9 @@ def SYSREAD(i=0, clear=1):
     finally:
         hxEPRINT = 1;
 
+    limit=((hxDRAWSPACE_X-4) * (hxDRAWSPACE_Y-4));
+    if len(log) > limit: log=log[:limit];
+
     return log;
 
 def SYSDUMP():

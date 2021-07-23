@@ -23,6 +23,7 @@ typedef struct JOJ_COLOR_COMPRESSED {
 
 } JOJPIX;
 
+
 //  - --- - --- - --- - --- -
 
 JOJPIX rgba_to_joj       (float* pixel);

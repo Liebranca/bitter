@@ -45,16 +45,14 @@ void HASHIT(HASH* h, char* k)               {
 
 void NITHASH(HASH* h)                       {
 
-    for(uint x=0; x<h->nslots; x++)
-    {
+    for(uint x=0; x<h->nslots; x++) {
+
         uint offset=x*ZJC_HASH_JMP;
         HSLOT* slot=MEMBUFF(byref(h->m), HSLOT, offset);
 
         MKSTK(byref(slot->stack), ZJC_HASH_STKLEN);
-        for(uint y=ZJC_HASH_STKLEN; y>0; y--)
-        {
+        for(uint y=ZJC_HASH_STKLEN; y>0; y--) {
             STACKPUSH(byref(slot->stack), y-1);
-
         };
 
     };                                                                                      };
@@ -75,8 +73,7 @@ HASH* GWHASH(HASH* h)                       {
     HASH* new_hash; MEMGET(HASH, new_hash, (nslots*ZJC_HASH_JMP), byref(h->m.id));
     new_hash->nslots=nslots; NITHASH(new_hash);
 
-    for(uint x=0; x<h->nslots; x++)
-    {
+    for(uint x=0; x<h->nslots; x++) {
 
         uint offset=x*ZJC_HASH_JMP;
         HSLOT* src_slot=MEMBUFF(byref(h->m), HSLOT, offset);
@@ -112,8 +109,7 @@ int KINHSLOT(void)                          {
 
 //   ---     ---     ---     ---     ---    find by key alone
 
-    if(ZJC_LKEY_HASH->y==-2)
-    {
+    if(ZJC_LKEY_HASH->y==-2) {
 
         if(!(lkp->key)) { return 0; }
 
@@ -141,16 +137,14 @@ int KINHSLOT(void)                          {
         if(*ZJC_CURR_HNODE==NULL || lkp->key==NULL) { break; }
 
         // skip deleted node on fetch
-        if(*ZJC_CURR_HNODE==&ZJC_HASH_GRAVE)
-        {
+        if(*ZJC_CURR_HNODE==&ZJC_HASH_GRAVE) {
             if(ZJC_HASH_FLAGS & ZJC_HASH_FINSRT) { return 0; }
-
         }
 
         // new lookup token for existing key
         elif( !(ZJC_HASH_FLAGS & ZJC_HASH_FINSRT) \
-        &&     (ZJC_LKEY_HASH->y<0              ) )
-        {
+        &&     (ZJC_LKEY_HASH->y<0              ) ) {
+
             // if keys match, copy data to token
             if(!__wrstrcmp(lkp->key, ZJC_LKEY_HASH->key))
             { *ZJC_LKEY_HASH=*lkp; return 1; }
@@ -165,8 +159,8 @@ int INHASH(HASH* h, ID* lkp)                {
 
     ZJC_LKEY_HASH=lkp;
 
-    if(lkp->y>=0 && lkp->x>=0)
-    {
+    if(lkp->y>=0 && lkp->x>=0) {
+
         ZJC_CURR_HSLOT=MEMBUFF(byref(h->m), HSLOT, ZJC_HASH_JMP*lkp->x);
         ZJC_CURR_HNODE=&(ZJC_CURR_HSLOT->nodes[lkp->y]);
         return *ZJC_CURR_HNODE!=&ZJC_HASH_GRAVE;

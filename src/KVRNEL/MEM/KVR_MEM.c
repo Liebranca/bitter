@@ -18,7 +18,14 @@
 //   ---     ---     ---     ---     ---
 
 #define MEMCNT(size, op)                    /* a counter. goes up on MKMEM, down on DLMEM  */\
-    USED_MEMORY op##=size; CALOUT("%u KB USED\n\b", USED_MEMORY/1024)
+    USED_MEMORY op##=size;                                                                   \
+                                                                                             \
+    if(USED_MEMORY > 1024) {                                                                 \
+                                                                                             \
+        if(USED_MEMORY > 1024*1024) { CALOUT("%u KB USED\n\b", USED_MEMORY/1024);        }   \
+        else                        { CALOUT("%u MB USED\n\b", USED_MEMORY/(1024*1024)); };  \
+                                                                                             \
+    } else                          { CALOUT("%u BYTES USED\n\b", USED_MEMORY);          };
 
 static uint64_t USED_MEMORY = 0;            // total bytes used by MEM instances
 
