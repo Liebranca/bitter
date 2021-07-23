@@ -18,7 +18,7 @@
 //   ---     ---     ---     ---     ---
 
 #define MEMCNT(size, op)                    /* a counter. goes up on MKMEM, down on DLMEM  */\
-    USED_MEMORY op##=size; CALOUT("%u bytes USED\n\b", USED_MEMORY)
+    USED_MEMORY op##=size; CALOUT("%u KB USED\n\b", USED_MEMORY/1024)
 
 static uint64_t USED_MEMORY = 0;            // total bytes used by MEM instances
 

@@ -589,10 +589,18 @@ class hxPX:
         srcpath = CATPATH(self.path, "src");
         modules = WALK(srcpath)[0][1];
 
+        d="";
+        with open(CATPATH(ROOT(), PX.name, PX.name+".px"), 'r') as pxfile:
+            d=pxfile.read();
+
+        d=eval(d); old_mods={mod["name"]:mod["mode"] for mod in d["modules"]};
+
         i = 0; result = [];
         for m in modules:
 
-            new_module = hxMOD(m);
+            mode = old_mods[m] if m in old_mods else 1;
+
+            new_module = hxMOD(m, mode=mode);
             new_module.scandir();
             result.append(new_module);
 
@@ -774,9 +782,33 @@ class hxPX:
             else:
                 n = m.name; DEPS = 0;
                 if m.name == '__main__': outdir=release;
+                elif m.mode==2: outdir=release;
                 else: outdir=outbase + "\\" + m.name;
 
             AVTO_SETOUT(outdir);
+
+            if m.mode==2:
+
+                deplist={fname:1 for fname in mfiles};
+                for fname in mfiles:
+                    head, _sep, tail = fname.rpartition("."); f=head + ".d";
+                    f=RDFILE(f, rl=1, rl_sep=" ", ask=0, mute=1)[0];
+                    deps=f.split(": ")[-1].replace("\n", "").replace("/", "\\").replace("\\\\", "\\").split(" \\");
+
+                    for dep in deps:
+                        head, _sep, tail = dep.rpartition("."); dep=head + ".o";
+
+                        tail=(dep.split("\\src\\")[1]).split("\\");
+                        modname=tail[0]; oname=tail[-1];
+
+                        head, _sep, tail = dep.rpartition("\\src\\");
+                        dep=f"{head}\\trashcan\\{TARGET()}\\{modname}\\{oname}".lstrip();
+                        dep=dep.rstrip();
+
+                        deplist[dep]=1;
+
+                mfiles=list(deplist.keys());
+
             if len(mfiles) or DEPS:
                 if fcount != -len(mfiles) or brute or DEPS:
 

@@ -209,7 +209,9 @@ def AVTO_MKDLL(olist, gcc, name):
     dll = f"{OBJFOLD}\\{name}.dll"
     if OKFILE(dll): DOS(f"@del {dll}");
 
-    olist = " ".join(fname for fname in olist); _w = " -Wall " if FKWALL() else " "
+    olist = " ".join(fname for fname in olist);
+    _w = " -Wall " if FKWALL() else " ";
+
     DOS(f"@{gcc}{_w}-shared {olist} -o {dll} 2> {LOGOS()}");
 
     mess = SYSREAD();
