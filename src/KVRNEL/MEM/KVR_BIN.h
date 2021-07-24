@@ -32,8 +32,9 @@ typedef struct KVR_BIN {                    // helper struct for dealing with fi
 } BIN;
 
 BIN* MKBIN   (char* path,                   // init bin for read/write
-              char* mode,
-              uint  ft  );
+              char* mode,                   // -ft determines sign to check
+              uint  ft,                     // -ex_alloc reserves additional memory
+              uint  ex_alloc);
 
 int  RDBIN   (BIN* bin        );            // read from bin
 int  DLBIN   (BIN* bin        );            // closes a bin file
@@ -47,8 +48,8 @@ void STBADSIG(int is_bad      );            // alters read-state on inappropriat
 
 #if KVR_DEBUG
                                             /* catch if error on open                      */
-    #define BINOPEN(bin, path, mode, ft, retx) { retx = 0;                                   \
-        bin=MKBIN(path, mode, ft); ERRCATCH(RDBIN(bin), retx, 0x40,BINPATH);                }
+    #define BINOPEN(bin, path, mode, ft, ex_alloc, retx) { retx = 0;                         \
+        bin=MKBIN(path, mode, ft, ex_alloc); ERRCATCH(RDBIN(bin), retx, 0x40,BINPATH);       }
 
                                             /* catch if error on close                     */
     #define BINCLOSE(bin)                   { int retx = 0;                                  \
@@ -62,6 +63,12 @@ void STBADSIG(int is_bad      );            // alters read-state on inappropriat
                                             /* catch if we don't read as many bytes        */
     #define BINREAD(bin, rb, type, count, buff) { rb = count;                                \
         ERRCATCH(fread(buff, sizeof(type), count, bin->file), rb, 0x43, BINPATH);            \
+        rb *= sizeof(type);                                                                 }
+
+    #define BINREAD_ATR(bin, rb, type, count, buff, offset) { rb = count;                    \
+        fseek(bin->file, 0, SEEK_CUR); fseek(bin->file, offset, SEEK_CUR);                   \
+        ERRCATCH(fread(buff, sizeof(type), count, bin->file), rb, 0x43, BINPATH);            \
+        fseek(bin->file, 0, SEEK_CUR);                                                       \
         rb *= sizeof(type);                                                                 }
 
                                             /* catch if file signatures don't match        */
@@ -83,6 +90,10 @@ void STBADSIG(int is_bad      );            // alters read-state on inappropriat
 
     #define BINREAD(bin, rb, type, count, buff)                                              \
         rb=fread(buff, sizeof(type), count, bin->file)
+
+    #define BINREAD_ATR(bin, rb, type, count, buff, offset)                                  \
+        fseek(bin->file, 0, SEEK_CUR); fseek(bin->file, offset, SEEK_CUR);                   \
+        rb=fread(buff, sizeof(type), count, bin->file); fseek(bin->file, 0, SEEK_CUR)
 
     #define BINSIG(bin, sig) STBADSIG(CMPSIG(&bin->sign, &sig));
 

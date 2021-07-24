@@ -1,6 +1,6 @@
-#include <string.h>
+#include "kvr_zwrap.h"
 
-#include "kvr_bin.h"
+#include <string.h>
 #include "zlib.h"
 
 //  - --- - --- - --- - --- -

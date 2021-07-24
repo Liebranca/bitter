@@ -1,5 +1,6 @@
-#include "KVRNEL/zjc_evil.h"
-#include "KVRNEL/TYPES/zjc_BinTypes.h"
+#include "../KVRNEL/zjc_evil.h"
+#include "../KVRNEL/TYPES/zjc_BinTypes.h"
+
 #include <stdio.h>
 
 EXPORT void RNCOL(float* pixels, uint size) {

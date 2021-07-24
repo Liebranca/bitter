@@ -47,7 +47,8 @@ SIG GTSIG(uint ft)                          {
 
 //   ---     ---     ---     ---     ---
 
-BIN* MKBIN(char* path, char* mode, uint ft) {
+BIN* MKBIN(char* path, char* mode,
+           uint  ft,   uint  ex_alloc)      {
 
     char name[20];
 
@@ -58,7 +59,7 @@ BIN* MKBIN(char* path, char* mode, uint ft) {
     for(int x=pathsize; y<limit; x--, y++)  { name[y]=*(path+(x-(limit-y))); }; name[y]='\0';
 
     ID id=IDNEW("BIN*", name);
-    BIN* bin; MEMGET(BIN, bin, pathsize+1+4, &id);
+    BIN* bin; MEMGET(BIN, bin, pathsize+1+4+ex_alloc, &id);
 
     y=0; char* m = MEMBUFF(byref(bin->m), char, 0); do { m[y]=*mode; y++; } while(*mode++);
     y=0; char* p = MEMBUFF(byref(bin->m), char, 4); do { p[y]=*path; y++; } while(*path++);

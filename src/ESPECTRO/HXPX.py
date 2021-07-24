@@ -805,7 +805,8 @@ class hxPX:
                         dep=f"{head}\\trashcan\\{TARGET()}\\{modname}\\{oname}".lstrip();
                         dep=dep.rstrip();
 
-                        deplist[dep]=1;
+                        if dep.endswith(".o") and OKFILE(dep):
+                            deplist[dep]=1;
 
                 mfiles=list(deplist.keys());
 
