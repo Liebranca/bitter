@@ -212,7 +212,7 @@ def AVTO_MKDLL(olist, gcc, name):
     olist = " ".join(fname for fname in olist);
     _w = " -Wall " if FKWALL() else " ";
 
-    DOS(f"@{gcc}{_w}-shared {olist} -o {dll} 2> {LOGOS()}");
+    DOS(f"@{gcc}{_w} -shared {olist} -o {dll} {LIBS} 2> {LOGOS()}");
 
     mess = SYSREAD();
     if mess:

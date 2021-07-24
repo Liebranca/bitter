@@ -22,7 +22,7 @@
                                                                                              \
     if(USED_MEMORY > 1024) {                                                                 \
                                                                                              \
-        if(USED_MEMORY > 1024*1024) { CALOUT("%u KB USED\n\b", USED_MEMORY/1024);        }   \
+        if(USED_MEMORY < 1024*1024) { CALOUT("%u KB USED\n\b", USED_MEMORY/1024);        }   \
         else                        { CALOUT("%u MB USED\n\b", USED_MEMORY/(1024*1024)); };  \
                                                                                              \
     } else                          { CALOUT("%u BYTES USED\n\b", USED_MEMORY);          };

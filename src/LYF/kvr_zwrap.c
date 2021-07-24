@@ -1,7 +1,8 @@
 #include "kvr_zwrap.h"
+#include "ZLIB/zlib.h"
 
 #include <string.h>
-#include "zlib.h"
+#include <stdio.h>
 
 //  - --- - --- - --- - --- -
 
@@ -55,12 +56,11 @@ int INFLBIN(BIN* src,    BIN* dst,
     z_stream strm;
     infstrm_init(&strm);
 
-    rewind(src->file);
+    rewind(src->file); rewind(dst->file);
 
     strm.next_in      = in;
     strm.avail_in     = 0;
 
-    BIN* bin;
     int  bytes_read;
 
 //  - --- - --- - --- - --- -
@@ -68,10 +68,10 @@ int INFLBIN(BIN* src,    BIN* dst,
     while(dataleft) {
 
                                             // read next block to decompress
-        if(readsize > dataleft)             { readsize = dataleft;                 };
-        fseek                               (src->file, 0, SEEK_CUR                );
-        bin=src; BINREAD                    ( bin, bytes_read, uchar, readsize, in );
-        fseek                               (src->file, 0, SEEK_CUR                );
+        if(readsize > dataleft)             { readsize = dataleft;                };
+        fseek                               (src->file, 0, SEEK_CUR               );
+        BINREAD                             (src, bytes_read, uchar, readsize, in );
+        fseek                               (src->file, 0, SEEK_CUR               );
 
         dataleft      -= readsize;
         strm.avail_in  = bytes_read;
@@ -90,7 +90,7 @@ int INFLBIN(BIN* src,    BIN* dst,
             have = CHUNK - strm.avail_out;
 
             fseek                           (dst->file, 0, SEEK_CUR           );
-            bin=dst; BINWRITE               (bin, bytes_read, uchar, have, out);
+            BINWRITE                        (dst, bytes_read, uchar, have, out);
             fseek                           (dst->file, 0, SEEK_CUR           );
 
         };
@@ -113,12 +113,12 @@ int DEFLBIN(BIN* src,    BIN* dst,
     z_stream strm;
 
     defstrm_init(&strm);
-    rewind(src->file);
+    rewind(src->file); rewind(dst->file);
 
     uint dataleft = size_i;
 
-    BIN* bin;
     int  bytes_read;
+    strm.avail_out=0;
 
 //  - --- - --- - --- - --- -
 
@@ -128,7 +128,7 @@ int DEFLBIN(BIN* src,    BIN* dst,
 
                                             // read next block to compress
         fseek                               (src->file, 0, SEEK_CUR              );
-        bin=src; BINREAD                    (bin, bytes_read, uchar, readsize, in);
+        BINREAD                             (src, bytes_read, uchar, readsize, in);
         fseek                               (src->file, 0, SEEK_CUR              );
 
         strm.next_in   = in;
@@ -140,6 +140,8 @@ int DEFLBIN(BIN* src,    BIN* dst,
 
         while (strm.avail_out == 0) {       // compress block and write to dst
 
+            CALOUT("FUCK", bytes_read);
+
             uint have;
             strm.avail_out = CHUNK;
             strm.next_out  = out;
@@ -149,8 +151,10 @@ int DEFLBIN(BIN* src,    BIN* dst,
             have           = CHUNK - strm.avail_out;
             (*size_d)     += have;
 
+            CALOUT("DUCK %i\n\b", bytes_read);
+
             fseek                           (dst->file, 0, SEEK_CUR           );
-            bin=dst; BINWRITE               (bin, bytes_read, uchar, have, out);
+            BINWRITE                        (dst, bytes_read, uchar, have, out);
             fseek                           (dst->file, 0, SEEK_CUR           );
 
         };

@@ -70,10 +70,10 @@ BIN* MKBIN(char* path, char* mode,
 
 int RDBIN(BIN* bin)                         {
 
-    int isnew   = 0;                        // just so we know if we created something
-
     char* rmode = MEMBUFF(byref(bin->m), char, 0);
     char* path  = MEMBUFF(byref(bin->m), char, 4);
+
+    int isnew   = !strcmp(rmode, "wb+");    // just so we know if we created something
 
                                             // we consider it a reading sesh if either
     int r = ( !strcmp(rmode, "rb+")         // -mode is read for update (input & output)
@@ -124,12 +124,14 @@ int RDBIN(BIN* bin)                         {
 
 //   ---     ---     ---     ---     ---
 
+char* PTHBIN(BIN* bin)                      { return MEMBUFF(byref(bin->m), char, 4);       };
+
 int DLBIN(BIN* bin)                         {
 
     int failure = fclose(bin->file);
 
     if  ( failure)                          { return ERROR;                                 }
-    elif(!MUTEBIN)                          { CALOUT("File closed <%s>\n\b", BINPATH);      };
+    elif(!MUTEBIN)                          { CALOUT("File closed <%s>\n\b", PTHBIN(bin));  };
 
     bin->file = NULL;
     return 0;                                                                               };
@@ -138,8 +140,8 @@ int RMBIN(BIN* bin)                         {
 
     if(bin->file)                           { BINCLOSE(bin)                                 };
 
-    int retx = remove(BINPATH); if(retx)    { return ERROR;                                 }
-    elif(!MUTEBIN)                          { CALOUT("Deleted file <%s>\n\b", BINPATH);     };
+    int retx=remove(PTHBIN(bin)); if(retx)  { return ERROR;                                 }
+    elif(!MUTEBIN)                          { CALOUT("Deleted file <%s>\n\b", PTHBIN(bin)); };
 
     return 0;                                                                               };
 

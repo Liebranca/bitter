@@ -798,10 +798,12 @@ class hxPX:
                     for dep in deps:
                         head, _sep, tail = dep.rpartition("."); dep=head + ".o";
 
-                        tail=(dep.split("\\src\\")[1]).split("\\");
+                        rep= "\\_include\\" if "\\src\\" not in dep else "\\src\\";
+
+                        tail=(dep.split(rep)[1]).split("\\");
                         modname=tail[0]; oname=tail[-1];
 
-                        head, _sep, tail = dep.rpartition("\\src\\");
+                        head, _sep, tail = dep.rpartition(rep);
                         dep=f"{head}\\trashcan\\{TARGET()}\\{modname}\\{oname}".lstrip();
                         dep=dep.rstrip();
 

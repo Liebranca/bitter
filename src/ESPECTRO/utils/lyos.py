@@ -1249,6 +1249,9 @@ class KVNSL:
     def MAKEPROG(self, tasks):
         self.PROGBAR=PROGBAR( tasks, (3,23), 72 );
 
+    def LOGREAD(self):
+        ERRPRINT(SYSREAD(), err=-1); self.DEBUG_SPIT();
+
     def RUN(self):
 
         CURSOR.SAVE(); CURSOR.JUMP(1, 23);
@@ -1283,7 +1286,7 @@ class KVNSL:
 
                         "RETURN"    : [ self.REXEC,        []                ],
                         "TAB"       : [ self.DEBUG_TOGGLE, []                ],
-                        "ORDM"      : [ self.DEBUG_OUT,    [["test debug"], {'err':-1} ]]
+                        "ORDM"      : [ self.LOGREAD,      []                ]
 
                     };
 
