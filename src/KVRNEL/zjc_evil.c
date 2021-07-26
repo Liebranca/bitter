@@ -14,8 +14,6 @@ static       int    CALDEPTH = 0;         // call depth counter
 static       int    CALREG_I = 0;         // current idex into locreg
 static       int    ERRSTATE = 0x00;      // global errorstate
 
-static       FILE*  CALLOG   = NULL;      // handle to the log dump
-
 static       DANG   CALREG[64];             // call register; a call dump
 
 //   ---     ---     ---     ---     ---
@@ -38,21 +36,6 @@ void CALOUT(char* format, ...)              {
     va_start(args, format);
     vfprintf(stderr, format, args);
     va_end(args);
-
-    };
-
-//   ---     ---     ---     ---     ---
-
-void __openlog()                            {
-
-    // hardcoded for now. pass in ROOT later or something to make this a relative path
-    CALLOG=freopen("D:\\lieb_git\\KVR\\trashcan\\log\\KVNSLOG", "w+", stderr);
-
-    };
-
-void __closelog() {
-
-    fclose(CALLOG);
 
     };
 
@@ -134,16 +117,18 @@ void __terminator (int errcode, char* info) {
 
     switch(errcode)                         {
 
-        case  0: mbody =                    "Insuficcient memory (%s requested).";      break;
+        case  0: mbody =                    "Insuficcient memory %s(%s requested)";     break;
 
         // NOTE START
         /* these are from an old version  *
          * and were never used. i leave   *
          * them because they amuse me.    */
-        case  1: mbody =                    "Access violation. %s%s";                   break;
-        case  2: mbody =                    "The end times have come. %s%s";            break;
-        case  3: mbody =                    "You just did something illegal. %s%s";     break;
+        case  1: mbody =                    "Access violation %s%s";                    break;
+        case  2: mbody =                    "The end times have come %s%s";             break;
+        case  3: mbody =                    "You just did something illegal %s%s";      break;
         // NOTE END
+
+        case  4: mbody =                    "ZLIB went PLOP %s(status %s)";             break;
 
         case 64: mbody =                    "Couln't open file %s<%s>";                 break;
         case 65: mbody =                    "File couldn't be closed %s<%s>";           break;
@@ -153,8 +138,8 @@ void __terminator (int errcode, char* info) {
         case 68: mbody =                    "Inappropriate file signature %s<%s>";      break;
         case 69: mbody =                    "Error deleting file %s<%s>";               break;
 
-        case 70: mbody =                    "Stack is full; can't push. %s%s";          break;
-        case 71: mbody =                    "Stack is empty; can't pop. %s%s";          break;
+        case 70: mbody =                    "Stack is full; can't push %s%s";           break;
+        case 71: mbody =                    "Stack is empty; can't pop %s%s";           break;
         case 72: mbody =                    "Can't insert key %s<%s>";                  break;
         case 73: mbody =                    "Key %s<%s>\x1b[0m not found";              break;
 

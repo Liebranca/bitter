@@ -1250,7 +1250,11 @@ class KVNSL:
         self.PROGBAR=PROGBAR( tasks, (3,23), 72 );
 
     def LOGREAD(self):
-        ERRPRINT(SYSREAD(), err=-1); self.DEBUG_SPIT();
+        s=SYSREAD(clear=0);
+        if s:
+            s=SYSREAD(clear=1);
+            ERRPRINT(s, err=-1); self.DEBUG_SPIT();
+            self.CLOCK.reset();
 
     def RUN(self):
 
@@ -1264,6 +1268,9 @@ class KVNSL:
         while True:
 
             CURSOR.SAVE(); self.CLOCK.FRAME_BEGIN();
+
+            if self.DEBUGREG.isCurrent:
+                self.LOGREAD();
 
 #   ---     ---     ---     ---     ---
 

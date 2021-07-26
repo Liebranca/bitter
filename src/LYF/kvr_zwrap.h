@@ -9,8 +9,8 @@ extern "C" {
 
 //   ---     ---     ---     ---     ---
 
-int INFLBIN(BIN* src, BIN* dst, uint size_i, uint  size_d);
-int DEFLBIN(BIN* src, BIN* dst, uint size_i, uint* size_d);
+int INFLBIN(BIN* src, BIN* dst, uint size_i, uint  size_d, uint offs_i, uint offs_d);
+int DEFLBIN(BIN* src, BIN* dst, uint size_i, uint* size_d, uint offs_i, uint offs_d);
 
 //   ---     ---     ---     ---     ---
 

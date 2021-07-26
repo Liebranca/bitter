@@ -8,8 +8,6 @@
  *   ---     ---     ---     ---     ---    */
 
 #include "kvr_bin.h"
-#include "kvr_mem.h"
-
 #include <string.h>
 
 //   ---     ---     ---     ---     ---
@@ -45,9 +43,26 @@ SIG GTSIG(uint ft)                          {
 
     return sig;                                                                             };
 
+char* GTRMODE(uint x)                       {
+
+    char* rmode;
+
+    switch(x) {
+
+        case 0 : rmode="rb";  break;
+        case 1 : rmode="rb+"; break;
+        case 2 : rmode="wb";  break;
+        case 3 : rmode="wb+"; break;
+
+        default: rmode="w+";  break;
+
+    };
+
+    return rmode;                                                                           };
+
 //   ---     ---     ---     ---     ---
 
-BIN* MKBIN(char* path, char* mode,
+BIN* MKBIN(char* path, uint mode,
            uint  ft,   uint  ex_alloc)      {
 
     char name[20];
@@ -59,25 +74,23 @@ BIN* MKBIN(char* path, char* mode,
     for(int x=pathsize; y<limit; x--, y++)  { name[y]=*(path+(x-(limit-y))); }; name[y]='\0';
 
     ID id=IDNEW("BIN*", name);
-    BIN* bin; MEMGET(BIN, bin, pathsize+1+4+ex_alloc, &id);
+    BIN* bin; MEMGET(BIN, bin, pathsize+1+ex_alloc, &id);
 
-    y=0; char* m = MEMBUFF(byref(bin->m), char, 0); do { m[y]=*mode; y++; } while(*mode++);
-    y=0; char* p = MEMBUFF(byref(bin->m), char, 4); do { p[y]=*path; y++; } while(*path++);
-
-    bin->sign=GTSIG(ft);
+    y=0; char* p = MEMBUFF(byref(bin->m), char, 0); do { p[y]=*path; y++; } while(*path++);
+    bin->sign=GTSIG(ft); bin->mode=mode;
 
     return bin;                                                                             };
 
 int RDBIN(BIN* bin)                         {
 
-    char* rmode = MEMBUFF(byref(bin->m), char, 0);
-    char* path  = MEMBUFF(byref(bin->m), char, 4);
+    char* rmode = GTRMODE(bin->mode             );
+    char* path  = MEMBUFF(byref(bin->m), char, 0);
 
-    int isnew   = !strcmp(rmode, "wb+");    // just so we know if we created something
+    int isnew   =   !strcmp(rmode, "wb+");  // just so we know if we created something
 
                                             // we consider it a reading sesh if either
-    int r = ( !strcmp(rmode, "rb+")         // -mode is read for update (input & output)
-            | !strcmp(rmode, "rb" ) );      // -mode is read only       (just input    )
+    int r       = ( !strcmp(rmode, "rb+")   // -mode is read for update (input & output)
+                  | !strcmp(rmode, "rb" ) );// -mode is read only       (just input    )
 
 //   ---     ---     ---     ---     ---
 
@@ -86,7 +99,7 @@ int RDBIN(BIN* bin)                         {
     if  (bin->file == NULL)                 {
 
         if  (isnew >  0   )                 { return ERROR;                                 }
-        elif(r            )                 { rmode = "wb"; isnew = 1; goto OPEN;           };
+        elif(r            )                 { rmode = "wb+"; isnew = 1; goto OPEN;           };
                                                                                             };
 
 //   ---     ---     ---     ---     ---
@@ -111,7 +124,6 @@ int RDBIN(BIN* bin)                         {
     {
         int wb;
         BINWRITE                            (bin, wb, SIG, 1, &(bin->sign)                  );
-        rewind                              (bin->file                                      );
     }
 
 //   ---     ---     ---     ---     ---
@@ -124,7 +136,7 @@ int RDBIN(BIN* bin)                         {
 
 //   ---     ---     ---     ---     ---
 
-char* PTHBIN(BIN* bin)                      { return MEMBUFF(byref(bin->m), char, 4);       };
+char* PTHBIN(BIN* bin)                      { return MEMBUFF(byref(bin->m), char, 0);       };
 
 int DLBIN(BIN* bin)                         {
 

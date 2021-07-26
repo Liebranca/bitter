@@ -6,10 +6,6 @@
 
 void main(void) {
 
-    __openlog();
-
     // test code here;
 
-    __closelog();
-
-}
+};

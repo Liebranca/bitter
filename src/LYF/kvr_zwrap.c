@@ -3,6 +3,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <assert.h>
 
 //  - --- - --- - --- - --- -
 
@@ -12,14 +13,33 @@
 
 #define CHUNK 0x4000
 
+//  - --- - --- - --- - --- -
+
+static int ZLIB_STATUS=0;
+
+char* CHR_ZLIB_STATUS(void)                 {
+
+    switch(ZLIB_STATUS) {
+
+        case -1: return "Z_ERRNO";
+        case -2: return "Z_STREAM_ERROR";
+        case -3: return "Z_DATA_ERROR";
+        case -4: return "Z_MEM_ERROR";
+        case -5: return "Z_BUF_ERROR";
+        case -6: return "Z_VERSION_ERROR";
+
+        case  1: return "Z_STREAM_END";
+        case  2: return "Z_NEED_DICT";
+
+        default: return "Z_OK";
+
+    };                                                                                      };
+
 #define CALL_ZLIB(x) {                                                      \
-        int status;                                                         \
-        status = x;                                                         \
-        if (status < 0) {                                                   \
-            fprintf       (stderr,                                          \
-                           "%s:%d: %s returned a bad status of %d.\n",      \
-                           __FILE__, __LINE__, #x, status);                 \
-            __terminator(0, "Bruh, zLib went PLOP!");                       \
+        ZLIB_STATUS = x;                                                    \
+        if (ZLIB_STATUS < 0) {                                              \
+            CALOUT("FAILED %s\n\b", #x);                                    \
+            __terminator(4, CHR_ZLIB_STATUS());                             \
         }                                                                   \
     }
 
@@ -45,7 +65,8 @@ static void infstrm_init(z_stream* strm)    {
 //  - --- - --- - --- - --- -
 
 int INFLBIN(BIN* src,    BIN* dst,
-            uint size_i, uint size_d)       {
+            uint size_i, uint size_d,
+            uint offs_i, uint offs_d)       {
 
     uchar    in [CHUNK];
     uchar    out[CHUNK];
@@ -53,33 +74,39 @@ int INFLBIN(BIN* src,    BIN* dst,
     uint     readsize = CHUNK;
     uint     dataleft = size_d;
 
-    z_stream strm;
+    z_stream strm     = {0};
+    strm.next_in      = Z_NULL;
+    strm.avail_in     = 0;
+
     infstrm_init(&strm);
 
     rewind(src->file); rewind(dst->file);
+    fseek(src->file,           0,        SEEK_CUR);
+    fseek(src->file, sizeof(SIG)+offs_d, SEEK_CUR);
+    fseek(src->file,           0,        SEEK_CUR);
+    fseek(dst->file,           0,        SEEK_CUR);
+    fseek(dst->file, sizeof(SIG)+offs_i, SEEK_CUR);
+    fseek(dst->file,           0,        SEEK_CUR);
 
-    strm.next_in      = in;
-    strm.avail_in     = 0;
-
-    int  bytes_read;
+    int  bytes_read; dataleft;
 
 //  - --- - --- - --- - --- -
 
     while(dataleft) {
-
                                             // read next block to decompress
         if(readsize > dataleft)             { readsize = dataleft;                };
         fseek                               (src->file, 0, SEEK_CUR               );
         BINREAD                             (src, bytes_read, uchar, readsize, in );
         fseek                               (src->file, 0, SEEK_CUR               );
 
-        dataleft      -= readsize;
-        strm.avail_in  = bytes_read;
-        strm.next_in   = in;
+        strm.avail_in = readsize;
+        strm.next_in  = in;
+
+        dataleft     -= readsize;
 
 //  - --- - --- - --- - --- -
 
-        while(strm.avail_out == 0) {        // decompress block and write to dst
+        while (strm.avail_out == 0) {       // decompress block and write to dst
 
             uint have;
 
@@ -87,7 +114,7 @@ int INFLBIN(BIN* src,    BIN* dst,
             strm.next_out  = out;
             CALL_ZLIB(inflate(&strm, Z_NO_FLUSH));
 
-            have = CHUNK - strm.avail_out;
+            have           = CHUNK - strm.avail_out;
 
             fseek                           (dst->file, 0, SEEK_CUR           );
             BINWRITE                        (dst, bytes_read, uchar, have, out);
@@ -105,20 +132,26 @@ int INFLBIN(BIN* src,    BIN* dst,
 //  - --- - --- - --- - --- -
 
 int DEFLBIN(BIN* src,    BIN* dst,
-            uint size_i, uint* size_d)      {
+            uint size_i, uint* size_d,
+            uint offs_i, uint offs_d)      {
 
     uchar    in [CHUNK];
     uchar    out[CHUNK];
 
-    z_stream strm;
+    z_stream strm={0};
 
     defstrm_init(&strm);
+
     rewind(src->file); rewind(dst->file);
+    fseek(src->file,           0,        SEEK_CUR);
+    fseek(src->file, sizeof(SIG)+offs_i, SEEK_CUR);
+    fseek(src->file,           0,        SEEK_CUR);
+    fseek(dst->file,           0,        SEEK_CUR);
+    fseek(dst->file, sizeof(SIG)+offs_d, SEEK_CUR);
+    fseek(dst->file,           0,        SEEK_CUR);
 
-    uint dataleft = size_i;
-
-    int  bytes_read;
-    strm.avail_out=0;
+    int  bytes_read; int flush;
+    uint dataleft=size_i;
 
 //  - --- - --- - --- - --- -
 
@@ -132,26 +165,24 @@ int DEFLBIN(BIN* src,    BIN* dst,
         fseek                               (src->file, 0, SEEK_CUR              );
 
         strm.next_in   = in;
-        strm.avail_in  = readsize;
+        strm.avail_in  = bytes_read;
 
-        dataleft -= readsize;
+        dataleft      -= bytes_read;
+        flush          = (dataleft) ? Z_NO_FLUSH : Z_FINISH;
 
 //  - --- - --- - --- - --- -
 
-        while (strm.avail_out == 0) {       // compress block and write to dst
-
-            CALOUT("FUCK", bytes_read);
+        while(strm.avail_in) {
 
             uint have;
+
             strm.avail_out = CHUNK;
             strm.next_out  = out;
 
-            CALL_ZLIB (deflate (& strm, Z_FINISH));
+            CALL_ZLIB (deflate (& strm, flush));
 
             have           = CHUNK - strm.avail_out;
             (*size_d)     += have;
-
-            CALOUT("DUCK %i\n\b", bytes_read);
 
             fseek                           (dst->file, 0, SEEK_CUR           );
             BINWRITE                        (dst, bytes_read, uchar, have, out);

@@ -11,12 +11,13 @@ extern "C" {
 //   ---     ---     ---     ---     ---
 
 BIN* MKJOJ(char* path,                      // inits a joj file
-           char* mode,
+           uint  mode,
            uint  size);
 
 BIN* LDJOJ(char* path);                     // open an existing joj
 
 int ENCJOJ(BIN* joj, float* pixels);        // write pixels to joj
+void DECJOJ(BIN* src, float* pixels);       // decompress joj
 
 int DEFLJOJ(char** paths,                   // compress multiple joj into a single daf
             uint   num_paths,

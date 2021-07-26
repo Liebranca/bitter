@@ -102,10 +102,7 @@ void __printcalreg(int flush              );// prints __registered__ calls
 void __popcalreg  (                       );// pop from call register
 void __terminator (int errcode, char* info);// goes back in time to save john connor
 
-void __openlog();
-void __closelog();
-
-void CALOUT(char* format, ...);
+void CALOUT       (char* format, ...      );// prints to KVNSLOG
 
 //   ---     ---     ---     ---     ---
 // some bug-tracking macros

@@ -27,12 +27,13 @@ typedef struct KVR_BIN {                    // helper struct for dealing with fi
     MEM   m;                                // mem header
 
     SIG   sign;                             // file signature
+    uint  mode;                             // readmode+flags (maybe?)
     FILE* file;                             // file handle
 
 } BIN;
 
 BIN* MKBIN   (char* path,                   // init bin for read/write
-              char* mode,                   // -ft determines sign to check
+              uint  mode,                   // -ft determines sign to check
               uint  ft,                     // -ex_alloc reserves additional memory
               uint  ex_alloc);
 
