@@ -65,10 +65,10 @@ char* GTRMODE(uint x)                       {
 BIN* MKBIN(char* path, uint mode,
            uint  ft,   uint  ex_alloc)      {
 
-    char name[20];
+    char name[KVR_IDK_WIDTH]; 
 
     int  pathsize = strlen(path);
-    int  limit    = 18; if(pathsize < limit) { limit=pathsize; }
+    int  limit    = (KVR_IDK_WIDTH-1);      if(pathsize < limit) { limit=pathsize; }
     int  y        = 0;
 
     for(int x=pathsize; y<limit; x--, y++)  { name[y]=*(path+(x-(limit-y))); }; name[y]='\0';

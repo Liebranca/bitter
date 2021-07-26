@@ -5,6 +5,7 @@
 ID IDNEW(char* type, char* key)            {
 
     ID id={0}; int i=0;
+    uint klimit=KVR_IDK_WIDTH-1;
 
     do {
         id.type[i]=*type; i++;
@@ -16,11 +17,11 @@ ID IDNEW(char* type, char* key)            {
 
     do {
         id.key[i]=*key; i++;
-        if(i==19) { id.key[19]='\0'; break; }
+        if(i==klimit) { id.key[klimit]='\0'; break; }
 
     } while(*key++);
 
-    if(i!=19) { id.key[i]='\0'; };
+    if(i!=klimit) { id.key[i]='\0'; };
 
     id.x = -1;
     id.y = -1;

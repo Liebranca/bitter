@@ -94,9 +94,6 @@ int ENCJOJ(uint dim, uint* size_i)          {
                                             // add to archive's total
     *size_i        +=                       sq_dim*sizeof(JOJPIX);      \
 
-                                            // write dim to file
-    BINWRITE                                (JOJ_FROM, wb, uint, 1, &dim);
-
                                             // get recycle pixel buffer
     float* pixels = MEMBUFF                 (JOJ_PIXELS, float, 0       );
 
@@ -184,31 +181,34 @@ void DECJOJ(BIN* src, float* pixels)        {
 */
 //   ---     ---     ---     ---     ---
 
-int ZPJOJ(uint size_i)                      {
+int ZPJOJ(uint size_i, uint count,
+          JOJH* jojh              )         {
 
     uint size_d   = 0;
     uint offs_i   = 0;
 
-    uint offs_d   = sizeof(uint)*2;
+    uint offs_d   =                         (sizeof(uint)*3) + (count * KVR_IDK_WIDTH    );
+
                                             // zip the entire file
-    DEFLBIN                                 (JOJ_FROM, JOJ_TO, size_i, &size_d, \
-                                             offs_i, offs_d                     );
+    DEFLBIN                                 (JOJ_FROM, JOJ_TO, size_i, &size_d,          \
+                                             offs_i, offs_d                              );
 
 //   ---     ---     ---     ---     ---    // add sizes to header
 
     int  wb;
-    uint sizes[2] =                         { size_i, size_d                    };
+    uint sizes[3] =                         { size_i, size_d, count                      };
 
                                             // rewind TO
-    rewind                                  (JOJ_TO->file                       );
-    fseek                                   (JOJ_TO->file, 0, SEEK_CUR          );
+    rewind                                  (JOJ_TO->file                                );
+    fseek                                   (JOJ_TO->file, 0, SEEK_CUR                   );
 
                                             // skip the signature
-    fseek                                   (JOJ_TO->file, sizeof(SIG), SEEK_CUR);
+    fseek                                   (JOJ_TO->file, sizeof(SIG), SEEK_CUR         );
 
                                             // still the cursor and write
-    fseek                                   (JOJ_TO->file, 0, SEEK_CUR          );
-    BINWRITE                                (JOJ_TO, wb, uint, 2, sizes         );
+    fseek                                   (JOJ_TO->file, 0, SEEK_CUR                   );
+    BINWRITE                                (JOJ_TO, wb, uint, 3, sizes                  );
+    BINWRITE                                (JOJ_TO, wb, JOJH, count, jojh               );
 }
 
 //   ---     ---     ---     ---     ---

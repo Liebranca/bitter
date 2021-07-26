@@ -5,10 +5,10 @@
 
 MEM* MKSTR(char* buff, uint ex_alloc)       {
 
-    char name[20];
+    char name[KVR_IDK_WIDTH];
 
     int  len   = strlen(buff)+1;
-    int  limit = 18; if(len < limit) { limit=len; }
+    int  limit = (KVR_IDK_WIDTH-1);         if(len < limit) { limit=len; }
     int  y     = 0;
 
     for(int x=(int) len; y<limit; x--, y++) {

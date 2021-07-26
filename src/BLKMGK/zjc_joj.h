@@ -10,6 +10,15 @@ extern "C" {
 
 //   ---     ---     ---     ---     ---
 
+typedef struct JOJH {
+
+    uint dim;
+    char name[KVR_IDK_WIDTH];
+
+} JOJH;
+
+//   ---     ---     ---     ---     ---
+
 BIN*    MKJOJ    (char* path, uint mode  ); // inits a joj file
 JOJPIX* GTJOJ    (BIN* joj               ); // get start of joj buffer
 
@@ -19,7 +28,8 @@ int     DLJOJENG (void                   ); // joj encoder clean-up
 int     ENCJOJ   (uint  dim, uint* size_i); // read next image from pixdump and encode
 //void    DECJOJ   (BIN* src, float* pixels); // read next image from jojdump and decode
 
-int     ZPJOJ   (uint size_i            );  // zips encoded joj
+int     ZPJOJ   (uint size_i, uint count,\
+                 JOJH* jojh              ); // zips encoded joj
 
 //   ---     ---     ---     ---     ---
 
