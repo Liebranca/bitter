@@ -214,7 +214,7 @@ def AVTO_MKDLL(olist, gcc, name):
     if BUILD_DLL_TO and OKPATH(BUILD_DLL_TO):
         OBJFOLD=BUILD_DLL_TO;
 
-    dll = f"{OBJFOLD}\\{name}.dll"
+    name=name.lower(); dll = f"{OBJFOLD}\\{name}.dll"
     if OKFILE(dll): DOS(f"@del {dll}");
 
     olist = " ".join(fname for fname in olist);

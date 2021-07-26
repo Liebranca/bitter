@@ -8,9 +8,7 @@ extern "C" {
 //  - --- - --- - --- - --- -
 
 #include "../zjc_CommonTypes.h"
-
-#define   BUILD_FRAC  0x01
-#define   BUILD_JOJ   0x02
+#include "../zjc_evil.h"
 
 //  - --- - --- - --- - --- -
 
@@ -21,7 +19,8 @@ typedef struct JOJ_COLOR_COMPRESSED {
     uchar luma;
     uchar alpha;
 
-} JOJPIX;
+} JOJPIX; CASSERT                           ( sizeof(JOJPIX) == sizeof(float),  \
+                                              "JOJPIX size != float size"       );
 
 
 //  - --- - --- - --- - --- -

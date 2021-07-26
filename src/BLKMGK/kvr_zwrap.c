@@ -11,8 +11,6 @@
 #define GZIP_ENCODING 16
 #define ENABLE_ZLIB_GZIP 32
 
-#define CHUNK 0x4000
-
 //  - --- - --- - --- - --- -
 
 static int ZLIB_STATUS=0;
@@ -68,10 +66,10 @@ int INFLBIN(BIN* src,    BIN* dst,
             uint size_i, uint size_d,
             uint offs_i, uint offs_d)       {
 
-    uchar    in [CHUNK];
-    uchar    out[CHUNK];
+    uchar    in [ZJC_DAFPAGE];
+    uchar    out[ZJC_DAFPAGE];
 
-    uint     readsize = CHUNK;
+    uint     readsize = ZJC_DAFPAGE;
     uint     dataleft = size_d;
 
     z_stream strm     = {0};
@@ -110,11 +108,11 @@ int INFLBIN(BIN* src,    BIN* dst,
 
             uint have;
 
-            strm.avail_out = CHUNK;
+            strm.avail_out = ZJC_DAFPAGE;
             strm.next_out  = out;
             CALL_ZLIB(inflate(&strm, Z_NO_FLUSH));
 
-            have           = CHUNK - strm.avail_out;
+            have           = ZJC_DAFPAGE - strm.avail_out;
 
             fseek                           (dst->file, 0, SEEK_CUR           );
             BINWRITE                        (dst, bytes_read, uchar, have, out);
@@ -135,8 +133,8 @@ int DEFLBIN(BIN* src,    BIN* dst,
             uint size_i, uint* size_d,
             uint offs_i, uint offs_d)      {
 
-    uchar    in [CHUNK];
-    uchar    out[CHUNK];
+    uchar    in [ZJC_DAFPAGE];
+    uchar    out[ZJC_DAFPAGE];
 
     z_stream strm={0};
 
@@ -157,7 +155,7 @@ int DEFLBIN(BIN* src,    BIN* dst,
 
     while(dataleft) {
 
-        uint readsize = CHUNK; if(readsize > dataleft) { readsize = dataleft; }
+        uint readsize = ZJC_DAFPAGE; if(readsize > dataleft) { readsize = dataleft; }
 
                                             // read next block to compress
         fseek                               (src->file, 0, SEEK_CUR              );
@@ -176,12 +174,12 @@ int DEFLBIN(BIN* src,    BIN* dst,
 
             uint have;
 
-            strm.avail_out = CHUNK;
+            strm.avail_out = ZJC_DAFPAGE;
             strm.next_out  = out;
 
             CALL_ZLIB (deflate (& strm, flush));
 
-            have           = CHUNK - strm.avail_out;
+            have           = ZJC_DAFPAGE - strm.avail_out;
             (*size_d)     += have;
 
             fseek                           (dst->file, 0, SEEK_CUR           );

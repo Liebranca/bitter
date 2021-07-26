@@ -16,7 +16,9 @@ extern "C" {
 
 #include <stdint.h>
 
+#define ZJC_DAFPAGE           0x4000
 #define ZJC_DAFSIZE              256
+
 #define EXPORT __declspec(dllexport)        /* find a better place for this */
 
 typedef                 int8_t   schar;     // signed  8-bit

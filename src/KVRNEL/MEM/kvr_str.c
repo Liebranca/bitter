@@ -93,6 +93,6 @@ void RPSTR(MEM* str, char* tail,            \
     uint tot   = strlen(tail); CHKSTR;
     if(str->bsize < tot   ) { return; }
 
-    int x=0; do { head[x]=*tail; x++; } while(*tail++);                                          };
+    int x=0; do { head[x]=*tail; x++; } while(*tail++);                                     };
 
 //   ---     ---     ---     ---     ---

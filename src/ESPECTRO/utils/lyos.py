@@ -726,8 +726,14 @@ class REGION:
             if DOJUMP[0] or DOJUMP[1]: CURSOR.UPDATE();
 
             if ";>" in sub:
-                com, sub = sub.split(";>"); nt=eval(com);
-                if nt: sub=nt+sub;
+
+                com, sub = sub.split(";>");
+                try:
+                    nt=eval(com);
+                    if nt: sub=nt+sub;
+
+                except:
+                    pass;
 
             CPRINT(sub);
 

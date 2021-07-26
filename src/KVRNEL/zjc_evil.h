@@ -66,7 +66,6 @@ static char* __shpath(char* path)           {
     int src[3]    = { 0, 0, 0 };
 
     while (*path++)                         // iter through string
-
     {   curchar = path;                     /* check if current char is a slash            *
                                              * if so, check that next three match "src"    */
         if (  (*curchar == '\\')
