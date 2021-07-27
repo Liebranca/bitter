@@ -25,6 +25,7 @@ extern "C" {
 
 #define elif else if                        /* and prettier not having that space there    */
 
+#define DONE     0                          /* execution went 'okay', apparently           */
 #define FATAL -255                          /* also prettier than return -num or some      */
 #define ERROR -254                          /* other int errcode; return ERROR is cleaner  */
 

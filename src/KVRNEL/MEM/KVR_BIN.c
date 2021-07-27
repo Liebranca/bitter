@@ -167,7 +167,7 @@ int DLBIN(BIN* bin)                         {
     elif(!MUTEBIN)                          { CALOUT("File closed <%s>\n\b", PTHBIN(bin));  };
 
     bin->file   = NULL;
-    return 0;                                                                               };
+    return DONE;                                                                            };
 
 //   ---     ---     ---     ---     ---
 
@@ -178,6 +178,6 @@ int RMBIN(BIN* bin)                         {
     int retx=remove(PTHBIN(bin)); if(retx)  { return ERROR;                                 }
     elif(!MUTEBIN)                          { CALOUT("Deleted file <%s>\n\b", PTHBIN(bin)); };
 
-    return 0;                                                                               };
+    return DONE;                                                                            };
 
 //   ---     ---     ---     ---     ---

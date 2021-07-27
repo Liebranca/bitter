@@ -17,7 +17,7 @@ int PSHSTK(STK* s, uint x)                  {
     s->top++;
     s->buff[s->top]=x;
 
-    return 0;                                                                               };
+    return DONE;                                                                            };
 
 uint POPSTK(STK* s)                         {
 

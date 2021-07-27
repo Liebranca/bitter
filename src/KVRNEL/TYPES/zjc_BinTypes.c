@@ -166,8 +166,6 @@ JOJPIX rgba_to_joj  (float* pixel)          {
 void  joj_to_rgba  (float* pixel,
                     JOJPIX* joj )           {
 
-    // * 0.015625f  ) * 1.164000f; * 0.03125f;
-
     float luma        = frac_tofloat(joj->luma,     64, FRAC6,  0) * 1.164000f;
     float chroma_u    = frac_tofloat(joj->chroma_u, 64, FRAC5, 32);
     float chroma_v    = frac_tofloat(joj->chroma_v, 64, FRAC5, 32);

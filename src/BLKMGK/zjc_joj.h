@@ -25,8 +25,8 @@ extern "C" {
 
 typedef struct JOJH {
 
-    uint dim;
     char name[KVR_IDK_WIDTH];
+    uint dim;
 
 } JOJH;
 
@@ -36,13 +36,15 @@ BIN*    MKJOJ    (char* path, uint mode  ); // inits a joj file
 JOJPIX* GTJOJ    (BIN* joj               ); // get start of joj buffer
 
 int     NTJOJENG (int mode               ); // joj encoder start-up
-int     DLJOJENG (void                   ); // joj encoder clean-up
+int     DLJOJENG (int mode               ); // joj encoder clean-up
 
 int     ENCJOJ   (uint  dim, uint* size_i); // read next image from pixdump and encode
-//void    DECJOJ   (BIN* src, float* pixels); // read next image from jojdump and decode
+int     DECJOJ   (uint  dim              ); // read next image from jojdump and decode
 
 int     ZPJOJ   (uint size_i, uint count,\
                  JOJH* jojh              ); // zips encoded joj
+
+int     UZPJOJ  (JOJH* jojh, uint* sizes ); // unzips joj
 
 //   ---     ---     ---     ---     ---
 

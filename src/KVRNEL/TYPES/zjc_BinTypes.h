@@ -34,6 +34,11 @@ typedef struct JOJ_COLOR_COMPRESSED {
 
 //  - --- - --- - --- - --- -
 
+#define ZJC_RAWCOL_ELEMS 4                  // RGBA will always be four floats
+                                            // but who knows? one day, maybe...
+
+//  - --- - --- - --- - --- -
+
 JOJPIX rgba_to_joj       (float* pixel);
 void   joj_to_rgba       (float* pixel, JOJPIX* joj);
 

@@ -180,7 +180,7 @@ int NK4HSLOT(void)                          {
     ZJC_LKEY_HASH->y = ZJC_LIDX_HASH;
     ZJC_CURR_HNODE   = &(ZJC_CURR_HSLOT->nodes[ZJC_LKEY_HASH->y]);
 
-    ZJC_LIDX_HASH=0; return 0;                                                              };
+    ZJC_LIDX_HASH=0; return DONE;                                                           };
 
 //   ---     ---     ---     ---     ---
 

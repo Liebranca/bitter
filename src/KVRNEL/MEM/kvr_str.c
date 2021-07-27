@@ -66,9 +66,7 @@ void ADSTR(MEM** str, char* tail)           {
     uint  tot  = strlen                     (tail                                );
 
                                             // grow str if too small. then add
-    CHKSTR; do                              { head[clen+x]=*tail; } while(*tail++);
-
-};
+    CHKSTR; do                              { head[clen+x]=*tail; } while(*tail++);         };
 
 //   ---     ---     ---     ---     ---
 

@@ -36,7 +36,9 @@ char* CHR_ZLIB_STATUS(void)                 {
 #define CALL_ZLIB(x) {                                                      \
         ZLIB_STATUS = x;                                                    \
         if (ZLIB_STATUS < 0) {                                              \
-            CALOUT("FAILED %s\n\b", #x);                                    \
+                                                                            \
+        if(KVR_DEBUG) { CALOUT("FAILED %s\n\b", #x); }                      \
+                                                                            \
             __terminator(4, CHR_ZLIB_STATUS());                             \
         }                                                                   \
     }
@@ -104,7 +106,7 @@ int INFLBIN(BIN* src,    BIN* dst,
 
 //  - --- - --- - --- - --- -
 
-        while (strm.avail_out == 0) {       // decompress block and write to dst
+        while(strm.avail_in) {              // decompress block and write to dst
 
             uint have;
 
@@ -125,7 +127,7 @@ int INFLBIN(BIN* src,    BIN* dst,
 
     inflateEnd (& strm);
 
-    return 0;                                                                               };
+    return DONE;                                                                            };
 
 //  - --- - --- - --- - --- -
 
@@ -195,12 +197,14 @@ int DEFLBIN(BIN* src,    BIN* dst,
 
     int finalsize = (int) (100.0 - (( (float) ( *size_d) / (float) (size_i) ) * 100));
 
+#if KVR_DEBUG
     if(finalsize < 0) { CALOUT("BAD DEFLATE: %u/%u | approx. %i%% file size increase\n",
                               *size_d, size_i, -finalsize                                ); }
 
     else              { CALOUT("GOOD DEFLATE: %u/%u | approx. %i%% file size reduction\n",
                                *size_d, size_i,  finalsize                               ); };
+#endif
 
-    return 0;                                                                               };
+    return DONE;                                                                            };
 
 //  - --- - --- - --- - --- -

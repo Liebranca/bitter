@@ -14,15 +14,22 @@ BIN* JOJ_PIXDUMP;
 
 MEM* JOJ_PIXELS;
 
+#define JOJ_READCOUNT                       /* how many pixels we read on each run    */     \
+                                                                                             \
+    xELEMS(ZJC_DAFPAGE, JOJPIX)             /* jojpix that fit in a page              */     \
+    /*-----------------------*/             /* over                                   */     \
+    /ZJC_RAWCOL_ELEMS                       /* how many elements are in a pixel       */
+
 //   ---     ---     ---     ---     ---
 
 BIN* MKJOJ(char* path,
            uint  mode)                      {
 
+    BIN* joj;
     int  evilstate;
-
-    uint page =                             ZJC_DAFPAGE/sizeof(JOJPIX);         \
-    BIN* joj; BINOPEN                       (joj, path, mode, 1, page, evilstate);
+                                            // make it big enough for *packed* pixels
+    uint page = xBYTES                      (JOJ_READCOUNT, JOJPIX              );
+    BINOPEN                                 (joj, path, mode, 1, page, evilstate);
 
     return joj;                                                                             };
 
@@ -41,21 +48,23 @@ int NTJOJENG(int mode)                      {
 
     int   evilstate;
                                             // make a convenience string
-    MEM*  m       = MKSTR                   (GTPECWD(), 64                        );
+    MEM*  m       = MKSTR                   (GTPECWD(), 64                            );
     char* path    = MEMBUFF(m, char, 0);
 
 //   ---     ---     ---     ---     ---    // set fname and create/open files
 
-    RPSTR                                   (&m, "\\MATERAW.joj", strlen(path)    );
-    JOJ_FROM = MKJOJ                        (path, KVR_FMODE_RBP                  );
+    RPSTR                                   (&m, "\\MATERAW.joj", strlen(path)        );
+    JOJ_FROM = MKJOJ                        (path, KVR_FMODE_RBP                      );
 
-    RPSTR                                   (&m, "MATE.joj", strlen(path)-11      );
-    BINOPEN                                 (JOJ_TO, path, KVR_FMODE_RBP,         \
-                                             KVR_FTYPE_JOJ, 0, evilstate          );
+    if(JOJ_FROM == (BIN*) ERROR)            { return ERROR;                           };
 
-    RPSTR                                   (&m, "PIXDUMP.hx", strlen(path)-8     );
-    BINOPEN                                 (JOJ_PIXDUMP, path, KVR_FMODE_RB,     \
-                                             KVR_FTYPE_DMP, 0, evilstate          );
+    RPSTR                                   (&m, "MATE.joj", strlen(path)-11          );
+    BINOPEN                                 (JOJ_TO, path, KVR_FMODE_RBP,             \
+                                             KVR_FTYPE_JOJ, 0, evilstate              );
+
+    RPSTR                                   (&m, "PIXDUMP.hx", strlen(path)-8         );
+    BINOPEN                                 (JOJ_PIXDUMP, path, KVR_FMODE_RBP,        \
+                                             KVR_FTYPE_DMP, 0, evilstate              );
 
     if(mode == JOJ_DECODE) {                // castling on invert op
         BIN* tmp = JOJ_FROM;
@@ -65,14 +74,23 @@ int NTJOJENG(int mode)                      {
 
 //   ---     ---     ---     ---     ---    // make recycle pixel buffer
 
-    JOJ_PIXELS    = MKSTR                   ("BUF", ZJC_DAFPAGE                   );
+                                            // make it big enough to hold *unpacked* pixels
+    uint page  = xBYTES                     (JOJ_READCOUNT, float) * ZJC_RAWCOL_ELEMS;\
+    JOJ_PIXELS = MKSTR                      ("BUF", page                              );
 
                                             // free convenience string
-    DLMEM                                   (m                                    );        };
+    DLMEM                                   (m                                        );
+    return DONE;                                                                            };
 
 //   ---     ---     ---     ---     ---
 
-int DLJOJENG(void)                          {
+int DLJOJENG(int mode)                      {
+
+    if(mode == JOJ_DECODE) {                // de-castling on invert op
+        BIN* tmp = JOJ_FROM;
+        JOJ_FROM = JOJ_TO;
+        JOJ_TO   = tmp;
+    };
 
                                             // close mate
     BINCLOSE                                (JOJ_TO     );
@@ -85,7 +103,8 @@ int DLJOJENG(void)                          {
     DLMEM                                   (JOJ_PIXDUMP);
 
                                             // free recycle buff
-    DLMEM                                   (JOJ_PIXELS );                                  };
+    DLMEM                                   (JOJ_PIXELS );
+    return DONE;                                                                            };
 
 //   ---     ---     ---     ---     ---
 
@@ -98,8 +117,8 @@ int ENCJOJ(uint dim, uint* size_i)          {
     JOJPIX* buff    = GTJOJ                 (JOJ_FROM                   );
 
                                             // sizing ints we need later
-    uint    page    =                       ZJC_DAFPAGE/sizeof(float);
-    uint    remain  =                       sq_dim*4;                   \
+    uint    page    =                       ZJC_DAFPAGE/sizeof(float);  \
+    uint    remain  =                       sq_dim*ZJC_RAWCOL_ELEMS;    \
 
                                             // add to archive's total
     *size_i        +=                       sq_dim*sizeof(JOJPIX);      \
@@ -121,74 +140,58 @@ int ENCJOJ(uint dim, uint* size_i)          {
 
         remain -= readsize;                 // discount read from pending
 
-        for(uint x=0, y=0;                  // go through page and jojencode
-            x<(readsize);                   // then write to file
-            x+=4, y++    )                  { JOJPIX cpix=rgba_to_joj(pixels+x);     \
+        for(uint x=0, y=0; x<(readsize);    // go through page and jojencode
+            x+=ZJC_RAWCOL_ELEMS, y++   )    { JOJPIX cpix=rgba_to_joj(pixels+x);     \
                                               buff[y]=cpix;                          };
 
                                             // save encoded pixels, we gzip later
         BINWRITE                            (JOJ_FROM, wb, JOJPIX,                   \
-                                             readsize/4, buff                        );
+                                             readsize/ZJC_RAWCOL_ELEMS, buff         );
 
-    }; return 0;                                                                            };
-
-//   ---     ---     ---     ---     ---
-/*
-void DECJOJ(BIN* src, float* pixels)        {
-
-    uint size=0;
-    uint deflsize=0;
-
-    int wb; BIN* joj;
-
-    rewind(src->file);
-    fseek(src->file, 0,           SEEK_CUR);
-    fseek(src->file, sizeof(SIG), SEEK_CUR);
-    fseek(src->file, 0,           SEEK_CUR);
-
-    fseek(src->file, 0,           SEEK_CUR);
-    BINREAD(src, wb, uint, 1, &size    );
-    BINREAD(src, wb, uint, 1, &deflsize);
-    fseek(src->file, 0,           SEEK_CUR);
-
-    char* srcpath=PTHBIN(src);
-    MEM* path=MKSTR(srcpath, 4); RPSTR(path, "_dec.joj", path->bsize-9);
-    joj=MKJOJ((char*) path->buff, 3, size); DLMEM(path);
-
-    uint size_squared=size*size;
-    uint bytesize=((size_squared*1)*sizeof(JOJPIX));
-    INFLBIN(src, joj, bytesize, deflsize, sizeof(uint), sizeof(uint)*2);
-
-    rewind(joj->file);
-    fseek(joj->file,           0, SEEK_CUR);
-    fseek(joj->file, sizeof(SIG)+sizeof(uint), SEEK_CUR);
-    fseek(joj->file,           0, SEEK_CUR);
+    }; return DONE;                                                                         };
 
 //   ---     ---     ---     ---     ---
 
-    JOJPIX* buff;
-    uint* loc_p=GTJOJ(joj); size=*loc_p;
-    loc_p++; buff=(JOJPIX*) loc_p;
+int DECJOJ(uint dim)                        {
 
-    for(uint z=0; z<4; z++) {               // loop through the four layers
+    int     wb;
+    uint    sq_dim  = dim*dim;
 
-        uint start=z*size_squared*4;        // read from joj
-        BINREAD(joj, wb, JOJPIX, size_squared, buff);
+                                            // get the joj
+    JOJPIX* buff    = GTJOJ                 (JOJ_TO                     );
 
-        for(uint x=start, y=0;
-            x<start+(size_squared*4);
-            x+=4, y++               )       //convert jojpix to rgba and modify pixels
+                                            // sizing ints we need later
+    uint    page    =                       JOJ_READCOUNT;              \
+    uint    remain  =                       sq_dim;                     \
 
-        { float* pixel = pixels+x; joj_to_rgba(pixel, buff+y); };
+                                            // get recycle pixel buffer
+    float* pixels = MEMBUFF                 (JOJ_PIXELS, float, 0       );
 
-        break;
+    CALOUT("CAP %u | CACHE %u\n\b", JOJ_PIXELS->bsize, remain);
 
-    };
+    rewind(JOJ_PIXDUMP->file);              // rewind target
 
 //   ---     ---     ---     ---     ---
 
-    BINCLOSE(joj); DLMEM(joj);                                                              };
-*/
+    while(remain) {                         // read one joj-wide page at a time
+                                            // each joj being 8(r6)-bit Y'UV+A
+
+        uint readsize =                     (remain<page) ? remain : page;           \
+
+                                            // load buffer from dump
+        BINREAD                             (JOJ_TO, wb, JOJPIX, readsize, buff      );
+
+        remain -= readsize;                 // discount read from pending
+
+        for(uint x=0, y=0; y<(readsize);    // go through page and joj decode
+            x+=ZJC_RAWCOL_ELEMS, y++  )     { joj_to_rgba(pixels+x, buff+y);         };
+
+                                            // save decoded pixels so caller can read
+        BINWRITE                            (JOJ_PIXDUMP, wb, float,                 \
+                                             readsize*ZJC_RAWCOL_ELEMS, pixels       );
+
+    }; return DONE;                                                                         };
+
 //   ---     ---     ---     ---     ---
 
 int ZPJOJ(uint size_i, uint count,
@@ -197,7 +200,7 @@ int ZPJOJ(uint size_i, uint count,
     uint size_d   = 0;
     uint offs_i   = 0;
 
-    uint offs_d   =                         (sizeof(uint)*3) + (count * KVR_IDK_WIDTH    );
+    uint offs_d   =                         (sizeof(uint)*3) + (count * sizeof(JOJH)     );
 
                                             // zip the entire file
     DEFLBIN                                 (JOJ_FROM, JOJ_TO, size_i, &size_d,          \
@@ -219,6 +222,34 @@ int ZPJOJ(uint size_i, uint count,
     fseek                                   (JOJ_TO->file, 0, SEEK_CUR                   );
     BINWRITE                                (JOJ_TO, wb, uint, 3, sizes                  );
     BINWRITE                                (JOJ_TO, wb, JOJH, count, jojh               );
-}
+
+    return DONE;                                                                            };
+
+//   ---     ---     ---     ---     ---
+
+int UZPJOJ(JOJH* jojh, uint* sizes)         {
+
+    int  wb;                                // read file header
+    fseek                                   (JOJ_FROM->file, 0, SEEK_CUR                    );
+    BINREAD                                 (JOJ_FROM, wb, uint, 3, sizes                   );
+    BINREAD                                 (JOJ_FROM, wb, JOJH, sizes[2], jojh             );
+    fseek                                   (JOJ_FROM->file, 0, SEEK_CUR                    );
+
+//   ---     ---     ---     ---     ---
+
+    uint offs_i = 0;                        // skip header from unzipping
+    uint offs_d =                           (sizeof(uint)*3) + (sizeof(JOJH)*sizes[2]);     \
+
+                                            // unzip
+    INFLBIN                                 (JOJ_FROM, JOJ_TO, sizes[0], sizes[1],          \
+                                             offs_i, offs_d                                 );
+
+                                            // rewind & skip sig
+    rewind                                  (JOJ_TO->file                                   );
+    fseek                                   (JOJ_TO->file, 0, SEEK_CUR                      );
+    fseek                                   (JOJ_TO->file, sizeof(SIG), SEEK_CUR            );
+    fseek                                   (JOJ_TO->file, 0, SEEK_CUR                      );
+
+    return DONE;                                                                            };
 
 //   ---     ---     ---     ---     ---
