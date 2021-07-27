@@ -1,3 +1,12 @@
+// *   ---     ---     ---     ---     ---  *
+// *  ZJC_BINTYPES                          *
+// *                                        *
+// *  -common binary ops                    *
+// *  -float<->frac & float<->joj           *
+// *  -vertex packing                       *
+// *                                        *
+// *   ---     ---     ---     ---     ---  *
+
 #ifndef __ZJC_BINTYPES_H__
 #define __ZJC_BINTYPES_H__
 

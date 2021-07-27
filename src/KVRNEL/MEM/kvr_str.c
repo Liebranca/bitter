@@ -5,21 +5,27 @@
 
 MEM* MKSTR(char* buff, uint ex_alloc)       {
 
+    MEM* str;
+
     char name[KVR_IDK_WIDTH];
 
-    int  len   = strlen(buff)+1;
-    int  limit = (KVR_IDK_WIDTH-1);         if(len < limit) { limit=len; }
-    int  y     = 0;
+    int  y     = 0;                         // no overflow
+    int  len   =                            strlen(buff)+1;                            \
+    int  limit =                            (KVR_IDK_WIDTH-1                           );
+    if(len < limit)                         { limit=len;                               };
 
-    for(int x=(int) len; y<limit; x--, y++) {
+    for(int x=len; y<limit; x--, y++) {     // make key from buff
         name[y]=*(buff+(x-(limit-y)));
 
-    }; name[y]='\0';
+    }; name[y] = '\0';
 
-    ID id=IDNEW("STR*", name);
-    MEM* str; MEMGET(MEM, str, len+ex_alloc, &id);
+    y          = 0;                         // ask for mem
+    ID id      = IDNEW                      ("STR*", name                              );
+    MEMGET                                  (MEM, str, xBYTES(len+ex_alloc, uchar), &id);
 
-    y=0; char* b=MEMBUFF(str, char, 0); do { b[y]=*buff; y++; } while(*buff++);
+                                            //copy buff into mem
+    char* b    = MEMBUFF                    (str, char, 0                              );
+    do                                      { b[y]=*buff; y++; } while(*buff++         );
 
     return str;                                                                             };
 
@@ -27,72 +33,90 @@ MEM* MKSTR(char* buff, uint ex_alloc)       {
 
 MEM* GWSTR(MEM* str, uint mag)              {
 
-    char* buff = MEMBUFF(str, char, 0);
-    uint len   = str->bsize+mag;
+    MEM*  new_str;
 
-    MEM* new_str; MEMGET(MEM, new_str, len, byref(str->id)); int y=0;
-    char* b=MEMBUFF(str, char, 0); do { b[y]=*buff; y++; } while(*buff++);
+    int   y    = 0;                         // get len of old str and grow it
+    char* buff = MEMBUFF                    (str, char, 0                                   );
+    uint  len  =                            str->bsize+mag;                                 \
 
-    DLMEM(str); return new_str;                                                             };
+                                            // get mem and copy
+    MEMGET                                  (MEM, new_str, xBYTES(len, uchar),byref(str->id));
+    char* b    = MEMBUFF                    (str, char, 0);
+    do                                      { b[y]=*buff; y++; } while(*buff++              );
+
+                                            // free old mem and return new
+    DLMEM                                   (str                                            );
+    return new_str;                                                                         };
+
+//   ---     ---     ---     ---     ---    // convenience macro. checks for size
+
+#define CHKSTR  {                                         \
+    if(tot >= (*str)->bsize) {                            \
+        *str=GWSTR  (*str, 1 + ((*str)->bsize - tot));    \
+        head=MEMBUFF(*str, char, 0                  );    \
+    };                                              }
 
 //   ---     ---     ---     ---     ---
 
-#define CHKSTR  { MEM** pstr=&str;                          \
-    if(tot >= (*pstr)->bsize) {                             \
-        *pstr=GWSTR (*pstr, 1 + ((*pstr)->bsize - tot));    \
-        head=MEMBUFF(*pstr, char, 0                   );    \
-    };                                                }
+void ADSTR(MEM** str, char* tail)           {
 
-//   ---     ---     ---     ---     ---
+    int   x    = 0;                         // get str and size it
+    char* head = MEMBUFF                    (*str, char, 0                       );
+    uint  clen = strlen                     (head                                );
+    uint  tot  = strlen                     (tail                                );
 
-void ADSTR(MEM* str, char* tail)            {
-
-    char* head = MEMBUFF(str, char, 0);
-
-    uint clen  = strlen (head        );
-    uint tot   = strlen (tail        ); CHKSTR;
-
-    int x=0; do { head[clen+x]=*tail; } while(*tail++);
+                                            // grow str if too small. then add
+    CHKSTR; do                              { head[clen+x]=*tail; } while(*tail++);
 
 };
 
+//   ---     ---     ---     ---     ---
+
 MEM* PLSTR(MEM* str, char* tail)            {
 
-    char* head   = MEMBUFF(str, char, 0);
+    int   x      = 0;                       // get str and size it
+    char* head   = MEMBUFF                  (str, char, 0                        );
+    uint  clen   = strlen                   (head                                );
+    uint  tot    = strlen                   (tail                                );
 
-    uint clen    = strlen (head        );
-    uint tot     = strlen (tail        );
+    uint ex      = 0;                       // check if extra space is necessary
+    if(tot>=str->bsize)                     { ex+=(str->bsize - tot);            }
 
-    uint ex      = 0; if(tot>=str->bsize) { ex+=(str->bsize - tot); }
-
-    MEM* new_str = MKSTR(head, ex);
-    head=MEMBUFF(new_str, char, 0); int x=0; do { head[clen+x]=*tail; } while(*tail++);
+                                            // get mem and strcat. return copy
+    MEM* new_str = MKSTR                    (head, xBYTES(ex, uchar)             );
+    head         = MEMBUFF                  (new_str, char, 0                    );
+    do                                      { head[clen+x]=*tail; } while(*tail++);
 
     return new_str;                                                                         };
 
-void STSTR(MEM* str, char* buff)            {
+//   ---     ---     ---     ---     ---
 
-    char* head = MEMBUFF(str, char, 0);
+void STSTR(MEM** str, char* buff)           {
 
-    uint clen  = strlen(head);
-    uint tot   = strlen(buff); CHKSTR;
+    int   x    = 0;                         // get str and size it
+    char* head = MEMBUFF                    (*str, char, 0                  );
+    uint  clen = strlen                     (head                           );
+    uint  tot  = strlen                     (buff                           );
 
-    int x=0; do { head[x]=*buff; } while(*buff++);                                          };
+                                            // grow str if too small. then set
+    CHKSTR; do                              { head[x]=*buff; } while(*buff++);
+};
 
 //   ---     ---     ---     ---     ---
 
-void RPSTR(MEM* str, char* tail,            \
+void RPSTR(MEM** str, char* tail,           \
            uint offset         )            {
 
-    char* head = MEMBUFF(str, char, 0);
+                                            // ret without calout, cause if you fail this...
+    if((*str)->bsize < offset)              { return;                            };
 
-    uint clen  = strlen(head);
-    if(str->bsize < offset) { return; }
+    int   x    = 0;                         // get str and size it
+    char* head = MEMBUFF                    (*str, char, 0                       );
+    uint  clen = strlen                     (head                                );
+    uint  tot  = strlen                     (tail                                );
+    head       =                            head+offset;                         \
 
-    head       = head+offset;
-    uint tot   = strlen(tail); CHKSTR;
-    if(str->bsize < tot   ) { return; }
-
-    int x=0; do { head[x]=*tail; x++; } while(*tail++);                                     };
+                                            // grow str if too small. then replace
+    CHKSTR; do                              { head[x]=*tail; x++; } while(*tail++);         };
 
 //   ---     ---     ---     ---     ---

@@ -1,3 +1,12 @@
+// *   ---     ---     ---     ---     ---  *
+// *  KVR_PATHS                             *
+// *                                        *
+// *  -stepbrother to zjc_evil              *
+// *  -holds some strings with paths        *
+// *  -^setters & getters for em            *
+// *                                        *
+// *   ---     ---     ---     ---     ---  *
+
 #ifndef __KVR_PATHS_H__
 #define __KVR_PATHS_H__
 

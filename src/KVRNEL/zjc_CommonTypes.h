@@ -1,11 +1,11 @@
-/*   ---     ---     ---     ---     ---    *
- *  ZJC_COMMONTYPES.H                       *
- *                                          *
- *  -typedefs for fixed-sized types         *
- *  -definition of FRAC constants           *
- *  -some type conversion                   *
- *                                          *
- *   ---     ---     ---     ---     ---    */
+// *   ---     ---     ---     ---     ---  *
+// *  ZJC_COMMONTYPES.H                     *
+// *                                        *
+// *  -typedefs for fixed-sized types       *
+// *  -definition of FRAC constants         *
+// *  -some type conversion                 *
+// *                                        *
+// *   ---     ---     ---     ---     ---  *
 
 #ifndef __ZJC_COMMONTYPES_H__
 #define __ZJC_COMMONTYPES_H__
@@ -16,10 +16,19 @@ extern "C" {
 
 #include <stdint.h>
 
-#define ZJC_DAFPAGE           0x4000
-#define ZJC_DAFSIZE              256
+#define ZJC_DAFPAGE             0x4000
+#define ZJC_DAFSIZE                256
 
-#define EXPORT __declspec(dllexport)        /* find a better place for this */
+//  - --- - --- - --- - --- -               // syntax dummies; solely for clarity
+
+#define xBYTES(x, type) (sizeof(type)*x)
+#define xELEMS(x, type) (x/sizeof(type))
+
+//  - --- - --- - --- - --- -
+
+#define EXPORT __declspec(dllexport)        // find a better place for this
+
+//  - --- - --- - --- - --- -
 
 typedef                 int8_t   schar;     // signed  8-bit
 typedef                 int16_t  sshort;    // signed 16-bit

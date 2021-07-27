@@ -37,7 +37,7 @@ JOJPIX* GTJOJ(BIN* joj)                     {
 
 //   ---     ---     ---     ---     ---
 
-int NTJOJENG()                              {
+int NTJOJENG(int mode)                      {
 
     int   evilstate;
                                             // make a convenience string
@@ -46,12 +46,22 @@ int NTJOJENG()                              {
 
 //   ---     ---     ---     ---     ---    // set fname and create/open files
 
-    RPSTR                                   (m, "\\JOJ_FROM.joj", strlen(path)    );
-    JOJ_FROM = MKJOJ                        (path, 3                              );
-    RPSTR                                   (m, "MATE.joj", strlen(path)-12       );
-    BINOPEN                                 (JOJ_TO, path, 3, 1, 0, evilstate     );
-    RPSTR                                   (m, "PIXDUMP.hx", strlen(path)-8      );
-    BINOPEN                                 (JOJ_PIXDUMP, path, 0, 2, 0, evilstate);
+    RPSTR                                   (&m, "\\MATERAW.joj", strlen(path)    );
+    JOJ_FROM = MKJOJ                        (path, KVR_FMODE_RBP                  );
+
+    RPSTR                                   (&m, "MATE.joj", strlen(path)-11      );
+    BINOPEN                                 (JOJ_TO, path, KVR_FMODE_RBP,         \
+                                             KVR_FTYPE_JOJ, 0, evilstate          );
+
+    RPSTR                                   (&m, "PIXDUMP.hx", strlen(path)-8     );
+    BINOPEN                                 (JOJ_PIXDUMP, path, KVR_FMODE_RB,     \
+                                             KVR_FTYPE_DMP, 0, evilstate          );
+
+    if(mode == JOJ_DECODE) {                // castling on invert op
+        BIN* tmp = JOJ_FROM;
+        JOJ_FROM = JOJ_TO;
+        JOJ_TO   = tmp;
+    };
 
 //   ---     ---     ---     ---     ---    // make recycle pixel buffer
 

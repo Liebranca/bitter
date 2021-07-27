@@ -1,3 +1,11 @@
+// *   ---     ---     ---     ---     ---  *
+// *  ZJC_EVIL                              *
+// *                                        *
+// *  -debug stuff                          *
+// *  -hohsys                               *
+// *                                        *
+// *   ---     ---     ---     ---     ---  *
+
 #ifndef __ZJC_EVIL_H__
 #define __ZJC_EVIL_H__
 

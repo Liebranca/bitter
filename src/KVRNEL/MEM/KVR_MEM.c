@@ -1,12 +1,3 @@
-/*   ---     ---     ---     ---     ---    *
- *  KVR_MEM                                 *
- *                                          *
- *  main memory workhorse for KVR           *
- *  handles allocation and deallocation     *
- *  defines behaviour of base MEM struct    *
- *                                          *
- *   ---     ---     ---     ---     ---    */
-
 #include "kvr_mem.h"
 
 #include <stdlib.h>

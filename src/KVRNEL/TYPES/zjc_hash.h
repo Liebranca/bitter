@@ -1,3 +1,13 @@
+// *   ---     ---     ---     ---     ---  *
+// *  ZJC_HASH                              *
+// *                                        *
+// *  -hash tables (duh)                    *
+// *  -rewritten a thousand times           *
+// *  -kinda untested                       *
+// *  -uses ids for fast fetching           *
+// *                                        *
+// *   ---     ---     ---     ---     ---  *
+
 #ifndef __ZJC_HASH_H__
 #define __ZJC_HASH_H__
 

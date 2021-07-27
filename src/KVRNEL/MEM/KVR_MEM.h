@@ -1,3 +1,13 @@
+// *   ---     ---     ---     ---     ---  *
+// *  KVR_MEM                               *
+// *                                        *
+// *  -memory workhorse                     *
+// *  -alloc, dealloc                       *
+// *  -is base struct to most things        *
+// *  -does cool funky poly                 *
+// *                                        *
+// *   ---     ---     ---     ---     ---  *
+
 #ifndef __KVR_MEM_H__
 #define __KVR_MEM_H__
 

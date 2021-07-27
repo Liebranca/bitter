@@ -1,12 +1,3 @@
-/*   ---     ---     ---     ---     ---    *
- *  ZJC_BINTYPES.C                          *
- *                                          *
- *  -common binary ops                      *
- *  -float<->frac & float<->joj             *
- *  -vertex packing                         *
- *                                          *
- *   ---     ---     ---     ---     ---    */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>

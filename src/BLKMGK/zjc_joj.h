@@ -1,8 +1,21 @@
+// *   ---     ---     ---     ---     ---  *
+// *  ZJC_JOJ                               *
+// *                                        *
+// *  -basic bin derivate                   *
+// *  -holds image data in joj format       *
+// *  -conversions defined at zjc_bintypes  *
+// *  -gzipped to the max                   *
+// *                                        *
+// *   ---     ---     ---     ---     ---  *
+
 #ifndef __ZJC_JOJ_H__
 #define __ZJC_JOJ_H__
 
 #include "../KVRNEL/MEM/kvr_bin.h"
 #include "../KVRNEL/TYPES/zjc_BinTypes.h"
+
+#define JOJ_ENCODE 0
+#define JOJ_DECODE 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -22,7 +35,7 @@ typedef struct JOJH {
 BIN*    MKJOJ    (char* path, uint mode  ); // inits a joj file
 JOJPIX* GTJOJ    (BIN* joj               ); // get start of joj buffer
 
-int     NTJOJENG (void                   ); // joj encoder start-up
+int     NTJOJENG (int mode               ); // joj encoder start-up
 int     DLJOJENG (void                   ); // joj encoder clean-up
 
 int     ENCJOJ   (uint  dim, uint* size_i); // read next image from pixdump and encode

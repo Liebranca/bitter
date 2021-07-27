@@ -1,3 +1,12 @@
+// *   ---     ---     ---     ---     ---  *
+// *  BLKMGK                                *
+// *                                        *
+// *  -spiritual succesor of dsm module     *
+// *  -entry point for data packers         *
+// *  -gets teh joj                         *
+// *                                        *
+// *   ---     ---     ---     ---     ---  *
+
 #include "zjc_joj.h"
 #include "../KVRNEL/kvr_paths.h"
 
@@ -33,7 +42,7 @@ EXPORT void UTJOJ(uint i, uint dim,
                   char* name      )         {
 
                                             // kiknit on first run
-    if(!i)                                  { NTJOJENG();                             };
+    if(!i)                                  { NTJOJENG(JOJ_ENCODE);                   };
     ENCJOJ                                  (dim, &DAF_SIZE_I                         );
 
                                             // save entry data

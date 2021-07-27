@@ -1,4 +1,4 @@
-#include "ZJC_EVIL.h"
+#include "zjc_evil.h"
 
 #include <stdio.h>
 #include <stdarg.h>

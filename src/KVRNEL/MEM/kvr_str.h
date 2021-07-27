@@ -1,3 +1,12 @@
+// *   ---     ---     ---     ---     ---  *
+// *  KVR_STR                               *
+// *                                        *
+// *  -plain mem use                        *
+// *  -some funcs for char arrays           *
+// *  -can poly, but funcs are byte-base    *
+// *                                        *
+// *   ---     ---     ---     ---     ---  *
+
 #ifndef __KVR_STR_H__
 #define __KVR_STR_H__
 
@@ -11,10 +20,10 @@ extern "C" {
 
 MEM* MKSTR (char* buff, uint  ex_alloc);
 MEM* GWSTR (MEM*  str,  uint  mag     );
-void ADSTR (MEM*  str,  char* tail    );
+void ADSTR (MEM** str,  char* tail    );
 MEM* PLSTR (MEM*  str,  char* tail    );
-void STSTR (MEM*  str,  char* buff    );
-void RPSTR (MEM*  str,  char* tail,   \
+void STSTR (MEM** str,  char* buff    );
+void RPSTR (MEM** str,  char* tail,   \
             uint  offset              );
 
 //   ---     ---     ---     ---     ---

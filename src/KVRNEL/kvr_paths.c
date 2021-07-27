@@ -25,7 +25,7 @@ void __closelog()                           {
     static MEM*  NAME;                                                                       \
                                                                                              \
     void     NT##NAME (char* buff  )        { NAME = MKSTR  (buff, 0      );                }\
-    char*    ST##NAME (char* buff  )        { STSTR         (NAME, buff   );                }\
+    char*    ST##NAME (char* buff  )        { STSTR         (&NAME, buff  );                }\
     char*    GT##NAME (            )        { return MEMBUFF(NAME, char, 0);                }
 
 //   ---     ---     ---     ---     ---

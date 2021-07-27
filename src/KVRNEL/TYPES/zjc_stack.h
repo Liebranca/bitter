@@ -1,3 +1,11 @@
+// *   ---     ---     ---     ---     ---  *
+// *  ZJC_STACK                             *
+// *                                        *
+// *  -simple uint stacks                   *
+// *  -used to remember indices             *
+// *                                        *
+// *   ---     ---     ---     ---     ---  *
+
 #ifndef __ZJC_STACK_H__
 #define __ZJC_STACK_H__
 
