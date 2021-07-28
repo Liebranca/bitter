@@ -57,11 +57,20 @@ typedef struct ZJC_INT_PAIR     { int x;   int   y; } ipair;
 
 //  - --- - --- - --- - --- -
 
-static const float FRAC8 = 1.0f / 256;
-static const float FRAC7 = 1.0f / 128;
-static const float FRAC6 = 1.0f /  64;
-static const float FRAC5 = 1.0f /  32;
-static const float FRAC4 = 1.0f /  16;
+static const float FRAC8     = 1.0f / 256;
+static const float FRAC7     = 1.0f / 128;
+static const float FRAC6     = 1.0f /  64;
+static const float FRAC5     = 1.0f /  32;
+static const float FRAC4     = 1.0f /  16;
+static const float FRAC3     = 1.0f /   8;
+static const float FRAC2     = 1.0f /   4;
+static const float FRAC1     = 1.0f /   2;
+
+static const float FRACL_F[] =              { FRAC1, FRAC2, FRAC3, FRAC4,
+                                              FRAC5, FRAC6, FRAC7, FRAC8    };
+
+static const uint  FRACL_I[] =              {    2,      4,      8,    16,
+                                                32,     64,    128,   256   };
 
 //  - --- - --- - --- - --- -
 

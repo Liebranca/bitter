@@ -8,8 +8,15 @@
 
 #include <math.h>
 
-//  - --- - --- - --- - --- -
+//   ---     ---     ---     ---     ---
 // move this to lymath later
+
+uint  clampui(uint v,
+              uint start,
+              uint end  )                   { if      (v < start) { v = start; }
+                                              else if (v > end  ) { v = end;   };
+                                            
+                                              return v;                                     };
 
 float clampf(float v,
              float start,
@@ -18,7 +25,16 @@ float clampf(float v,
 
                                               return v;                                     };
 
-//  - --- - --- - --- - --- -
+//   ---     ---     ---     ---     ---
+
+static uint CFRAC_L = 6;                    // default FRAC level for compression
+
+//   ---     ---     ---     ---     ---
+
+void STCFRACL(uint level)                   { CFRAC_L=clampui(level, 1, 7);                 };
+uint GTCFRACL()                             { return CFRAC_L;                               };
+
+//   ---     ---     ---     ---     ---
 
 void ZJC_pack_rawvert(VP3D* vert,
                       RWV3D* data)              {
@@ -41,6 +57,8 @@ void ZJC_pack_rawvert(VP3D* vert,
 
     vert->frac1  = (  (co)                    | ((nnn & 0xFF) << 24)           );
     vert->frac2  = ( ((nnn & (31 << 8)) >> 8) | (ttt << 5) | (uvs << 18)       );                                   }
+
+//   ---     ---     ---     ---     ---
 
 void ZJC_pack_rawbox (BP3D*  box,
                       RWB3D* data)              {
@@ -77,7 +95,7 @@ void ZJC_pack_rawbox (BP3D*  box,
 
                                                                                                                     }
 
-//  - --- - --- - --- - --- -
+//   ---     ---     ---     ---     ---
 
 uchar bitsize (uchar x)                     {
 
@@ -95,6 +113,8 @@ uchar bitsize (uchar x)                     {
 
     return bsize;                                                                           };
 
+//   ---     ---     ---     ---     ---
+
 uchar usbitsize (ushort x)                  {
 
     uchar bsize = 0;
@@ -111,8 +131,12 @@ uchar usbitsize (ushort x)                  {
 
     return bsize;                                                                           };
 
+//   ---     ---     ---     ---     ---
+
 int   nthbit    (uchar b, int n)            { return (b & (1 << n)) != 0;                   };
 int   uinthbit  (uint  b, int n)            { return (b & (1 << n)) != 0;                   };
+
+//   ---     ---     ---     ---     ---
 
 int takebits(uchar b,
              uint  iStart,
@@ -129,7 +153,7 @@ int takebits(uchar b,
 
     return x;                                                                               };
 
-//  - --- - --- - --- - --- -
+//   ---     ---     ---     ---     ---
 
 float frac_tofloat(uint  frac,
                    uint  maxval,
@@ -143,7 +167,7 @@ uchar float_tofrac (float v,
                     uint  shift)            { v = clampf(v, -maxval, maxval - fraction);
                                               return (uchar) roundf(v * fac) + shift;       };
 
-//      - --- - --- - --- - --- -
+//   ---     ---     ---     ---     ---
 
 // try packing four pixels at a time someday
 
@@ -151,29 +175,38 @@ JOJPIX rgba_to_joj  (float* pixel)          {
 
     JOJPIX joj   = { 0 };
 
+    float  ff    = FRACL_F[CFRAC_L];
+    uint   fi    = FRACL_I[CFRAC_L];
+
     float  r     = pixel[0];
     float  g     = pixel[1];
     float  b     = pixel[2];
     float  a     = pixel[3];
 
-    joj.luma     = float_tofrac(( 0.257f * r) + (0.504f * g) + (0.098f * b), 1, FRAC5, 32,  0);
-    joj.chroma_u = float_tofrac((-0.148f * r) - (0.291f * g) + (0.439f * b), 1, FRAC4, 16, 16);
-    joj.chroma_v = float_tofrac(( 0.439f * r) - (0.368f * g) - (0.071f * b), 1, FRAC4, 16, 16);
-    joj.alpha    = float_tofrac(a,                                           1, FRAC5, 32,  0);
+    joj.luma     = float_tofrac             (( 0.257f * r) + (0.504f * g) + (0.098f * b),
+                                             1, ff,   fi,  0                           );
+    joj.chroma_u = float_tofrac             ((-0.148f * r) - (0.291f * g) + (0.439f * b),
+                                             1, ff*2, fi/2, fi/2                       );
+    joj.chroma_v = float_tofrac             (( 0.439f * r) - (0.368f * g) - (0.071f * b),
+                                             1, ff*2, fi/2, fi/2                       );
+    joj.alpha    = float_tofrac             (a, 1, ff,   fi,  0                        );
 
     return joj;                                                                             };
 
 void  joj_to_rgba  (float* pixel,
                     JOJPIX* joj )           {
 
-    float luma        = frac_tofloat(joj->luma,     32, FRAC5,  0) * 1.164000f;
-    float chroma_u    = frac_tofloat(joj->chroma_u, 32, FRAC4, 16);
-    float chroma_v    = frac_tofloat(joj->chroma_v, 32, FRAC4, 16);
-    float alpha       = frac_tofloat(joj->alpha,    32, FRAC5,  0);
+    float  ff         = FRACL_F[CFRAC_L];
+    uint   fi         = FRACL_I[CFRAC_L];
+
+    float luma        = frac_tofloat(joj->luma,     fi, ff,      0) * 1.164000f;
+    float chroma_u    = frac_tofloat(joj->chroma_u, fi, ff*2, fi/2);
+    float chroma_v    = frac_tofloat(joj->chroma_v, fi, ff*2, fi/2);
+    float alpha       = frac_tofloat(joj->alpha,    fi, ff,      0);
 
     pixel[0]          = (luma) + (1.596f * chroma_v);
     pixel[1]          = (luma) - (0.392f * chroma_u) - (0.813f * chroma_v);
     pixel[2]          = (luma) + (2.017f * chroma_u);
     pixel[3]          = alpha;                                                              };
 
-//      - --- - --- - --- - --- -
+//   ---     ---     ---     ---     ---

@@ -58,8 +58,12 @@ int NTJOJENG(int mode)                      {
 
     if(JOJ_FROM == (BIN*) ERROR)            { return ERROR;                           };
 
+                                            // ensure mate is wiped when we *write* to it
+    int mate_rmode =                        (mode == JOJ_ENCODE) ? KVR_FMODE_WB
+                                                                 : KVR_FMODE_RBP;
+
     RPSTR                                   (&m, "MATE.joj", strlen(path)-11          );
-    BINOPEN                                 (JOJ_TO, path, KVR_FMODE_RBP,             \
+    BINOPEN                                 (JOJ_TO, path, mate_rmode,                \
                                              KVR_FTYPE_JOJ, 0, evilstate              );
 
     RPSTR                                   (&m, "PIXDUMP.hx", strlen(path)-8         );
@@ -163,6 +167,9 @@ int DECJOJ(JOJH* jojh)                      {
     uint    dim     = jojh->dim;
     uint    sq_dim  = dim*dim;
 
+                                            // set color compression level
+    STCFRACL                                (jojh->fracl                  );
+
                                             // get the joj
     JOJPIX* buff    = GTJOJ                 (JOJ_TO                       );
 
@@ -183,7 +190,7 @@ int DECJOJ(JOJH* jojh)                      {
 //   ---     ---     ---     ---     ---
 
     while(remain) {                         // read one joj-wide page at a time
-                                            // each joj being 8(r6)-bit Y'UV+A
+                                            // each joj being 8(fracl'd)-bit Y'UV+A
 
         uint readsize =                     (remain<page) ? remain : page;           \
 
@@ -206,10 +213,27 @@ int DECJOJ(JOJH* jojh)                      {
 int ZPJOJ(uint size_i, uint count,
           JOJH* jojh              )         {
 
+    int  wb;
     uint size_d   = 0;
     uint offs_i   = 0;
 
     uint offs_d   =                         (sizeof(uint)*3) + (count * sizeof(JOJH)     );
+
+                                            // quick blank mem for a flood fill
+    MEM* m        = MKSTR                   ("", offs_d                                  );
+
+                                            // skip the signature
+    fseek                                   (JOJ_TO->file, 0, SEEK_CUR                   );
+    fseek                                   (JOJ_TO->file, sizeof(SIG), SEEK_CUR         );
+    fseek                                   (JOJ_TO->file, 0, SEEK_CUR                   );
+
+                                            // add padding so we can jump without crashing
+    fseek                                   (JOJ_TO->file, 0, SEEK_CUR                   );
+    BINWRITE                                (JOJ_TO, wb, uchar, offs_d, m->buff          );
+    fseek                                   (JOJ_TO->file, 0, SEEK_CUR                   );
+
+                                            // free blank mem
+    DLMEM                                   (m                                           );
 
                                             // zip the entire file
     DEFLBIN                                 (JOJ_FROM, JOJ_TO, size_i, &size_d,          \
@@ -217,15 +241,18 @@ int ZPJOJ(uint size_i, uint count,
 
 //   ---     ---     ---     ---     ---    // add sizes to header
 
-    int  wb;
     uint sizes[3] =                         { size_i, size_d, count                      };
 
                                             // rewind TO
     rewind                                  (JOJ_TO->file                                );
     fseek                                   (JOJ_TO->file, 0, SEEK_CUR                   );
 
-                                            // skip the signature
-    fseek                                   (JOJ_TO->file, sizeof(SIG), SEEK_CUR         );
+                                            // signature being deleted for some reason
+                                            // even though we religiously skip it...
+                                            // soooo, just rewrite it till we fix that
+    BINWRITE                                (JOJ_TO, wb, SIG, 1, &(JOJ_TO->sign)         );
+                                            //^and dont forget we should be skipping intead:
+    //fseek                                   (JOJ_TO->file, sizeof(SIG), SEEK_CUR         );
 
                                             // still the cursor and write
     fseek                                   (JOJ_TO->file, 0, SEEK_CUR                   );

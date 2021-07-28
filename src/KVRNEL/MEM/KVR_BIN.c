@@ -2,10 +2,6 @@
 #include <string.h>
 
 //   ---     ---     ---     ---     ---
-
-static int MUTEBIN = 0;                     // disables "file closed/opened... " messages
-
-//   ---     ---     ---     ---     ---
 // filetypes
 
 static SIG CRKSIG = { 1126442020, 1378100260, 606348324,  606348363  };
@@ -77,18 +73,18 @@ BIN* MKBIN(char* path, uint mode,
 
     char name[KVR_IDK_WIDTH]; 
 
-    int  pathsize = strlen(path);           // no overflow
-    int  limit    = (KVR_IDK_WIDTH-1);      if(pathsize < limit) { limit=pathsize; }
+    int  len      = strlen(path);           // no overflow
+    int  limit    = (KVR_IDK_WIDTH-1);      if(len < limit) { limit=len;       };
     int  y        = 0;
 
                                             // make short id key from last chars of path
-    for(int x=pathsize; y<limit; x--, y++)  { name[y]=*(path+(x-(limit-y))); }; name[y]='\0';
+    for(int x=len; y<limit; x--, y++)       { name[y]=*(path+(len-(limit-y))); }; name[y]='\0';
 
 //   ---     ---     ---     ---     ---
 
                                             // make id and get mem
     ID id         = IDNEW                   ("BIN*", name                                   );
-    ex_alloc      =                         (pathsize+1) + ex_alloc;                        \
+    ex_alloc      =                         (len+1) + ex_alloc;                             \
     MEMGET                                  (BIN, bin, xBYTES(ex_alloc, uchar), &id         );
 
     y             = 0;                      // copy chars from path into our own buff
@@ -147,10 +143,11 @@ int RDBIN(BIN* bin)                         {
 
 //   ---     ---     ---     ---     ---
 
-                                            // inform console rats like me about the fopen
-    if  ( !MUTEBIN             )            { CALOUT("Opened file <%s>\n\b", path); }
-    if  ( !strcmp(rmode, "wb+"))            { isnew = 2;                            };
+#if KVR_DEBUG
+    CALOUT("Opened file <%s>\n\b", path);
+#endif
 
+    if  ( !strcmp(rmode, "wb+"))            { isnew = 2;                            };
     return isnew;                                                                           };
 
 //   ---     ---     ---     ---     ---    // just a convenience getter
@@ -164,7 +161,10 @@ int DLBIN(BIN* bin)                         {
                                             // errcatch before you print success
     int failure = fclose                    (bin->file                                      );
     if  ( failure)                          { return ERROR;                                 }
-    elif(!MUTEBIN)                          { CALOUT("File closed <%s>\n\b", PTHBIN(bin));  };
+
+#if KVR_DEBUG
+    CALOUT("File closed <%s>\n\b", PTHBIN(bin));
+#endif
 
     bin->file   = NULL;
     return DONE;                                                                            };
@@ -174,9 +174,12 @@ int DLBIN(BIN* bin)                         {
 int RMBIN(BIN* bin)                         {
 
                                             // close before delete, then errcatch
-    if(bin->file)                           { BINCLOSE(bin)                                 };
+    if(bin->file)                           { BINCLOSE(bin);                                };
     int retx=remove(PTHBIN(bin)); if(retx)  { return ERROR;                                 }
-    elif(!MUTEBIN)                          { CALOUT("Deleted file <%s>\n\b", PTHBIN(bin)); };
+
+#if KVR_DEBUG
+    CALOUT("Deleted file <%s>\n\b", PTHBIN(bin));
+#endif
 
     return DONE;                                                                            };
 

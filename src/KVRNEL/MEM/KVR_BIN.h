@@ -68,6 +68,8 @@ BIN* MKBIN   (char* path,                   // init bin for read/write
               uint  ft,                     // -ex_alloc reserves additional memory
               uint  ex_alloc);
 
+SIG   GTSIG   (uint ft         );
+
 int   RDBIN   (BIN* bin        );           // read from bin
 int   DLBIN   (BIN* bin        );           // closes a bin file
 int   RMBIN   (BIN* bin        );           // removes a bin file from disk
@@ -119,7 +121,8 @@ char* PTHBIN  (BIN* bin        );           // fetch path to bin
 //   ---     ---     ---     ---     ---
 
 #else
-    #define BINOPEN(bin, path, mode, ft, retx) bin=MKBIN(path, mode, ft); retx=RDBIN(bin)
+    #define BINOPEN(bin, path, mode, ft,ex_alloc, retx)                                      \
+        bin=MKBIN(path, mode, ft, ex_alloc); retx=RDBIN(bin)
 
     #define BINCLOSE(bin) DLBIN(bin)
 

@@ -23,10 +23,12 @@ extern "C" {
 
 //   ---     ---     ---     ---     ---
 
-typedef struct JOJH {
+typedef struct JOJH {                       // header for joj files
 
-    char name[KVR_IDK_WIDTH];
-    uint dim;
+    char name[KVR_IDK_WIDTH];               // id of this image
+
+    uint dim;                               // dimensions
+    uint fracl;                             // color compression level
 
 } JOJH;
 

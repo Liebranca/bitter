@@ -9,11 +9,9 @@ ID IDNEW(char* type, char* key)            {
 
     do {
         id.type[i]=*type; i++;
-        if(i==3) { break; }
+        if(i==4) { break; }
 
-    } while(*type++);
-
-    while(i<4) { id.type[i]='_'; i++; }; i=0;
+    } while(*type++); i=0;
 
     do {
         id.key[i]=*key; i++;

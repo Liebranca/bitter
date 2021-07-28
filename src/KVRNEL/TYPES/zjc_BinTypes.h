@@ -14,12 +14,12 @@
 extern "C" {
 #endif
 
-//  - --- - --- - --- - --- -
+//   ---     ---     ---     ---     ---
 
 #include "../zjc_CommonTypes.h"
 #include "../zjc_evil.h"
 
-//  - --- - --- - --- - --- -
+//   ---     ---     ---     ---     ---
 
 typedef struct JOJ_COLOR_COMPRESSED {
 
@@ -32,12 +32,15 @@ typedef struct JOJ_COLOR_COMPRESSED {
                                               "JOJPIX size != float size"       );
 
 
-//  - --- - --- - --- - --- -
+//   ---     ---     ---     ---     ---
 
 #define ZJC_RAWCOL_ELEMS 4                  // RGBA will always be four floats
                                             // but who knows? one day, maybe...
 
-//  - --- - --- - --- - --- -
+//   ---     ---     ---     ---     ---
+
+void   STCFRACL          (uint level);
+uint   GTCFRACL          (          );
 
 JOJPIX rgba_to_joj       (float* pixel);
 void   joj_to_rgba       (float* pixel, JOJPIX* joj);
@@ -53,7 +56,7 @@ int    takebits          (uchar b, uint iStart, uint iEnd);
 float  frac_tofloat      (uint frac, uint maxval, float fac, uint shift);
 uchar  float_tofrac      (float v, float maxval, float fraction, uint fac, uint shift);
 
-//  - --- - --- - --- - --- -
+//   ---     ---     ---     ---     ---
 
 typedef struct RAWVERT3D {
 
@@ -71,7 +74,7 @@ typedef struct RAWBOX3D {
 
 } RWB3D;
 
-//  - --- - --- - --- - --- -
+//   ---     ---     ---     ---     ---
 
 /*
      _________________________________________________________________________________
@@ -147,7 +150,7 @@ typedef struct BoxPacked3D {
 void ZJC_pack_rawvert(VP3D* vert, RWV3D* data);
 void ZJC_pack_rawbox (BP3D* box,  RWB3D* data);
 
-//  - --- - --- - --- - --- -
+//   ---     ---     ---     ---     ---
 
 #ifdef __cplusplus
 }

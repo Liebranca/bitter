@@ -15,7 +15,7 @@ MEM* MKSTR(char* buff, uint ex_alloc)       {
     if(len < limit)                         { limit=len;                               };
 
     for(int x=len; y<limit; x--, y++) {     // make key from buff
-        name[y]=*(buff+(x-(limit-y)));
+        name[y]=*(buff+y);
 
     }; name[y] = '\0';
 

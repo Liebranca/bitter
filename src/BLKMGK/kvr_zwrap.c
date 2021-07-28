@@ -127,7 +127,10 @@ int INFLBIN(BIN* src,    BIN* dst,
 
 //  - --- - --- - --- - --- -
 
+#if KVR_DEBUG
     CALOUT("INF %u/%u\n\b", tot, size_i);
+#endif
+
     inflateEnd (& strm);
 
     return DONE;                                                                            };

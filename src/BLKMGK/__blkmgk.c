@@ -40,20 +40,26 @@ EXPORT void DLBLKMGK() { DLKVRPTH(); };
 //   ---     ---     ---     ---     ---
 
 EXPORT void UTJOJ(uint i, uint dim,
-                  char* name      )         {
+                  uint cl, char* name)      {
 
                                             // kiknit on first run
     if(!i)                                  { NTJOJENG(JOJ_ENCODE);                   };
+
+                                            // set compression level and encode
+    STCFRACL                                (cl                                       );
     ENCJOJ                                  (dim, &DAF_SIZE_I                         );
+
+//   ---     ---     ---     ---     ---
 
                                             // save entry data
     for(int x=0; x<(KVR_IDK_WIDTH-1); x++)  { DAF_JITEMS[DAF_COUNTER].name[x]=*(name+x);
                                               if(*(name+x)=='\0') { break;            }     };
 
-//   ---     ---     ---     ---     ---
-
-    DAF_JITEMS[DAF_COUNTER].dim = dim;
+    DAF_JITEMS[DAF_COUNTER].dim   = dim;
+    DAF_JITEMS[DAF_COUNTER].fracl = cl;
     DAF_COUNTER++;
+
+//   ---     ---     ---     ---     ---
 
     if(i==BLKMGK_DONE) {                    // zip and kikdel on last run
         ZPJOJ                               (DAF_SIZE_I, DAF_COUNTER, DAF_JITEMS      );
@@ -81,6 +87,8 @@ EXPORT void INJOJ(uint i)                   {
     if(i!=BLKMGK_DONE) {                    // decode joj (writes to pixdump)
         DECJOJ                              (DAF_JITEMS+i                               );
     }
+
+//   ---     ---     ---     ---     ---
 
     else {                                  // kikdel on added run
         DLJOJENG                            (JOJ_DECODE                                 );
