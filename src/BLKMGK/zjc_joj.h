@@ -39,7 +39,7 @@ int     NTJOJENG (int mode               ); // joj encoder start-up
 int     DLJOJENG (int mode               ); // joj encoder clean-up
 
 int     ENCJOJ   (uint  dim, uint* size_i); // read next image from pixdump and encode
-int     DECJOJ   (uint  dim              ); // read next image from jojdump and decode
+int     DECJOJ   (JOJH* jojh             ); // read next image from jojdump and decode
 
 int     ZPJOJ   (uint size_i, uint count,\
                  JOJH* jojh              ); // zips encoded joj

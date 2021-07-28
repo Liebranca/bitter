@@ -79,7 +79,7 @@ EXPORT void INJOJ(uint i)                   {
 //   ---     ---     ---     ---     ---
 
     if(i!=BLKMGK_DONE) {                    // decode joj (writes to pixdump)
-        DECJOJ                              (DAF_JITEMS[i].dim                          );
+        DECJOJ                              (DAF_JITEMS+i                               );
     }
 
     else {                                  // kikdel on added run

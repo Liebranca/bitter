@@ -156,20 +156,20 @@ JOJPIX rgba_to_joj  (float* pixel)          {
     float  b     = pixel[2];
     float  a     = pixel[3];
 
-    joj.luma     = float_tofrac(( 0.257f * r) + (0.504f * g) + (0.098f * b), 1, FRAC6, 64,  0);
-    joj.chroma_u = float_tofrac((-0.148f * r) - (0.291f * g) + (0.439f * b), 1, FRAC5, 32, 32);
-    joj.chroma_v = float_tofrac(( 0.439f * r) - (0.368f * g) - (0.071f * b), 1, FRAC5, 32, 32);
-    joj.alpha    = float_tofrac(a,                                           1, FRAC6, 64,  0);
+    joj.luma     = float_tofrac(( 0.257f * r) + (0.504f * g) + (0.098f * b), 1, FRAC5, 32,  0);
+    joj.chroma_u = float_tofrac((-0.148f * r) - (0.291f * g) + (0.439f * b), 1, FRAC4, 16, 16);
+    joj.chroma_v = float_tofrac(( 0.439f * r) - (0.368f * g) - (0.071f * b), 1, FRAC4, 16, 16);
+    joj.alpha    = float_tofrac(a,                                           1, FRAC5, 32,  0);
 
     return joj;                                                                             };
 
 void  joj_to_rgba  (float* pixel,
                     JOJPIX* joj )           {
 
-    float luma        = frac_tofloat(joj->luma,     64, FRAC6,  0) * 1.164000f;
-    float chroma_u    = frac_tofloat(joj->chroma_u, 64, FRAC5, 32);
-    float chroma_v    = frac_tofloat(joj->chroma_v, 64, FRAC5, 32);
-    float alpha       = frac_tofloat(joj->alpha,    64, FRAC6,  0);
+    float luma        = frac_tofloat(joj->luma,     32, FRAC5,  0) * 1.164000f;
+    float chroma_u    = frac_tofloat(joj->chroma_u, 32, FRAC4, 16);
+    float chroma_v    = frac_tofloat(joj->chroma_v, 32, FRAC4, 16);
+    float alpha       = frac_tofloat(joj->alpha,    32, FRAC5,  0);
 
     pixel[0]          = (luma) + (1.596f * chroma_v);
     pixel[1]          = (luma) - (0.392f * chroma_u) - (0.813f * chroma_v);

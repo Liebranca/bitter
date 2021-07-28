@@ -114,19 +114,23 @@ int ENCJOJ(uint dim, uint* size_i)          {
     uint    sq_dim  = dim*dim;
 
                                             // get the joj
-    JOJPIX* buff    = GTJOJ                 (JOJ_FROM                   );
+    JOJPIX* buff    = GTJOJ                 (JOJ_FROM                                );
 
                                             // sizing ints we need later
-    uint    page    =                       ZJC_DAFPAGE/sizeof(float);  \
-    uint    remain  =                       sq_dim*ZJC_RAWCOL_ELEMS;    \
+    uint    page    =                       JOJ_READCOUNT*sizeof(float);             \
+    uint    remain  =                       sq_dim*ZJC_RAWCOL_ELEMS;                 \
 
                                             // add to archive's total
-    *size_i        +=                       sq_dim*sizeof(JOJPIX);      \
+    *size_i        +=                       sq_dim*sizeof(JOJPIX);                   \
 
                                             // get recycle pixel buffer
-    float* pixels = MEMBUFF                 (JOJ_PIXELS, float, 0       );
+    float* pixels   = MEMBUFF               (JOJ_PIXELS, float, 0                    );
 
-    rewind(JOJ_PIXDUMP->file);              // rewind cache
+                                            // rewind cache and skip sig
+    rewind                                  (JOJ_PIXDUMP->file                       );
+    fseek                                   (JOJ_PIXDUMP->file, 0, SEEK_CUR          );
+    fseek                                   (JOJ_PIXDUMP->file, sizeof(SIG), SEEK_CUR);
+    fseek                                   (JOJ_PIXDUMP->file, 0, SEEK_CUR          );
 
 //   ---     ---     ---     ---     ---
 
@@ -152,24 +156,29 @@ int ENCJOJ(uint dim, uint* size_i)          {
 
 //   ---     ---     ---     ---     ---
 
-int DECJOJ(uint dim)                        {
+int DECJOJ(JOJH* jojh)                      {
 
     int     wb;
+
+    uint    dim     = jojh->dim;
     uint    sq_dim  = dim*dim;
 
                                             // get the joj
-    JOJPIX* buff    = GTJOJ                 (JOJ_TO                     );
+    JOJPIX* buff    = GTJOJ                 (JOJ_TO                       );
 
                                             // sizing ints we need later
-    uint    page    =                       JOJ_READCOUNT;              \
-    uint    remain  =                       sq_dim;                     \
+    uint    page    =                       JOJ_READCOUNT;                \
+    uint    remain  =                       sq_dim;                       \
 
                                             // get recycle pixel buffer
-    float* pixels = MEMBUFF                 (JOJ_PIXELS, float, 0       );
+    float* pixels   = MEMBUFF               (JOJ_PIXELS, float, 0         );
 
-    CALOUT("CAP %u | CACHE %u\n\b", JOJ_PIXELS->bsize, remain);
-
-    rewind(JOJ_PIXDUMP->file);              // rewind target
+                                            // rewind target and write header
+    rewind                                  (JOJ_PIXDUMP->file);
+    fseek                                   (JOJ_PIXDUMP->file, 0, SEEK_CUR);
+    BINWRITE                                (JOJ_PIXDUMP, wb, JOJH,        \
+                                             1, jojh                       );
+    fseek                                   (JOJ_PIXDUMP->file, 0, SEEK_CUR);
 
 //   ---     ---     ---     ---     ---
 

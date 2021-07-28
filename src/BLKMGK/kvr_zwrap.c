@@ -88,7 +88,7 @@ int INFLBIN(BIN* src,    BIN* dst,
     fseek(dst->file, sizeof(SIG)+offs_i, SEEK_CUR);
     fseek(dst->file,           0,        SEEK_CUR);
 
-    int  bytes_read; dataleft;
+    int bytes_read; uint tot=0;
 
 //  - --- - --- - --- - --- -
 
@@ -106,7 +106,7 @@ int INFLBIN(BIN* src,    BIN* dst,
 
 //  - --- - --- - --- - --- -
 
-        while(strm.avail_in) {              // decompress block and write to dst
+        while(strm.avail_in || !strm.avail_out) {
 
             uint have;
 
@@ -120,11 +120,14 @@ int INFLBIN(BIN* src,    BIN* dst,
             BINWRITE                        (dst, bytes_read, uchar, have, out);
             fseek                           (dst->file, 0, SEEK_CUR           );
 
+            tot+=have;
+
         };
     };
 
 //  - --- - --- - --- - --- -
 
+    CALOUT("INF %u/%u\n\b", tot, size_i);
     inflateEnd (& strm);
 
     return DONE;                                                                            };
@@ -172,7 +175,7 @@ int DEFLBIN(BIN* src,    BIN* dst,
 
 //  - --- - --- - --- - --- -
 
-        while(strm.avail_in) {
+        while(strm.avail_in || !strm.avail_out) {
 
             uint have;
 
