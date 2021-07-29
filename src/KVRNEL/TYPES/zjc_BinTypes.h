@@ -19,6 +19,20 @@ extern "C" {
 #include "../zjc_CommonTypes.h"
 #include "../zjc_evil.h"
 
+//   ---     ---     ---     ---     ---    // these types are all basically the same!
+                                            // the one and only reason to have them?
+                                            // NAMING: less confusing to maintain.
+
+typedef struct JOJ_GREY_COMPRESSED {
+
+    uchar ao;
+    uchar rough;
+    uchar metal;
+    uchar emit;
+
+} JOJGREY; CASSERT                          ( sizeof(JOJGREY) == sizeof(float), \
+                                              "JOJGREY size != float size"      );
+
 //   ---     ---     ---     ---     ---
 
 typedef struct JOJ_NVEC_COMPRESSED {
@@ -31,6 +45,8 @@ typedef struct JOJ_NVEC_COMPRESSED {
 
 } JOJVEC; CASSERT                           ( sizeof(JOJVEC) == sizeof(float),  \
                                               "JOJVEC size != float size"       );
+
+//   ---     ---     ---     ---     ---
 
 typedef struct JOJ_COLOR_COMPRESSED {
 
@@ -54,6 +70,9 @@ void  STCFRACL (uint level           );     // sets frac level
 
 void  ENCNVEC  (float* n, JOJPIX* j  );     // encodes unit vector into joj-like
 void  DECNVEC  (float* n, JOJPIX* j  );     // decodes joj-like unit vector
+
+void  ENCGREY  (float* p, JOJPIX* j  );     // encodes packed curv/orm into joj-like
+void  DECGREY  (float* p, JOJPIX* j  );     // decodes joj-like into packed curv/orm
 
 void  ENCRGBA  (float* p, JOJPIX* j  );     // encode rgba into joj
 void  DECRGBA  (float* p, JOJPIX* j  );     // decode joj into rgba

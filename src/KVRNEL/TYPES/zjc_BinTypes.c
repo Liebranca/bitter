@@ -41,8 +41,11 @@ uchar FLTOFRAC     (float v,
 
 //   ---     ---     ---     ---     ---
 
-static uint CFRAC_L = 6;                    // default FRAC level for compression             
-void STCFRACL(uint level)                   { CFRAC_L=clampui(level, 1, 7);                 };
+static uint CFRAC_L  = 6;                   // default FRAC level for compression
+static uint CFRAC_D0 = 2;                   // degrade step, reduces precision
+static uint CFRAC_D1 = 4;                   // further degrade step, destroys precision
+
+void STCFRACL(uint level)                   { CFRAC_L=clampui(level, 0, 7);                 };
 
 //   ---     ---     ---     ---     ---
 
@@ -53,11 +56,11 @@ void ENCNVEC(float* n, JOJPIX* j)           {
     float   ff = FRACL_F[CFRAC_L];
     uint    fi = FRACL_I[CFRAC_L];
 
-    v->x       = FLTOFRAC                   ((n[0]*2.0)-1.0, 1, ff, fi, fi);
-    v->y       = FLTOFRAC                   ((n[1]*2.0)-1.0, 1, ff, fi, fi);
-    v->w       = FLTOFRAC                   ( n[3], 1, ff*2, fi/2, fi/2   );
-              
-    v->sign    =                            n[2] < 0;                     \
+    v->x       = FLTOFRAC                   ((n[0]*2.0)-1.0, 1, ff, fi, fi        );
+    v->y       = FLTOFRAC                   ((n[1]*2.0)-1.0, 1, ff, fi, fi        );
+    v->w       = FLTOFRAC                   ( n[3], 1, ff*CFRAC_D1, fi/CFRAC_D1, 0);
+
+    v->sign    =                            n[2] < 0;                             \
                                                                                             };
 
 //   ---     ---     ---     ---     ---
@@ -69,20 +72,48 @@ void DECNVEC(float* n, JOJPIX* j)           {
     float ff   = FRACL_F[CFRAC_L];
     uint  fi   = FRACL_I[CFRAC_L];
 
-    float x    = FRACTOFL                   (v->x, fi, ff, fi           );
-    float y    = FRACTOFL                   (v->y, fi, ff, fi           );
-    float w    = FRACTOFL                   (v->w, fi/2, ff*2, fi/2     );
+    float x    = FRACTOFL                   (v->x, fi, ff, fi                           );
+    float y    = FRACTOFL                   (v->y, fi, ff, fi                           );
+    float w    = FRACTOFL                   (v->w, fi/CFRAC_D1, ff*CFRAC_D1, 0          );
 
     int   sign = (v->sign) ? -1 : 1;
-
     float z    = 0;
-    float d    =                            1 - ( pow(x, 2) + pow(y, 2) );
-    if(d > 0)                               { z = sqrt(d) * sign;       };
+
+    float d    =                            1 - ( pow(x, 2) + pow(y, 2)                 );
+    if(d > 0)                               { z = sqrt(d) * sign;                       };
 
     n[0]       = (x+1)*0.5;
     n[1]       = (y+1)*0.5;
     n[2]       = (z+1)*0.5;
     n[3]       = w;                                                                         };
+
+//   ---     ---     ---     ---     ---
+
+void ENCGREY(float* p, JOJPIX* j)           {
+
+    JOJGREY* o = (JOJGREY*) j;
+
+    float ff   = FRACL_F[CFRAC_L];
+    uint  fi   = FRACL_I[CFRAC_L];
+
+    o->ao      = FLTOFRAC                   (p[0], 1, ff, fi, 0);
+    o->rough   = FLTOFRAC                   (p[1], 1, ff, fi, 0);
+    o->metal   = FLTOFRAC                   (p[2], 1, ff, fi, 0);
+    o->emit    = FLTOFRAC                   (p[3], 1, ff, fi, 0);                           };
+
+//   ---     ---     ---     ---     ---
+
+void DECGREY(float* p, JOJPIX* j)           {
+
+    JOJGREY* o  = (JOJGREY*) j;
+
+    float ff    = FRACL_F[CFRAC_L];
+    uint  fi    = FRACL_I[CFRAC_L];
+
+    p[0]        = FRACTOFL                  (o->ao,    fi, ff, 0);
+    p[1]        = FRACTOFL                  (o->rough, fi, ff, 0);
+    p[2]        = FRACTOFL                  (o->metal, fi, ff, 0);
+    p[3]        = FRACTOFL                  (o->emit,  fi, ff, 0);                          };
 
 //   ---     ---     ---     ---     ---
 
@@ -143,7 +174,7 @@ void ZJC_pack_rawbox (BP3D*  box,
                  | (FLTOFRAC  (data->co[22], 4, FRAC5, 32, 128) << 16)
                  | (FLTOFRAC  (data->co[23], 4, FRAC5, 32, 128) << 24) );
 
-                                                                                                                    }
+                                                                                            };
 
 //   ---     ---     ---     ---     ---
 
@@ -219,11 +250,10 @@ void ENCRGBA(float* p, JOJPIX* j)           {
     j->luma     = FLTOFRAC                  (( 0.257f * r) + (0.504f * g) + (0.098f * b),
                                             1, ff,   fi,  0                            );
     j->chroma_u = FLTOFRAC                  ((-0.148f * r) - (0.291f * g) + (0.439f * b),
-                                            1, ff*2, fi/2, fi/2                        );
+                                            1, ff*CFRAC_D0, fi/CFRAC_D0, fi/CFRAC_D0   );
     j->chroma_v = FLTOFRAC                  (( 0.439f * r) - (0.368f * g) - (0.071f * b),
-                                            1, ff*2, fi/2, fi/2                        );
-    j->alpha    = FLTOFRAC                  (a, 1, ff,   fi,  0                        );
-                                                                                            };
+                                            1, ff*CFRAC_D0, fi/CFRAC_D0, fi/CFRAC_D0   );
+    j->alpha    = FLTOFRAC                  (a, 1, ff*CFRAC_D1,   fi/CFRAC_D1,  0      );   };
 
 //   ---     ---     ---     ---     ---
 
@@ -233,13 +263,17 @@ void  DECRGBA(float* p, JOJPIX* j )         {
     uint   fi    = FRACL_I[CFRAC_L];
 
     float luma   = FRACTOFL                 (j->luma,     fi, ff,      0) * 1.164000f; \
-    float chr_u  = FRACTOFL                 (j->chroma_u, fi, ff*2, fi/2);             \
-    float chr_v  = FRACTOFL                 (j->chroma_v, fi, ff*2, fi/2);             \
-    float alpha  = FRACTOFL                 (j->alpha,    fi, ff,      0);             \
+    float chr_u  = FRACTOFL                 (j->chroma_u, fi,                          \
+                                             ff*CFRAC_D0, fi/CFRAC_D0                  );
+    float chr_v  = FRACTOFL                 (j->chroma_v, fi,                          \
+                                             ff*CFRAC_D0, fi/CFRAC_D0                  );
+    float alpha  = FRACTOFL                 (j->alpha,    fi/CFRAC_D1,                 \
+                                             ff*CFRAC_D1, 0                            );
 
     p[0]         =                          (luma) + (1.596f * chr_v);                 \
     p[1]         =                          (luma) - (0.392f * chr_u) - (0.813f * chr_v);
     p[2]         =                          (luma) + (2.017f * chr_u);                 \
-    p[3]         =                          alpha;                                          };
+    p[3]         =                          alpha;                                     \
+                                                                                            };
 
 //   ---     ---     ---     ---     ---

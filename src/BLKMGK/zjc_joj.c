@@ -127,8 +127,11 @@ int ENCJOJ(JOJH* jojh, uint* size_i)        {
 //   ---     ---     ---     ---     ---
 
     JOJENC_F        = &ENCRGBA;             // set encoder 
-    int len         = strlen                (jojh->name                              );
-    if(jojh->name[len-1]=='n')              { JOJENC_F=&ENCNVEC;                     };
+    int  len        = strlen                (jojh->name                              );
+    char imtype     =                       jojh->name[len-1];
+
+    if  (imtype=='n'               )        { JOJENC_F=&ENCNVEC;                     }
+    elif(imtype=='o' || imtype=='c')        { JOJENC_F=&ENCGREY;                     };
 
 //   ---     ---     ---     ---     ---
 
@@ -188,7 +191,10 @@ int DECJOJ(JOJH* jojh)                      {
 
     JOJENC_F        = &DECRGBA;             // set encoder 
     int len         = strlen                (jojh->name                   );
-    if(jojh->name[len-1]=='n')              { JOJENC_F=&DECNVEC;          };
+    char imtype     =                       jojh->name[len-1];
+
+    if  (imtype=='n'               )        { JOJENC_F=&DECNVEC;          }
+    elif(imtype=='o' || imtype=='c')        { JOJENC_F=&DECGREY;          };
 
 //   ---     ---     ---     ---     ---
 
