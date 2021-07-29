@@ -45,10 +45,6 @@ EXPORT void UTJOJ(uint i, uint dim,
                                             // kiknit on first run
     if(!i)                                  { NTJOJENG(JOJ_ENCODE);                   };
 
-                                            // set compression level and encode
-    STCFRACL                                (cl                                       );
-    ENCJOJ                                  (dim, &DAF_SIZE_I                         );
-
 //   ---     ---     ---     ---     ---
 
                                             // save entry data
@@ -57,6 +53,13 @@ EXPORT void UTJOJ(uint i, uint dim,
 
     DAF_JITEMS[DAF_COUNTER].dim   = dim;
     DAF_JITEMS[DAF_COUNTER].fracl = cl;
+
+//   ---     ---     ---     ---     ---
+
+                                            // set compression level and encode
+    STCFRACL                                (cl                                       );
+    ENCJOJ                                  (DAF_JITEMS+DAF_COUNTER, &DAF_SIZE_I      );
+
     DAF_COUNTER++;
 
 //   ---     ---     ---     ---     ---

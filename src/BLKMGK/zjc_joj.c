@@ -7,12 +7,16 @@
 #include <string.h>
 
 //   ---     ---     ---     ---     ---
+// fun pointer for swapping out encoders
+static void (*JOJENC_F)(float* pix, JOJPIX* j);
 
-BIN* JOJ_FROM;
+BIN* JOJ_FROM;                              // bins used for I/O
 BIN* JOJ_TO;
 BIN* JOJ_PIXDUMP;
 
-MEM* JOJ_PIXELS;
+MEM* JOJ_PIXELS;                            // a pixel buffer (keep it small)
+
+//   ---     ---     ---     ---     ---
 
 #define JOJ_READCOUNT                       /* how many pixels we read on each run    */     \
                                                                                              \
@@ -112,13 +116,21 @@ int DLJOJENG(int mode)                      {
 
 //   ---     ---     ---     ---     ---
 
-int ENCJOJ(uint dim, uint* size_i)          {
+int ENCJOJ(JOJH* jojh, uint* size_i)        {
 
     int     wb;
-    uint    sq_dim  = dim*dim;
+    uint    sq_dim  =                       (jojh->dim) * (jojh->dim);               \
 
                                             // get the joj
     JOJPIX* buff    = GTJOJ                 (JOJ_FROM                                );
+
+//   ---     ---     ---     ---     ---
+
+    JOJENC_F        = &ENCRGBA;             // set encoder 
+    int len         = strlen                (jojh->name                              );
+    if(jojh->name[len-1]=='n')              { JOJENC_F=&ENCNVEC;                     };
+
+//   ---     ---     ---     ---     ---
 
                                             // sizing ints we need later
     uint    page    =                       JOJ_READCOUNT*sizeof(float);             \
@@ -149,8 +161,7 @@ int ENCJOJ(uint dim, uint* size_i)          {
         remain -= readsize;                 // discount read from pending
 
         for(uint x=0, y=0; x<(readsize);    // go through page and jojencode
-            x+=ZJC_RAWCOL_ELEMS, y++   )    { JOJPIX cpix=rgba_to_joj(pixels+x);     \
-                                              buff[y]=cpix;                          };
+            x+=ZJC_RAWCOL_ELEMS, y++   )    { JOJENC_F(pixels+x, buff+y);            };
 
                                             // save encoded pixels, we gzip later
         BINWRITE                            (JOJ_FROM, wb, JOJPIX,                   \
@@ -172,6 +183,14 @@ int DECJOJ(JOJH* jojh)                      {
 
                                             // get the joj
     JOJPIX* buff    = GTJOJ                 (JOJ_TO                       );
+
+//   ---     ---     ---     ---     ---
+
+    JOJENC_F        = &DECRGBA;             // set encoder 
+    int len         = strlen                (jojh->name                   );
+    if(jojh->name[len-1]=='n')              { JOJENC_F=&DECNVEC;          };
+
+//   ---     ---     ---     ---     ---
 
                                             // sizing ints we need later
     uint    page    =                       JOJ_READCOUNT;                \
@@ -200,7 +219,7 @@ int DECJOJ(JOJH* jojh)                      {
         remain -= readsize;                 // discount read from pending
 
         for(uint x=0, y=0; y<(readsize);    // go through page and joj decode
-            x+=ZJC_RAWCOL_ELEMS, y++  )     { joj_to_rgba(pixels+x, buff+y);         };
+            x+=ZJC_RAWCOL_ELEMS, y++  )     { JOJENC_F(pixels+x, buff+y);            };
 
                                             // save decoded pixels so caller can read
         BINWRITE                            (JOJ_PIXDUMP, wb, float,                 \

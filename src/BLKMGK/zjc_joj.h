@@ -34,19 +34,19 @@ typedef struct JOJH {                       // header for joj files
 
 //   ---     ---     ---     ---     ---
 
-BIN*    MKJOJ    (char* path, uint mode  ); // inits a joj file
-JOJPIX* GTJOJ    (BIN* joj               ); // get start of joj buffer
+BIN*    MKJOJ    (char* path, uint mode   );// inits a joj file
+JOJPIX* GTJOJ    (BIN* joj                );// get start of joj buffer
 
-int     NTJOJENG (int mode               ); // joj encoder start-up
-int     DLJOJENG (int mode               ); // joj encoder clean-up
+int     NTJOJENG (int mode                );// joj encoder start-up
+int     DLJOJENG (int mode                );// joj encoder clean-up
 
-int     ENCJOJ   (uint  dim, uint* size_i); // read next image from pixdump and encode
-int     DECJOJ   (JOJH* jojh             ); // read next image from jojdump and decode
+int     ENCJOJ   (JOJH* jojh, uint* size_i);// read next image from pixdump and encode
+int     DECJOJ   (JOJH* jojh              );// read next image from jojdump and decode
 
-int     ZPJOJ   (uint size_i, uint count,\
-                 JOJH* jojh              ); // zips encoded joj
+int     ZPJOJ   (uint size_i, uint count, \
+                 JOJH* jojh               );// zips encoded joj
 
-int     UZPJOJ  (JOJH* jojh, uint* sizes ); // unzips joj
+int     UZPJOJ  (JOJH* jojh, uint* sizes  );// unzips joj
 
 //   ---     ---     ---     ---     ---
 

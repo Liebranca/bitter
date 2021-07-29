@@ -21,6 +21,17 @@ extern "C" {
 
 //   ---     ---     ---     ---     ---
 
+typedef struct JOJ_NVEC_COMPRESSED {
+
+    uchar sign;
+
+    uchar x;
+    uchar y;
+    uchar w;
+
+} JOJVEC; CASSERT                           ( sizeof(JOJVEC) == sizeof(float),  \
+                                              "JOJVEC size != float size"       );
+
 typedef struct JOJ_COLOR_COMPRESSED {
 
     uchar chroma_u;
@@ -39,22 +50,22 @@ typedef struct JOJ_COLOR_COMPRESSED {
 
 //   ---     ---     ---     ---     ---
 
-void   STCFRACL          (uint level);
-uint   GTCFRACL          (          );
+void  STCFRACL (uint level           );     // sets frac level
 
-JOJPIX rgba_to_joj       (float* pixel);
-void   joj_to_rgba       (float* pixel, JOJPIX* joj);
+void  ENCNVEC  (float* n, JOJPIX* j  );     // encodes unit vector into joj-like
+void  DECNVEC  (float* n, JOJPIX* j  );     // decodes joj-like unit vector
 
-uchar  bitsize           (uchar x);
-uchar  usbitsize         (ushort x);
+void  ENCRGBA  (float* p, JOJPIX* j  );     // encode rgba into joj
+void  DECRGBA  (float* p, JOJPIX* j  );     // decode joj into rgba
 
-int    nthbit            (uchar b, int n);
-int    uinthbit          (uint b, int n);
+uchar bitsize  (uchar  x             );
+uchar usbitsize(ushort x             );
 
-int    takebits          (uchar b, uint iStart, uint iEnd);
+int   nthbit   (uchar b, int n       );
+int   uinthbit (uint  b, int n       );
 
-float  frac_tofloat      (uint frac, uint maxval, float fac, uint shift);
-uchar  float_tofrac      (float v, float maxval, float fraction, uint fac, uint shift);
+int   takebits (uchar b, uint iStart,\
+                uint iEnd            );
 
 //   ---     ---     ---     ---     ---
 
