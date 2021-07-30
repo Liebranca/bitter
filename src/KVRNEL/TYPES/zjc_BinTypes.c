@@ -272,10 +272,20 @@ void ENCRGBA(float* p, JOJPIX* j)           {
 
     j->luma     = FLTOFRAC                  (( 0.257f * r) + (0.504f * g) + (0.098f * b),
                                             1, ff,   fi,  0                            );
+
+                                            // this is wrong: it creates color artifacts
+                                            // i just so happen to __LOVE__ the glitchy look
     j->chroma_u = FLTOFRAC                  ((-0.148f * r) - (0.291f * g) + (0.439f * b),
-                                            1, ff, fi, fi   );
+                                            1, ff, fi, fi                              );
     j->chroma_v = FLTOFRAC                  (( 0.439f * r) - (0.368f * g) - (0.071f * b),
-                                            1, ff, fi, fi   );
+                                            1, ff, fi, fi                              );
+
+                                            // the 'right way', not nearly as cool
+//  j->chroma_u = FLTOFRAC                  ((-0.148f * r) - (0.291f * g) + (0.439f * b),
+//                                          1, ff*CFRAC_D0, fi/CFRAC_D0, fi/CFRAC_D0   );
+//  j->chroma_v = FLTOFRAC                  (( 0.439f * r) - (0.368f * g) - (0.071f * b),
+//                                          1, ff*CFRAC_D0, fi/CFRAC_D0, fi/CFRAC_D0   );
+
     j->alpha    = FLTOFRAC                  (a, 1, ff*CFRAC_D1,   fi/CFRAC_D1,  0      );   };
 
 //   ---     ---     ---     ---     ---
@@ -286,10 +296,19 @@ void  DECRGBA(float* p, JOJPIX* j )         {
     uint   fi    = FRACL_I[CFRAC_L];
 
     float luma   = FRACTOFL                 (j->luma,     fi, ff,      0) * 1.164000f; \
+
+                                            // color artifacts 10/10
     float chr_u  = FRACTOFL                 (j->chroma_u, fi,                          \
-                                             ff, fi                  );
+                                             ff, fi                                    );
     float chr_v  = FRACTOFL                 (j->chroma_v, fi,                          \
-                                             ff, fi                  );
+                                             ff, fi                                    );
+
+                                            // the 'right way'
+//  float chr_u  = FRACTOFL                 (j->chroma_u, fi,                          \
+//                                           ff*CFRAC_D0, fi/CFRAC_D0                  );
+//  float chr_v  = FRACTOFL                 (j->chroma_v, fi,                          \
+//                                           ff*CFRAC_D0, fi/CFRAC_D0                  );
+
     float alpha  = FRACTOFL                 (j->alpha,    fi/CFRAC_D1,                 \
                                              ff*CFRAC_D1, 0                            );
 
