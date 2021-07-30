@@ -96,10 +96,25 @@ void ENCGREY(float* p, JOJPIX* j)           {
     float ff   = FRACL_F[CFRAC_L];
     uint  fi   = FRACL_I[CFRAC_L];
 
-    o->ao      = FLTOFRAC                   (p[0], 1, ff, fi, 0);
-    o->rough   = FLTOFRAC                   (p[1], 1, ff, fi, 0);
-    o->metal   = FLTOFRAC                   (p[2], 1, ff, fi, 0);
-    o->emit    = FLTOFRAC                   (p[3], 1, ff, fi, 0);                           };
+    o->mask    =                            ( ((p[0] < 0.35f)     )                        \
+                                            | ((p[1] > 0.25f) << 1)                        \
+                                            | ((p[2] > 0.25f) << 2)                        \
+                                            | ((p[3] > 0.25f) << 3)                        );
+
+    if(o->mask&1) {
+        o->low = FLTOFRAC                   (p[0]/0.35f, 1, ff, fi, 0        );            \
+    }
+
+    else {
+        o->low = FLTOFRAC                   ((p[3]-0.25f)/0.75f, 1, ff, fi, 0) * (o->mask&8);
+    };
+
+    if(p[1] > 0.5f || p[1] != 1.0f)         { p[1] -= 0.5f; }
+
+    o->mid     = FLTOFRAC                   ((p[1]-0.25f)/0.75f, 1, ff, fi, 0) * (o->mask&2);
+    o->hi      = FLTOFRAC                   ((p[2]-0.25f)/0.75f, 1, ff, fi, 0) * (o->mask&4);
+
+    o->mask    = o->mask&1;                                                                 };
 
 //   ---     ---     ---     ---     ---
 
@@ -110,10 +125,18 @@ void DECGREY(float* p, JOJPIX* j)           {
     float ff    = FRACL_F[CFRAC_L];
     uint  fi    = FRACL_I[CFRAC_L];
 
-    p[0]        = FRACTOFL                  (o->ao,    fi, ff, 0);
-    p[1]        = FRACTOFL                  (o->rough, fi, ff, 0);
-    p[2]        = FRACTOFL                  (o->metal, fi, ff, 0);
-    p[3]        = FRACTOFL                  (o->emit,  fi, ff, 0);                          };
+    if(o->mask) {
+        p[0]    = FRACTOFL                  (o->low, fi, ff, 0) * 0.35f;
+        p[3]    = 1;
+    }
+
+    else {
+        p[0]    = 1;
+        p[3]    = FRACTOFL                  (o->low, fi, ff, 0);
+    };
+
+    p[1]        = FRACTOFL                  (o->mid, fi, ff, 0);
+    p[2]        = FRACTOFL                  (o->hi,  fi, ff, 0);                            };
 
 //   ---     ---     ---     ---     ---
 
@@ -250,9 +273,9 @@ void ENCRGBA(float* p, JOJPIX* j)           {
     j->luma     = FLTOFRAC                  (( 0.257f * r) + (0.504f * g) + (0.098f * b),
                                             1, ff,   fi,  0                            );
     j->chroma_u = FLTOFRAC                  ((-0.148f * r) - (0.291f * g) + (0.439f * b),
-                                            1, ff*CFRAC_D0, fi/CFRAC_D0, fi/CFRAC_D0   );
+                                            1, ff, fi, fi   );
     j->chroma_v = FLTOFRAC                  (( 0.439f * r) - (0.368f * g) - (0.071f * b),
-                                            1, ff*CFRAC_D0, fi/CFRAC_D0, fi/CFRAC_D0   );
+                                            1, ff, fi, fi   );
     j->alpha    = FLTOFRAC                  (a, 1, ff*CFRAC_D1,   fi/CFRAC_D1,  0      );   };
 
 //   ---     ---     ---     ---     ---
@@ -264,9 +287,9 @@ void  DECRGBA(float* p, JOJPIX* j )         {
 
     float luma   = FRACTOFL                 (j->luma,     fi, ff,      0) * 1.164000f; \
     float chr_u  = FRACTOFL                 (j->chroma_u, fi,                          \
-                                             ff*CFRAC_D0, fi/CFRAC_D0                  );
+                                             ff, fi                  );
     float chr_v  = FRACTOFL                 (j->chroma_v, fi,                          \
-                                             ff*CFRAC_D0, fi/CFRAC_D0                  );
+                                             ff, fi                  );
     float alpha  = FRACTOFL                 (j->alpha,    fi/CFRAC_D1,                 \
                                              ff*CFRAC_D1, 0                            );
 
