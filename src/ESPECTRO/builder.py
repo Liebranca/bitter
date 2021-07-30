@@ -43,7 +43,7 @@ HEDS     = [];
 
 # if this is set (and OKPATH) dlls are sent to it
 # hardcoding it for now for testing
-BUILD_DLL_TO="D:\\lieb_git\\UPBGE_ASSETS\\lytools"
+BUILD_DLL_TO=f"D:\\lieb_git\\UPBGE_ASSETS\\bin\\x64"
 
 def AVTO_SETOUT(s):
     global OBJFOLD; OBJFOLD = s;

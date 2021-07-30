@@ -1,4 +1,5 @@
 #include "zjc_hash.h"
+#include <stddef.h>
 #include <math.h>
 
 //   ---     ---     ---     ---     ---

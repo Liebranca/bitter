@@ -25,11 +25,10 @@ extern "C" {
 
 typedef struct JOJ_GREY_COMPRESSED {
 
-    uchar mask;
-
-    uchar low;
-    uchar mid;
-    uchar hi;
+    uchar a;
+    uchar b;
+    uchar c;
+    uchar d;
 
 } JOJGREY; CASSERT                          ( sizeof(JOJGREY) == sizeof(float), \
                                               "JOJGREY size != float size"      );

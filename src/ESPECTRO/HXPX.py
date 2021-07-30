@@ -675,7 +675,7 @@ class hxPX:
 
                 num=len(_files); tasks[0][1]+=num; tasks[1][1]+=int(num!=0);
 
-        KVNSL.MAKEPROG(tasks);
+        KVNSL.MAKEPROG(tasks); CHDIR(CC())
         t1=Thread(target=KVNSL.SYNC_CLOCKBAR, args=['PROGBAR']); t1.start();
         t2=Thread(target=self.build, args=[brute]); t2.start();
 

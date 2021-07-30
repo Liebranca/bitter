@@ -56,11 +56,11 @@ void ENCNVEC(float* n, JOJPIX* j)           {
     float   ff = FRACL_F[CFRAC_L];
     uint    fi = FRACL_I[CFRAC_L];
 
-    v->x       = FLTOFRAC                   ((n[0]*2.0)-1.0, 1, ff, fi, fi        );
-    v->y       = FLTOFRAC                   ((n[1]*2.0)-1.0, 1, ff, fi, fi        );
-    v->w       = FLTOFRAC                   ( n[3], 1, ff*CFRAC_D1, fi/CFRAC_D1, 0);
+    v->x       = FLTOFRAC                   ((n[0]*2.0)-1.0, 1, ff, fi, fi);
+    v->y       = FLTOFRAC                   ((n[1]*2.0)-1.0, 1, ff, fi, fi);
+    v->w       = FLTOFRAC                   ( n[3], 1, ff, fi, 0          );
 
-    v->sign    =                            n[2] < 0;                             \
+    v->sign    =                            n[2] < 0;                     \
                                                                                             };
 
 //   ---     ---     ---     ---     ---
@@ -72,15 +72,15 @@ void DECNVEC(float* n, JOJPIX* j)           {
     float ff   = FRACL_F[CFRAC_L];
     uint  fi   = FRACL_I[CFRAC_L];
 
-    float x    = FRACTOFL                   (v->x, fi, ff, fi                           );
-    float y    = FRACTOFL                   (v->y, fi, ff, fi                           );
-    float w    = FRACTOFL                   (v->w, fi/CFRAC_D1, ff*CFRAC_D1, 0          );
+    float x    = FRACTOFL                   (v->x, fi, ff, fi          );
+    float y    = FRACTOFL                   (v->y, fi, ff, fi          );
+    float w    = FRACTOFL                   (v->w, fi, ff, 0           );
 
     int   sign = (v->sign) ? -1 : 1;
     float z    = 0;
 
-    float d    =                            1 - ( pow(x, 2) + pow(y, 2)                 );
-    if(d > 0)                               { z = sqrt(d) * sign;                       };
+    float d    =                            1 - ( pow(x, 2) + pow(y, 2));
+    if(d > 0)                               { z = sqrt(d) * sign;      };
 
     n[0]       = (x+1)*0.5;
     n[1]       = (y+1)*0.5;
@@ -89,6 +89,9 @@ void DECNVEC(float* n, JOJPIX* j)           {
 
 //   ---     ---     ---     ---     ---
 
+uchar GREY4STP(float v)                     {
+    return ((v>0.25 && v <=0.75) || v>=0.95) | ((v>0.75) << 1);                             };
+
 void ENCGREY(float* p, JOJPIX* j)           {
 
     JOJGREY* o = (JOJGREY*) j;
@@ -96,25 +99,10 @@ void ENCGREY(float* p, JOJPIX* j)           {
     float ff   = FRACL_F[CFRAC_L];
     uint  fi   = FRACL_I[CFRAC_L];
 
-    o->mask    =                            ( ((p[0] < 0.35f)     )                        \
-                                            | ((p[1] > 0.25f) << 1)                        \
-                                            | ((p[2] > 0.25f) << 2)                        \
-                                            | ((p[3] > 0.25f) << 3)                        );
-
-    if(o->mask&1) {
-        o->low = FLTOFRAC                   (p[0]/0.35f, 1, ff, fi, 0        );            \
-    }
-
-    else {
-        o->low = FLTOFRAC                   ((p[3]-0.25f)/0.75f, 1, ff, fi, 0) * (o->mask&8);
-    };
-
-    if(p[1] > 0.5f || p[1] != 1.0f)         { p[1] -= 0.5f; }
-
-    o->mid     = FLTOFRAC                   ((p[1]-0.25f)/0.75f, 1, ff, fi, 0) * (o->mask&2);
-    o->hi      = FLTOFRAC                   ((p[2]-0.25f)/0.75f, 1, ff, fi, 0) * (o->mask&4);
-
-    o->mask    = o->mask&1;                                                                 };
+    o->a       = GREY4STP(p[0]);
+    o->b       = GREY4STP(p[1]);
+    o->c       = GREY4STP(p[2]);
+    o->d       = GREY4STP(p[3]);                                                            };
 
 //   ---     ---     ---     ---     ---
 
@@ -125,18 +113,10 @@ void DECGREY(float* p, JOJPIX* j)           {
     float ff    = FRACL_F[CFRAC_L];
     uint  fi    = FRACL_I[CFRAC_L];
 
-    if(o->mask) {
-        p[0]    = FRACTOFL                  (o->low, fi, ff, 0) * 0.35f;
-        p[3]    = 1;
-    }
-
-    else {
-        p[0]    = 1;
-        p[3]    = FRACTOFL                  (o->low, fi, ff, 0);
-    };
-
-    p[1]        = FRACTOFL                  (o->mid, fi, ff, 0);
-    p[2]        = FRACTOFL                  (o->hi,  fi, ff, 0);                            };
+    p[0]        = o->a*0.35f;
+    p[1]        = o->b*0.35f;
+    p[2]        = o->c*0.35f;
+    p[3]        = o->d*0.35f;                                                               };
 
 //   ---     ---     ---     ---     ---
 
