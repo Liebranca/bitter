@@ -10,7 +10,7 @@ static BIN* CALLOG     = NULL;              // handle to the log dump
 
 //   ---     ---     ---     ---     ---
 
-#define PECTROPATH 1                        // deactivates my errlog redirection
+#define PECTROPATH 0                        // deactivates my errlog redirection
 
 void __openlog()                            {
 

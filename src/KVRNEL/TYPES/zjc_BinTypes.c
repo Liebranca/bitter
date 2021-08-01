@@ -49,6 +49,40 @@ void STCFRACL(uint level)                   { CFRAC_L=clampui(level, 0, 7);     
 
 //   ---     ---     ---     ---     ---
 
+void ENCVRT(float* v, CRKVRT* c)            {
+
+    float   ff = FRACL_F[CFRAC_L];
+    uint    fi = FRACL_I[CFRAC_L];
+
+                                            // i dont care what anybody says, Y is UP
+    c->co_x   = FLTOFRAC                    ( v[0], 4, ff*CFRAC_D1,    \
+                                              fi/CFRAC_D1, fi          );
+    c->co_y   = FLTOFRAC                    ( v[2], 4, ff*CFRAC_D1,    \
+                                              fi/CFRAC_D1, fi          );
+    c->co_z   = FLTOFRAC                    (-v[1], 4, ff*CFRAC_D1,    \
+                                              fi/CFRAC_D1, fi          );
+
+                                            // same for normals
+    c->nr_x   = FLTOFRAC                    ( v[3], 1, ff*CFRAC_D0,    \
+                                              fi/CFRAC_D0, fi/CFRAC_D0 );
+    c->nr_y   = FLTOFRAC                    ( v[5], 1, ff*CFRAC_D0,    \
+                                              fi/CFRAC_D0, fi/CFRAC_D0 );
+    c->nr_z   =                              -v[4] < 0;                \
+
+                                            // ... and tangents
+    c->tn_x   = FLTOFRAC                    ( v[6], 1, ff*CFRAC_D0,    \
+                                              fi/CFRAC_D0, fi/CFRAC_D0 );
+    c->tn_y   = FLTOFRAC                    ( v[8], 1, ff*CFRAC_D0,    \
+                                              fi/CFRAC_D0, fi/CFRAC_D0 );
+    c->tn_z   =                              -v[7] < 0;                \
+
+    c->bhand  = v[9] < 0;
+
+    c->u      = FLTOFRAC                    ( v[10], 1, ff, fi, 0      );
+    c->v      = FLTOFRAC                    ( v[11], 1, ff, fi, 0      );                   };
+
+//   ---     ---     ---     ---     ---
+
 void ENCNVEC(float* n, JOJPIX* j)           {
 
     JOJVEC* v  = (JOJVEC*) j;
@@ -120,64 +154,29 @@ void DECGREY(float* p, JOJPIX* j)           {
 
 //   ---     ---     ---     ---     ---
 
-void ZJC_pack_rawvert(VP3D* vert,
-                      RWV3D* data)              {
+void ZJC_pack_rawvert(VP3D* vert, \
+                      CRKVRT* data)         { ;
 
+/*  old fun. rewrite.
     uint   co    = ( (FLTOFRAC(data->co     [0], 4, FRAC5, 32, 128)      )
                    | (FLTOFRAC(data->co     [1], 4, FRAC5, 32, 128) <<  8)
-                   | (FLTOFRAC(data->co     [2], 4, FRAC5, 32, 128) << 16) );
+                   | (FLTOFRAC(data->co     [2], 4, FRAC5, 32, 128) << 16)     );
 
     uint nnn     = ( (FLTOFRAC(data->normal [0], 1, FRAC5, 32,  32)      )
                    | (FLTOFRAC(data->normal [1], 1, FRAC4, 16,  16) <<  6)
-                   | (            (data->normal [2] < 0               ) << 11)
-                   | (      ((int) data->bhand                        ) << 12) );
+                   | (        (data->normal [2] < 0               ) << 11)
+                   | (  ((int) data->bhand                        ) << 12)     );
 
     uint ttt     = ( (FLTOFRAC(data->tangent[0], 1, FRAC5, 32,  32)      )
                    | (FLTOFRAC(data->tangent[1], 1, FRAC5, 32,  32) <<  6)
-                   | (            (data->tangent[2] < 0               ) << 12) );
+                   | (        (data->tangent[2] < 0               ) << 12)     );
 
     uint uvs     = ( (FLTOFRAC(data->uv     [0], 1, FRAC7, 64,  64)      )
-                   | (FLTOFRAC(data->uv     [0], 1, FRAC7, 64,  64) <<  7) );
+                   | (FLTOFRAC(data->uv     [0], 1, FRAC7, 64,  64) <<  7)     );
 
     vert->frac1  = (  (co)                    | ((nnn & 0xFF) << 24)           );
-    vert->frac2  = ( ((nnn & (31 << 8)) >> 8) | (ttt << 5) | (uvs << 18)       );                                   }
-
-//   ---     ---     ---     ---     ---
-
-void ZJC_pack_rawbox (BP3D*  box,
-                      RWB3D* data)              {
-
-    box->frac1 = ( (FLTOFRAC  (data->co[ 0], 4, FRAC5, 32, 128)      )
-                 | (FLTOFRAC  (data->co[ 1], 4, FRAC5, 32, 128) <<  8)
-                 | (FLTOFRAC  (data->co[ 2], 4, FRAC5, 32, 128) << 16)
-                 | (FLTOFRAC  (data->co[ 3], 4, FRAC5, 32, 128) << 24) );
-
-    box->frac2 = ( (FLTOFRAC  (data->co[ 4], 4, FRAC5, 32, 128)      )
-                 | (FLTOFRAC  (data->co[ 5], 4, FRAC5, 32, 128) <<  8)
-                 | (FLTOFRAC  (data->co[ 6], 4, FRAC5, 32, 128) << 16)
-                 | (FLTOFRAC  (data->co[ 7], 4, FRAC5, 32, 128) << 24) );
-
-    box->frac3 = ( (FLTOFRAC  (data->co[ 8], 4, FRAC5, 32, 128)      )
-                 | (FLTOFRAC  (data->co[ 9], 4, FRAC5, 32, 128) <<  8)
-                 | (FLTOFRAC  (data->co[10], 4, FRAC5, 32, 128) << 16)
-                 | (FLTOFRAC  (data->co[11], 4, FRAC5, 32, 128) << 24) );
-
-    box->frac4 = ( (FLTOFRAC  (data->co[12], 4, FRAC5, 32, 128)      )
-                 | (FLTOFRAC  (data->co[13], 4, FRAC5, 32, 128) <<  8)
-                 | (FLTOFRAC  (data->co[14], 4, FRAC5, 32, 128) << 16)
-                 | (FLTOFRAC  (data->co[15], 4, FRAC5, 32, 128) << 24) );
-
-    box->frac5 = ( (FLTOFRAC  (data->co[16], 4, FRAC5, 32, 128)      )
-                 | (FLTOFRAC  (data->co[17], 4, FRAC5, 32, 128) <<  8)
-                 | (FLTOFRAC  (data->co[18], 4, FRAC5, 32, 128) << 16)
-                 | (FLTOFRAC  (data->co[19], 4, FRAC5, 32, 128) << 24) );
-
-    box->frac6 = ( (FLTOFRAC  (data->co[20], 4, FRAC5, 32, 128)      )
-                 | (FLTOFRAC  (data->co[21], 4, FRAC5, 32, 128) <<  8)
-                 | (FLTOFRAC  (data->co[22], 4, FRAC5, 32, 128) << 16)
-                 | (FLTOFRAC  (data->co[23], 4, FRAC5, 32, 128) << 24) );
-
-                                                                                            };
+    vert->frac2  = ( ((nnn & (31 << 8)) >> 8) | (ttt << 5) | (uvs << 18)       );*/
+}
 
 //   ---     ---     ---     ---     ---
 

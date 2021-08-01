@@ -77,6 +77,9 @@ int   CMPSIG  (SIG* s0, SIG* s1);           // compares two signatures
 void  STBADSIG(int is_bad      );           // alters read-state on inappropriate signature
 char* PTHBIN  (BIN* bin        );           // fetch path to bin
 
+int   BIN2BIN (BIN* a, BIN* b,              // write size bytes from a to b
+               uint size       );
+
 //   ---     ---     ---     ---     ---
 
 #if KVR_DEBUG

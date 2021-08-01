@@ -1,4 +1,5 @@
 #include "kvr_bin.h"
+#include "kvr_str.h"
 #include <string.h>
 
 //   ---     ---     ---     ---     ---
@@ -153,6 +154,29 @@ int RDBIN(BIN* bin)                         {
 //   ---     ---     ---     ---     ---    // just a convenience getter
 
 char* PTHBIN(BIN* bin)                      { return MEMBUFF(byref(bin->m), char, 0);       };
+
+//   ---     ---     ---     ---     ---
+
+int BIN2BIN (BIN* a, BIN* b, uint size)     {
+
+    int  wb;
+
+    MEM* buff   = MKSTR("", ZJC_DAFSIZE);
+
+    while(size) {
+        uint readsize  =                    (size<ZJC_DAFSIZE) ? size : ZJC_DAFSIZE;
+
+        fseek                               (a->file, 0, SEEK_CUR        );
+        BINREAD                             (a, wb, uchar, readsize, buff);
+        fseek                               (a->file, 0, SEEK_CUR        );
+
+        fseek                               (a->file, 0, SEEK_CUR        );
+        BINWRITE                            (b, wb, uchar, readsize, buff);
+        fseek                               (a->file, 0, SEEK_CUR        );
+
+        size          -= readsize;
+
+    }; return DONE;                                                                         };
 
 //   ---     ---     ---     ---     ---
 

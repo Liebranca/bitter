@@ -39,10 +39,12 @@ typedef struct KVR_MEM {                    // generic holding dynamic memory
 
 //   ---     ---     ---     ---     ---
 
-MEM*  MKMEM(uint size, ID* id    );         // create a new MEM block
-void  DLMEM(void* p              );         // frees a MEM block
-void* NVMEM(MEM* m, int p        );         // get ptr to MEM @offset
-void  CLMEM(MEM* m               );         // flood a block with zeroes
+MEM*  MKMEM (uint size, ID* id    );        // create a new MEM block
+void  DLMEM (void* p              );        // frees a MEM block
+void* NVMEM (MEM* m, int p        );        // get ptr to MEM @offset
+void  CLMEM (MEM* m               );        // flood a block with zeroes
+
+void  CLMEM2(void* buff, uint size);        // for when you want to cleanse a non-mem array
 
 //   ---     ---     ---     ---     ---
 

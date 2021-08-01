@@ -58,11 +58,37 @@ typedef struct JOJ_COLOR_COMPRESSED {
 } JOJPIX; CASSERT                           ( sizeof(JOJPIX) == sizeof(float),  \
                                               "JOJPIX size != float size"       );
 
+//   ---     ---     ---     ---     ---    // *unpacked* geometry types
+                                            // ie, how we read it from file on unzip
+                                            // we'd pack them for actual in-memory usage
+
+typedef struct CRK_VERT_COMPRESSED {
+
+    uchar co_x;                             // coordinates
+    uchar co_y;
+    uchar co_z;
+
+    uchar nr_x;                             // normals
+    uchar nr_y;
+    uchar nr_z;
+
+    uchar tn_x;                             // tangent
+    uchar tn_y;
+    uchar tn_z;
+
+    uchar bhand;                            // bitangent handeness
+
+    uchar u;                                // tex proj
+    uchar v;
+
+} CRKVRT;
 
 //   ---     ---     ---     ---     ---
 
 #define ZJC_RAWCOL_ELEMS 4                  // RGBA will always be four floats
                                             // but who knows? one day, maybe...
+
+#define ZJC_RAWVRT_ELEMS 12                 // elemcount for vertdata likely to change
 
 //   ---     ---     ---     ---     ---
 
@@ -77,6 +103,12 @@ void  DECGREY  (float* p, JOJPIX* j  );     // decodes joj-like into packed curv
 void  ENCRGBA  (float* p, JOJPIX* j  );     // encode rgba into joj
 void  DECRGBA  (float* p, JOJPIX* j  );     // decode joj into rgba
 
+//   ---     ---     ---     ---     ---
+
+void ENCVRT    (float* v, CRKVRT* c  );     // enconde verts into crk format
+
+//   ---     ---     ---     ---     ---
+
 uchar bitsize  (uchar  x             );
 uchar usbitsize(ushort x             );
 
@@ -85,24 +117,6 @@ int   uinthbit (uint  b, int n       );
 
 int   takebits (uchar b, uint iStart,\
                 uint iEnd            );
-
-//   ---     ---     ---     ---     ---
-
-typedef struct RAWVERT3D {
-
-    float co       [3];
-    float normal   [3];
-    float tangent  [3];
-    float bhand;
-    float uv       [2];
-
-} RWV3D;
-
-typedef struct RAWBOX3D {
-
-    float co[24];
-
-} RWB3D;
 
 //   ---     ---     ---     ---     ---
 
@@ -166,19 +180,7 @@ typedef struct VertexPacked3D {
 // and all that explaining just for two ints in a struct!
 // guess I could make this a single long but GLSL wouldn't like that
 
-typedef struct BoxPacked3D {
-
-    uint frac1;                                 // v1x  v1y  v1z  v2x
-    uint frac2;                                 // v2y  v2z  v3x  v3y
-    uint frac3;                                 // v3z  v4x  v4y  v4z
-    uint frac4;                                 // v5x  v5y  v5z  v6x
-    uint frac5;                                 // v6y  v6z  v7x  v7y
-    uint frac6;                                 // v7z  v8x  v8y  v8z
-
-} BP3D;
-
-void ZJC_pack_rawvert(VP3D* vert, RWV3D* data);
-void ZJC_pack_rawbox (BP3D* box,  RWB3D* data);
+void ZJC_pack_rawvert(VP3D* vert, CRKVRT* data);
 
 //   ---     ---     ---     ---     ---
 

@@ -81,7 +81,11 @@ void DLMEM(void* p)                         {
 
     }                                                                                       };
 
+//   ---     ---     ---     ---     ---
+
 void CLMEM(MEM* m)                          { memset(m->buff, 0, m->bsize);                 };
+
+void CLMEM2(void* buff, uint size)          { memset(buff, 0, size);                        };
 
 //   ---     ---     ---     ---     ---
 

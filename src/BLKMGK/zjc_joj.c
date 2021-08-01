@@ -31,9 +31,9 @@ BIN* MKJOJ(char* path,
 
     BIN* joj;
     int  evilstate;
-                                            // make it big enough for *packed* pixels
-    uint page = xBYTES                      (JOJ_READCOUNT, JOJPIX              );
-    BINOPEN                                 (joj, path, mode, 1, page, evilstate);
+                                            // make it big enough for *encoded* pixels
+    uint page = xBYTES                      (JOJ_READCOUNT, JOJPIX                          );
+    BINOPEN                                 (joj, path, mode, KVR_FTYPE_JOJ, page, evilstate);
 
     return joj;                                                                             };
 
@@ -136,7 +136,7 @@ int ENCJOJ(JOJH* jojh, uint* size_i)        {
 //   ---     ---     ---     ---     ---
 
                                             // sizing ints we need later
-    uint    page    =                       JOJ_READCOUNT*sizeof(float);             \
+    uint    page    =                       JOJ_READCOUNT*ZJC_RAWCOL_ELEMS;          \
     uint    remain  =                       sq_dim*ZJC_RAWCOL_ELEMS;                 \
 
                                             // add to archive's total

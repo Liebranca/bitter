@@ -43,7 +43,7 @@ HEDS     = [];
 
 # if this is set (and OKPATH) dlls are sent to it
 # hardcoding it for now for testing
-BUILD_DLL_TO=f"D:\\lieb_git\\UPBGE_ASSETS\\bin\\x64"
+BUILD_DLL_TO=f"D:\\lieb_git\\UPBGE_ASSETS\\bin\\"
 
 def AVTO_SETOUT(s):
     global OBJFOLD; OBJFOLD = s;
@@ -212,7 +212,7 @@ def AVTO_MKLIB(olist, ar, name):
 def AVTO_MKDLL(olist, gcc, name):
 
     if BUILD_DLL_TO and OKPATH(BUILD_DLL_TO):
-        OBJFOLD=BUILD_DLL_TO;
+        OBJFOLD=BUILD_DLL_TO+f"\\{TARGET()}";
 
     name=name.lower(); dll = f"{OBJFOLD}\\{name}.dll"
     if OKFILE(dll): DOS(f"@del {dll}");
