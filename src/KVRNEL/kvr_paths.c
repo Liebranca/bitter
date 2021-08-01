@@ -18,17 +18,22 @@ void __openlog()                            {
     CALLOG->file=freopen                    (PTHBIN(CALLOG), "w+", stderr);
     #endif
 
-    CALOUT                                  ("\n\bKVR RUN\n\b"           );                 };
+#if KVR_DEBUG & KVR_CALOK
+    CALOUT                                  ('K', "\n\bKVR RUN\n\b"      );                 };
+#endif
 
 void __closelog()                           {
 
     FILE* f=CALLOG->file;
 
-    DLMEM                                   (CALLOG           );
-    CALOUT                                  ("KVR END\n\b\n\b");
+    DLMEM                                   (CALLOG                );
+
+#if KVR_DEBUG & KVR_CALOK
+    CALOUT                                  ('K', "KVR END\n\b\n\b");
+#endif
 
     #if PECTROPATH
-    fclose                                  (f                );
+    fclose                                  (f                     );
     #endif
 
                                                                                             };
@@ -39,7 +44,7 @@ void __closelog()                           {
                                                                                              \
     static MEM*  NAME;                                                                       \
                                                                                              \
-    void     NT##NAME (char* buff  )        { NAME = MKSTR  (buff, 0      );                }\
+    void     NT##NAME (char* buff  )        { NAME = MKSTR  (buff, 0, 0   );                }\
     char*    ST##NAME (char* buff  )        { STSTR         (&NAME, buff  );                }\
     char*    GT##NAME (            )        { return MEMBUFF(NAME, char, 0);                }
 

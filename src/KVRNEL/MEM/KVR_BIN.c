@@ -106,8 +106,9 @@ int RDBIN(BIN* bin)                         {
     char* rmode =   GTRMODE                 (bin->mode                              );
     char* path  =   MEMBUFF                 (byref(bin->m), char, 0                 );
 
-                                            // just so we know if we created something
-    int isnew   =   !strcmp                 (rmode, "wb+"                           );
+    int isnew   = ( !strcmp(rmode, "wb+")   // just so we know if we created something
+                  | !strcmp(rmode, "wb" ) );
+
 
                                             // we consider it a reading sesh if either
     int r       = ( !strcmp(rmode, "rb+")   // -mode is read for update (input & output)
@@ -144,8 +145,8 @@ int RDBIN(BIN* bin)                         {
 
 //   ---     ---     ---     ---     ---
 
-#if KVR_DEBUG
-    CALOUT("Opened file <%s>\n\b", path);
+#if KVR_DEBUG & KVR_CALOF
+    CALOUT('F', "Opened file <%s>\n\b", path);
 #endif
 
     if  ( !strcmp(rmode, "wb+"))            { isnew = 2;                            };
@@ -161,7 +162,8 @@ int BIN2BIN (BIN* a, BIN* b, uint size)     {
 
     int  wb;
 
-    MEM* buff   = MKSTR("", ZJC_DAFSIZE);
+    MEM*   m    = MKSTR                     ("B2BRD", ZJC_DAFSIZE, 1     );
+    uchar* buff = (uchar*) m->buff;
 
     while(size) {
         uint readsize  =                    (size<ZJC_DAFSIZE) ? size : ZJC_DAFSIZE;
@@ -176,7 +178,9 @@ int BIN2BIN (BIN* a, BIN* b, uint size)     {
 
         size          -= readsize;
 
-    }; return DONE;                                                                         };
+    }; DLMEM(m);
+
+    return DONE;                                                                         };
 
 //   ---     ---     ---     ---     ---
 
@@ -186,8 +190,8 @@ int DLBIN(BIN* bin)                         {
     int failure = fclose                    (bin->file                                      );
     if  ( failure)                          { return ERROR;                                 }
 
-#if KVR_DEBUG
-    CALOUT("File closed <%s>\n\b", PTHBIN(bin));
+#if KVR_DEBUG & KVR_CALOF
+    CALOUT('F', "File closed <%s>\n\b", PTHBIN(bin));
 #endif
 
     bin->file   = NULL;
@@ -201,8 +205,8 @@ int RMBIN(BIN* bin)                         {
     if(bin->file)                           { BINCLOSE(bin);                                };
     int retx=remove(PTHBIN(bin)); if(retx)  { return ERROR;                                 }
 
-#if KVR_DEBUG
-    CALOUT("Deleted file <%s>\n\b", PTHBIN(bin));
+#if KVR_DEBUG & KVR_CALOF
+    CALOUT('F', "Deleted file <%s>\n\b", PTHBIN(bin));
 #endif
 
     return DONE;                                                                            };

@@ -3,7 +3,8 @@
 
 //   ---     ---     ---     ---     ---
 
-MEM* MKSTR(char* buff, uint ex_alloc)       {
+MEM* MKSTR(char* buff, uint ex_alloc,
+           uint disc_buff_len       )       {
 
     MEM* str;
 
@@ -13,6 +14,8 @@ MEM* MKSTR(char* buff, uint ex_alloc)       {
     int  len   =                            strlen(buff)+1;                            \
     int  limit =                            (KVR_IDK_WIDTH-1                           );
     if(len < limit)                         { limit=len;                               };
+
+    ex_alloc-=len*(disc_buff_len!=0);       // discount len of buff if var is set
 
     for(int x=len; y<limit; x--, y++) {     // make key from buff
         name[y]=*(buff+y);
@@ -81,7 +84,7 @@ MEM* PLSTR(MEM* str, char* tail)            {
     if(tot>=str->bsize)                     { ex+=(str->bsize - tot);            }
 
                                             // get mem and strcat. return copy
-    MEM* new_str = MKSTR                    (head, xBYTES(ex, uchar)             );
+    MEM* new_str = MKSTR                    (head, xBYTES(ex, uchar), 0          );
     head         = MEMBUFF                  (new_str, char, 0                    );
     do                                      { head[clen+x]=*tail; } while(*tail++);
 

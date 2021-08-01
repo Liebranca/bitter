@@ -18,7 +18,8 @@ extern "C" {
 
 //   ---     ---     ---     ---     ---
 
-MEM* MKSTR (char* buff, uint  ex_alloc);
+MEM* MKSTR (char* buff, uint  ex_alloc,
+            uint disc_buff_len        );
 MEM* GWSTR (MEM*  str,  uint  mag     );
 void ADSTR (MEM** str,  char* tail    );
 MEM* PLSTR (MEM*  str,  char* tail    );

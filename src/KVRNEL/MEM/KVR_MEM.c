@@ -3,53 +3,127 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <inttypes.h>
 #include <string.h>
 #include <stdio.h>
 
 //   ---     ---     ---     ---     ---
 
-#if KVR_DEBUG
+static uint64_t USED_MEMORY  = 0;           // total bytes used by MEM instances
 
-    #define MEMCNT(act, m, op) {            /* a counter. goes up on MKMEM, down on DLMEM  */\
-        USED_MEMORY op##=m->fsize;                                                           \
-        char* um_unit_name="BYTES";                                                          \
-        uint  um_unit_size=USED_MEMORY;                                                      \
-        char* um_obju_name="BYTES";                                                          \
-        uint  um_obju_size=m->fsize;                                                         \
-                                                                                             \
-                                                                                             \
-        if  (USED_MEMORY > (1024*1024)) {                                                    \
-            um_unit_size=um_unit_size/(1024*1024);                                           \
-            um_unit_name="MB";                                                               \
-        }                                                                                    \
-                                                                                             \
-        elif(USED_MEMORY > 1024       ) {                                                    \
-            um_unit_size=um_unit_size/1024;                                                  \
-            um_unit_name="KB";                                                               \
-        };                                                                                   \
-                                                                                             \
-        if  (um_obju_size > (1024*1024)) {                                                   \
-            um_unit_size=um_obju_size/(1024*1024);                                           \
-            um_obju_name="MB";                                                               \
-        }                                                                                    \
-                                                                                             \
-        elif(um_obju_size > 1024       ) {                                                   \
-            um_obju_size=um_obju_size/1024;                                                  \
-            um_obju_name="KB";                                                               \
-        };                                                                                   \
-                                                                                             \
-        CALOUT                              ("%s %s: %u %s | %u %s USED\n\b",                \
-                                             act, m->id.full,                                \
-                                             um_obju_size, um_obju_name,                     \
-                                             um_unit_size, um_unit_name                 );  }
+static uint     MEMCNT_KBSIZ = 1024;
+static uint     MEMCNT_MBSIZ = 1024*1024;
 
-#else
+static char*    MEMCNT_BYTES = "BYTES";
+static char*    MEMCNT_KB    = "KB";
+static char*    MEMCNT_MB    = "MB";
 
-    #define MEMCNT(act, m, op) USED_MEMORY op##=m->fsize
+static char*    MEMCNT_ALLOC = "ALLOC";
+static char*    MEMCNT_DLLOC = "DEALLOC";
 
-#endif
+static char     MEMCNT_NEXT  = ' ';
+static uint     MEMCNT_I     = 0;
+static uint     MEMCNT_J     = 0;
+static uint     MEMCNT_H     = 0;
 
-static uint64_t USED_MEMORY = 0;            // total bytes used by MEM instances
+static char*    MEMCNT_ACT;
+static char     MEMCNT_STR[74];
+
+//   ---     ---     ---     ---     ---
+
+#define MEMCNT_STSTR(x, length) {                                                            \
+                                                                                             \
+    MEMCNT_J = 0; do {                                                                       \
+                                                                                             \
+        MEMCNT_NEXT          = ((*x)!=0x00) ? (*x) : 0x20;                                   \
+        MEMCNT_STR[MEMCNT_I] = MEMCNT_NEXT;                                                  \
+        MEMCNT_I++; MEMCNT_J++;                                                              \
+        if(MEMCNT_NEXT!=0x20) { *x++; }                                                      \
+                                                                                             \
+    } while(MEMCNT_J < length);                                                              \
+                                                                                             \
+    MEMCNT_STR[MEMCNT_I]=0x20; MEMCNT_I++;                                                  }
+
+//   ---     ---     ---     ---     ---
+
+void MEMCNT(MEM* m, char act)               {
+
+    MEMCNT_NEXT = ' ';
+    MEMCNT_I    = 0;
+
+    char  snum[8];
+    char* snump = snum+0;
+    char* idful = m->id.full;
+
+    if(act==0x41) {                         // on alloc
+        MEMCNT_ACT=MEMCNT_ALLOC;
+        USED_MEMORY+=m->fsize;
+
+    }
+
+    else {                                  // on dealloc
+        MEMCNT_ACT=MEMCNT_DLLOC;
+        USED_MEMORY-=m->fsize;
+
+    };
+
+    MEMCNT_STSTR                            (MEMCNT_ACT, 7);
+    MEMCNT_STSTR                            (idful, 23    );
+
+//   ---     ---     ---     ---     ---
+
+    char* um_obju_name=MEMCNT_BYTES;
+    uint  um_obju_size=m->fsize;
+
+    if  (um_obju_size > MEMCNT_MBSIZ) {
+        um_obju_size=um_obju_size/MEMCNT_MBSIZ;
+        um_obju_name=MEMCNT_MB;
+
+    }
+
+    elif(um_obju_size > MEMCNT_KBSIZ) {
+        um_obju_size=um_obju_size/MEMCNT_KBSIZ;
+        um_obju_name=MEMCNT_KB;
+
+    };
+
+    __writoa                                (um_obju_size, snum, 10);
+    MEMCNT_STSTR                            (snump, 4              );
+    MEMCNT_STSTR                            (um_obju_name, 5       );
+
+//   ---     ---     ---     ---     ---
+
+    MEMCNT_STR[MEMCNT_I]='|'; MEMCNT_I++;
+    MEMCNT_STR[MEMCNT_I]=' '; MEMCNT_I++;
+
+    char* um_unit_name=MEMCNT_BYTES;
+    uint  um_unit_size=USED_MEMORY;
+
+    if  (USED_MEMORY > MEMCNT_MBSIZ) {
+        um_unit_size=um_unit_size/MEMCNT_MBSIZ;
+        um_unit_name=MEMCNT_MB;
+
+    }
+
+    elif(USED_MEMORY > MEMCNT_KBSIZ) {
+        um_unit_size=um_unit_size/MEMCNT_KBSIZ;
+        um_unit_name=MEMCNT_KB;
+
+    };
+
+    snum[0] = '\0';
+    snump   = snum+0;
+
+    __writoa                                (um_unit_size, snum, 10);
+    MEMCNT_STSTR                            (snump, 4              );
+    MEMCNT_STSTR                            (um_unit_name, 5       );
+
+//   ---     ---     ---     ---     ---
+
+    MEMCNT_STR[MEMCNT_I]='\0'; MEMCNT_I++;
+
+    CALOUT                                  ('M', "0x%" PRIXPTR  " %s USED\n\b",
+                                                (uintptr_t) m, MEMCNT_STR      );           };
 
 //   ---     ---     ---     ---     ---
 
@@ -66,7 +140,10 @@ MEM* MKMEM(uint size, ID* id)               { void* buff = __kvrmalloc(size);
         MEM* m=(MEM*) buff;
 
         m->id=*id;
-        m->fsize=size; MEMCNT("ALLOC", m, +);
+        m->fsize=size;
+#if KVR_DEBUG & KVR_CALOM
+        MEMCNT(m, 'A');
+#endif
 
         return m;
 
@@ -76,7 +153,9 @@ void DLMEM(void* p)                         {
 
     if(p) {
         MEM* m=(MEM*) p;
-        MEMCNT("DEALLOC", m, -);
+#if KVR_DEBUG & KVR_CALOM
+        MEMCNT(m, 'D');
+#endif
         free(p);
 
     }                                                                                       };

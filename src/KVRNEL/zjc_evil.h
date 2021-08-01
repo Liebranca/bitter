@@ -15,7 +15,17 @@
 extern "C" {
 #endif
 
-#define KVR_DEBUG 1                         /* set to zero to disable errcatch & messes    */
+//   ---     ---     ---     ---     ---
+
+                                            // logflags. enables/disables certain logmesses
+#define KVR_CALOM 0x01                      // MEM
+#define KVR_CALOF 0x02                      // BIN
+#define KVR_CALOK 0x04                      // PROC
+
+#define KVR_DEBUG (                         /* combined logflags */                          \
+    KVR_CALOM | KVR_CALOK                                                                    \
+                                                                                             \
+)
 
 //   ---     ---     ---     ---     ---
 // some shorthands
@@ -110,7 +120,8 @@ void __printcalreg(int flush              );// prints __registered__ calls
 void __popcalreg  (                       );// pop from call register
 void __terminator (int errcode, char* info);// goes back in time to save john connor
 
-void CALOUT       (char* format, ...      );// prints to KVNSLOG
+void CALOUT       (char fam,              \
+                   char* format, ...      );// prints to KVNSLOG
 
 //   ---     ---     ---     ---     ---
 // some bug-tracking macros

@@ -52,7 +52,7 @@ int NTJOJENG(int mode)                      {
 
     int   evilstate;
                                             // make a convenience string
-    MEM*  m       = MKSTR                   (GTPECWD(), 64                            );
+    MEM*  m       = MKSTR                   (GTPECWD(), 64, 0                         );
     char* path    = MEMBUFF(m, char, 0);
 
 //   ---     ---     ---     ---     ---    // set fname and create/open files
@@ -84,7 +84,7 @@ int NTJOJENG(int mode)                      {
 
                                             // make it big enough to hold *unpacked* pixels
     uint page  = xBYTES                     (JOJ_READCOUNT, float) * ZJC_RAWCOL_ELEMS;\
-    JOJ_PIXELS = MKSTR                      ("BUF", page                              );
+    JOJ_PIXELS = MKSTR                      ("JOJBUF", page, 1                        );
 
                                             // free convenience string
     DLMEM                                   (m                                        );
@@ -245,7 +245,7 @@ int ZPJOJ(uint size_i, uint count,
     uint offs_d   =                         (sizeof(uint)*3) + (count * sizeof(JOJH)     );
 
                                             // quick blank mem for a flood fill
-    MEM* m        = MKSTR                   ("", offs_d                                  );
+    MEM* m        = MKSTR                   ("ZPBLNK", offs_d, 1                         );
 
                                             // skip the signature
     fseek                                   (JOJ_TO->file, 0, SEEK_CUR                   );

@@ -36,7 +36,7 @@ EXPORT void NTBLKMGK(char** pth_l)          {
                                             // wipe these arrays on init
     CLMEM2                                  (DAF_JITEMS, xBYTES(ZJC_DAFSIZE, JOJH));
     CLMEM2                                  (DAF_CITEMS, xBYTES(ZJC_DAFSIZE, CRKH));
-    CALOUT                                  ("BLKMGK v%f\n\b", BLKMGK_V           );        };
+    CALOUT                                  ('K', "BLKMGK v%f\n\b", BLKMGK_V      );        };
 
 EXPORT void DLBLKMGK() { DLKVRPTH(); };
 

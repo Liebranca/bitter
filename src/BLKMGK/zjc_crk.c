@@ -52,7 +52,7 @@ int NTCRKENG(int mode)                      {
 
     int   evilstate;
                                             // make a convenience string
-    MEM*  m       = MKSTR                   (GTPECWD(), 64                            );
+    MEM*  m       = MKSTR                   (GTPECWD(), 64, 0                         );
     char* path    = MEMBUFF(m, char, 0);
 
 //   ---     ---     ---     ---     ---    // set fname and create/open files
@@ -83,8 +83,8 @@ int NTCRKENG(int mode)                      {
 //   ---     ---     ---     ---     ---    // make recycle vertex buffer
 
                                             // make it big enough to hold *unpacked* vertices
-    uint page = xBYTES                      (CRK_READCOUNT, float) * ZJC_RAWVRT_ELEMS; \
-    CRK_VRTS = MKSTR                        ("BUF", page                               );
+    uint page = xBYTES                      (CRK_READCOUNT, float) * ZJC_RAWVRT_ELEMS;\
+    CRK_VRTS = MKSTR                        ("CRKBUF", page, 1                        );
 
                                             // free convenience string
     DLMEM                                   (m                                        );
@@ -186,7 +186,7 @@ int ZPCRK(uint size_i, uint count,
     uint offs_d   =                         (sizeof(uint)*3) + (count * sizeof(CRKH)     );
 
                                             // quick blank mem for a flood fill
-    MEM* m        = MKSTR                   ("", offs_d                                  );
+    MEM* m        = MKSTR                   ("ZPBLNK", offs_d, 1                         );
 
                                             // skip the signature
     fseek                                   (CRK_TO->file, 0, SEEK_CUR                   );

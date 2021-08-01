@@ -37,7 +37,7 @@ char* CHR_ZLIB_STATUS(void)                 {
         ZLIB_STATUS = x;                                                    \
         if (ZLIB_STATUS < 0) {                                              \
                                                                             \
-        if(KVR_DEBUG) { CALOUT("FAILED %s\n\b", #x); }                      \
+        if(KVR_DEBUG) { CALOUT('E', "FAILED %s\n\b", #x); }                 \
                                                                             \
             __terminator(4, CHR_ZLIB_STATUS());                             \
         }                                                                   \
@@ -127,8 +127,8 @@ int INFLBIN(BIN* src,    BIN* dst,
 
 //  - --- - --- - --- - --- -
 
-#if KVR_DEBUG
-    CALOUT("INF %u/%u\n\b", tot, size_i);
+#if KVR_DEBUG & KVR_CALOF
+    CALOUT('F', "\n\bINFLATED %u/%u\n\b", tot, size_i);
 #endif
 
     inflateEnd (& strm);
@@ -203,11 +203,11 @@ int DEFLBIN(BIN* src,    BIN* dst,
 
     int finalsize = (int) (100.0 - (( (float) ( *size_d) / (float) (size_i) ) * 100));
 
-#if KVR_DEBUG
-    if(finalsize < 0) { CALOUT("BAD DEFLATE: %u/%u | approx. %i%% file size increase\n",
+#if KVR_DEBUG & KVR_CALOF
+    if(finalsize < 0) { CALOUT('F', "BAD DEFLATE: %u/%u | approx. %i%% file size increase\n",
                               *size_d, size_i, -finalsize                                ); }
 
-    else              { CALOUT("GOOD DEFLATE: %u/%u | approx. %i%% file size reduction\n",
+    else              { CALOUT('F', "GOOD DEFLATE: %u/%u | approx. %i%% file size reduction\n",
                                *size_d, size_i,  finalsize                               ); };
 #endif
 
