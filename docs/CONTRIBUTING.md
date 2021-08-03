@@ -13,22 +13,19 @@ First and foremost, I am trapped on Windows for a variety of reasons. I cannot g
 ```
 /*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
 /*    FILENAME                              *
-                                            *
-      -memory workhorse                     *
-      -alloc, dealloc                       *
-      -is base struct to most things        *
-      -does cool funky poly                 *
-                                            */
+*                                           *
+*     -descriptor,(=)                       *
+*                                           */
 // *   ---     ---     ---     ---     ---  *
-/*    Notice                                *
-                                            *
-      Licenced under                        *
-      your clever siggy.                    *
-                                            */
+/*    NOTICE                                *
+*                                           *
+*     Licenced under                        *
+*     your clever siggy.                    *
+*                                           */
 // *   ---     ---     ---     ---     ---  *
 /* CONTRIBUTORS                             *
-      name,(=)                              *
-                                            */
+*     name,(=)                              *
+*                                           */
 /*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
 ```
 
