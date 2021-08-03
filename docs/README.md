@@ -11,4 +11,4 @@
 
  - I have time
  - You \*need\* general public libraries
- - It's way more fun to write the deps rather than simply adding them
+ - It's way more fun to write the deps than simply adding them
