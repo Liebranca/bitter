@@ -1,12 +1,3 @@
-// *   ---     ---     ---     ---     ---  *
-// *  KVR_STR                               *
-// *                                        *
-// *  -plain mem use                        *
-// *  -some funcs for char arrays           *
-// *  -can poly, but funcs are byte-base    *
-// *                                        *
-// *   ---     ---     ---     ---     ---  *
-
 #ifndef __KVR_STR_H__
 #define __KVR_STR_H__
 

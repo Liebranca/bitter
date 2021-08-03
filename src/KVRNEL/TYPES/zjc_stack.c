@@ -1,3 +1,21 @@
+/*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
+/*    ZJC_STACK                             *
+*                                           *
+*     -simple stack for uints               *
+*     -used to remember avail indices       *
+*                                           */
+// *   ---     ---     ---     ---     ---  *
+/*    LIBRE SOFTWARE                        *
+*                                           *
+*     Licenced under GNU GPL3               *
+*     be a bro and inherit                  *
+*                                           */
+// *   ---     ---     ---     ---     ---  *
+/* CONTRIBUTORS                             *
+*     lyeb,                                 *
+*                                           */
+/*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
+
 #include "zjc_stack.h"
 
 //  - --- - --- - --- - --- -

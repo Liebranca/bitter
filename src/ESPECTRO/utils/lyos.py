@@ -854,7 +854,7 @@ class REGION:
         space  = self.pad;
         tjump  = f"$:CURSOR.JUMP{self.RECT.tx+1, y};>"
         sub    = color+self.BUFF[self.BUFF_PTR:self.BUFF_PTR+space];
-        s      = tjump + sub; self.BUFF_PTR += space;
+        s      = tjump+sub; self.BUFF_PTR += space;
 
         return s;
 
@@ -900,7 +900,7 @@ class REGION:
         return trigger;
 
     def appBuff(self):
-        s=""; length=len(self.BUFF); i=0;
+        s=""; length=len(self.BUFF); i=0; y=0;
         self.BUFF_PTR=(self.VSPACE*self.pad*self.PAGE)+(self.pad*self.BUFF_WRIT);
         for y in range(self.RECT.ty+1+self.BUFF_WRIT, self.RECT.by):
             s = s + self.spitBuff(y);
@@ -1699,9 +1699,11 @@ def FLFILE(path, ask=1):
 
 #   ---     ---     ---     ---     ---
 
+RD_LAST=0;
+
 def RDFILE(path, b=0, rh=0, rl=0, dec=0, rl_sep="\n", trunc=0, ask=1, mute=0):
 
-    global hxNVRASK;
+    global hxNVRASK, RD_LAST;
     if hxNVRASK: ask=0;
 
     if not OKFILE(path):
@@ -1740,25 +1742,30 @@ def RDFILE(path, b=0, rh=0, rl=0, dec=0, rl_sep="\n", trunc=0, ask=1, mute=0):
         if rh:
 
             file = open(path, m);
-            while size:
 
-                rb = min(size, READSIZE()); # bytes to read clamped to bytes left
+            file.seek(RD_LAST);
+            rb = min(size-RD_LAST, READSIZE()); # bytes to read clamped to bytes left
 
-                s  = file.read(rb);         # read, cat, substract
-                d  = d + s; size -= rb;
+            s  = file.read(rb);         # read, cat, substract
+            d  = d + s;
+
+            RD_LAST+=rb;
+
+#   ---     ---     ---     ---     ---
 
         else:
 
             with open(path, m) as file:
 
-                while size:
+                file.seek(RD_LAST);
+                rb = min(size-RD_LAST, READSIZE()); # bytes to read clamped to bytes left
 
-                    rb = min(size, READSIZE());
+                s  = file.read(rb);         # read, cat, substract
+                d  = d + s;
 
-                    s  = file.read(rb);
-                    d  = d + s; size -= rb;
-
-                if trunc: file.truncate(0);
+                RD_LAST+=rb;
+                #if size-RD_LAST<=0:
+                #    file.truncate(0);
 
             ERRPRINT(f"Closed file <{SHPATH(path)}>", rec=2);
 
@@ -2020,16 +2027,32 @@ def SYSREAD(i=0, clear=1):
 
     F = [KVRLOG, KVRIN][i];
 
-    global hxEPRINT; hxEPRINT = 0;
+    global hxEPRINT, RD_LAST; hxEPRINT = 0;
     log="";
 
     try:
-        log = RDFILE(F, rl=1, rl_sep=" ", trunc=clear, ask=0)[0];
+
+        trunc=0; log='';
+        with open(F, 'r+') as file:
+
+            rsize=int(READSIZE()/64);
+            file.seek(RD_LAST);
+            rb = min(FILESIZE(F)-RD_LAST, rsize);
+
+            log  = file.read(rb);
+
+            RD_LAST+=rb;
+
+            if RD_LAST >= FILESIZE(F) or RD_LAST >= READSIZE(): trunc=1;
+
+        if trunc:
+            file = open(F, 'w');
+            file.truncate(0);
+
+            file.close();
+
     finally:
         hxEPRINT = 1;
-
-    limit=((hxDRAWSPACE_X-4) * (hxDRAWSPACE_Y-4));
-    if len(log) > limit: log=log[:limit];
 
     return log;
 

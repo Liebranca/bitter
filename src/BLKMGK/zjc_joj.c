@@ -1,3 +1,21 @@
+/*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
+/*    ZJC_JOJ                               *
+*                                           *
+*     -image degrader                       *
+*     -total datapacker                     *
+*                                           */
+// *   ---     ---     ---     ---     ---  *
+/*    LIBRE SOFTWARE                        *
+*                                           *
+*     Licenced under GNU GPL3               *
+*     be a bro and inherit                  *
+*                                           */
+// *   ---     ---     ---     ---     ---  *
+/* CONTRIBUTORS                             *
+*     lyeb,                                 *
+*                                           */
+/*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
+
 #include "zjc_joj.h"
 #include "kvr_zwrap.h"
 

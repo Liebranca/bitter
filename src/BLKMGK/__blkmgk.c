@@ -1,12 +1,21 @@
+/*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
+/*    BLKMGK                                *
+*                                           *
+*     -spiritual succesor of dsm module     *
+*     -entry point for data packers         *
+*     -gets the joj                         *
+*                                           */
 // *   ---     ---     ---     ---     ---  *
-// *  BLKMGK                                *
-// *                                        *
-// *  -spiritual succesor of dsm module     *
-// *  -entry point for data packers         *
-// *  -gets teh joj                         *
-// *  -makes crk                            *
-// *                                        *
+/*    LIBRE SOFTWARE                        *
+*                                           *
+*     Licenced under GNU GPL3               *
+*     be a bro and inherit                  *
+*                                           */
 // *   ---     ---     ---     ---     ---  *
+/* CONTRIBUTORS                             *
+*     lyeb,                                 *
+*                                           */
+/*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
 
 #include "zjc_joj.h"
 #include "zjc_crk.h"

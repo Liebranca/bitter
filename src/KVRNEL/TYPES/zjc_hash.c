@@ -1,3 +1,21 @@
+/*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
+/*    ZJC_HASH                              *
+*                                           *
+*     -looks up values by id                *
+*     -every mem has an id                  *
+*                                           */
+// *   ---     ---     ---     ---     ---  *
+/*    LIBRE SOFTWARE                        *
+*                                           *
+*     Licenced under GNU GPL3               *
+*     be a bro and inherit                  *
+*                                           */
+// *   ---     ---     ---     ---     ---  *
+/* CONTRIBUTORS                             *
+*     lyeb,                                 *
+*                                           */
+/*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
+
 #include "zjc_hash.h"
 #include <stddef.h>
 #include <math.h>

@@ -1,3 +1,23 @@
+/*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
+/*    KVR_BIN                               *
+*                                           *
+*     -talks to stuff on disk               *
+*     -likes siggies                        *
+*     -is also a mem                        *
+*     -has it's own buffer                  *
+*                                           */
+// *   ---     ---     ---     ---     ---  *
+/*    LIBRE SOFTWARE                        *
+*                                           *
+*     Licenced under GNU GPL3               *
+*     be a bro and inherit                  *
+*                                           */
+// *   ---     ---     ---     ---     ---  *
+/* CONTRIBUTORS                             *
+*     lyeb,                                 *
+*                                           */
+/*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
+
 #include "kvr_bin.h"
 #include "kvr_str.h"
 #include <string.h>
@@ -7,6 +27,7 @@
 
 static SIG CRKSIG = { 1126442020, 1378100260, 606348324,  606348363  };
 static SIG JOJSIG = { 606348324,  606358052,  606359332,  608838692  };
+static SIG LNGSIG = { 606348364,  606359332,  609100836, 1193550884  };
 
 // [...]
 
@@ -35,6 +56,7 @@ SIG GTSIG(uint ft)                          {
 
         case KVR_FTYPE_CRK :                sig=CRKSIG; break;
         case KVR_FTYPE_JOJ :                sig=JOJSIG; break;
+        case KVR_FTYPE_LNG :                sig=LNGSIG; break;
 
         // [...]
 

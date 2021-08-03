@@ -1,10 +1,20 @@
+/*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
+/*    ZJC_EVIL                              *
+*                                           *
+*     -debug stuff                          *
+*     -hoh sys                              *
+*                                           */
 // *   ---     ---     ---     ---     ---  *
-// *  ZJC_EVIL                              *
-// *                                        *
-// *  -debug stuff                          *
-// *  -hohsys                               *
-// *                                        *
+/*    LIBRE SOFTWARE                        *
+*                                           *
+*     Licenced under GNU GPL3               *
+*     be a bro and inherit                  *
+*                                           */
 // *   ---     ---     ---     ---     ---  *
+/* CONTRIBUTORS                             *
+*     lyeb,                                 *
+*                                           */
+/*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
 
 #ifndef __ZJC_EVIL_H__
 #define __ZJC_EVIL_H__

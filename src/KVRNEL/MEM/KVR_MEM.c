@@ -1,3 +1,22 @@
+/*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
+/*    KVR_MEM                               *
+*                                           *
+*     -memory workhorse                     *
+*     -polies off to most things            *
+*     -not really oop                       *
+*                                           */
+// *   ---     ---     ---     ---     ---  *
+/*    LIBRE SOFTWARE                        *
+*                                           *
+*     Licenced under GNU GPL3               *
+*     be a bro and inherit                  *
+*                                           */
+// *   ---     ---     ---     ---     ---  *
+/* CONTRIBUTORS                             *
+*     lyeb,                                 *
+*                                           */
+/*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
+
 #include "kvr_mem.h"
 
 #include <stdlib.h>

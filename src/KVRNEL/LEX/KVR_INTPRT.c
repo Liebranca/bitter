@@ -1,11 +1,20 @@
-/*   ---     ---     ---     ---     ---    *
- *  KVR_INTPRT.C                            *
- *                                          *
- *  -handles console user input             *
- *  -tokenization                           *
- *  -parsing                                *
- *                                          *
- *   ---     ---     ---     ---     ---    */
+/*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
+/*    KVR_INTPRT                            *
+*                                           *
+*     -reads PE$O input                     *
+*     -produces C output                    *
+*                                           */
+// *   ---     ---     ---     ---     ---  *
+/*    LIBRE SOFTWARE                        *
+*                                           *
+*     Licenced under GNU GPL3               *
+*     be a bro and inherit                  *
+*                                           */
+// *   ---     ---     ---     ---     ---  *
+/* CONTRIBUTORS                             *
+*     lyeb,                                 *
+*                                           */
+/*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
 
 #include "kvr_intprt.h"
 #include "../TYPES/zjc_hash.h"

@@ -1,3 +1,22 @@
+/*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
+/*    KVR_ZWRAP                             *
+*                                           *
+*     -'wraps' zlib calls                   *
+*     -deflates/inflates bins               *
+*     -stream-deal pending                  *
+*                                           */
+// *   ---     ---     ---     ---     ---  *
+/*    LIBRE SOFTWARE                        *
+*                                           *
+*     Licenced under GNU GPL3               *
+*     be a bro and inherit                  *
+*                                           */
+// *   ---     ---     ---     ---     ---  *
+/* CONTRIBUTORS                             *
+*     lyeb,                                 *
+*                                           */
+/*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
+
 #include "kvr_zwrap.h"
 #include "ZLIB/zlib.h"
 

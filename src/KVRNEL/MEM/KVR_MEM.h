@@ -1,13 +1,3 @@
-// *   ---     ---     ---     ---     ---  *
-// *  KVR_MEM                               *
-// *                                        *
-// *  -memory workhorse                     *
-// *  -alloc, dealloc                       *
-// *  -is base struct to most things        *
-// *  -does cool funky poly                 *
-// *                                        *
-// *   ---     ---     ---     ---     ---  *
-
 #ifndef __KVR_MEM_H__
 #define __KVR_MEM_H__
 
@@ -50,6 +40,8 @@ void  CLMEM2(void* buff, uint size);        // for when you want to cleanse a no
 
 #define MEMBUFF(m, type, offset)              /* get type-casted ptr to MEM @offset        */\
     ((type*) (NVMEM(m, offset)))
+
+//   ---     ---     ---     ---     ---
 
                                               /* checks for allocation failure             */
 #define MEMGET(type, to, size, id)          { uint mem_reqsize=(size)+sizeof(type);          \

@@ -1,12 +1,3 @@
-// *   ---     ---     ---     ---     ---  *
-// *  ZJC_CRK                               *
-// *                                        *
-// *  -bin derivate                         *
-// *  -static mesh encoder                  *
-// *  -highly addictive                     *
-// *                                        *
-// *   ---     ---     ---     ---     ---  *
-
 #ifndef __ZJC_BLCRK_H__
 #define __ZJC_BLCRK_H__
 

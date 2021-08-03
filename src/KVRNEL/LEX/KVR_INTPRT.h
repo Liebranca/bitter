@@ -1,11 +1,3 @@
-// *   ---     ---     ---     ---     ---  *
-// *  KVR_INTPRT                            *
-// *                                        *
-// *  -read user coms                       *
-// *  -turns peso into c                    *
-// *                                        *
-// *   ---     ---     ---     ---     ---  *
-
 #ifndef __KVR_INTPRT_H__
 #define __KVR_INTPRT_H__
 

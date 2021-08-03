@@ -1,13 +1,3 @@
-// *   ---     ---     ---     ---     ---  *
-// *  ZJC_JOJ                               *
-// *                                        *
-// *  -basic bin derivate                   *
-// *  -holds image data in joj format       *
-// *  -conversions defined at zjc_bintypes  *
-// *  -gzipped to the max                   *
-// *                                        *
-// *   ---     ---     ---     ---     ---  *
-
 #ifndef __ZJC_JOJ_H__
 #define __ZJC_JOJ_H__
 

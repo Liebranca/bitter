@@ -1,12 +1,3 @@
-// *   ---     ---     ---     ---     ---  *
-// *  KVR_BIN                               *
-// *                                        *
-// *  -binary files                         *
-// *  -open/close; read/write               *
-// *  -sigs for zjc ftypes                  *
-// *                                        *
-// *   ---     ---     ---     ---     ---  *
-
 #ifndef __KVR_BIN_H__
 #define __KVR_BIN_H__
 
@@ -29,6 +20,7 @@
 
 #define KVR_FTYPE_CRK  0
 #define KVR_FTYPE_JOJ  1
+#define KVR_FTYPE_LNG  2
 
 // [...]
 

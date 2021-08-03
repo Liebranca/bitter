@@ -1,7 +1,9 @@
 /*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
-/*    ZJC_ID                                *
+/*    KVR_LNGSTRM                           *
 *                                           *
-*     -used to poly mem-like structs        *
+*     -a longstream                         *
+*     -lng for short                        *
+*     -wip for a 'live' fread               *
 *                                           */
 // *   ---     ---     ---     ---     ---  *
 /*    LIBRE SOFTWARE                        *
@@ -15,33 +17,25 @@
 *                                           */
 /*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
 
-#include "zjc_id.h"
+#include "kvr_bin.h"
 
 //   ---     ---     ---     ---     ---
 
-ID IDNEW(char* type, char* key)            {
+BIN* MKLNGSTRM(char* path, char* name)      {
 
-    ID id={0}; int i=0;
-    uint klimit=KVR_IDK_WIDTH-1;
+    BIN* lng;
+    int  evilstate;
+    int  i=0;
 
-    do {
-        id.type[i]=*type; i++;
-        if(i==4) { break; }
+    BINOPEN                                 (lng, path, KVR_FMODE_RB, KVR_FTYPE_LNG,
+                                             ZJC_DAFSIZE, evilstate                );
 
-    } while(*type++); i=0;
+    static char* type="STRM";
 
-    do {
-        id.key[i]=*key; i++;
-        if(i==klimit) { id.key[klimit]='\0'; break; }
+    do { lng->m.id.type[i] = *type; i++;  } while  (*type++                        ); i=0;
+    do { lng->m.id.key [i] = *name; i++;  } while  (*name++                        );
 
-    } while(*key++);
-
-    if(i!=klimit) { id.key[i]='\0'; };
-
-    id.x = -1;
-    id.y = -1;
-
-    return id;
+    return lng;
 
 };
 

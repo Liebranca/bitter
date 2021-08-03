@@ -1,3 +1,22 @@
+/*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
+/*    KVR_STR                               *
+*                                           *
+*     -plain mem use                        *
+*     -can do arrays                        *
+*     -all ops are byte-sized               *
+*                                           */
+// *   ---     ---     ---     ---     ---  *
+/*    LIBRE SOFTWARE                        *
+*                                           *
+*     Licenced under GNU GPL3               *
+*     be a bro and inherit                  *
+*                                           */
+// *   ---     ---     ---     ---     ---  *
+/* CONTRIBUTORS                             *
+*     lyeb,                                 *
+*                                           */
+/*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
+
 #include "kvr_str.h"
 #include <string.h>
 

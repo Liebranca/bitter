@@ -1,11 +1,19 @@
+/*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
+/*    ZJC_COMMONTYPES                       *
+*                                           *
+*     -only header worthy of this notice    *
+*                                           */
 // *   ---     ---     ---     ---     ---  *
-// *  ZJC_COMMONTYPES.H                     *
-// *                                        *
-// *  -typedefs for fixed-sized types       *
-// *  -definition of FRAC constants         *
-// *  -some type conversion                 *
-// *                                        *
+/*    LIBRE SOFTWARE                        *
+*                                           *
+*     Licenced under GNU GPL3               *
+*     be a bro and inherit                  *
+*                                           */
 // *   ---     ---     ---     ---     ---  *
+/* CONTRIBUTORS                             *
+*     lyeb,                                 *
+*                                           */
+/*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
 
 #ifndef __ZJC_COMMONTYPES_H__
 #define __ZJC_COMMONTYPES_H__

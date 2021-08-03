@@ -1,11 +1,3 @@
-// *   ---     ---     ---     ---     ---  *
-// *  ZJC_ID                                *
-// *                                        *
-// *  -simple data header/descriptor        *
-// *  -used to poly mem derivates           *
-// *                                        *
-// *   ---     ---     ---     ---     ---  *
-
 #ifndef __ZJC_ID_H__
 #define __ZJC_ID_H__
 

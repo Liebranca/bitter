@@ -1,12 +1,3 @@
-// *   ---     ---     ---     ---     ---  *
-// *  KVR_ZWRAP                             *
-// *                                        *
-// *  -'wraps' zlib stuff                   *
-// *  -deflates/inflates bins               *
-// *  -stream-deal pending                  *
-// *                                        *
-// *   ---     ---     ---     ---     ---  *
-
 #ifndef __KVR_ZWRAP_H__
 #define __KVR_ZWRAP_H__
 

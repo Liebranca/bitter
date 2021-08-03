@@ -1,3 +1,23 @@
+/*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
+/*    ZJC_BINTYPES                          *
+*                                           *
+*     -common binary ops                    *
+*     -float<->frac in many flavors         *
+*     -bitpacking                           *
+*                                           */
+// *   ---     ---     ---     ---     ---  *
+/*    LIBRE SOFTWARE                        *
+*                                           *
+*     Licenced under GNU GPL3               *
+*     be a bro and inherit                  *
+*                                           */
+// *   ---     ---     ---     ---     ---  *
+/* CONTRIBUTORS                             *
+*     lyeb,                                 *
+*                                           */
+/*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
