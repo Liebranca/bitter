@@ -10,9 +10,9 @@
 
 //   ---     ---     ---     ---     ---
 
-static       int    CALDEPTH = 0;         // call depth counter
-static       int    CALREG_I = 0;         // current idex into locreg
-static       int    ERRSTATE = 0x00;      // global errorstate
+static       int    CALDEPTH = 0;           // call depth counter
+static       int    CALREG_I = 0;           // current idex into locreg
+static       int    ERRSTATE = 0x00;        // global errorstate
 
 static       DANG   CALREG[64];             // call register; a call dump
 
@@ -46,8 +46,30 @@ void CALOUT(char fam, char* format, ...)    {
 
 //   ---     ---     ---     ---     ---
 
-void __writoa  (int x, char* buff, int rdx) { _itoa(x, buff, rdx);                          };
-int  __wrstrcmp(char* s0, char* s1        ) { return strcmp(s0, s1);                        };
+void __writoa  (int x, char* buff, int rdx) {
+
+#if KVR_DEBUG & KVR_CALOS
+    timer_start();
+#endif
+
+    _itoa(x, buff, rdx);
+
+#if KVR_DEBUG & KVR_CALOS
+    CALOUT('S', "ITOA   took %fms\n\b", timer_end());
+#endif
+                                                                                            };
+int  __wrstrcmp(char* s0, char* s1        ) {
+
+#if KVR_DEBUG & KVR_CALOS
+    timer_start();
+    int ret=strcmp(s0, s1);
+    CALOUT('S', "STRCMP took %fms\n\b", timer_end());
+    return ret;
+#else
+
+return strcmp(s0, s1);
+#endif
+                                                                                            };
 
 DANG* __geterrloc(const char* p,
                   const char* f,
