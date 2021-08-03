@@ -8,22 +8,28 @@ First and foremost, I am trapped on Windows for a variety of reasons. I cannot g
 - *For now* I use Mingw-w64 mainly, so producing binaries from other versions could need some fine-tunning.
 - The entire interface runs on ANSI escapes. If you don't run it on a terminal capable of understanding those sequences, you'll see weird things.
 - You'll have to get something like *ansicon* if you're seeing said weird things.
-- Every piece of code (including headers) must display the following notice in comments, right at the start of the *source* file:
+- Every piece of code must display the following notice in comments, right at the start of the *source* file:
 
 ```
- *   ---     ---     ---     ---     ---  *
- *   related-to,(=)                       *
- *   ---     ---     ---     ---     ---  *
- *  NAME (without extensions)             *
- *                                        *
- *  -description0                         *
- *  -descriptionn                         *
- *                                        *
- *   ---     ---     ---     ---     ---  *
-     LICENSE_BLOCK                         
- *   ---     ---     ---     ---     ---  *
-     contributors,(=)                      
- *   ---     ---     ---     ---     ---  *
+/*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
+/*    FILENAME                              *
+                                            *
+      -memory workhorse                     *
+      -alloc, dealloc                       *
+      -is base struct to most things        *
+      -does cool funky poly                 *
+                                            */
+// *   ---     ---     ---     ---     ---  *
+/*    Notice                                *
+                                            *
+      Licenced under                        *
+      your clever siggy.                    *
+                                            */
+// *   ---     ---     ---     ---     ---  *
+/* CONTRIBUTORS                             *
+      name,(=)                              *
+                                            */
+/*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
 ```
 
 And this final license block cannot be incompatible with GPL3. Needless to say, if you `#include` a GPL'd file, then be a bro and use the same license because it's your inheritance.
