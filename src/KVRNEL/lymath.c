@@ -1,7 +1,7 @@
 /*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
-/*    chKEY                                 *
+/*    LYMATH                                *
 *                                           *
-*     -sdl keyboard stuff                   *
+*     -operations done MY way               *
 *                                           */
 // *   ---     ---     ---     ---     ---  *
 /*    LIBRE SOFTWARE                        *
@@ -15,12 +15,13 @@
 *                                           */
 /*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
 
-#include "chKEY.h"
+#include "lymath.h"
 
 //   ---     ---     ---     ---     ---
 
-void STWINKEY(uchar* k, uchar input)        {(*k)|= (1 << input);                           };
-void CLWINKEY(uchar* k, uchar input)        {(*k)&=~(1 << input);                           };
-int  GTWINKEY(uchar* k, uchar value)        { return ((*k)&value)==value;                   };
+void SCUSTR2(ustr2* us, ustr2 dim, float x) { float v=(float) (us->x/dim.x);                \
+                                              us->x=(v*x)*dim.x;                            \
+                                              v=(float) (us->y/dim.y);                      \
+                                              us->y=(v*x)*dim.y;                            };
 
 //   ---     ---     ---     ---     ---
