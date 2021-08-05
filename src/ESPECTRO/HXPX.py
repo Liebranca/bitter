@@ -33,6 +33,7 @@ from ESPECTRO    import (
     GETKVRSOR,
 
     DOS,
+    CLS,
     ERRPRINT,
 
     clnstr,
@@ -846,14 +847,27 @@ class hxPX:
 
         KVNSL.DEBUG_SPIT();
 
+    def RDOS(self, exepath):
+        CLS();
+
+        GETKVNSL().CLOCK.stop=1;
+        DOS(exepath);
+        del self.t1;
+        GETKVNSL().CLOCK.stop=0;
+        GETKVNSL().CLOCK.reset();
+        GETKVNSL().DEBUG_TOGGLE();
+        GETKVNSL().DEBUG_TOGGLE();
+
     def run(self):
         if self.mode == 0:
             OLD_PATH=CWD();
             CHDIR(CATPATH(ROOT(), '_run', TARGET()));
-            DOS(f"{self.outdir}\\{self.name}.exe");
+            self.t1=Thread(target=self.RDOS, args=[f"{self.outdir}\\{self.name}.exe"]);
+            self.t1.start();
+
             CHDIR(OLD_PATH);
 
-            ERRPRINT(SYSREAD(), err=-1); GETKVNSL().DEBUG_SPIT();
+            #ERRPRINT(SYSREAD(), err=-1); GETKVNSL().DEBUG_SPIT();
             GETKVNSL().CLOCK.reset();
 
         else:

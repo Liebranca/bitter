@@ -1,21 +1,3 @@
-/*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
-/*    ZJC_EVIL                              *
-*                                           *
-*     -debug stuff                          *
-*     -hoh sys                              *
-*                                           */
-// *   ---     ---     ---     ---     ---  *
-/*    LIBRE SOFTWARE                        *
-*                                           *
-*     Licenced under GNU GPL3               *
-*     be a bro and inherit                  *
-*                                           */
-// *   ---     ---     ---     ---     ---  *
-/* CONTRIBUTORS                             *
-*     lyeb,                                 *
-*                                           */
-/*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
-
 #ifndef __ZJC_EVIL_H__
 #define __ZJC_EVIL_H__
 
@@ -35,7 +17,7 @@ extern "C" {
 #define KVR_CALOS 0x08                      // report string ops
 
 #define KVR_DEBUG (                         /* combined logflags */                          \
-    KVR_CALOM | KVR_CALOK | KVR_CALOS                                                        \
+    0                                                                                        \
                                                                                              \
 )
 
@@ -158,6 +140,7 @@ void CALOUT       (char fam,              \
 // move these somewhere else
 void  timer_start(void);
 float timer_end  (void);
+float timer_ftime(void);
 
 #ifdef __cplusplus
 }

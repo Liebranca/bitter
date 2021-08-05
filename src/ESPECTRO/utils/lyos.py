@@ -22,6 +22,8 @@ sys.ps2    = '-';
 FATAL      = -255;
 ERROR      = -254;
 
+KVNSL_H    = None;
+
 #   ---     ---     ---     ---     ---
 
 def DISCOUNT_ESCAPES(S, space):
@@ -1018,6 +1020,8 @@ class KVRSOR(COORD):
 #   ---     ---     ---     ---     ---
 
     def JUMP(self, x=1, y=1):
+        if(KVNSL_H.CLOCK.stop): return;
+
         CPRINT(f"\x1b[{y};{x}H");
         self.SETY(y); self.SETX(x);
 
@@ -1030,9 +1034,6 @@ class KVRSOR(COORD):
         self.saved = (self.y, self.x);
     def LOAD(self):
         self.JUMP(*self.saved);
-
-CURSOR = KVRSOR(1,1,75,1,1,23);
-def GETKVRSOR(): return CURSOR;
 
 #   ---     ---     ---     ---     ---
 
@@ -1050,7 +1051,7 @@ class KVNSL:
         self.PROGBAR   = None;
         self.CLOCK     = None;
 
-        CURSOR.JUMP(1,22);
+        #CURSOR.JUMP(1,22);
 
     def AP_INTCALL(self, ID, call, args, k=0):
         if k:
@@ -1262,6 +1263,11 @@ class KVNSL:
             ERRPRINT(s, err=-1); self.DEBUG_SPIT();
             self.CLOCK.reset();
 
+    def OUTREAD(self):
+        s=SYSREAD(clear=1);
+        if s:
+            CPRINT(SYSREAD(clear=1), flush=1);
+
     def RUN(self):
 
         CURSOR.SAVE(); CURSOR.JUMP(1, 23);
@@ -1276,7 +1282,8 @@ class KVNSL:
             CURSOR.SAVE(); self.CLOCK.FRAME_BEGIN();
 
             if self.DEBUGREG.isCurrent:
-                self.LOGREAD();
+                if self.CLOCK.stop: self.OUTREAD();
+                else: self.LOGREAD();
 
 #   ---     ---     ---     ---     ---
 
@@ -1351,6 +1358,9 @@ class KVNSL:
 #   ---     ---     ---     ---     ---
 
 KVNSL_H  = KVNSL();
+CURSOR = KVRSOR(1,1,75,1,1,23);
+
+def GETKVRSOR(): return CURSOR;
 DEBUGREG = REGION ( "DEBUG",
 
                     rect=COORD( 1,  1, 76, 1, 1, 22 ),
@@ -2454,7 +2464,7 @@ class CLOCK:
         self.frametime=(1/FPS); self.ptr=0; self.ch="►▼◄▲";
         self.animframe=0.0; self.animrate=self.frametime*animrate;
         self.framedelta=0.0; self.framestart=0.0; self.framestop=0.0;
-        self.halted=0;
+        self.halted=0; self.stop=0;
 
     def reset(self):
         self.animframe=0.0; self.framedelta=0.0;
@@ -2469,11 +2479,15 @@ class CLOCK:
             self.framestop=0.0; self.animframe=0.0;
 
     def FRAME_BEGIN(self):
+
         if self.halted: self.halted=0;
         self.framestart=rnow();
         if self.framestop: self.framedelta+=(self.framestart - self.framestop);
 
     def DRAW(self):
+
+        if self.stop:
+            return;
 
         CURSOR.JUMP(2, 23);
         if self.animframe>=self.animrate:

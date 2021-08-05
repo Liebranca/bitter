@@ -122,7 +122,7 @@ def MKHED(name, ext):
     if   ext in EXT_CLIKE   : return HED_INFO_CLIKE   (name);
     elif ext in EXT_PESOLIKE: return HED_INFO_PESOLIKE(name);
 
-COMP_LANG = LFLAT                           ([EXT_CLIKE, EXT_PESOLIKE            ]);
+COMP_LANG = LFLAT                           ([EXT_CLIKE                          ]);
 ALL_LANGS = LFLAT                           ([EXT_CLIKE, EXT_PESOLIKE, EXT_PYLIKE]);
 
 #   ---     ---     ---     ---     ---

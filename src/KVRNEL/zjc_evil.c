@@ -1,3 +1,21 @@
+/*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
+/*    ZJC_EVIL                              *
+*                                           *
+*     -debug stuff                          *
+*     -hoh sys                              *
+*                                           */
+// *   ---     ---     ---     ---     ---  *
+/*    LIBRE SOFTWARE                        *
+*                                           *
+*     Licenced under GNU GPL3               *
+*     be a bro and inherit                  *
+*                                           */
+// *   ---     ---     ---     ---     ---  *
+/* CONTRIBUTORS                             *
+*     lyeb,                                 *
+*                                           */
+/*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
+
 #include "zjc_evil.h"
 
 #include <stdio.h>
@@ -221,3 +239,4 @@ static float   CPS=1.0f/CLOCKS_PER_SEC;
 void  timer_start(void)                     { framestart = clock();                         };
 float deltaCalc  (void)                     { return (frameend-framestart) * CPS;           };
 float timer_end  (void)                     { frameend   = clock(); return deltaCalc();     };
+float timer_ftime(void)                     { return CPS/0.008f;                            };

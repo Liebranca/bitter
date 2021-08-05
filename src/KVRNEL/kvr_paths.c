@@ -30,17 +30,18 @@ static BIN* CALLOG     = NULL;              // handle to the log dump
 
 #define PECTROPATH 0                        // deactivates my errlog redirection
 
-void __openlog()                            {
+void __openlog(void)                        {
 
-    #if PECTROPATH
+#if PECTROPATH
     CALLOG->file=freopen                    (PTHBIN(CALLOG), "w+", stderr);
-    #endif
-
-#if KVR_DEBUG & KVR_CALOK
-    CALOUT                                  ('K', "\n\bKVR RUN\n\b"      );                 };
 #endif
 
-void __closelog()                           {
+#if KVR_DEBUG & KVR_CALOK
+    CALOUT                                  ('K', "\n\bKVR RUN\n\b"      );
+#endif
+                                                                                            };
+
+void __closelog(void)                       {
 
     FILE* f=CALLOG->file;
 
@@ -50,9 +51,9 @@ void __closelog()                           {
     CALOUT                                  ('K', "KVR END\n\b\n\b");
 #endif
 
-    #if PECTROPATH
+#if PECTROPATH
     fclose                                  (f                     );
-    #endif
+#endif
 
                                                                                             };
 
