@@ -829,11 +829,12 @@ class hxPX:
                 KVNSL.PROGBAR.taskDone(1);
 
             if abort: break;
-            if m.mode == 1 and OKFILE(CATPATH(outdir, m.name+".lib")):
-                AVTO_INCLUDES(f"-I{m.path}",            1);
-                AVTO_LIBS    (f"-L{outdir} -l{m.name}", 1);
-
-                intfiles.append(CATPATH(outdir, m.name+".lib"));
+            if m.mode != 0:
+                ext=".lib" if m.mode==1 else ".dll";
+                if OKFILE(CATPATH(outdir, m.name+ext)):
+                    AVTO_INCLUDES(f"-I{m.path}",            1);
+                    AVTO_LIBS    (f"-L{outdir} -l{m.name}", 1);
+                    intfiles.append(CATPATH(outdir, m.name+ext));
 
 #   ---     ---     ---     ---     ---
 
@@ -855,8 +856,9 @@ class hxPX:
         del self.t1;
         GETKVNSL().CLOCK.stop=0;
         GETKVNSL().CLOCK.reset();
-        GETKVNSL().DEBUG_TOGGLE();
-        GETKVNSL().DEBUG_TOGGLE();
+        #GETKVNSL().DEBUG_SPIT();
+        #GETKVNSL().DEBUG_TOGGLE();
+        #GETKVNSL().DEBUG_TOGGLE();
 
     def run(self):
         if self.mode == 0:

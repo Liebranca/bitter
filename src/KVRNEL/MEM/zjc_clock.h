@@ -25,6 +25,7 @@ typedef struct ZJC_CLOCK {                  // simplistic, hand-made clock
     float   sctim;                          // timescale
 
     float   fBy;                            // delta mult
+    uint    uBy;                            // delta mult
 
     int     frcap;                          // per-second framecap
     int     frcnt;                          // frame-count
@@ -41,10 +42,9 @@ typedef struct ZJC_CLOCK {                  // simplistic, hand-made clock
 
 //   ---     ---     ---     ---     ---
 
-CLCK*  MKCLCK              (char* name,   \
+CLCK*  MKCLCK              (char* chars,  \
                             uint frcap,   \
-                            float sctim,  \
-                            char* chars   );// allocs a new clock
+                            float sctim   );// allocs a new clock
 
 void   CLCKWIN             (uint w        );// sleeps for a while
 

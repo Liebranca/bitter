@@ -36,11 +36,14 @@ typedef struct CHASM_WINDOW {               // sdl window stuff
 
 //   ---     ---     ---     ---     ---
 
-WIN* MKWIN(char* title,             \
-           int height, int width    );      // makes new window
+WIN* MKWIN      (char* title,         \
+                 int height, int width);    // makes new window
 
+int  BKWIN      (WIN* win             );    // breaks the window
 
-
+void POLWIN     (WIN* win             );    // polls the windows for input events
+int  GTWINOPEN  (WIN* win             );    // check if the window is open
+void SWPWINBUF  (WIN* win             );    // 
 
 //   ---     ---     ---     ---     ---
 

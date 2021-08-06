@@ -1323,7 +1323,7 @@ class KVNSL:
                             self.OUT(itm,                     flush=0);
                             self.OUT(info, region=inforegion, flush=0);
 
-                    elif KEYBOARD_CONTROLLER.LOG == 27:
+                    elif KEYBOARD_CONTROLLER.LOG == 167:
 
                         if self.CUR_REGION.NAME=="RPANEL":
                             self.CUR_REGION.LABELS[0]="";

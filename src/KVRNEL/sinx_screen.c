@@ -17,7 +17,6 @@
 /*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
 
 #include "KVRNEL/MEM/kvr_str.h"
-#include "KVRNEL/MEM/zjc_clock.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -84,12 +83,9 @@ void SINX_LOOP(void)                        {
 
     int pos[2]={2,22};
 
-    CLCK* clck=MKCLCK("draw_clock", 8, 1.0f, "|/-\\|/-\\");
-    STCLCK(clck);
-
     do {
 
-        KFRBEG();
+        //KFRBEG();
         if(kbhit()) {
 
             c = (char) getch();
@@ -128,12 +124,10 @@ void SINX_LOOP(void)                        {
         };
 
         // SINX_DRAW();
-        KFREND();
 
 
     } while(c != '\r');
 
-    DLMEM(clck);
     DLMEM(SINX_SCREEN);                                                                     };
 
 //   ---     ---     ---     ---     ---

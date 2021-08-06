@@ -17,7 +17,7 @@ extern "C" {
 #define KVR_CALOS 0x08                      // report string ops
 
 #define KVR_DEBUG (                         /* combined logflags */                          \
-    0                                                                                        \
+    KVR_CALOM | KVR_CALOF | KVR_CALOK                                                        \
                                                                                              \
 )
 

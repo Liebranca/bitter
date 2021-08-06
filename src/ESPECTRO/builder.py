@@ -211,8 +211,8 @@ def AVTO_MKLIB(olist, ar, name):
 
 def AVTO_MKDLL(olist, gcc, name):
 
-    if BUILD_DLL_TO and OKPATH(BUILD_DLL_TO):
-        OBJFOLD=BUILD_DLL_TO+f"\\{TARGET()}";
+    #if BUILD_DLL_TO and OKPATH(BUILD_DLL_TO):
+    #   OBJFOLD=BUILD_DLL_TO+f"\\{TARGET()}";
 
     name=name.lower(); dll = f"{OBJFOLD}\\{name}.dll"
     if OKFILE(dll): DOS(f"@del {dll}");

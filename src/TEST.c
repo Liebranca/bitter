@@ -20,10 +20,29 @@
 #undef main
 #endif
 
-#include "..\KVRNEL\sinx_screen.h"
+#include "../KVRNEL/kvr_paths.h"
+
+#include "CHASM/chMNG.h"
 
 void main(void)                             {
 
-    SINX_LOOP();
+    char* paths[4]={
+        "D:\\lieb_git\\KVR\\trashcan\\log\\",
+        "D:\\lieb_git\\KVR\\trashcan\\log\\",
+        "D:\\lieb_git\\KVR\\trashcan\\log\\",
+        "D:\\lieb_git\\KVR\\trashcan\\log\\"
+    };
+
+    NTKVRPTH(paths);
+    NTCHMNG("SINx8", 0);
+
+    while(GTCHMNGRUN()) {
+        FRBEGCHMNG();
+        FRENDCHMNG();
+        SLEEPCHMNG();
+    };
+
+    DLCHMNG();
+    DLKVRPTH();
 
 };

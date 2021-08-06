@@ -34,11 +34,11 @@ static        CLCK* cclck = NULL;
 
 //   ---     ---     ---     ---     ---
 
-CLCK* MKCLCK(char* name, uint frcap, \
-             float sctim, char* chars)      {
+CLCK* MKCLCK(char* chars, uint frcap,
+             float sctim            )       {
 
-    CLCK* clck; ID id=IDNEW("CLCK", name);
-    MEMGET(CLCK, clck, 0, &id);
+    CLCK* clck; ID id=IDNEW("CLCK", chars);
+    MEMGET(CLCK, clck, 8, &id);
 
 //   ---     ---     ---     ---     ---
 
@@ -65,18 +65,18 @@ CLCK* MKCLCK(char* name, uint frcap, \
 
     } while(*chars++);
 
-    clck->dinfo[10] = 22;
-    clck->dinfo[11] =  2;
+    clck->dinfo[ 9] =  0;
+    clck->dinfo[10] = 23;
+    clck->dinfo[11] =  1;
 
     return clck;                                                                            };
 
 //   ---     ---     ---     ---     ---
 
-void   CALCFRDLT           (void          ) { cclck->frdlt+=(
+void   CALCFRDLT           (void          ) { cclck->frdlt+=(                               \
                                                                 (cclck->frend)              \
                                                               - (cclck->frbeg)              \
-                                                            );                              \
-                                                                                            \
+                                                            ) * CPS;                        \
                                               cclck->flags|=CLCK_ONFLG;                     };
 
 //   ---     ---     ---     ---     ---
@@ -88,13 +88,13 @@ void   STSCTIM             (float sctim   ) { cclck->sctim=sctim;               
 //   ---     ---     ---     ---     ---
 
 void   CALCFRTIM           (void          ) { cclck->frtim= (CLOCKS_PER_SEC/cclck->frcap);  };
-
 void   STFRCAP             (int frcap     ) { cclck->frcap=frcap; CALCFRTIM();              };
 
 //   ---     ---     ---     ---     ---
 
-int    GTSLEEP             (void          ) { return cclck->frdlt < cclck->frtim;           };
-void   SLEEP               (void          ) { cclck->flags&=~CLCK_ONFLG; usleep(GTSLTIM()); };
+int    GTSLEEP             (void          ) { if(cclck->frtim < cclck->frdlt) {
+                                                  cclck->frdlt=0; return 0;
+                                              }; return cclck->frdlt < cclck->frtim;        };
 
 //   ---     ---     ---     ---     ---
 
@@ -104,10 +104,12 @@ void   CALCSLTIM           (void          ) { cclck->sltim=(cclck->frtim)-(cclck
 //   ---     ---     ---     ---     ---
 
 uint   GTSLTIM             (void          ) { return cclck->sltim;                          };
-
-void   GTFBY               (void          ) { CALCSLTIM(); cclck->fBy= 1.0f
+uint   GTUBY               (uint base     ) { cclck->uBy=(uint)(cclck->fBy * base);         };
+void   GTFBY               (void          ) { CALCSLTIM(); cclck->fBy= 1.0f                 \
                                                                      / (cclck->frtim/*l*/   \
-                                                                     -cclck->sltim);        };
+                                                                       -cclck->sltim);
+
+                                              GTUBY(256);                                   };
 
 //   ---     ---     ---     ---     ---
 
@@ -116,12 +118,13 @@ float  GTFRDLT             (void          ) { return cclck->frdlt;              
 
 //   ---     ---     ---     ---     ---
 
-void   DRCLCK              (void          ) { CALOUT('C', "\x1b[%i;%iH%c",
+void   DRCLCK              (void          ) { CALOUT('C', "\x1b[%i;%iH%c DELTA %u FRAMETIME %u SLEEP %u",
 
                                                   cclck->dinfo[10],
                                                   cclck->dinfo[11],
+                                                  cclck->dinfo[(cclck->frcnt)%4],
 
-                                                  cclck->dinfo[(cclck->frcnt)%8]
+                                                  cclck->frdlt, cclck->frtim, cclck->sltim
 
                                               ); cclck->frcnt++;
 
@@ -132,16 +135,7 @@ void   DRCLCK              (void          ) { CALOUT('C', "\x1b[%i;%iH%c",
 //   ---     ---     ---     ---     ---
 
 void   KFRBEG              (void          ) { cclck->frbeg=clock();                         };
-
-void   KFREND              (void          ) { cclck->frend=clock(); CALCFRDLT();
-                                              if(cclck->frdlt>=cclck->frtim) {
-                                                cclck->frdlt=0;
-
-                                              }; GTFBY(); DRCLCK();                         \
-                                                                                            \
-                                              if(GTSLEEP()) {                               \
-                                                  SLEEP();                                  \
-                                                                                            \
-                                              } else { cclck->frdlt=0; }                    };
+void   KFREND              (void          ) { cclck->frend=clock(); DRCLCK(); CALCFRDLT();  \
+                                              GTFBY();                                      };
 
 //   ---     ---     ---     ---     ---

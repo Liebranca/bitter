@@ -17,9 +17,14 @@
 
 #include "chWIN.h"
 
+//   ---     ---     ---     ---     ---
+
 #define chWIN_FLAGS_OPEN  0x01
 #define chWIN_FLAGS_FOCUS 0x02
 #define chWIN_FLAGS_ISTOP 0x04
+
+void STWINFLAG  (WIN* win, int flag)        { win->flags|=flag;                             };
+void USTWINFLAG (WIN* win, int flag)        { win->flags&=~flag;                            };
 
 //   ---     ---     ---     ---     ---
 
@@ -65,24 +70,22 @@ WIN* MKWIN(char* title,          \
     whandle.mouse.sens  = 0.65f;
 */
 
+    STWINFLAG(win, chWIN_FLAGS_OPEN);
+
     return win;                                                                             };
 
 //   ---     ---     ---     ---     ---
 
-int DLWIN       (WIN* win)                  { SDL_DestroyWindow(win->window); DLMEM(win);   \
+int BKWIN       (WIN* win)                  { SDL_DestroyWindow(win->window); DLMEM(win);   \
                                               return DONE;                                  };
-
-void STWINFLAG  (WIN* win, int flag)        { win->flags|=flag;                             };
-void USTWINFLAG (WIN* win, int flag)        { win->flags&=~flag;                            };
-
 void SWPWINBUF  (WIN* win)                  { SDL_GL_SwapWindow(win->window);               };
 void SHWWINCUR  (void    )                  { SDL_ShowCursor(SDL_DISABLE);                  };
 void HIDWINCUR  (void    )                  { SDL_ShowCursor(SDL_ENABLE);                   };
-int  GTWINCLOSED(WIN* win)                  { return win->flags & chWIN_FLAGS_OPEN;     };
+int  GTWINOPEN  (WIN* win)                  { return win->flags & chWIN_FLAGS_OPEN;         };
 
 //   ---     ---     ---     ---     ---
 
-void pollEvents(WIN* win)                   {
+void POLWIN(WIN* win)                       {
 
     int k;
     SDL_Event event;
@@ -163,7 +166,7 @@ void pollEvents(WIN* win)                   {
 
         case SDL_KEYDOWN:
             k = event.key.keysym.sym;
-            if(k == SDLK_ESCAPE)            { USTWINFLAG(win, chWIN_FLAGS_OPEN); break;     };
+            if(k == SDLK_ESCAPE)         { USTWINFLAG(win, chWIN_FLAGS_OPEN); break;     };
 
             for(uchar i = 0; i < 8; i++) {
                 if(k == CH_KEYB_KCODES[i])  { STWINKEY(&win->key, i);                       };
