@@ -14,25 +14,55 @@ typedef struct LYMTH_USTR8 {
 
     union {
         struct {
-            uchar x:2;
-            uchar y:2;
-            uchar z:2;
-            uchar w:2;
+            uint x:8;
+            uint y:8;
+            uint z:8;
+            uint w:8;
 
-        };  uchar b;
+        };  uint F;
     };
 
-} ustr8; CASSERT(sizeof(ustr8)==1, "USTR8 SHOULD BE 1 BYTE");
+} ustr8; CASSERT(sizeof(ustr8)==4, "USTR8 SHOULD BE 4 BYTES");
 
-/* 00 00  00 00 
-   00 00  00 00 
-               
-   00 00  00 00 
-   00 00  00 00 */
- 
 //   ---     ---     ---     ---     ---
 
-void add(ustr8* a, ustr8 b);
+void ldaus8  (ustr8* a        );            // load address into var
+void ldbus8  (ustr8* b        );
+
+void bdaus8  (uchar x, uchar y,
+              uchar z, uchar w);            // set val by elem
+void bdbus8  (uchar x, uchar y,
+              uchar z, uchar w);
+
+void staus8  (uint  F         );            // set val by mask
+void stbus8  (uint  F         );
+
+//   ---     ---     ---     ---     ---
+
+void addus8  (void            );            // ncrry a+b
+void subus8  (void            );            // ncrry a-b
+void mulus8  (uchar s         );            // ncrry a*s
+void divus8  (uchar s         );            // ncrry a/s
+
+void faddus8 (void            );            // carry a+b
+void fsubus8 (void            );            // carry a-b
+void fmulus8 (void            );            // carry a*b
+void fdivus8 (void            );            // carry a/b
+
+//   ---     ---     ---     ---     ---
+
+void shaus8  (void            );            // dec repr
+void shbus8  (void            ); 
+
+void fshaus8 (void            );            // hex repr
+void fshbus8 (void            );
+
+void bshaus8 (void            );            // bin repr
+void bshbus8 (void            );
+
+//   ---     ---     ---     ---     ---
+
+void fxorus8 (void            );            // a^b
 
 //   ---     ---     ---     ---     ---
 
