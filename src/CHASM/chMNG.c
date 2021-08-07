@@ -20,8 +20,11 @@
 #include "chMNG.h"
 #include "chWIN.h"
 
-#include "GLEW/glew.h"
 #include "../KVRNEL/MEM/zjc_clock.h"
+#include "glad/glad.h"
+
+#include <windows.h>
+#include <SDL2/SDL_syswm.h>
 
 //   ---     ---     ---     ---     ---
 
@@ -29,18 +32,32 @@
 
 static SDL_GLContext ogl_context;
 
-static CLCK*         chmang_clock = NULL;
-static WIN*          curwin       = NULL;
+static CLCK*         chmang_clock    = NULL;
+static WIN*          curwin          = NULL;
 
-static uint          w_width      = 640;
-static uint          w_height     = 480;
+static uint          w_width         = 171;
+static uint          w_height        =  96;
 
 static uchar         openwins;
+
+static float         ambientColor[4] = { 1, 0, 0, 0.5f };
+static float         ambientMult     = 1.0f;
 
 //   ---     ---     ---     ---     ---
 
 int   GTCHMNGRUN        (void)              { return GTWINOPEN(curwin);                     };
-void  FRBEGCHMNG        (void)              { KFRBEG(); POLWIN(curwin);                     };
+
+void  FRBEGCHMNG        (void)              { KFRBEG(); POLWIN(curwin); SWPWINBUF(curwin);
+
+    glBindFramebuffer                       (GL_FRAMEBUFFER, 0                              );
+
+    glClearColor                            ( ambientColor[0] * ambientMult, \
+                                              ambientColor[1] * ambientMult, \
+                                              ambientColor[2] * ambientMult, \
+                                              ambientColor[3] * ambientMult  );
+
+    glClear                                 (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);    };
+
 float FBYCHMNG          (void)              { return chmang_clock->fBy;                     };
 uint  UBYCHMNG          (void)              { return chmang_clock->uBy;                     };
 void  FRENDCHMNG        (void)              { KFREND();                                     };
@@ -67,29 +84,45 @@ int NTCHMNG(char* title, int fullscreen)    {
     SDL_GL_SetAttribute                     (SDL_GL_CONTEXT_MAJOR_VERSION, 4              );
     SDL_GL_SetAttribute                     (SDL_GL_CONTEXT_MINOR_VERSION, 0              );
 
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
+                        SDL_GL_CONTEXT_PROFILE_CORE);
+
     openwins=1;
 
     SDL_DisplayMode DM;
     SDL_GetCurrentDisplayMode(0, &DM);
 
     if(fullscreen) {
-        w_width  = DM.w;
-        w_height = DM.h;
-
+        w_width  = DM.w-1;
+        w_height = DM.h-1;
+    
     };
 
 //   ---     ---     ---     ---     ---    // make window
 
-    curwin          = MKWIN                 (title, w_width, w_height                     );
+    curwin          = MKWIN                 (title, w_height, w_width                     );
     ogl_context     = SDL_GL_CreateContext  (curwin->window                               );
+    gladLoadGLLoader                        ((GLADloadproc)SDL_GL_GetProcAddress          );
 
-    if(fullscreen) {
-        SDL_SetWindowFullscreen             (curwin->window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+    SDL_MaximizeWindow(curwin->window);
 
-    };
+    //SDL_SysWMinfo wmInfo;
+    //SDL_VERSION(&wmInfo.version);  // Initialize wmInfo
+    //SDL_GetWindowWMInfo(curwin->window, &wmInfo);
+    //HWND hWnd = wmInfo.info.win.window;
+    //
+    //SetWindowLong(hWnd, GWL_EXSTYLE, GetWindowLong(hWnd, GWL_EXSTYLE) | WS_EX_LAYERED);
+    //SetLayeredWindowAttributes(hWnd, 0x000000FF, 128, LWA_ALPHA); //LWA_COLORKEY
+
+    SDL_SetWindowOpacity(curwin->window, 0.5f);
+
+    //if(fullscreen) {
+    //    SDL_SetWindowFullscreen             (curwin->window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+    //
+    //};
 
 //   ---     ---     ---     ---     ---    // init glew
-
+ /*
     glewExperimental = GL_TRUE;
     GLenum status = glewInit();
     if (status != GLEW_OK) {
@@ -101,7 +134,7 @@ int NTCHMNG(char* title, int fullscreen)    {
     if (!glewIsSupported("GL_VERSION_4_0")) {
         CALOUT('E', "This application requires OpenGL v4.0\n\b");
 
-    };
+    };*/
 
     SDL_GL_SetSwapInterval(1);
 
@@ -119,13 +152,13 @@ int NTCHMNG(char* title, int fullscreen)    {
     }*/
 
 //   ---     ---     ---     ---     ---
-/*
+
     glEnable                                (GL_DEPTH_TEST                                );
     glEnable                                (GL_CULL_FACE                                 );
     glCullFace                              (GL_BACK                                      );
     glEnable                                (GL_BLEND                                     );
     glBlendFunc                             (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA         );
-*/
+
     chmang_clock = MKCLCK                   ("|/-\\", 8, 1.0f                             );
     STCLCK                                  (chmang_clock                                 );
 

@@ -2055,11 +2055,11 @@ def SYSREAD(i=0, clear=1):
 
             if RD_LAST >= FILESIZE(F) or RD_LAST >= READSIZE(): trunc=1;
 
-        if trunc:
-            file = open(F, 'w');
-            file.truncate(0);
-
-            file.close();
+        #if trunc:
+        #    file = open(F, 'w');
+        #    file.truncate(0);
+        #
+        #    file.close();
 
     finally:
         hxEPRINT = 1;

@@ -9,20 +9,28 @@ extern "C" {
 
 //   ---     ---     ---     ---     ---
 
-typedef struct LY_UNSIG_STR2 {
+typedef struct LY_UNSIG_STR4 {
 
-    union {
+    
 
-        uchar x;
-        uchar y;
-
-    };  uchar v;
-
-} ustr2;
+};
 
 //   ---     ---     ---     ---     ---
 
-void SCUSTR2(ustr2* us, ustr2 dim, float x);
+typedef struct LY_UNSIG_STR16 {
+
+    union {
+
+        uchar  x;
+        uchar  y;
+
+    };  ushort v;
+
+} ustr16;
+
+//   ---     ---     ---     ---     ---
+
+void SCUSTR16(ustr16* us, ustr16 dim, float x);
 
 //   ---     ---     ---     ---     ---
 

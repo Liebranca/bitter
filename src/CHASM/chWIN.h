@@ -17,7 +17,7 @@ extern "C" {
 
 typedef struct CHASM_WINDOW {               // sdl window stuff
 
-    MEM           mem;                      // mem header
+    ID            id;                       // pol header
 
     char          key;                      // cool custom keyboard shit
     RAT           rat;                      // cool custom mouse shit
@@ -25,8 +25,8 @@ typedef struct CHASM_WINDOW {               // sdl window stuff
     SDL_Window*   window;                   // handle to the window
     SDL_GLContext context;                  // opengl context for this window
 
-    ustr2         size;                     // screen size
-    ustr2         hsize;                    // guides relative to screen size
+    ustr16        size;                     // screen size
+    ustr16        hsize;                    // guides relative to screen size
 
     int           flags;                    // 0x01 is open
                                             // 0x02 has focus

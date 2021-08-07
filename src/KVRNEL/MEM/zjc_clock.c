@@ -81,7 +81,7 @@ void   CALCFRDLT           (void          ) { cclck->frdlt+=(                   
 
 //   ---     ---     ---     ---     ---
 
-void   CLCKWIN             (uint w        ) { usleep(w); cclck->frdlt+=w;                   };
+void   CLCKWIN             (uint w        ) { /*usleep(w);*/ cclck->frdlt+=w;               };
 float  GTSCTIM             (void          ) { return cclck->sctim;                          };
 void   STSCTIM             (float sctim   ) { cclck->sctim=sctim;                           };
 

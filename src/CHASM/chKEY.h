@@ -2,7 +2,7 @@
 #define __CH_KEY_H__
 
 #include "zjc_CommonTypes.h"
-#include "SDL/SDL.h"
+#include "SDL2/SDL.h"
 
 #ifdef __cplusplus
 extern "C" {

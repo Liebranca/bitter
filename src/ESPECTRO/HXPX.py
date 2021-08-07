@@ -738,6 +738,11 @@ class hxPX:
         for lib in LIBS:
             AVTO_LIBS    (lib.buildstr, i!=0); i=1;
 
+        #-lmingw32 -lglew32mx -lopengl32 -lglu32
+        AVTO_LIBS("-L"+"\\".join(cc.split("\\")[:-1])+"x86_64-w64-mingw32\\lib"+" -lSDL2", 1);
+        AVTO_INCLUDES("-I"+"\\".join(cc.split("\\")[:-1])+"include\SDL2",1);
+        AVTO_INCLUDES("-I"+"\\".join(cc.split("\\")[:-1])+"include\GL",1);
+
         for m in self.modules:
 
             self.curmod = m;
@@ -788,28 +793,27 @@ class hxPX:
 
             AVTO_SETOUT(outdir);
 
-            if m.mode==2:
 
-                deplist={fname:1 for fname in mfiles};
-                for fname in mfiles:
-                    head, _sep, tail = fname.rpartition("."); f=head + ".d";
-                    f=RDFILE(f, rl=1, rl_sep=" ", ask=0, mute=1)[0];
-                    deps=f.split(": ")[-1].replace("\n", "").replace("/", "\\").replace("\\\\", "\\").split(" \\");
+            deplist={fname:1 for fname in mfiles};
+            for fname in mfiles:
+                head, _sep, tail = fname.rpartition("."); f=head + ".d";
+                f=RDFILE(f, rl=1, rl_sep=" ", ask=0, mute=1)[0];
+                deps=f.split(": ")[-1].replace("\n", "").replace("/", "\\").replace("\\\\", "\\").split(" \\");
 
-                    for dep in deps:
-                        head, _sep, tail = dep.rpartition("."); dep=head + ".o";
+                for dep in deps:
+                    head, _sep, tail = dep.rpartition("."); dep=head + ".o";
 
-                        rep= "\\_include\\" if "\\src\\" not in dep else "\\src\\";
+                    rep= "\\_include\\" if "\\src\\" not in dep else "\\src\\";
 
-                        tail=(dep.split(rep)[1]).split("\\");
-                        modname=tail[0]; oname=tail[-1];
+                    tail=(dep.split(rep)[1]).split("\\");
+                    modname=tail[0]; oname=tail[-1];
 
-                        head, _sep, tail = dep.rpartition(rep);
-                        dep=f"{head}\\trashcan\\{TARGET()}\\{modname}\\{oname}".lstrip();
-                        dep=dep.rstrip();
+                    head, _sep, tail = dep.rpartition(rep);
+                    dep=f"{head}\\trashcan\\{TARGET()}\\{modname}\\{oname}".lstrip();
+                    dep=dep.rstrip();
 
-                        if dep.endswith(".o") and OKFILE(dep):
-                            deplist[dep]=1;
+                    if dep.endswith(".o") and OKFILE(dep):
+                        deplist[dep]=1;
 
                 mfiles=list(deplist.keys());
 

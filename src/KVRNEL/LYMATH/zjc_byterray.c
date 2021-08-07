@@ -1,7 +1,7 @@
 /*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
-/*    LYMATH                                *
+/*    ZJC_BYTERRAY                          *
 *                                           *
-*     -operations done MY way               *
+*     -basic bytesized unit                 *
 *                                           */
 // *   ---     ---     ---     ---     ---  *
 /*    LIBRE SOFTWARE                        *
@@ -15,13 +15,29 @@
 *                                           */
 /*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
 
-#include "lymath.h"
+#include "zjc_byterray.h"
+#include <stdio.h>
 
 //   ---     ---     ---     ---     ---
 
-void SCUSTR2(ustr2* us, ustr2 dim, float x) { float v=(float) (us->x/dim.x);                \
-                                              us->x=(v*x)*dim.x;                            \
-                                              v=(float) (us->y/dim.y);                      \
-                                              us->y=(v*x)*dim.y;                            };
+void add(ustr8* a, ustr8 b)                 {
+
+    a->x=(a->x+b.x);
+    a->y=(a->y+b.y);
+
+};
+
+//   ---     ---     ---     ---     ---
+
+void main(void)                             {
+
+    ustr8 a={1,1};
+    ustr8 b={3,0};
+
+    add(&a, b);
+    printf("x%u y%u", a.x, a.y);
+    fflush(stdout);
+
+};
 
 //   ---     ---     ---     ---     ---

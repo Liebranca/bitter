@@ -26,10 +26,10 @@
 
 void RESWINRAT(RAT* rat, ustr2 dim)         { rat->state=3;                                 \
                                               rat->abs.x=dim.x; rat->abs.y=dim.y;           \
-                                              rat->rel.x=0.0f;  rat->rel.y=0.0f;            };
+                                              rat->rel.x=0;  rat->rel.y=0;                  };
 
-void STOPWINRAT(RAT* rat)                   { USTWINRATACT(rat); rat->rel.x=0.0f;           \
-                                                                 rat->rel.y=0.0f;           };
+void STOPWINRAT(RAT* rat)                   { USTWINRATACT(rat); rat->rel.x=0;              \
+                                                                 rat->rel.y=0;              };
 
 //   ---     ---     ---     ---     ---
 
@@ -43,7 +43,7 @@ void RUNWINRAT(RAT* rat,
 
 //   ---     ---     ---     ---     ---
 
-int  WALWINRAT(RAT* rat, ustr2 dim)         { return (   rat->abs.x == 0        )     \
+int  WALWINRAT(RAT* rat, ustr16 dim)        { return (   rat->abs.x == 0        )     \
                                                      | ((rat->abs.y == 0        ) << 1)
                                                      | ((rat->abs.x == dim.x - 1) << 2)
                                                      | ((rat->abs.y == dim.y - 1) << 3);    };
@@ -51,7 +51,7 @@ int  WALWINRAT(RAT* rat, ustr2 dim)         { return (   rat->abs.x == 0        
 //   ---     ---     ---     ---     ---
 
 ustr2 GTWINRATMOTION(RAT* rat, ustr2 dim,
-                     float x            )   { SCUSTR2(&rat->rel, dim, x);                   };
+                     float x            )   { SCUSTR16(&rat->rel, dim, x);                  };
 
 //   ---     ---     ---     ---     ---
 

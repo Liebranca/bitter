@@ -1,7 +1,7 @@
 /*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
-/*    KVR_MECH                              *
+/*    LYMATH                                *
 *                                           *
-*     -basic kvr machine                    *
+*     -operations done MY way               *
 *                                           */
 // *   ---     ---     ---     ---     ---  *
 /*    LIBRE SOFTWARE                        *
@@ -14,12 +14,3 @@
 *     lyeb,                                 *
 *                                           */
 /*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
-
-#include "KVRNEL\MEM\kvr_mem.h"
-
-MEM* rdmem;
-MEM* mvmem;
-
-/*void main(void) {
-    
-};*/

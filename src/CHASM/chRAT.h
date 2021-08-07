@@ -4,7 +4,7 @@
 #include "../KVRNEL/zjc_CommonTypes.h"
 #include "../KVRNEL/lymath.h"
 
-#include "SDL/SDL.h"
+#include "SDL2/SDL.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -14,11 +14,11 @@ extern "C" {
 
 typedef struct CHASM_RODENT {
 
-    ustr2 abs;
-    ustr2 rel;
+    ustr16 abs;
+    ustr16 rel;
 
-    char  sens;
-    char  state;
+    uchar  sens;
+    char   state;
 
 } RAT;
 
@@ -26,19 +26,19 @@ typedef struct CHASM_RODENT {
 
 void  RUNWINRAT     (RAT* rat, SDL_MouseMotionEvent* motion);
 
-void  RESWINRAT     (RAT* rat, ustr2 dim);  // resets rats position
-void  STOPWINRAT    (RAT* rat           );  // stop rat motion
-int   WALWINRAT     (RAT* rat, ustr2 dim);  // check rat against the wall
+void  RESWINRAT     (RAT* rat, ustr16 dim); // resets rats position
+void  STOPWINRAT    (RAT* rat            ); // stop rat motion
+int   WALWINRAT     (RAT* rat, ustr16 dim); // check rat against the wall
 
-ustr2 GTWINRATMOTION(RAT* rat, ustr2 dim,
-                     float x            );  // get %based motion from last frame
+ustr2 GTWINRATMOTION(RAT* rat, ustr16 dim,
+                     float x             ); // get %based motion from last frame
 
-int  GTWINRATIG     (RAT* rat           );  // these just set and get flags
-void USTWINRATIG    (RAT* rat           );
-void STWINRATIG     (RAT* rat           );
-int  GTWINRATACT    (RAT* rat           );
-void USTWINRATACT   (RAT* rat           );
-void STWINRATACT    (RAT* rat           );
+int  GTWINRATIG     (RAT* rat            ); // these just set and get flags
+void USTWINRATIG    (RAT* rat            );
+void STWINRATIG     (RAT* rat            );
+int  GTWINRATACT    (RAT* rat            );
+void USTWINRATACT   (RAT* rat            );
+void STWINRATACT    (RAT* rat            );
 
 //   ---     ---     ---     ---     ---
 

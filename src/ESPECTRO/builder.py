@@ -8,6 +8,7 @@
 from ESPECTRO import (
 
     DOS,
+    ROOT,
     ERRPRINT,
 
     TOUCH,
@@ -43,7 +44,7 @@ HEDS     = [];
 
 # if this is set (and OKPATH) dlls are sent to it
 # hardcoding it for now for testing
-BUILD_DLL_TO=f"D:\\lieb_git\\UPBGE_ASSETS\\bin\\"
+BUILD_DLL_TO=f"D:\\lieb_git\\AUVILIB\\bin\\"
 
 def AVTO_SETOUT(s):
     global OBJFOLD; OBJFOLD = s;
@@ -75,16 +76,16 @@ def AVTO_SRCBUILD(src, obj, gcc):
     if OKFILE(obj): DOS(f"@del {obj}");     # delete pre-existing .o
     ERRPRINT(src.split("\\")[-1], err=-1); _w = " -Wall " if FKWALL() else " "
 
-    s = f"@{gcc}{_w}-MMD {INCLUDES} -c {src} -o {obj} 2> {LOGOS()}";
-    DOS(s); mess = SYSREAD();
+    s = f"@{gcc}{_w}-MMD {INCLUDES} {LIBS} -c {src} -o {obj} 2> {LOGOS()}";
+    DOS(s); mess = SYSREAD(clear=0);
 
     #---------------------------
     # added this here so i can look at the disassembly
     # make a flag to disable or maybe put it somewhere else
     # i'd prefer having it always on, but yknow: things
-    asm=obj.replace(".o", ".s");
-    s = f"@{gcc}{_w} {INCLUDES} -S -O2 {src} -o {asm} 2> {LOGOS()}";
-    DOS(s); mess=mess+SYSREAD();
+    #asm=obj.replace(".o", ".s");
+    #s = f"@{gcc}{_w} {INCLUDES} -S -O2 {src} -o {asm} 2> {LOGOS()}";
+    #DOS(s); mess=mess+SYSREAD(clear=0);
     #---------------------------
 
     if mess:
@@ -175,9 +176,10 @@ def AVTO_MKEXE(olist, gcc, name):
     if OKFILE(exe): DOS(f"@del {exe}");
 
     olist = " ".join(fname for fname in olist); _w = " -Wall " if FKWALL() else " "
-    DOS(f"@{gcc}{_w}{olist} -o {exe} {LIBS} 2> {LOGOS()}");
+ 
+    DOS(f"@{gcc}{_w}{olist} {LIBS} -o {exe}  2> {LOGOS()}");
 
-    mess = SYSREAD();
+    mess = SYSREAD(clear=0);
     if mess:
         isWarning = OKFILE(exe);
         ERRPRINT(mess, err=1 if isWarning else 2, rec=3);
@@ -197,7 +199,7 @@ def AVTO_MKLIB(olist, ar, name):
     olist = " ".join(fname for fname in olist);
     DOS(f"@{ar} crf {lib} {olist} 2> {LOGOS()}");
 
-    mess = SYSREAD();
+    mess = SYSREAD(clear=0);
     if mess:
         isWarning = OKFILE(lib);
         ERRPRINT(mess, err=1 if isWarning else 2, rec=3);
@@ -211,8 +213,8 @@ def AVTO_MKLIB(olist, ar, name):
 
 def AVTO_MKDLL(olist, gcc, name):
 
-    #if BUILD_DLL_TO and OKPATH(BUILD_DLL_TO):
-    #   OBJFOLD=BUILD_DLL_TO+f"\\{TARGET()}";
+    if BUILD_DLL_TO and OKPATH(BUILD_DLL_TO):
+       OBJFOLD=BUILD_DLL_TO+f"\\{TARGET()}";
 
     name=name.lower(); dll = f"{OBJFOLD}\\{name}.dll"
     if OKFILE(dll): DOS(f"@del {dll}");

@@ -3,8 +3,8 @@
 
 #include "../zjc_CommonTypes.h"
 
-#define KVR_IDK_WIDTH 20
-#define KVR_IDT_WIDTH  4
+#define ZJC_IDK_WIDTH 20
+#define ZJC_IDT_WIDTH  4
 
 #ifdef __cplusplus
 extern "C" {
@@ -17,11 +17,11 @@ typedef struct ZJC_BLOCK_HEADER {           // base struct to identify otherwise
     union {
 
         struct {
-            char type[KVR_IDT_WIDTH];       // four chars describing the block
-            char key [KVR_IDK_WIDTH];       // for fetching/inserting on table
+            char type[ZJC_IDT_WIDTH];       // four chars describing the block
+            char key [ZJC_IDK_WIDTH];       // for fetching/inserting on table
 
-        };  char full[KVR_IDT_WIDTH
-                     +KVR_IDK_WIDTH];       // type + key
+        };  char full[ZJC_IDT_WIDTH
+                     +ZJC_IDK_WIDTH];       // type + key
 
     };
 
@@ -32,7 +32,7 @@ typedef struct ZJC_BLOCK_HEADER {           // base struct to identify otherwise
 
 //   ---     ---     ---     ---     ---
 
-ID IDNEW(char* type, char* key);            // call on block init
+ID IDTAKE(char* type, char* key);           // call on block init
 
 
 //   ---     ---     ---     ---     ---

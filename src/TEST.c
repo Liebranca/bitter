@@ -16,15 +16,17 @@
 *                                           */
 /*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
 
-#ifdef main
-#undef main
-#endif
 
-#include "../KVRNEL/kvr_paths.h"
-
+#include "KVRNEL/kvr_paths.h"
 #include "CHASM/chMNG.h"
 
-void main(void)                             {
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+//   ---     ---     ---     ---     ---
+
+int main(int argc, char *argv[])            {
 
     char* paths[4]={
         "D:\\lieb_git\\KVR\\trashcan\\log\\",
@@ -34,7 +36,7 @@ void main(void)                             {
     };
 
     NTKVRPTH(paths);
-    NTCHMNG("SINx8", 0);
+    NTCHMNG("SINx8", 1);
 
     while(GTCHMNGRUN()) {
         FRBEGCHMNG();
@@ -45,4 +47,12 @@ void main(void)                             {
     DLCHMNG();
     DLKVRPTH();
 
+    return 0;
+
 };
+
+//   ---     ---     ---     ---     ---
+
+#ifdef __cplusplus
+};
+#endif

@@ -19,10 +19,10 @@
 
 //   ---     ---     ---     ---     ---
 
-ID IDNEW(char* type, char* key)            {
+ID IDTAKE(char* type, char* key)            {
 
     ID id={0}; int i=0;
-    uint klimit=KVR_IDK_WIDTH-1;
+    uint klimit=ZJC_IDK_WIDTH-1;
 
     do {
         id.type[i]=*type; i++;
@@ -41,8 +41,6 @@ ID IDNEW(char* type, char* key)            {
     id.x = -1;
     id.y = -1;
 
-    return id;
-
-};
+    return id;                                                                              };
 
 //   ---     ---     ---     ---     ---
