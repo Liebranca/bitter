@@ -47,7 +47,7 @@ HASH* GWHASH(HASH* h);
 
 //   ---     ---     ---     ---     ---
 
-#if KVR_DEBUG                               /* catch full bucket */
+#if KVR_DEBUG & KVR_CALLOH                  /* catch full bucket */
     #define HASHSET(h, data)                { FLHASH(1); /* set mode to insertion */         \
         ID* lkp=(ID*) data; int key_in_hash=INHASH(h, lkp); int retx=0;                      \
         if(!key_in_hash) { ERRCATCH(NK4HSLOT(), retx, 72, lkp->key); h->nitems++; };         \
@@ -63,7 +63,7 @@ HASH* GWHASH(HASH* h);
 
 //   ---     ---     ---     ---     ---
 
-#if KVR_DEBUG                               /* catch key error */
+#if KVR_DEBUG & KVR_CALLOH                  /* catch key error */
     #define HASHGET(h, lkp, to, pop)        { FLHASH(0); /* set mode to fetch     */         \
         int key_in_hash=INHASH(h, lkp);                                                      \
         if(!key_in_hash) { ERRCATCH(ERROR, key_in_hash, 73, lkp->key); to=NULL; }            \
@@ -79,7 +79,7 @@ HASH* GWHASH(HASH* h);
 
 //   ---     ---     ---     ---     ---
 
-#if KVR_DEBUG                               /* catch key error */
+#if KVR_DEBUG & KVR_CALLOH                  /* catch key error */
     #define STR_HASHGET(h, key, to, pop)    { FLHASH(0);                                     \
         ID lkp=IDNEW("LKP_", key); lkp.y=-2; int key_in_hash=INHASH(h, &lkp);                \
         if(!key_in_hash) { ERRCATCH(ERROR, key_in_hash, 73,  key); to=NULL; }                \

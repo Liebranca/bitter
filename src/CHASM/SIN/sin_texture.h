@@ -1,8 +1,7 @@
-#ifndef __CH_MANG_H__
-#define __CH_MANG_H__
+#ifndef __SIN_TEXTURE_H__
+#define __SIN_TEXTURE_H__
 
 #include "../KVRNEL/zjc_CommonTypes.h"
-#include "../KVRNEL/TYPES/zjc_id.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -10,13 +9,10 @@ extern "C" {
 
 //   ---     ---     ---     ---     ---
 
-typedef struct SINx8_IMAGE_TEXTURE {
+void NTSINTEX();                            // kiknit
+void DLSINTEX();                            // kikdel
 
-    ID id;
 
-    ustr2 size;
-
-};
 
 //   ---     ---     ---     ---     ---
 
@@ -24,4 +20,4 @@ typedef struct SINx8_IMAGE_TEXTURE {
 }
 #endif
 
-#endif // __CH_MANG_H__
+#endif // __SIN_TEXTURE_H__

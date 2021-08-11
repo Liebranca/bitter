@@ -23,8 +23,8 @@
 #include "../KVRNEL/MEM/zjc_clock.h"
 #include "glad/glad.h"
 
-#include <windows.h>
-#include <SDL2/SDL_syswm.h>
+//#include <windows.h>
+//#include <SDL2/SDL_syswm.h>
 
 //   ---     ---     ---     ---     ---
 
@@ -159,7 +159,7 @@ int NTCHMNG(char* title, int fullscreen)    {
     glEnable                                (GL_BLEND                                     );
     glBlendFunc                             (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA         );
 
-    chmang_clock = MKCLCK                   ("|/-\\", 8, 1.0f                             );
+    chmang_clock = MKCLCK                   (".*^~", 8, 1.0f                              );
     STCLCK                                  (chmang_clock                                 );
 
     return DONE;                                                                            };
@@ -179,7 +179,7 @@ int DLCHMNG()                               {
 
 void GTCHMNGKPROC(uchar* mask)              { *mask = (curwin->key & *mask);                };
 
-void GTCHMNGMVKEY(ustr2* moveaxis)          {
+void GTCHMNGMVKEY(ustr8* moveaxis)          {
 
     moveaxis->x = 0;
     moveaxis->y = 0;

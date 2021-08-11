@@ -20,11 +20,7 @@
 
 //  - --- - --- - --- - --- -
 
-void MKSTK(STK* s, uint bounds)             {
-        s->bounds = bounds;
-        s->top    = -1;
-
-    };
+void MKSTK(STK* s, uint bounds)             { s->bounds=bounds; s->top=-1;                  };
 
 //  - --- - --- - --- - --- -
 

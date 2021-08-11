@@ -42,6 +42,7 @@ void stbus8  (uint  F         );
 void addus8  (void            );            // ncrry a+b
 void subus8  (void            );            // ncrry a-b
 void mulus8  (uchar s         );            // ncrry a*s
+void mulus8f (float s         );            // ncrry ((float)a)*s
 void divus8  (uchar s         );            // ncrry a/s
 
 void faddus8 (void            );            // carry a+b

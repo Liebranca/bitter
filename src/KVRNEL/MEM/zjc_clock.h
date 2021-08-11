@@ -14,7 +14,7 @@ extern "C" {
 
 typedef struct ZJC_CLOCK {                  // simplistic, hand-made clock
 
-    MEM*    m;                              // mem header
+    MEM     m;                              // mem header
 
     uint    frbeg;                          // marks beggining of clock frame
     uint    frend;                          // marks end of clock frame
@@ -34,9 +34,8 @@ typedef struct ZJC_CLOCK {                  // simplistic, hand-made clock
                                             // 0x02: rested last frame
                                             // 0x04: blank*6
 
-    char    dinfo[12];                      // draw info for clock
-                                            // chars 0-8 are the actual chars to show
-                                            // 9 is terminator, 10-11 are screen yx pos 
+    char    display[8];                     // draw chars for clock
+    uchar   display_pos[2];                 // position to draw at
 
 } CLCK;
 

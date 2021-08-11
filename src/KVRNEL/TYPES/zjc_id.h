@@ -32,7 +32,7 @@ typedef struct ZJC_BLOCK_HEADER {           // base struct to identify otherwise
 
 //   ---     ---     ---     ---     ---
 
-ID IDTAKE(char* type, char* key);           // call on block init
+ID IDNEW(char* type, char* key);            // call on block init
 
 
 //   ---     ---     ---     ---     ---

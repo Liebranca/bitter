@@ -19,7 +19,7 @@
 
 //   ---     ---     ---     ---     ---
 
-ID IDTAKE(char* type, char* key)            {
+ID IDNEW(char* type, char* key)             {
 
     ID id={0}; int i=0;
     uint klimit=ZJC_IDK_WIDTH-1;

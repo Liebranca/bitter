@@ -27,11 +27,11 @@ MEM* MKSTR(char* buff, uint ex_alloc,
 
     MEM* str;
 
-    char name[KVR_IDK_WIDTH];
+    char name[ZJC_IDK_WIDTH];
 
     int  y     = 0;                         // no overflow
     int  len   =                            strlen(buff)+1;                            \
-    int  limit =                            (KVR_IDK_WIDTH-1                           );
+    int  limit =                            (ZJC_IDK_WIDTH-1                           );
     if(len < limit)                         { limit=len;                               };
 
     ex_alloc-=len*(disc_buff_len!=0);       // discount len of buff if var is set

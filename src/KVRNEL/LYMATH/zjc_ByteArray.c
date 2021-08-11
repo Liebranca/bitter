@@ -1,5 +1,5 @@
 /*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
-/*    ZJC_BYTERRAY                          *
+/*    ZJC_BYTEARRAY                         *
 *                                           *
 *     -basic bytesized units                *
 *                                           */
@@ -15,7 +15,7 @@
 *                                           */
 /*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
 
-#include "zjc_byterray.h"
+#include "zjc_ByteArray.h"
 #include "../zjc_evil.c"
 #include "../TYPES/zjc_BinTypes.c"
 
@@ -96,6 +96,11 @@ void mulus8 (uchar s)                       { LUS8(a)->x=LUS8(a)->x*s;          
                                               LUS8(a)->z=LUS8(a)->z*s;                      \
                                               LUS8(a)->w=LUS8(a)->w*s;                      };
 
+void mulus8f(float s)                       { LUS8(a)->x=((float)LUS8(a)->x)*s;\
+                                              LUS8(a)->y=((float)LUS8(a)->y)*s;\
+                                              LUS8(a)->z=((float)LUS8(a)->z)*s;\
+                                              LUS8(a)->w=((float)LUS8(a)->w)*s;};
+
 void divus8 (uchar s)                       { LUS8(a)->x=LUS8(a)->x/s;                      \
                                               LUS8(a)->y=LUS8(a)->y/s;                      \
                                               LUS8(a)->z=LUS8(a)->z/s;                      \
@@ -105,16 +110,14 @@ void divus8 (uchar s)                       { LUS8(a)->x=LUS8(a)->x/s;          
 
 void main(void)                             {
 
-    ustr8 a; ldaus8(&a); bdaus8(255,255,255,255);
-    ustr8 b; ldbus8(&b); bdbus8(  1,  3, 44, 97);
+    uint  x=128*128;
+    float y=(float) x;
 
-    bshaus8 ();
-    subus8 (); CALOUT('E', " -\n");
-    bshbus8 (); CALOUT('E', "\n");
+    for(uchar i=0; i<32; i++) {
+      printf("%d", uinthbit(y, i));
+    };
 
-    CALOUT('E', "--------\n"   );
-
-    bshaus8 ();
+    printf(" %f", y);
                                                                                             };
 
 //   ---     ---     ---     ---     ---

@@ -14,31 +14,30 @@ extern "C" {
 
 typedef struct CHASM_RODENT {
 
-    ustr16 abs;
-    ustr16 rel;
+    ustr8 abs;
+    ustr8 rel;
 
-    uchar  sens;
-    char   state;
+    uchar sens;
+    char  state;
 
 } RAT;
 
 //   ---     ---     ---     ---     ---
 
-void  RUNWINRAT     (RAT* rat, SDL_MouseMotionEvent* motion);
+void RUNWINRAT     (RAT* rat, SDL_MouseMotionEvent* motion);
 
-void  RESWINRAT     (RAT* rat, ustr16 dim); // resets rats position
-void  STOPWINRAT    (RAT* rat            ); // stop rat motion
-int   WALWINRAT     (RAT* rat, ustr16 dim); // check rat against the wall
+void RESWINRAT     (RAT* rat, ustr8 dim);    // resets rats position
+void STOPWINRAT    (RAT* rat           );    // stop rat motion
+int  WALWINRAT     (RAT* rat, ustr8 dim);    // check rat against the wall
 
-ustr2 GTWINRATMOTION(RAT* rat, ustr16 dim,
-                     float x             ); // get %based motion from last frame
+void GTWINRATMOTION(RAT* rat, float x  );   // get %based motion from last frame
 
-int  GTWINRATIG     (RAT* rat            ); // these just set and get flags
-void USTWINRATIG    (RAT* rat            );
-void STWINRATIG     (RAT* rat            );
-int  GTWINRATACT    (RAT* rat            );
-void USTWINRATACT   (RAT* rat            );
-void STWINRATACT    (RAT* rat            );
+int  GTWINRATIG     (RAT* rat           );  // these just set and get flags
+void USTWINRATIG    (RAT* rat           );
+void STWINRATIG     (RAT* rat           );
+int  GTWINRATACT    (RAT* rat           );
+void USTWINRATACT   (RAT* rat           );
+void STWINRATACT    (RAT* rat           );
 
 //   ---     ---     ---     ---     ---
 

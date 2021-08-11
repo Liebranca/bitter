@@ -20,3 +20,6 @@ src/KVRNEL/MEM/KVR_KLS.c
 src/KVRNEL/MEM/KVR_KLS.h
 src/TEST.c
 KVR.px
+src/CHASM/glad/glad.c
+src/CHASM/glad/glad.h
+rprules.md

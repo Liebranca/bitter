@@ -61,7 +61,7 @@ EXPORT void UTCRK(uint i, uint vert_count,
 //   ---     ---     ---     ---     ---
 
                                             // save entry data
-    for(int x=0; x<(KVR_IDK_WIDTH-1); x++)  { DAF_CITEMS[DAF_COUNTER].name[x]=*(name+x);
+    for(int x=0; x<(ZJC_IDK_WIDTH-1); x++)  { DAF_CITEMS[DAF_COUNTER].name[x]=*(name+x);
                                               if(*(name+x)=='\0') { break;            }     };
 
     DAF_CITEMS[DAF_COUNTER].vert_count = vert_count;
@@ -94,7 +94,7 @@ EXPORT void UTJOJ(uint i, uint dim,
 //   ---     ---     ---     ---     ---
 
                                             // save entry data
-    for(int x=0; x<(KVR_IDK_WIDTH-1); x++)  { DAF_JITEMS[DAF_COUNTER].name[x]=*(name+x);
+    for(int x=0; x<(ZJC_IDK_WIDTH-1); x++)  { DAF_JITEMS[DAF_COUNTER].name[x]=*(name+x);
                                               if(*(name+x)=='\0') { break;            }     };
 
     DAF_JITEMS[DAF_COUNTER].dim   = dim;

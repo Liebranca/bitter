@@ -30,8 +30,6 @@
 static const  float CPS   = 1.0f / CLOCKS_PER_SEC;
 static        CLCK* cclck = NULL;
 
-// "|/-\\|/-\\";
-
 //   ---     ---     ---     ---     ---
 
 CLCK* MKCLCK(char* chars, uint frcap,
@@ -42,32 +40,33 @@ CLCK* MKCLCK(char* chars, uint frcap,
 
 //   ---     ---     ---     ---     ---
 
-    clck->frbeg    = 0;
-    clck->frend    = 0;
+    clck->frbeg      = 0;
+    clck->frend      = 0;
 
-    clck->frdlt    = 0;
-    clck->frtim    = 0;
-    clck->sltim    = 0;
-    clck->sctim    = sctim;
-    clck->fBy      = 0.0f;
+    clck->frdlt      = 0;
+    clck->frtim      = 0;
+    clck->sltim      = 0;
+    clck->sctim      = sctim;
+    clck->fBy        = 0.0f;
 
-    clck->frcap    = frcap;
-    clck->frcnt    = 0;
+    clck->frcap      = frcap;
+    clck->frcnt      = 0;
 
-    clck->flags    = 0;
+    clck->flags      = 0;
 
-    clck->dinfo[0] = '\0';
+    clck->display[0] = '\0';
 
 //   ---     ---     ---     ---     ---
 
     int i=0; do {
-        clck->dinfo[i]=*chars; i++;
+        clck->display[i]=*chars; i++;
 
-    } while(*chars++);
+    } while(*chars++ && i<4);
 
-    clck->dinfo[ 9] =  0;
-    clck->dinfo[10] = 23;
-    clck->dinfo[11] =  1;
+    clck->display    [4] = '\0';
+
+    clck->display_pos[0] = 23;
+    clck->display_pos[1] =  1;
 
     return clck;                                                                            };
 
@@ -118,13 +117,13 @@ float  GTFRDLT             (void          ) { return cclck->frdlt;              
 
 //   ---     ---     ---     ---     ---
 
-void   DRCLCK              (void          ) { CALOUT('C', "\x1b[%i;%iH%c DELTA %u FRAMETIME %u SLEEP %u",
+void   DRCLCK              (void          ) { CALOUT('C', "\x1b[%i;%iH%c %s",
 
-                                                  cclck->dinfo[10],
-                                                  cclck->dinfo[11],
-                                                  cclck->dinfo[(cclck->frcnt)%4],
+                                                  cclck->display_pos[0],
+                                                  cclck->display_pos[1],
+                                                  cclck->display[(cclck->frcnt)%4],
 
-                                                  cclck->frdlt, cclck->frtim, cclck->sltim
+                                                  cclck->m.id.full
 
                                               ); cclck->frcnt++;
 

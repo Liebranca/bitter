@@ -17,7 +17,7 @@ extern "C" {
 
 typedef struct CRKH {                       // header for bcrk files
 
-    char   name[KVR_IDK_WIDTH];             // id for this mesh
+    char   name[ZJC_IDK_WIDTH];             // id for this mesh
 
     ushort vert_count;                      // mesh dimensions
     ushort idex_count;

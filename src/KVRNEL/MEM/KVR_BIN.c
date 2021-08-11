@@ -94,10 +94,10 @@ BIN* MKBIN(char* path, uint mode,
 
     BIN* bin;
 
-    char name[KVR_IDK_WIDTH]; 
+    char name[ZJC_IDK_WIDTH]; 
 
     int  len      = strlen(path);           // no overflow
-    int  limit    = (KVR_IDK_WIDTH-1);      if(len < limit) { limit=len;       };
+    int  limit    = (ZJC_IDK_WIDTH-1);      if(len < limit) { limit=len;       };
     int  y        = 0;
 
                                             // make short id key from last chars of path

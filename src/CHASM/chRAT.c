@@ -24,7 +24,7 @@
 
 //  - --- - --- - --- - --- -
 
-void RESWINRAT(RAT* rat, ustr2 dim)         { rat->state=3;                                 \
+void RESWINRAT(RAT* rat, ustr8 dim)         { rat->state=3;                                 \
                                               rat->abs.x=dim.x; rat->abs.y=dim.y;           \
                                               rat->rel.x=0;  rat->rel.y=0;                  };
 
@@ -43,15 +43,14 @@ void RUNWINRAT(RAT* rat,
 
 //   ---     ---     ---     ---     ---
 
-int  WALWINRAT(RAT* rat, ustr16 dim)        { return (   rat->abs.x == 0        )     \
+int  WALWINRAT(RAT* rat, ustr8 dim)         { return (   rat->abs.x == 0        )     \
                                                      | ((rat->abs.y == 0        ) << 1)
                                                      | ((rat->abs.x == dim.x - 1) << 2)
                                                      | ((rat->abs.y == dim.y - 1) << 3);    };
 
 //   ---     ---     ---     ---     ---
 
-ustr2 GTWINRATMOTION(RAT* rat, ustr2 dim,
-                     float x            )   { SCUSTR16(&rat->rel, dim, x);                  };
+void GTWINRATMOTION(RAT* rat, float x)      { mulus8f(x);                                   };
 
 //   ---     ---     ---     ---     ---
 

@@ -13,8 +13,7 @@ extern "C" {
 #define KVR_CALOM 0x01                      // MEM
 #define KVR_CALOF 0x02                      // BIN
 #define KVR_CALOK 0x04                      // PROC
-
-#define KVR_CALOS 0x08                      // report string ops
+#define KVR_CALOH 0x08                      // HASH
 
 #define KVR_DEBUG (                         /* combined logflags */                          \
     KVR_CALOM | KVR_CALOF | KVR_CALOK                                                        \
