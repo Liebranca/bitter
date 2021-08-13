@@ -22,6 +22,12 @@
 
 //   ---     ---     ---     ---     ---
 
+static MEM* MLNG = NULL;                    // big mem for temporal storage
+void LDLNG (uint size)                      { DLMEM(MLNG); MLNG=MKSTR("MEMLNG", size, 1);   };
+MEM* GTLNG (void     )                      { return MEMLNG;                                };
+
+//   ---     ---     ---     ---     ---
+
 MEM* MKSTR(char* buff, uint ex_alloc,
            uint disc_buff_len       )       {
 

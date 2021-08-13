@@ -29,10 +29,9 @@
 // fun pointer for swapping out encoders
 static void (*JOJENC_F)(float* pix, JOJPIX* j);
 
-typedef struct JOJ_PALETTE_COLOR {          // format for hashing colors
+typedef struct JOJ_PALETTE_COLOR {          // dummy format for hashing colors
 
     ID     id;                              // lookup identifier
-    uint   n;                               // numerical representation
     JOJPIX pix;                             // the actual color values
 
 } JOJPC;
@@ -40,10 +39,21 @@ typedef struct JOJ_PALETTE_COLOR {          // format for hashing colors
 static JOJPC JOJ_PALETTE[ZJC_DAFSIZE];      // palette storage
 static HASH* JOJ_PALHASH;                   // addr table
 
-                                            // size of header for *zipped* files
-static uint  PKD_JOJH_SIZE =                ( (sizeof(uint)*3) + (count * sizeof(JOJH)) \
-                                            + (ZJC_DAFSIZE * sizeof(JOJPIX)             \
-                                            + (ZJC_DAFSIZE)                             );
+uint CALCJOJHSIZ(uint entries, uint colors) {
+
+                                            // size of header
+    return                                  ( (sizeof(uint)* 4            ) \
+                                            + (entries     * ZJC_IDK_WIDTH) \
+                                            + (colors      * sizeof(JOJPIX) );              };
+
+//   ---     ---     ---     ---     ---
+
+static uint JOJ_CVALUES[4] = {4,1,1,1};
+
+void STJOJDIM(uint dim)                     { JOJ_CVALUES[1] = dim;                         \
+                                              JOJ_CVALUES[2] = dim*dim;                     };
+
+void GTJOJLST(void    )                     { return JOJ_CVALUES[0];                        };
 
 //   ---     ---     ---     ---     ---
 
@@ -62,54 +72,34 @@ int NTJOJENG(int mode)                      {
     int   evilstate;
 
                                             // make a convenience string
-    MEM*  m       = MKSTR                   (GTPECWD(), 6, 0                             );
+    MEM*  m       = MKSTR                   (GTPECWD(), 6, 0                     );
     char* path    = MEMBUFF(m, char, 0);
 
 //   ---     ---     ---     ---     ---
 
     BIN** joj;                              // fetch adeq bin slot for current op
-    if(mode==JOJ_ENCODE)                    { joj = GTBINTO();                           }
-    else                                    { joj = GTBINFR();                           };
+    if(mode==JOJ_ENCODE)                    { joj = GTBINTO();                   }
+    else                                    { joj = GTBINFR();                   };
 
                                             // ensure joj is wiped when we *write* to it
     int mate_rmode =                        (mode == JOJ_ENCODE) ? KVR_FMODE_WB
                                                                  : KVR_FMODE_RBP;
 
                                             // set fname and open
-    RPSTR                                   (&m, "\\JOJ", strlen(path)                   );
-    BINOPEN                                 ((*joj), path, mate_rmode,                   \
-                                             KVR_FTYPE_JOJ, 0, evilstate                 );
+    RPSTR                                   (&m, "\\JOJ", strlen(path)           );
+    BINOPEN                                 ((*joj), path, mate_rmode,           \
+                                             KVR_FTYPE_JOJ, 0, evilstate         );
 
 //   ---     ---     ---     ---     ---
 
-    if(mode==JOJ_ENCODE) {
-
-                                            // quick blank mem for a flood fill
-        MEM* m        = MKSTR               ("ZPBLNK", PKD_JOJH_SIZE, 1                  );
-
-                                            // skip the signature
-        fseek                               ((*joj)->file, 0, SEEK_CUR                   );
-        fseek                               ((*joj)->file, sizeof(SIG), SEEK_CUR         );
-        fseek                               ((*joj)->file, 0, SEEK_CUR                   );
-
-                                            // add padding so we can jump without crashing
-        fseek                               ((*joj)->file, 0, SEEK_CUR                   );
-        BINWRITE                            ((*joj), wb, uchar, PKD_JOJH_SIZE, m->buff   );
-        fseek                               ((*joj)->file, 0, SEEK_CUR                   );
-
-                                            // free blank mem
-        DLMEM                               (m                                           );
-
-                                            // nit deflate;
-        NTDEFL                              (                                            );
-
-    }                                       // nit inflate
-    else                                    { NTINFL();                                  };
+                                            // op-dependent nit
+    if(mode==JOJ_ENCODE)                    { NTDEFL ();                         };
+    else                                    { NTINFL();                          };
 
 //   ---     ---     ---     ---     ---
 
                                             // free convenience string
-    DLMEM                                   (m                                           );
+    DLMEM                                   (m                                   );
     return DONE;                                                                            };
 
 //   ---     ---     ---     ---     ---
@@ -133,15 +123,13 @@ int DLJOJENG(int mode)                      {
 
 //   ---     ---     ---     ---     ---
 
-int ENCJOJ(float* src, JOJH* jojh,
-           HRW*   h              )          {
+int ENCJOJ(float* src, HRW* h)              {
 
     int     wb;
-    uint    sq_dim  =                       (jojh->dim) * (jojh->dim);               \
 
                                             // fetch
     BIN**   to      = GTBINTO               (                                        );
-    MEM*    wt      = GTBINWT               (                                        );
+    MEM*    wt      = GTLNG                 (                                        );
 
                                             // get buff from static mem
     uchar*  buff    = MEMBUFF               (wt, uchar, 0                            );
@@ -150,18 +138,16 @@ int ENCJOJ(float* src, JOJH* jojh,
 
 //   ---     ---     ---     ---     ---
 
-    JOJENC_F        = &ENCRGBA;             // set encoder 
-    int  len        = strlen                (jojh->name                              );
-    char imtype     =                       jojh->name[len-1];
+                                            // set encoder
+    if  ( JOJ_CVALUES[0]==4)                { JOJ_CVALUES[0]=0;                      }
 
-    if  (imtype=='n'               )        { JOJENC_F=&ENCNVEC;                     }
-    elif(imtype=='o' || imtype=='c')        { JOJENC_F=&ENCGREY;                     };
+    if  (!JOJ_CVALUES[0]   )                { JOJENC_F=&ENCRGBA; STCFRACL(4);        }
+    elif( JOJ_CVALUES[0]==1)                { JOJENC_F=&ENCVEC;  STCFRACL(1);        }
+    else                                    { JOJENC_F=&ENCGREY;                     };
+
+    JOJ_CVALUES[0]++;
 
 //   ---     ---     ---     ---     ---
-
-                                            // sizing ints we need later
-    uint    page    =                       JOJ_READCOUNT*ZJC_RAWCOL_ELEMS;          \
-    uint    remain  =                       sq_dim*ZJC_RAWCOL_ELEMS;                 \
 
     JOJPC*  jpc     = NULL;                 // hash fetch target
     void*   p_ptr   = NULL;                 // voidstar dummy for jpc-get
@@ -170,63 +156,60 @@ int ENCJOJ(float* src, JOJH* jojh,
 
 //   ---     ---     ---     ---     ---
 
-    while(remain) {                         // read one pixel-wide page at a time
-                                            // each pixel being __always__ 32-bit RGBA
-
-        uint readsize  =                    (remain<page) ? remain : page;           \
-        remain        -= readsize;          // discount read from pending
-
-        for(uint x=0, y=0; x<(readsize);    // go through page and jojencode
-            x+=ZJC_RAWCOL_ELEMS, y++   )    {
+    for(uint x=0, y=h->size_i              ;
+        x<(JOJ_CVALUES[2]*ZJC_RAWCOL_ELEMS);
+        x+=ZJC_RAWCOL_ELEMS, y++           ){
 
                                             // get the color
-            JOJENC_F                        (src+x, jpix                             );
+        JOJENC_F                            (src+x, &jpix                            );
 
                                             // make an id
-            snprintf                        (idname, ZJC_IDK_WIDTH-1, "%u.%u%.%u.%u" ,
-                                             buff[y].luma, buff[y].chroma_u          ,
-                                             buff[y].chroma_v, buff[y].alpha         );
+        snprintf                            (idname, ZJC_IDK_WIDTH-1, "%u.%u%.%u.%u" ,
+                                            jpix.luma, jpix.chroma_u                ,
+                                            jpix.chroma_v, jpix.alpha               );
 
                                             // check id against palette
-            STR_HASHGET                     ( JOJ_PALHASH, idname, p_ptr, 0          );
+        STR_HASHGET                         ( JOJ_PALHASH, idname, p_ptr, 0          );
 
 //   ---     ---     ---     ---     ---
 
-            if(!p_ptr) {                    // on new color, save to palette
+        if(!p_ptr) {                        // on new color, save to palette
 
-                if(JOJ_PALHASH->nitems==ZJC_DAFSIZE) {
-                    CALOUT                  ('E', "BAD JOJ: using over %u colors"    ,
-                                            ZJC_DAFSIZE                              )
+            if(JOJ_PALHASH->nitems==ZJC_DAFSIZE) {
 
-                    return ERROR;
+                                            // this errcheck isnt trivial
+                                            // failing it means a full stop, redo
+                                            // the image list, then run blkmgk again
+                                            // but hopefully you'll never see it
+                CALOUT                      ('E', "BAD JOJ: using over %u colors"    ,
+                                            ZJC_DAFSIZE                              );
 
-                };
+                return ERROR;
+
+            };
+
+//   ---     ---     ---     ---     ---
 
                                             // set values on new entry
-                jpc      =                  JOJ_PALETTE+(JOJ_PALHASH->nitems);       \
-                jpc->id  = IDNEW            ("COL*", idname                          );
-                jpc->pix = jpix;                                                     \
-                jpc->n   =                  JOJ_PALHASH->nitems                      \
+            jpc      =                      JOJ_PALETTE+(JOJ_PALHASH->nitems);       \
+            jpc->id  = IDNEW                ("COL*", idname                          );
+            jpc->pix = jpix;                                                         \
 
                                             // insert on table
-                HASHSET                     (JOJ_PALHASH, jpc                        );
+            HASHSET                         (JOJ_PALHASH, jpc                        );
 
-            }
+        }
                                             // on repeat color, fetch from palette
-            else                            { jpc = (JOJPC*) p_ptr;                  };
+        else                                { jpc = (JOJPC*) p_ptr;                  };
 
-            buff[y]=jpc->n;                 /* save color index to buff */           };
+        buff[y]=jpc->n;                     // save color index to buff
+
+    };
 
 //   ---     ---     ---     ---     ---
 
-        DEFLBUF                             (buff, (*to), readsize                   ,
-                                             &(h->size_d), 0, PKD_JOJH_SIZE+h->size_i,
-                                             h->idex==(h->total-1) && !remain        );
-
-    };
-                                            // add to archive's total
-    h->size_i      +=                       sq_dim*sizeof(uchar);                    \
-    return DONE;                                                                         };
+    h->size_i += JOJ_CVALUES[2]             // add to archive's total
+    return DONE;                                                                            };
 
 //   ---     ---     ---     ---     ---
 
@@ -291,57 +274,77 @@ int DECJOJ(JOJH* jojh)                      {
 
 //   ---     ---     ---     ---     ---
 
-int ZPJOJ(HRW h, JOJH* jojh)                {
+int ZPJOJ(HRW* h)                           {
 
-                                            // add sizes to header
-    uint  sizes[4] =                        { h->size_i, h->size_d, h->total   ,
-                                              JOJ_PALHASH->nitems              };
+                                            // get header size
+    h->offs_d      = CALCJOJHSIZ            (h->total/4, JOJ_PALHASH->nitems     );
 
-                                            // fetch bin
-    BIN** to       = GTBINTO                (                                  );
+    int   wb;                               // add sizings to header
+    uint  sizes[4] =                        { h->size_i, h->size_d, h->total     ,
+                                              JOJ_PALHASH->nitems                };
 
-                                            // rewind TO
-    rewind                                  ((*to)->file                       );
-    fseek                                   ((*to)->file, 0, SEEK_CUR          );
-    fseek                                   ((*to)->file, sizeof(SIG), SEEK_CUR);
+                                            // fetch
+    BIN** to       = GTBINTO                (                                    );
+    MEM*    wt     = GTLNG                  (                                    );
 
-                                            // still the cursor and write header
-    fseek                                   ((*to)->file, 0, SEEK_CUR          );
-    BINWRITE                                ((*to), wb, uint, 3, sizes         );
-    BINWRITE                                ((*to), wb, JOJH, count, jojh      );
-    fseek                                   ((*to)->file, 0, SEEK_CUR          );
+                                            // get buff from static mem
+    uchar*  buff   = MEMBUFF                (wt, uchar, 0                        );
+
+                                            // rewind TO and skip sig
+    rewind                                  ((*to)->file                         );
+    fseek                                   ((*to)->file, 0, SEEK_CUR            );
+    fseek                                   ((*to)->file, sizeof(SIG), SEEK_CUR  );
+    fseek                                   ((*to)->file, 0, SEEK_CUR            );
+
+//   ---     ---     ---     ---     ---
+
+                                            // quick blank mem for a flood fill
+    MEM* m         = MKSTR                  ("ZPBLNK", offs_d, 1                 );
+
+                                            // add padding so we can jump without crashing
+    fseek                                   ((*to)->file, 0, SEEK_CUR            );
+    BINWRITE                                ((*to), wb, uchar, h->offs_d, m->buff);
+    fseek                                   ((*to)->file, 0, SEEK_CUR            );
+
+                                            // free blank mem
+    DLMEM                                   (m                                   );
+
+//   ---     ---     ---     ---     ---
+
+                                            // zip the buff
+    DEFLBUF                                 (buff, (*to), h->size_i,             \
+                                             &(h->size_d), 0, 0                  );
+
+//   ---     ---     ---     ---     ---
+
+                                            // write size data
+    fseek                                   ((*to)->file, 0, SEEK_CUR            );
+    BINWRITE                                ((*to), wb, uint, ARRSIZE(sizes)     ,
+                                             sizes                               );
+
+    fseek                                   ((*to)->file, 0, SEEK_CUR            );
 
 //   ---     ---     ---     ---     ---
 
                                             // make temp for palette write values
-    MEM* pal       = MKSTR                  ("JOJPAL",                         \
-                                                                               \
-                                            ( (sizeof(JOJPIX)*ZJC_DAFSIZE)     \
-                                            + (sizeof(uchar )*ZJC_DAFSIZE) )   ,
+    MEM* pal       = MKSTR                  ("JOJPAL",                           \
+                                             sizeof(JOJPIX)*JOJ_PALHASH->nitems  ,
+                                             1                                   );
 
-                                            1                                  );
+    for(uint x=0; x<h->total; x++) {        // copy palette data to buff
 
-    for(uint x=0, y=0; y<h->total;
-        y++, x+=5                )  {       // copy palette data to buff
-
-        JOJPC jpc = JOJ_PALETTE[y];
-
-        pal[x+0]  = jpc->n;
-
-        pal[x+1]  = jpc->pix.chroma_u;
-        pal[x+2]  = jpc->pix.chroma_v;
-        pal[x+3]  = jpc->pix.luma;
-        pal[x+4]  = jpc->pix.alpha;
+        JOJPC jpc = JOJ_PALETTE[x];
+        pal[x]    = jpc->pix;
 
     };
 
 //   ---     ---     ---     ---     ---
 
                                             // write palette data
-    fseek                                   ((*to)->file, 0, SEEK_CUR          );
-    BINWRITE                                ((*to), wb, uchar, ZJC_DAFSIZE*5   ,
-                                             JOJ_PALETTE                       );
-    fseek                                   ((*to)->file, 0, SEEK_CUR          );
+    fseek                                   ((*to)->file, 0, SEEK_CUR            );
+    BINWRITE                                ((*to), wb, JOJPIX,                  \
+                                             JOJ_PALHASH->nitems, pal            );
+    fseek                                   ((*to)->file, 0, SEEK_CUR            );
 
     DLMEM(pal);
     return DONE;                                                                            };

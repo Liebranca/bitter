@@ -13,29 +13,15 @@ extern "C" {
 
 //   ---     ---     ---     ---     ---
 
-typedef struct JOJH {                       // header for joj files
+int  NTJOJENG (int mode               );    // joj encoder start-up
+int  DLJOJENG (int mode               );    // joj encoder clean-up
+int  ENCJOJ   (float* src, HRW* h     );    // read next image from pixdump and encode
+int  DECJOJ   (                       );    // read next image from jojdump and decode
+int  ZPJOJ    (HRW* h                 );    // zips encoded joj
+int  UZPJOJ   (uint* sizes            );    // unzips joj
 
-    char name[ZJC_IDK_WIDTH];               // id of this image
-
-    uint dim;                               // dimensions
-    uint fracl;                             // color compression level
-
-} JOJH;
-
-//   ---     ---     ---     ---     ---
-
-int     NTJOJENG (int mode                );// joj encoder start-up
-int     DLJOJENG (int mode                );// joj encoder clean-up
-
-int     ENCJOJ   (float* src, JOJH* jojh  ,
-                  HRW* h                  );  // read next image from pixdump and encode
-
-int     DECJOJ   (JOJH* jojh              );// read next image from jojdump and decode
-
-int     ZPJOJ   (uint size_i, uint count, \
-                 JOJH* jojh               );// zips encoded joj
-
-int     UZPJOJ  (JOJH* jojh, uint* sizes  );// unzips joj
+void STJOJDIM (uint dim               );    // uniform image dimentions for current file
+void GTJOJLST (void                   );    // get n repr of last enc/dec fun
 
 //   ---     ---     ---     ---     ---
 

@@ -20,6 +20,7 @@
 #include "zjc_joj.h"
 #include "zjc_crk.h"
 #include "../KVRNEL/kvr_paths.h"
+#include "../KVRNEL/MEM/kvr_str.h"
 
 #define BLKMGK_V    0.1
 
@@ -29,7 +30,7 @@
 //   ---     ---     ---     ---     ---
 
 static HRW  DAF_DATA = {0};
-static JOJH DAF_JITEMS[ZJC_DAFSIZE];
+static char DAF_JITEMS[ZJC_DAFSIZE][ZJC_IDK_WIDTH];
 static CRKH DAF_CITEMS[ZJC_DAFSIZE];
 
 //   ---     ---     ---     ---     ---
@@ -46,7 +47,8 @@ EXPORT void NTBLKMGK(char** pth_l)          {
     CALOUT                                  ('K', "BLKMGK v%f\n\b", BLKMGK_V      );        };
 
 EXPORT void DLBLKMGK()                      { DLKVRPTH();                                   };
-EXPORT void STDAFTOT(uint v)                { DAF_DATA.total=v;                             };
+EXPORT void STDAFTOT(uint tot, uint siz)    { DAF_DATA.total=tot; if(siz) { LDLNG(tot*siz); };
+                                                                                            };
 
 //   ---     ---     ---     ---     ---
 
@@ -84,35 +86,31 @@ EXPORT void UTCRK(uint i, uint vert_count,
 
 //   ---     ---     ---     ---     ---
 
-EXPORT void BMENCJOJ(uint i, uint tot)      {
+EXPORT void BMENCJOJ(uint i)                {
 
                                             // kiknit on first run
-    if  (i==BLKMGK_KRUN)                    { NTWTBUF(); NTJOJENG(JOJ_ENCODE);         };
+    if  (i==BLKMGK_KRUN)                    { NTJOJENG(JOJ_ENCODE);                    };
 
     elif(i==BLKMGK_DONE) {                  // zip and kikdel on last run
         ZPJOJ                               (DAF_DATA.size_i, DAF_DATA.idex, DAF_JITEMS);
         DLWTBUF                             (                                          );
         DLJOJENG                            (JOJ_ENCODE                                );
-    };                                                                                      };
+    }
+
+    else                                    { STJOJDIM(i);                             };   };
 
 //   ---     ---     ---     ---     ---
 
-EXPORT void UTJOJ(uint dim, uint cl     ,
-                  char* name, float* src)   {
+EXPORT void UTJOJ(char* name, float* src)   {
 
-                                            // save entry data
-    for(int x=0; x<(ZJC_IDK_WIDTH-1); x++)  { DAF_JITEMS[DAF_DATA.idex].name[x]=*(name+x);
-                                              if(*(name+x)=='\0') { break;              }   };
+    if(GTJOJLST()==4) {
+        for(int x=0; x<(ZJC_IDK_WIDTH-1); x++) {
+            DAF_JITEMS[DAF_DATA.idex][x/4]=*(name+x);
+            if(*(name+x)=='\0') { break; };
 
-    DAF_JITEMS[DAF_DATA.idex].dim   = dim;
-    DAF_JITEMS[DAF_DATA.idex].fracl = cl;
+        };
 
-//   ---     ---     ---     ---     ---
-
-                                            // set compression level and encode
-    STCFRACL                                (cl                                         );
-    ENCJOJ                                  (src, DAF_JITEMS+DAF_DATA.idex, &DAF_DATA   );
-
+    }; ENCJOJ                               (src, &DAF_DATA);
     DAF_DATA.idex++;                                                                        };
 
 //   ---     ---     ---     ---     ---

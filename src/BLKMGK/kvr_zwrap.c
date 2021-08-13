@@ -191,8 +191,7 @@ void DLDEFL(void)                           {
 
 int DEFLBUF(void* src, BIN* dst      ,
             uint size_i, uint* size_d,
-            uint offs_i, uint offs_d ,
-            uint finish              )      {
+            uint offs_i, uint offs_d )      {
 
                                             // fetch locs
     uchar*   out = MEMBUFF                  (ZLIB_MEM, uchar, ZJC_DAFPAGE           );
@@ -217,7 +216,7 @@ int DEFLBUF(void* src, BIN* dst      ,
         ZLIB_STRM.avail_in       =          readsize;
 
         dataleft                -=          readsize;
-        flush                    =          (dataleft && !finish) ? Z_NO_FLUSH : Z_FINISH;
+        flush                    =          (dataleft) ? Z_NO_FLUSH : Z_FINISH;
 
 //  - --- - --- - --- - --- -
 

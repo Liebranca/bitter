@@ -26,8 +26,7 @@ int INFLBIN(BIN* src, BIN* dst       ,
 
 int DEFLBUF(void* src, BIN* dst      ,
             uint size_i, uint* size_d,
-            uint offs_i, uint offs_d ,
-            uint finish              );     // compress buf to bin
+            uint offs_i, uint offs_d );     // compress buf to bin
 
 int DEFLBIN(BIN* src, BIN* dst       ,
             uint size_i, uint* size_d,
