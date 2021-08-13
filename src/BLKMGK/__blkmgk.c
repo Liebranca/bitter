@@ -22,14 +22,13 @@
 #include "../KVRNEL/kvr_paths.h"
 
 #define BLKMGK_V    0.1
-#define BLKMGK_DONE 0x444f4e45
+
+#define BLKMGK_KRUN 0x4B52554E
+#define BLKMGK_DONE 0x444F4E45
 
 //   ---     ---     ---     ---     ---
 
-static uint DAF_SIZE_I;
-static uint DAF_SIZE_D;
-static uint DAF_COUNTER;
-
+static HRW  DAF_DATA = {0};
 static JOJH DAF_JITEMS[ZJC_DAFSIZE];
 static CRKH DAF_CITEMS[ZJC_DAFSIZE];
 
@@ -39,15 +38,15 @@ EXPORT void NTBLKMGK(char** pth_l)          {
 
     NTKVRPTH(pth_l);
 
-    DAF_SIZE_I  = 0;
-    DAF_COUNTER = 0;
-
                                             // wipe these arrays on init
+    CLMEM2                                  (&DAF_DATA,   sizeof(HRW)             );
     CLMEM2                                  (DAF_JITEMS, xBYTES(ZJC_DAFSIZE, JOJH));
     CLMEM2                                  (DAF_CITEMS, xBYTES(ZJC_DAFSIZE, CRKH));
+
     CALOUT                                  ('K', "BLKMGK v%f\n\b", BLKMGK_V      );        };
 
-EXPORT void DLBLKMGK() { DLKVRPTH(); };
+EXPORT void DLBLKMGK()                      { DLKVRPTH();                                   };
+EXPORT void STDAFTOT(uint v)                { DAF_DATA.total=v;                             };
 
 //   ---     ---     ---     ---     ---
 
@@ -61,59 +60,60 @@ EXPORT void UTCRK(uint i, uint vert_count,
 //   ---     ---     ---     ---     ---
 
                                             // save entry data
-    for(int x=0; x<(ZJC_IDK_WIDTH-1); x++)  { DAF_CITEMS[DAF_COUNTER].name[x]=*(name+x);
-                                              if(*(name+x)=='\0') { break;            }     };
+    for(int x=0; x<(ZJC_IDK_WIDTH-1); x++)  { DAF_CITEMS[DAF_DATA.idex].name[x]=*(name+x);
+                                              if(*(name+x)=='\0') { break;              }   };
 
-    DAF_CITEMS[DAF_COUNTER].vert_count = vert_count;
-    DAF_CITEMS[DAF_COUNTER].idex_count = idex_count;
-    DAF_CITEMS[DAF_COUNTER].fracl      = cl;
+    DAF_CITEMS[DAF_DATA.idex].vert_count = vert_count;
+    DAF_CITEMS[DAF_DATA.idex].idex_count = idex_count;
+    DAF_CITEMS[DAF_DATA.idex].fracl      = cl;
 
 //   ---     ---     ---     ---     ---
 
                                             // set compression level and encode
-    STCFRACL                                (cl                                       );
-    ENCCRK                                  (DAF_CITEMS+DAF_COUNTER, &DAF_SIZE_I      );
+    STCFRACL                                (cl                                        );
+    ENCCRK                                  (DAF_CITEMS+DAF_DATA.idex, &DAF_DATA.size_i);
 
-    DAF_COUNTER++;
+    DAF_DATA.idex++;
 
 //   ---     ---     ---     ---     ---
 
     if(i==BLKMGK_DONE) {                    // zip and kikdel on last run
-        ZPCRK                               (DAF_SIZE_I, DAF_COUNTER, DAF_CITEMS      );
-        DLCRKENG                            (CRK_ENCODE                               );
+        ZPCRK                               (DAF_DATA.size_i, DAF_DATA.idex, DAF_CITEMS);
+        DLCRKENG                            (CRK_ENCODE                                );
     };                                                                                      };
 
 //   ---     ---     ---     ---     ---
 
-EXPORT void UTJOJ(uint i, uint dim,
-                  uint cl, char* name)      {
+EXPORT void BMENCJOJ(uint i, uint tot)      {
 
                                             // kiknit on first run
-    if(!i)                                  { NTJOJENG(JOJ_ENCODE);                   };
+    if  (i==BLKMGK_KRUN)                    { NTWTBUF(); NTJOJENG(JOJ_ENCODE);         };
+
+    elif(i==BLKMGK_DONE) {                  // zip and kikdel on last run
+        ZPJOJ                               (DAF_DATA.size_i, DAF_DATA.idex, DAF_JITEMS);
+        DLWTBUF                             (                                          );
+        DLJOJENG                            (JOJ_ENCODE                                );
+    };                                                                                      };
 
 //   ---     ---     ---     ---     ---
 
-                                            // save entry data
-    for(int x=0; x<(ZJC_IDK_WIDTH-1); x++)  { DAF_JITEMS[DAF_COUNTER].name[x]=*(name+x);
-                                              if(*(name+x)=='\0') { break;            }     };
+EXPORT void UTJOJ(uint dim, uint cl     ,
+                  char* name, float* src)   {
 
-    DAF_JITEMS[DAF_COUNTER].dim   = dim;
-    DAF_JITEMS[DAF_COUNTER].fracl = cl;
+                                            // save entry data
+    for(int x=0; x<(ZJC_IDK_WIDTH-1); x++)  { DAF_JITEMS[DAF_DATA.idex].name[x]=*(name+x);
+                                              if(*(name+x)=='\0') { break;              }   };
+
+    DAF_JITEMS[DAF_DATA.idex].dim   = dim;
+    DAF_JITEMS[DAF_DATA.idex].fracl = cl;
 
 //   ---     ---     ---     ---     ---
 
                                             // set compression level and encode
-    STCFRACL                                (cl                                       );
-    ENCJOJ                                  (DAF_JITEMS+DAF_COUNTER, &DAF_SIZE_I      );
+    STCFRACL                                (cl                                         );
+    ENCJOJ                                  (src, DAF_JITEMS+DAF_DATA.idex, &DAF_DATA   );
 
-    DAF_COUNTER++;
-
-//   ---     ---     ---     ---     ---
-
-    if(i==BLKMGK_DONE) {                    // zip and kikdel on last run
-        ZPJOJ                               (DAF_SIZE_I, DAF_COUNTER, DAF_JITEMS      );
-        DLJOJENG                            (JOJ_ENCODE                               );
-    };                                                                                      };
+    DAF_DATA.idex++;                                                                        };
 
 //   ---     ---     ---     ---     ---
 
@@ -121,13 +121,15 @@ EXPORT void INJOJ(uint i)                   {
 
     if(!i) {                                // kiknit and unzip on first run
         NTJOJENG                            ( JOJ_DECODE                                );
-        uint sizes[3] =                     { DAF_SIZE_I, DAF_SIZE_D, DAF_COUNTER       };
+        uint sizes[4] =                     { DAF_DATA.size_i, DAF_DATA.size_d,         \
+                                              DAF_DATA.idex, 0                          };
+
         UZPJOJ                              ( DAF_JITEMS, sizes                         );
 
                                             // size values from header
-        DAF_SIZE_I    =                     sizes[0];                                   \
-        DAF_SIZE_D    =                     sizes[1];                                   \
-        DAF_COUNTER   =                     sizes[2];                                   \
+        DAF_DATA.size_i =                   sizes[0];                                   \
+        DAF_DATA.size_d =                   sizes[1];                                   \
+        DAF_DATA.idex   =                   sizes[2];                                   \
 
     };
 

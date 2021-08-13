@@ -23,9 +23,6 @@
 #include "../KVRNEL/MEM/zjc_clock.h"
 #include "glad/glad.h"
 
-//#include <windows.h>
-//#include <SDL2/SDL_syswm.h>
-
 //   ---     ---     ---     ---     ---
 
 #define CHASM_MAX_WINS 1
@@ -105,38 +102,10 @@ int NTCHMNG(char* title, int fullscreen)    {
     gladLoadGLLoader                        ((GLADloadproc)SDL_GL_GetProcAddress          );
 
     SDL_MaximizeWindow(curwin->window);
-
-    //SDL_SysWMinfo wmInfo;
-    //SDL_VERSION(&wmInfo.version);  // Initialize wmInfo
-    //SDL_GetWindowWMInfo(curwin->window, &wmInfo);
-    //HWND hWnd = wmInfo.info.win.window;
-    //
-    //SetWindowLong(hWnd, GWL_EXSTYLE, GetWindowLong(hWnd, GWL_EXSTYLE) | WS_EX_LAYERED);
-    //SetLayeredWindowAttributes(hWnd, 0x000000FF, 128, LWA_ALPHA); //LWA_COLORKEY
-
     SDL_SetWindowOpacity(curwin->window, 0.5f);
-
-    //if(fullscreen) {
-    //    SDL_SetWindowFullscreen             (curwin->window, SDL_WINDOW_FULLSCREEN_DESKTOP);
-    //
-    //};
-
-//   ---     ---     ---     ---     ---    // init glew
- /*
-    glewExperimental = GL_TRUE;
-    GLenum status = glewInit();
-    if (status != GLEW_OK) {
-        CALOUT('E', "GLEW failed it's own init; something's wrong...\n");
-        DLCHMNG(); return FATAL;
-
-    };
-
-    if (!glewIsSupported("GL_VERSION_4_0")) {
-        CALOUT('E', "This application requires OpenGL v4.0\n\b");
-
-    };*/
-
     SDL_GL_SetSwapInterval(1);
+
+//   ---     ---     ---     ---     ---
 
     /* joystick stuff can't be tested now
     int numjoys = SDL_NumJoysticks();

@@ -91,16 +91,18 @@ void NTKVRPTH(char** pth_l)                 {
     do { ;                       } while(*path++ ); path-=1;
     do { path[y]=*fname; y++;    } while(*fname++);
 
-    __openlog();
+    __openlog(); NTBINS();
 
 };
 
 void DLKVRPTH        (            )         {
 
-    DLMEM         (ROOT         );
+    DLBINS        (             );
     DLMEM         (CWD          );
     DLMEM         (PEROOT       );
     DLMEM         (PECWD        );
+    DLMEM         (ROOT         );
+
 
     __closelog    (             );                                                          };
 

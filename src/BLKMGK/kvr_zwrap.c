@@ -32,7 +32,9 @@
 
 //  - --- - --- - --- - --- -
 
-static int ZLIB_STATUS=0;
+static z_stream ZLIB_STRM   = {0};
+static STR*     ZLIB_MEM    = NULL;
+static int      ZLIB_STATUS = 0;
 
 char* CHR_ZLIB_STATUS(void)                 {
 
@@ -83,21 +85,35 @@ static void infstrm_init(z_stream* strm)    {
 
 //  - --- - --- - --- - --- -
 
+void NTINFL(void)                           {
+
+    ZLIB_STRM.next_in  = Z_NULL;
+    ZLIB_STRM.avail_in = 0;
+
+    infstrm_init                            (&ZLIB_STRM                  );
+
+    if(!ZLIB_MEM) {
+        ZLIB_MEM = MKSTR                    ("ZLIB_MEM", ZJC_DAFPAGE*2, 1); }               };
+
+void DLINFL(void)                           {
+
+    DLMEM     (ZLIB_MEM  );
+    inflateEnd(&ZLIB_STRM);                                                                 };
+
+//   ---     ---     ---     ---     ---
+
 int INFLBIN(BIN* src,    BIN* dst,
             uint size_i, uint size_d,
             uint offs_i, uint offs_d)       {
 
-    uchar    in [ZJC_DAFPAGE];
-    uchar    out[ZJC_DAFPAGE];
+    NTINFL();
+
+                                            // fetch locs
+    uchar*   in       = MEMBUFF             (ZLIB_MEM, uchar, 0          );
+    uchar*   out      = MEMBUFF             (ZLIB_MEM, uchar, ZJC_DAFPAGE);
 
     uint     readsize = ZJC_DAFPAGE;
     uint     dataleft = size_d;
-
-    z_stream strm     = {0};
-    strm.next_in      = Z_NULL;
-    strm.avail_in     = 0;
-
-    infstrm_init(&strm);
 
     rewind(src->file); rewind(dst->file);
     fseek(src->file,           0,        SEEK_CUR);
@@ -118,22 +134,22 @@ int INFLBIN(BIN* src,    BIN* dst,
         BINREAD                             (src, bytes_read, uchar, readsize, in );
         fseek                               (src->file, 0, SEEK_CUR               );
 
-        strm.avail_in = readsize;
-        strm.next_in  = in;
+        ZLIB_STRM.avail_in = readsize;
+        ZLIB_STRM.next_in  = in;
 
         dataleft     -= readsize;
 
 //  - --- - --- - --- - --- -
 
-        while(strm.avail_in || !strm.avail_out) {
+        while(ZLIB_STRM.avail_in || !ZLIB_STRM.avail_out) {
 
             uint have;
 
-            strm.avail_out = ZJC_DAFPAGE;
-            strm.next_out  = out;
-            CALL_ZLIB(inflate(&strm, Z_NO_FLUSH));
+            ZLIB_STRM.avail_out = ZJC_DAFPAGE;
+            ZLIB_STRM.next_out  = out;
+            CALL_ZLIB(inflate(&ZLIB_STRM, Z_NO_FLUSH));
 
-            have           = ZJC_DAFPAGE - strm.avail_out;
+            have           = ZJC_DAFPAGE - ZLIB_STRM.avail_out;
 
             fseek                           (dst->file, 0, SEEK_CUR           );
             BINWRITE                        (dst, bytes_read, uchar, have, out);
@@ -144,28 +160,111 @@ int INFLBIN(BIN* src,    BIN* dst,
         };
     };
 
+    DLINFL();
+
 //  - --- - --- - --- - --- -
 
 #if KVR_DEBUG & KVR_CALOF
     CALOUT('F', "\n\bINFLATED %u/%u\n\b", tot, size_i);
 #endif
 
-    inflateEnd (& strm);
-
     return DONE;                                                                            };
 
 //  - --- - --- - --- - --- -
+
+void NTDEFL(void)                           {
+
+    ZLIB_STRM.next_in  = Z_NULL;
+    ZLIB_STRM.avail_in = 0;
+
+    defstrm_init                            (&ZLIB_STRM                  );
+
+    if(!ZLIB_MEM) {
+        ZLIB_MEM = MKSTR                    ("ZLIB_MEM", ZJC_DAFPAGE*2, 1); }               };
+
+void DLDEFL(void)                           {
+
+    DLMEM     (ZLIB_MEM  );
+    deflateEnd(&ZLIB_STRM);                                                                 };
+
+//   ---     ---     ---     ---     ---
+
+int DEFLBUF(void* src, BIN* dst      ,
+            uint size_i, uint* size_d,
+            uint offs_i, uint offs_d ,
+            uint finish              )      {
+
+                                            // fetch locs
+    uchar*   out = MEMBUFF                  (ZLIB_MEM, uchar, ZJC_DAFPAGE           );
+    uchar*   in  = (uchar*) src;
+
+                                            // rewind and skip
+    rewind                                  (dst->file                              );
+    fseek                                   (dst->file,           0,        SEEK_CUR);
+    fseek                                   (dst->file, sizeof(SIG)+offs_d, SEEK_CUR);
+    fseek                                   (dst->file,           0,        SEEK_CUR);
+
+    int flush; int wb;
+    uint dataleft=size_i;
+
+//  - --- - --- - --- - --- -
+
+    while(dataleft) {
+
+        uint readsize            =          (readsize > dataleft) ? dataleft : ZJC_DAFPAGE;
+
+        ZLIB_STRM.next_in        =          in;
+        ZLIB_STRM.avail_in       =          readsize;
+
+        dataleft                -=          readsize;
+        flush                    =          (dataleft && !finish) ? Z_NO_FLUSH : Z_FINISH;
+
+//  - --- - --- - --- - --- -
+
+        while(ZLIB_STRM.avail_in || !ZLIB_STRM.avail_out) {
+
+            uint have;
+
+            ZLIB_STRM.avail_out  =          ZJC_DAFPAGE;
+            ZLIB_STRM.next_out   =          out;
+
+            CALL_ZLIB                       (deflate (& ZLIB_STRM, flush));
+
+            have                 =          ZJC_DAFPAGE - ZLIB_STRM.avail_out;
+            (*size_d)           +=          have;
+
+            fseek                           (dst->file, 0, SEEK_CUR   );
+            BINWRITE                        (dst, wb, uchar, have, out);
+            fseek                           (dst->file, 0, SEEK_CUR   );
+
+        };  in                  +=          readsize;
+
+    };
+
+//  - --- - --- - --- - --- -
+
+#if KVR_DEBUG & KVR_CALOF
+    int finalsize = (int) (100.0 - (( (float) ( *size_d) / (float) (size_i) ) * 100));
+    if(finalsize < 0) { CALOUT('F', "BAD DEFLATE: %u/%u | approx. %i%% file size increase\n",
+                              *size_d, size_i, -finalsize                                ); }
+
+    else              { CALOUT('F', "GOOD DEFLATE: %u/%u | approx. %i%% file size reduction\n",
+                               *size_d, size_i,  finalsize                               ); };
+#endif
+
+    return DONE;                                                                            };
+
+//   ---     ---     ---     ---     ---
 
 int DEFLBIN(BIN* src,    BIN* dst,
             uint size_i, uint* size_d,
             uint offs_i, uint offs_d)      {
 
-    uchar    in [ZJC_DAFPAGE];
-    uchar    out[ZJC_DAFPAGE];
+    NTDEFL();
 
-    z_stream strm={0};
-
-    defstrm_init(&strm);
+                                            // fetch locs
+    uchar*   in       = MEMBUFF             (ZLIB_MEM, uchar, 0          );
+    uchar*   out      = MEMBUFF             (ZLIB_MEM, uchar, ZJC_DAFPAGE);
 
     rewind(src->file); rewind(dst->file);
     fseek(src->file,           0,        SEEK_CUR);
@@ -189,24 +288,24 @@ int DEFLBIN(BIN* src,    BIN* dst,
         BINREAD                             (src, bytes_read, uchar, readsize, in);
         fseek                               (src->file, 0, SEEK_CUR              );
 
-        strm.next_in   = in;
-        strm.avail_in  = bytes_read;
+        ZLIB_STRM.next_in   = in;
+        ZLIB_STRM.avail_in  = bytes_read;
 
         dataleft      -= bytes_read;
         flush          = (dataleft) ? Z_NO_FLUSH : Z_FINISH;
 
 //  - --- - --- - --- - --- -
 
-        while(strm.avail_in || !strm.avail_out) {
+        while(ZLIB_STRM.avail_in || !ZLIB_STRM.avail_out) {
 
             uint have;
 
-            strm.avail_out = ZJC_DAFPAGE;
-            strm.next_out  = out;
+            ZLIB_STRM.avail_out = ZJC_DAFPAGE;
+            ZLIB_STRM.next_out  = out;
 
-            CALL_ZLIB (deflate (& strm, flush));
+            CALL_ZLIB (deflate (& ZLIB_STRM, flush));
 
-            have           = ZJC_DAFPAGE - strm.avail_out;
+            have           = ZJC_DAFPAGE - ZLIB_STRM.avail_out;
             (*size_d)     += have;
 
             fseek                           (dst->file, 0, SEEK_CUR           );
@@ -216,13 +315,12 @@ int DEFLBIN(BIN* src,    BIN* dst,
         };
     };
 
+    DLDEFL();
+
 //  - --- - --- - --- - --- -
 
-    deflateEnd (&strm);
-
-    int finalsize = (int) (100.0 - (( (float) ( *size_d) / (float) (size_i) ) * 100));
-
 #if KVR_DEBUG & KVR_CALOF
+    int finalsize = (int) (100.0 - (( (float) ( *size_d) / (float) (size_i) ) * 100));
     if(finalsize < 0) { CALOUT('F', "BAD DEFLATE: %u/%u | approx. %i%% file size increase\n",
                               *size_d, size_i, -finalsize                                ); }
 

@@ -23,6 +23,27 @@
 #include <string.h>
 
 //   ---     ---     ---     ---     ---
+// common statics for read/write
+
+static MEM* KVR_RD = NULL;                  // read buff
+static MEM* KVR_WT = NULL;                  // write buff
+static BIN* KVR_TO = NULL;                  // bin-to
+static BIN* KVR_FR = NULL;                  // bin-from
+
+void  NTRDBUF(void)                         { KVR_RD = MKSTR("KVR_RD", ZJC_DAFPAGE, 1);     };
+void  NTWTBUF(void)                         { KVR_WT = MKSTR("KVR_WB", ZJC_DAFPAGE, 1);     };
+void  DLRDBUF(void)                         { DLMEM(KVR_WT);                                };
+void  DLWTBUF(void)                         { DLMEM(KVR_RD);                                };
+
+void  LDBINTO(BIN* b)                       { KVR_TO=b;                                     };
+void  LDBINFR(BIN* b)                       { KVR_FR=b;                                     };
+BIN** GTBINTO(void  )                       { return &KVR_TO;                               };
+BIN** GTBINFR(void  )                       { return &KVR_FR;                               };
+
+MEM*  GTBINRD(void  )                       { return KVR_RD;                                };
+MEM*  GTBINWT(void  )                       { return KVR_WT;                                };
+
+//   ---     ---     ---     ---     ---
 // filetypes
 
 static SIG CRKSIG = { 1126442020, 1378100260, 606348324,  606348363  };
@@ -89,8 +110,7 @@ char* GTRMODE(uint x)                       {
 
 //   ---     ---     ---     ---     ---
 
-BIN* MKBIN(char* path, uint mode,
-           uint  ft,   uint  ex_alloc)      {
+BIN* MKBIN(char* path, uint mode, uint  ft) {
 
     BIN* bin;
 
@@ -107,8 +127,7 @@ BIN* MKBIN(char* path, uint mode,
 
                                             // make id and get mem
     ID id         = IDNEW                   ("BIN*", name                                   );
-    ex_alloc      =                         (len+1) + ex_alloc;                             \
-    MEMGET                                  (BIN, bin, xBYTES(ex_alloc, uchar), &id         );
+    MEMGET                                  (BIN, bin, xBYTES(len+1, uchar), &id            );
 
     y             = 0;                      // copy chars from path into our own buff
     char* p       = MEMBUFF                 (byref(bin->m), char, 0                         );
@@ -180,29 +199,29 @@ char* PTHBIN(BIN* bin)                      { return MEMBUFF(byref(bin->m), char
 
 //   ---     ---     ---     ---     ---
 
-int BIN2BIN (BIN* a, BIN* b, uint size)     {
+int BIN2BIN (uint size)                     {
 
     int  wb;
+    uchar* buff = (uchar*) KVR_RD->buff;
 
-    MEM*   m    = MKSTR                     ("B2BRD", ZJC_DAFSIZE, 1     );
-    uchar* buff = (uchar*) m->buff;
+#if KVR_DEBUG & KVR_CALOF
+    CALOUT('F', "Writting from <%s> to <%s>\n\b", PTHBIN(KVR_FR), PTHBIN(KVR_TO));
+#endif
 
     while(size) {
         uint readsize  =                    (size<ZJC_DAFSIZE) ? size : ZJC_DAFSIZE;
 
-        fseek                               (a->file, 0, SEEK_CUR        );
-        BINREAD                             (a, wb, uchar, readsize, buff);
-        fseek                               (a->file, 0, SEEK_CUR        );
+        fseek                               (KVR_FR->file, 0, SEEK_CUR        );
+        BINREAD                             (KVR_FR, wb, uchar, readsize, buff);
+        fseek                               (KVR_FR->file, 0, SEEK_CUR        );
 
-        fseek                               (a->file, 0, SEEK_CUR        );
-        BINWRITE                            (b, wb, uchar, readsize, buff);
-        fseek                               (a->file, 0, SEEK_CUR        );
+        fseek                               (KVR_TO->file, 0, SEEK_CUR        );
+        BINWRITE                            (KVR_TO, wb, uchar, readsize, buff);
+        fseek                               (KVR_TO->file, 0, SEEK_CUR        );
 
         size          -= readsize;
 
-    }; DLMEM(m);
-
-    return DONE;                                                                         };
+    }; return DONE;                                                                         };
 
 //   ---     ---     ---     ---     ---
 

@@ -34,6 +34,21 @@ extern "C" {
 
 //   ---     ---     ---     ---     ---
 
+typedef struct HELRNW {                     // helper values for read/write packed in a struct
+
+    uint idex;                              // current position within file
+    uint total;                             // total entries in file
+
+    uint size_i;                            // uncompressed size
+    uint size_d;                            // compressed size
+
+    uint offs_i                             // *bytes* to skip on uncompressed read/write
+    uint offs_d;                            // *bytes* to skip on compressed read/write
+
+} HRW;
+
+//   ---     ---     ---     ---     ---
+
 typedef struct KVR_SIG {                    // a more 'arcane' way to go about signatures
 
     uint a;
@@ -55,10 +70,28 @@ typedef struct KVR_BIN {                    // helper struct for dealing with fi
 
 } BIN;
 
-BIN* MKBIN   (char* path,                   // init bin for read/write
-              uint  mode,                   // -ft determines sign to check
-              uint  ft,                     // -ex_alloc reserves additional memory
-              uint  ex_alloc);
+//   ---     ---     ---     ---     ---
+
+BIN* MKBIN     (char* path      ,
+                uint  mode      ,
+                uint  ft        );          // init bin for read/write
+                                            // -ft determines sign to check
+
+//   ---     ---     ---     ---     ---
+
+void  NTRDBUF  (void            );          // nit read buffer
+void  NTWTBUF  (void            );          // nit write buffer
+void  DLRDBUF  (void            );          // free read buffer
+void  DLWTBUF  (void            );          // free write buffer
+
+void  LDBINTO  (BIN* b          );          // load bin into bin-to
+void  LDBINFR  (BIN* b          );          // load bin into bin-from
+
+BIN** GTBINTO  (void            );          // get bin-to
+BIN** GTBINFR  (void            );          // get bin-from
+MEM*  GTBINRD  (void            );          // get read buff
+MEM*  GTBINWT  (void            );          // get write buff
+//   ---     ---     ---     ---     ---
 
 SIG   GTSIG   (uint ft         );
 
@@ -69,15 +102,17 @@ int   CMPSIG  (SIG* s0, SIG* s1);           // compares two signatures
 void  STBADSIG(int is_bad      );           // alters read-state on inappropriate signature
 char* PTHBIN  (BIN* bin        );           // fetch path to bin
 
-int   BIN2BIN (BIN* a, BIN* b,              // write size bytes from a to b
-               uint size       );
+int   BIN2BIN (uint size       );           // write size bytes from src to dst
+                                            // -bin-from is src
+                                            // -bin-to is dst
+                                            // -no rewind
 
 //   ---     ---     ---     ---     ---
 
 #if KVR_DEBUG
                                             /* catch if error on open                      */
-    #define BINOPEN(bin, path, mode, ft, ex_alloc, retx) { retx = 0;                         \
-        bin=MKBIN(path, mode, ft, ex_alloc); ERRCATCH(RDBIN(bin), retx, 0x40,PTHBIN(bin));  }
+    #define BINOPEN(bin, path, mode, ft, retx) { retx = 0;                                   \
+        bin=MKBIN(path, mode, ft); ERRCATCH(RDBIN(bin), retx, 0x40,PTHBIN(bin));            }
 
                                             /* catch if error on close                     */
     #define BINCLOSE(bin)                   { int retx = 0;                                  \
@@ -116,8 +151,8 @@ int   BIN2BIN (BIN* a, BIN* b,              // write size bytes from a to b
 //   ---     ---     ---     ---     ---
 
 #else
-    #define BINOPEN(bin, path, mode, ft,ex_alloc, retx)                                      \
-        bin=MKBIN(path, mode, ft, ex_alloc); retx=RDBIN(bin)
+    #define BINOPEN(bin, path, mode, ft, retx)                                               \
+        bin=MKBIN(path, mode, ft); retx=RDBIN(bin)
 
     #define BINCLOSE(bin) DLBIN(bin)
 
