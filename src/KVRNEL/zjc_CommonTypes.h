@@ -46,7 +46,7 @@ typedef                 int64_t  slong;     // signed 64-bit
 typedef                 uint8_t  uchar;     // unsigned  8-bit
 typedef                 uint16_t ushort;    // unsigned 16-bit
 typedef                 uint32_t uint;      // unsigned 32-bit
-typedef                 uint64_t ulong;     // unsigned 64-bit
+typedef                 uint64_t _ulong;    // unsigned 64-bit
 
 typedef const           int8_t   cchar;     // const signed  8-bit
 typedef const           int16_t  cshort;    // const signed 16-bit

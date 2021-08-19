@@ -85,19 +85,18 @@ void NTKVRPTH(char** pth_l)                 {
 
     char* fname = "KVNSLOG";
 
-    CALLOG      = MKBIN(GTROOT(), 3, 2, strlen(fname)+16);
+    CALLOG      = MKBIN(GTROOT(), KVR_FMODE_WBP, KVR_FTYPE_LNG);
     char* path  = PTHBIN(CALLOG); int y=0;
 
     do { ;                       } while(*path++ ); path-=1;
     do { path[y]=*fname; y++;    } while(*fname++);
 
-    __openlog(); NTBINS();
+    __openlog();
 
 };
 
 void DLKVRPTH        (            )         {
 
-    DLBINS        (             );
     DLMEM         (CWD          );
     DLMEM         (PEROOT       );
     DLMEM         (PECWD        );

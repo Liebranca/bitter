@@ -42,7 +42,7 @@ typedef struct HELRNW {                     // helper values for read/write pack
     uint size_i;                            // uncompressed size
     uint size_d;                            // compressed size
 
-    uint offs_i                             // *bytes* to skip on uncompressed read/write
+    uint offs_i;                            // *bytes* to skip on uncompressed read/write
     uint offs_d;                            // *bytes* to skip on compressed read/write
 
 } HRW;

@@ -1,8 +1,8 @@
 #ifndef __ZJC_BYTERRAY_H__
 #define __ZJC_BYTERRAY_H__
 
-#include "../zjc_evil.h"
-#include "../zjc_CommonTypes.h"
+#include "zjc_evil.h"
+#include "zjc_CommonTypes.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -19,7 +19,9 @@ typedef struct LYMTH_USTR8 {
             uint z:8;
             uint w:8;
 
-        };  uint F;
+        };  uint  F;
+            uchar V[4];
+
     };
 
 } ustr8; CASSERT(sizeof(ustr8)==4, "USTR8 SHOULD BE 4 BYTES");

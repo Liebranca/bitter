@@ -15,8 +15,8 @@ MEM* GWSTR (MEM*  str,  uint  mag     );    // expand array
 void ADSTR (MEM** str,  char* tail    );    // add substring at end of array
 MEM* PLSTR (MEM*  str,  char* tail    );    // make copy of array, then add tail
 void STSTR (MEM** str,  char* buff    );    // set contents of array
-void RPSTR (MEM** str,  char* tail,   \     // set contents of array @offset
-            uint  offset              );
+void RPSTR (MEM** str,  char* tail    ,
+            uint  offset              );    // set contents of array @offset
 
 void LDLNG (uint size                 );    // set lng to width size
 MEM* GTLNG (void                      );    // get addr of lng

@@ -63,7 +63,7 @@ void CALOUT(char fam, char* format, ...)    {
 
 //   ---     ---     ---     ---     ---
 
-void __writoa  (int x, char* buff, int rdx) { _itoa(x, buff, rdx);                          };
+void __writoa  (int x, char* buff, int rdx) { sprintf(buff, "%i", x);                       };
 int  __wrstrcmp(char* s0, char* s1        ) { return strcmp(s0, s1);                        };
 
 DANG* __geterrloc(const char* p,

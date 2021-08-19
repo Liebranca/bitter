@@ -16,8 +16,8 @@
 /*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
 
 #include "zjc_ByteArray.h"
-#include "../zjc_evil.c"
-#include "../TYPES/zjc_BinTypes.c"
+#include "zjc_evil.h"
+#include "TYPES/zjc_BinTypes.h"
 
 #include <stdio.h>
 
@@ -105,19 +105,5 @@ void divus8 (uchar s)                       { LUS8(a)->x=LUS8(a)->x/s;          
                                               LUS8(a)->y=LUS8(a)->y/s;                      \
                                               LUS8(a)->z=LUS8(a)->z/s;                      \
                                               LUS8(a)->w=LUS8(a)->w/s;                      };
-
-//   ---     ---     ---     ---     ---
-
-void main(void)                             {
-
-    uint  x=128*128;
-    float y=(float) x;
-
-    for(uchar i=0; i<32; i++) {
-      printf("%d", uinthbit(y, i));
-    };
-
-    printf(" %f", y);
-                                                                                            };
 
 //   ---     ---     ---     ---     ---

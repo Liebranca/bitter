@@ -17,7 +17,7 @@
 /*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
 
 #include "kvr_intprt.h"
-#include "../TYPES/zjc_hash.h"
+#include "KVRNEL/TYPES/zjc_hash.h"
 #include "eval_for.h"
 
 #include <string.h>

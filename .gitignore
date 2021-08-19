@@ -23,3 +23,5 @@ KVR.px
 src/CHASM/glad/glad.c
 src/CHASM/glad/glad.h
 rprules.md
+*.stackdump
+*.c~

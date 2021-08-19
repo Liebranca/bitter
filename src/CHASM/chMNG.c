@@ -21,7 +21,7 @@
 #include "chWIN.h"
 
 #include "../KVRNEL/MEM/zjc_clock.h"
-#include "glad/glad.h"
+#include "GL/glew.h"
 
 //   ---     ---     ---     ---     ---
 
@@ -99,7 +99,20 @@ int NTCHMNG(char* title, int fullscreen)    {
 
     curwin          = MKWIN                 (title, w_height, w_width                     );
     ogl_context     = SDL_GL_CreateContext  (curwin->window                               );
-    gladLoadGLLoader                        ((GLADloadproc)SDL_GL_GetProcAddress          );
+    //gladLoadGLLoader                        ((GLADloadproc)SDL_GL_GetProcAddress          );
+
+    glewExperimental = GL_TRUE;
+    GLenum status = glewInit();
+    if (status != GLEW_OK) {
+        CALOUT('E', "GLEW failed it's own init; something's wrong...\n");
+        DLCHMANG(); return FATAL;
+
+    };
+
+    if (!glewIsSupported("GL_VERSION_4_0")) {
+        CALOUT('E', "This application requires OpenGL v4.0\n");
+
+    };
 
     SDL_MaximizeWindow(curwin->window);
     SDL_SetWindowOpacity(curwin->window, 0.5f);

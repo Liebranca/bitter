@@ -24,7 +24,7 @@
 
 static MEM* MLNG = NULL;                    // big mem for temporal storage
 void LDLNG (uint size)                      { DLMEM(MLNG); MLNG=MKSTR("MEMLNG", size, 1);   };
-MEM* GTLNG (void     )                      { return MEMLNG;                                };
+MEM* GTLNG (void     )                      { return MLNG;                                  };
 
 //   ---     ---     ---     ---     ---
 
