@@ -8,17 +8,15 @@ extern "C" {
 #endif
 
 //   ---     ---     ---     ---     ---
-
                                             // logflags. enables/disables certain logmesses
 #define KVR_CALOM 0x01                      // MEM
 #define KVR_CALOF 0x02                      // BIN
 #define KVR_CALOK 0x04                      // PROC
 #define KVR_CALOH 0x08                      // HASH
 
-#define KVR_DEBUG (                         /* combined logflags */                          \
-    KVR_CALOM | KVR_CALOF | KVR_CALOK                                                        \
-                                                                                             \
-)
+#ifndef KVR_DEBUG                           /* should be created at compile-time through -D*/
+#define KVR_DEBUG 0x00                      /* this is just here as a safety net           */
+#endif
 
 //   ---     ---     ---     ---     ---
 // some shorthands

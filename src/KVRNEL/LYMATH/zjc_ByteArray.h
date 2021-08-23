@@ -1,8 +1,8 @@
 #ifndef __ZJC_BYTERRAY_H__
 #define __ZJC_BYTERRAY_H__
 
-#include "zjc_evil.h"
-#include "zjc_CommonTypes.h"
+#include "KVRNEL/zjc_evil.h"
+#include "KVRNEL/zjc_CommonTypes.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -16,13 +16,13 @@
 *                                           */
 /*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
 
-#include "zjc_CommonTypes.h"
-#include "zjc_evil.c"
-#include "zjc_id.c"
-#include "kvr_mem.c"
-#include "kvr_str.c"
-#include "kvr_bin.c"
-#include "lymath.h"
+#include "KVRNEL/zjc_CommonTypes.h"
+#include "KVRNEL/zjc_evil.h"
+#include "KVRNEL/TYPES/zjc_id.h"
+#include "KVRNEL/MEM/kvr_mem.h"
+#include "KVRNEL/MEM/kvr_str.h"
+#include "KVRNEL/MEM/kvr_bin.h"
+#include "KVRNEL/lymath.h"
 
 #include <sys/ioctl.h>
 #include <sys/socket.h>

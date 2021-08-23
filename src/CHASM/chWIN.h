@@ -3,8 +3,8 @@
 
 #include <assert.h>
 
-#include "../KVRNEL/MEM/kvr_mem.h"
-#include "../KVRNEL/lymath.h"
+#include "KVRNEL/MEM/kvr_mem.h"
+#include "KVRNEL/lymath.h"
 
 #include "chRAT.h"
 #include "chKEY.h"

@@ -1,7 +1,7 @@
 #ifndef __CH_MANG_H__
 #define __CH_MANG_H__
 
-#include "../KVRNEL/zjc_CommonTypes.h"
+#include "KVRNEL/zjc_CommonTypes.h"
 
 #ifdef __cplusplus
 extern "C" {

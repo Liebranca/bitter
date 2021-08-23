@@ -1,4 +1,4 @@
-# KVRNEL GNU MAKEFILE
+# CHASM GNU MAKEFILE
 
 #   ---     ---     ---     ---     ---
 # platform switch
@@ -17,8 +17,8 @@ OFLG      = -s -Os -fno-unwind-tables -fno-asynchronous-unwind-tables
 OFLG     += -fsingle-precision-constant -ffast-math -fno-ident
 LFLG      = -ffunction-sections -fdata-sections -Wl,--gc-sections
 
-FSWAT     = KVRNEL
-MKWAT     = kvrnel.dll
+FSWAT     = CHASM
+MKWAT     = chasm.dll
 
 DIRS      = $(shell find $(BASE_DIR) -type d)
 HEDS      = $(wildcard $(DIRS:%=%/*.h))
@@ -32,7 +32,7 @@ ODIR      = $(patsubst %,$(TRSH)/%,$(DIRS))
 
 INCLUDES  = -I$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 INCLUDES += -I$(dir $(abspath ..)/)
-LIBS      = 
+LIBS      = -L$(BIN) -lkvrnel -lpng16 -lgl -lglew -lopengl32 -lSDL2main -lSDL2
 
 MAIN      = $(BIN)/$(MKWAT)
 

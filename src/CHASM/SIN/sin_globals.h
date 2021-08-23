@@ -1,11 +1,11 @@
 #ifndef __SIN_GLOBALS_H__
 #define __SIN_GLOBALS_H__
 
-#include "../KVRNEL/zjc_CommonTypes.h"
-#include "../KVRNEL/TYPES/zjc_id.h"
-#include "../../KVRNEL/TYPES/zjc_hash.h"
+#include "KVRNEL/zjc_CommonTypes.h"
+#include "KVRNEL/TYPES/zjc_id.h"
+#include "KVRNEL/TYPES/zjc_hash.h"
 
-#include "../glad/glad.h"
+#include "glad/glad.h"
 
 #ifdef __cplusplus
 extern "C" {

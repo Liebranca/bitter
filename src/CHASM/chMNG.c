@@ -20,8 +20,8 @@
 #include "chMNG.h"
 #include "chWIN.h"
 
-#include "../KVRNEL/MEM/zjc_clock.h"
-#include "GL/glew.h"
+#include "KVRNEL/MEM/zjc_clock.h"
+#include "glad/glad.h"
 
 //   ---     ---     ---     ---     ---
 
@@ -67,8 +67,6 @@ uint  GTWINHEI          (void)              { return w_height;                  
 int NTCHMNG(char* title, int fullscreen)    {
 
                                             // SDL setup boilerplate
-    SDL_Init                                (SDL_INIT_EVERYTHING                          );
-
     SDL_GL_SetAttribute                     (SDL_GL_RED_SIZE,              3              );
     SDL_GL_SetAttribute                     (SDL_GL_GREEN_SIZE,            3              );
     SDL_GL_SetAttribute                     (SDL_GL_BLUE_SIZE,             2              );
@@ -79,10 +77,17 @@ int NTCHMNG(char* title, int fullscreen)    {
     SDL_GL_SetAttribute                     (SDL_GL_ACCELERATED_VISUAL,    1              );
 
     SDL_GL_SetAttribute                     (SDL_GL_CONTEXT_MAJOR_VERSION, 4              );
-    SDL_GL_SetAttribute                     (SDL_GL_CONTEXT_MINOR_VERSION, 0              );
+    SDL_GL_SetAttribute                     (SDL_GL_CONTEXT_MINOR_VERSION, 6              );
 
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
-                        SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute                     (SDL_GL_CONTEXT_PROFILE_MASK                  ,
+                                             SDL_GL_CONTEXT_PROFILE_CORE                  );
+
+    if(SDL_Init(SDL_INIT_EVERYTHING) < 0) {
+
+        SDL_Quit(); CALOUT('E', "SDL FAIL\n");
+        return FATAL;
+
+    };
 
     openwins=1;
 
@@ -99,20 +104,7 @@ int NTCHMNG(char* title, int fullscreen)    {
 
     curwin          = MKWIN                 (title, w_height, w_width                     );
     ogl_context     = SDL_GL_CreateContext  (curwin->window                               );
-    //gladLoadGLLoader                        ((GLADloadproc)SDL_GL_GetProcAddress          );
-
-    glewExperimental = GL_TRUE;
-    GLenum status = glewInit();
-    if (status != GLEW_OK) {
-        CALOUT('E', "GLEW failed it's own init; something's wrong...\n");
-        DLCHMANG(); return FATAL;
-
-    };
-
-    if (!glewIsSupported("GL_VERSION_4_0")) {
-        CALOUT('E', "This application requires OpenGL v4.0\n");
-
-    };
+    gladLoadGLLoader                        ((GLADloadproc)SDL_GL_GetProcAddress          );
 
     SDL_MaximizeWindow(curwin->window);
     SDL_SetWindowOpacity(curwin->window, 0.5f);

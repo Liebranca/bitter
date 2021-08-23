@@ -1,8 +1,8 @@
 #ifndef __CH_RAT_H__
 #define __CH_RAT_H__
 
-#include "../KVRNEL/zjc_CommonTypes.h"
-#include "../KVRNEL/lymath.h"
+#include "KVRNEL/zjc_CommonTypes.h"
+#include "KVRNEL/lymath.h"
 
 #include "SDL2/SDL.h"
 

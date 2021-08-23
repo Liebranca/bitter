@@ -23,6 +23,7 @@ extern "C" {
 #endif
 
 #include <stdint.h>
+#include <stddef.h>
 
 #define ZJC_DAFPAGE             0x4000
 #define ZJC_DAFSIZE                256
