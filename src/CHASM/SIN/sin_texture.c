@@ -85,7 +85,7 @@ uint MKTEX(uint dim, char* name)            {
     glGenTextures                           (1, &(tex->loc)                          );
     glActiveTexture                         (GL_TEXTURE0                             );
     glBindTexture                           (GL_TEXTURE_2D_ARRAY, tex->loc           );
-    glTexStorage3D                          (GL_TEXTURE_2D_ARRAY, 4, GL_RGBA32F     ,
+    glTexStorage3D                          (GL_TEXTURE_2D_ARRAY, 4, GL_RGBA32F      ,
                                              tex->info.x, tex->info.x, tex->info.y   );
 
     glTexParameteri                         (GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BASE_LEVEL, 0);
@@ -153,7 +153,7 @@ void LDTEX(uint idex)                       {
 
         glTexSubImage3D                     (GL_TEXTURE_2D_ARRAY, 0, 0, 0,                  \
                                              layer, tex->info.x, tex->info.x, 1             ,
-                                             GL_RGBA, GL_UNSIGNED_BYTE, buff+(layer*64)      );
+                                             GL_RGBA, GL_FLOAT, buff+(layer*128)            );
     };
 
 //   ---     ---     ---     ---     ---
@@ -227,10 +227,10 @@ void RDPNG(char* fpath, uchar* buff)        {
     
     };*/
 
-    uint idex=0;
+    uint idex=0; uint b=0;
     for(int y=0; y<height; y++) {
-        for(int x=0; x<rowbytes; x+=4) {
-            buff[idex]=rows[y][x]; idex++;
+        for(int x=0; x<rowbytes; x+=3) {
+            buff[idex]=rows[y][x]*255; idex++;
 
         };
 

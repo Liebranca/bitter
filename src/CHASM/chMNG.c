@@ -32,8 +32,8 @@ static SDL_GLContext ogl_context;
 static CLCK*         chmang_clock    = NULL;
 static WIN*          curwin          = NULL;
 
-static uint          w_width         = 171;
-static uint          w_height        =  96;
+static uint          w_width         =  256;
+static uint          w_height        =  256;
 
 static uchar         openwins;
 

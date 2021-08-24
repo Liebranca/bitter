@@ -34,7 +34,7 @@ out vec2  texCoords;                                                            
                                                                                              \
 void main() {                                                                                \
     gl_Position = vec4(Position.x, Position.y, 0, 1.0);                                      \
-    texCoords   = UV;                                                                        \
+    texCoords   = (UV+1)*0.5;\
 };                                                                                           \
                                                                                              \
 "
@@ -53,10 +53,24 @@ SIN_GL_VER,
 in vec2 texCoords;                                                                           \
 uniform sampler2DArray Surface;                                                              \
                                                                                              \
-void main()                                                                                  \
-{                                                                                            \
-    vec4 color = texture(Surface, vec3(texCoords, 0));  \
-    gl_FragColor = color; \
+                                                                                             \
+const uint bmp[2] = uint[2](0x686C6FF, 0xF060606);                                           \
+\
+\
+void main() {                                                                                \
+\
+    uint x = uint(texCoords.x*8);\
+    uint y = uint(texCoords.y*8);\
+\
+    uint i = x+(y*8);                                                                        \
+    uint z = uint(i > 31);                                                                   \
+                                                                                             \
+    i-=z*32;                                                                                 \
+    bool r = !bool(bmp[z]&(1<<i));                                                           \
+\
+\
+    vec4 color = vec4(r,r,r,!r);\
+    gl_FragColor = color;                                                                    \
 }                                                                                            \
                                                                                              \
 "
