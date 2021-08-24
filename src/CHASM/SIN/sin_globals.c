@@ -20,6 +20,7 @@
 
 //   ---     ---     ---     ---     ---
 
+uint SIN_EVILSTATE    = 0;
 static HASH* SIN_HASH = NULL;
 
 void NTSINHASH()                            { SIN_HASH=MKHASH(SIN_HASHSIZ, "SIN_HASH");     };

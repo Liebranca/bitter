@@ -20,6 +20,7 @@
 
 #include "CHASM/SIN/__sin.h"
 #include "CHASM/SIN/sin_texture.h"
+#include "CHASM/SIN/REND/sin_canvas.h"
 
 #include <libpng16/png.h>
 #include <stdio.h>
@@ -40,13 +41,20 @@ int main(int argc, char** argv) {
     };
 
     NTKVRPTH(paths     );
-    NTCHMNG ("SINx8", 1);
+    NTCHMNG ("SINx8", 0);
 
-    NTSIN   (          );
-    MKTEX   (64, "test");
+    NTSIN();
+
+    uint tex_idex = MKTEX(8, "test");
+    uint tex_loc  = GTTEXLOC(tex_idex);
 
     while(GTCHMNGRUN()) {
-        FRBEGCHMNG();
+
+        int evilstate=FRBEGCHMNG();
+        if(evilstate) { break; };
+
+        DRCANVAS  (tex_loc);
+
         FRENDCHMNG();
         SLEEPCHMNG();
 
@@ -55,8 +63,6 @@ int main(int argc, char** argv) {
     DLSIN   ();
     DLCHMNG ();
     DLKVRPTH();
-
-    //RDPNG("D:/lieb_git/KVR/bin/x64/lycon.png");
 
     return 0;
 

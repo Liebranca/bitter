@@ -1,7 +1,7 @@
 /*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
 /*    SIN                                   *
 *                                           *
-*     -byte-sized graphics                  *
+*     -bytesized graphics                   *
 *                                           */
 // *   ---     ---     ---     ---     ---  *
 /*    LIBRE SOFTWARE                        *
@@ -17,10 +17,13 @@
 
 #include "sin_globals.h"
 #include "sin_texture.h"
+#include "sin_shader.h"
+
+#include "REND/sin_canvas.h"
 
 //   ---     ---     ---     ---     ---
 
-void NTSIN() { NTSINHASH(); NTSINTEX (); };
-void DLSIN() { DLSINTEX (); DLSINHASH(); };
+void NTSIN() { NTSINHASH(); NTSINTEX(); NTSINSHD (); NTCANVAS (); };
+void DLSIN() { DLCANVAS (); DLSINSHD(); DLSINTEX (); DLSINHASH(); };
 
 //   ---     ---     ---     ---     ---

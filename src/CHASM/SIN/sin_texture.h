@@ -14,8 +14,12 @@ void DLSINTEX(                    );        // kikdel
 
 uint MKTEX   (uint dim, char* name);        // occupy texslot
 void DLTEX   (uint idex           );        // free texslot
+void LDTEX   (uint idex           );        // load data into tex
 
-void RDPNG   (char* fpath         );
+uint GTTEXLOC(uint idex           );        // get gl location
+
+void RDPNG   (char* fpath         ,
+              uchar* buff         );
 
 //   ---     ---     ---     ---     ---
 

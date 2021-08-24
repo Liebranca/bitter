@@ -14,11 +14,25 @@ extern "C" {
 //   ---     ---     ---     ---     ---
 
 #define SIN_TEXNIDS  64
+#define SIN_SHDNIDS   4
 #define SIN_M3DNIDS 128
 #define SIN_ANSNIDS  32
 #define SIN_HASHSIZ   6
 
 #define SIN_TEXLAYS   4
+#define SIN_SHDLAYS   2
+
+#define SIN_GL_VER "#version 460\n"
+
+extern uint SIN_EVILSTATE;
+
+enum SIN_UNIFORM_NAMES {
+
+    SIN_MODEL_U,
+    SIN_NMAT_U,
+    SIN_NUM_U
+
+};
 
 //   ---     ---     ---     ---     ---
 

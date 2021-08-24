@@ -21,7 +21,7 @@
 #include "chWIN.h"
 
 #include "KVRNEL/MEM/zjc_clock.h"
-#include "glad/glad.h"
+#include "SIN/sin_globals.h"
 
 //   ---     ---     ---     ---     ---
 
@@ -37,14 +37,22 @@ static uint          w_height        =  96;
 
 static uchar         openwins;
 
-static float         ambientColor[4] = { 1, 0, 0, 0.5f };
+static float         ambientColor[4] = { 22.0f/255.0f, 30.0f/255.0f, 35.0f/255.0f, 1.0f };
 static float         ambientMult     = 1.0f;
 
 //   ---     ---     ---     ---     ---
 
 int   GTCHMNGRUN        (void)              { return GTWINOPEN(curwin);                     };
 
-void  FRBEGCHMNG        (void)              { KFRBEG(); POLWIN(curwin); SWPWINBUF(curwin);
+int   FRBEGCHMNG        (void)              { KFRBEG(); POLWIN(curwin);
+
+    if(SIN_EVILSTATE) {
+        CALOUT('E', "SIN exception -- shutting down. Check the logs...");
+        return FATAL;
+
+    };
+
+    SWPWINBUF(curwin);
 
     glBindFramebuffer                       (GL_FRAMEBUFFER, 0                              );
 
@@ -53,7 +61,8 @@ void  FRBEGCHMNG        (void)              { KFRBEG(); POLWIN(curwin); SWPWINBU
                                               ambientColor[2] * ambientMult, \
                                               ambientColor[3] * ambientMult  );
 
-    glClear                                 (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);    };
+    glClear                                 (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    return DONE;                                                                            };
 
 float FBYCHMNG          (void)              { return chmang_clock->fBy;                     };
 uint  UBYCHMNG          (void)              { return chmang_clock->uBy;                     };
@@ -95,8 +104,8 @@ int NTCHMNG(char* title, int fullscreen)    {
     SDL_GetCurrentDisplayMode(0, &DM);
 
     if(fullscreen) {
-        w_width  = DM.w-1;
-        w_height = DM.h-1;
+        w_width  = DM.w;
+        w_height = DM.h;
     
     };
 
@@ -106,8 +115,8 @@ int NTCHMNG(char* title, int fullscreen)    {
     ogl_context     = SDL_GL_CreateContext  (curwin->window                               );
     gladLoadGLLoader                        ((GLADloadproc)SDL_GL_GetProcAddress          );
 
-    SDL_MaximizeWindow(curwin->window);
-    SDL_SetWindowOpacity(curwin->window, 0.5f);
+    //SDL_MaximizeWindow(curwin->window);
+    //SDL_SetWindowOpacity(curwin->window, 0.5f);
     SDL_GL_SetSwapInterval(1);
 
 //   ---     ---     ---     ---     ---

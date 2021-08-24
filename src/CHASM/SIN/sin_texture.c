@@ -18,6 +18,7 @@
 #include "sin_texture.h"
 #include "sin_globals.h"
 #include "KVRNEL/lymath.h"
+#include "KVRNEL/MEM/kvr_str.h"
 
 #include <stdio.h>
 #include <libpng16/png.h>
@@ -38,10 +39,11 @@ typedef struct SIN_TEXTURE {                // simple descriptor
 
 typedef struct SIN_TEXMANG {                // array of texture descriptors
 
-    MEM m;                                  // mem header
+    MEM  m;                                 // mem header
 
-    TEX slots[SIN_TEXNIDS];                 // id array
-    STK stack;                              // avail @stktop
+    uint used;                              // occupied slot counter
+    TEX  slots[SIN_TEXNIDS];                // id array
+    STK  stack;                             // avail @stktop
 
 } TEXMNG;
 
@@ -75,48 +77,95 @@ uint MKTEX(uint dim, char* name)            {
                                             // get next avail slot
     uint idex; STACKPOP                     (byref(SIN_TEXTURES->stack), idex        );
 
-    TEX tex    = SIN_TEXTURES->slots[idex]; // fill out the forms
-    tex.info.x = dim;
-    tex.info.y = SIN_TEXLAYS;
+    TEX* tex    = (SIN_TEXTURES->slots)+idex;
+    tex->info.x = dim;
+    tex->info.y = SIN_TEXLAYS;
 
                                             // alloc gl buffer
-    glGenTextures                           (1, &(tex.loc)                           );
+    glGenTextures                           (1, &(tex->loc)                          );
     glActiveTexture                         (GL_TEXTURE0                             );
-    glBindTexture                           (GL_TEXTURE_2D_ARRAY, tex.loc            );
-    glTexStorage3D                          (GL_TEXTURE_2D_ARRAY, tex.info.y, GL_RGBA,
-                                             tex.info.x, tex.info.x, tex.info.y      );
+    glBindTexture                           (GL_TEXTURE_2D_ARRAY, tex->loc           );
+    glTexStorage3D                          (GL_TEXTURE_2D_ARRAY, 4, GL_RGBA32F     ,
+                                             tex->info.x, tex->info.x, tex->info.y   );
+
+    glTexParameteri                         (GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BASE_LEVEL, 0);
+    glTexParameteri                         (GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL,  3);
+    glTexParameteri                         (GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S,      \
+                                             GL_REPEAT                                    );
+    glTexParameteri                         (GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T,      \
+                                             GL_REPEAT                                    );
+
+    glTexParameterf                         (GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER,  \
+                                             GL_NEAREST_MIPMAP_NEAREST                    );
+    glTexParameterf                         (GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER,  \
+                                             GL_NEAREST                                   );
+
     glBindTexture                           (GL_TEXTURE_2D_ARRAY, 0                  );
 
                                             // assign name to tex and insert to hash
-    tex.id     = IDNEW                      ("TEX*", name                            );
-    STSINHASH                               (&(tex.id)                               );
+    tex->id    = IDNEW                      ("TEX*", name                            );
+    STSINHASH                               (&(tex->id)                              );
 
-    return idex;                                                                            };
+    LDTEX(idex);
+
+    SIN_TEXTURES->used++; return idex;                                                      };
 
 //   ---     ---     ---     ---     ---
 
 void DLTEX(uint idex)                       {
 
-    TEX tex = SIN_TEXTURES->slots[idex];
+    TEX* tex = (SIN_TEXTURES->slots)+idex;
 
     void** tmp;                             // dummy hash get-pop
-    GTSINHASH                               (&(tex.id), tmp, 1                  );
+    GTSINHASH                               (&(tex->id), tmp, 1                 );
 
                                             // gl clean
     glBindTexture                           (GL_TEXTURE_2D_ARRAY, 0             );
-    glDeleteTextures                        (1, &(tex.loc)                      );
+    glDeleteTextures                        (1, &(tex->loc)                     );
 
                                             // push free to slotstack
     STACKPUSH                               (byref(SIN_TEXTURES->stack), idex   );
-    CLMEM2                                  (&tex, sizeof(TEX)                  );
+    CLMEM2                                  (tex, sizeof(TEX)                   );
 
-    CALOUT('E', "You never see this ALSO!");
-
-          };
+    SIN_TEXTURES->used--;                                                                   };
 
 //   ---     ---     ---     ---     ---
 
-void RDPNG(char* fpath)                     {
+uint GTTEXLOC(uint idex)                    { return SIN_TEXTURES->slots[idex].loc;         };
+
+//   ---     ---     ---     ---     ---
+
+void LDTEX(uint idex)                       {
+
+    TEX* tex = (SIN_TEXTURES->slots)+idex;
+
+    LDLNG(64*256); MEM* lng=GTLNG();
+    uchar* buff = MEMBUFF(lng, uchar, 0);
+
+    RDPNG                                   ("D:/lieb_git/KVR/bin/x64/lycon.png", buff      );
+
+    glActiveTexture                         (GL_TEXTURE0                                    );
+    glBindTexture                           (GL_TEXTURE_2D_ARRAY, tex->loc                  );
+
+    for(uchar layer = 0   ;
+        layer < 2         ;
+        layer++           ) {
+
+        glTexSubImage3D                     (GL_TEXTURE_2D_ARRAY, 0, 0, 0,                  \
+                                             layer, tex->info.x, tex->info.x, 1             ,
+                                             GL_RGBA, GL_UNSIGNED_BYTE, buff+(layer*64)      );
+    };
+
+//   ---     ---     ---     ---     ---
+
+    glGenerateMipmap                        (GL_TEXTURE_2D_ARRAY                            );
+    glBindTexture                           (GL_TEXTURE_2D_ARRAY, 0                         );
+
+    DLMEM(lng);                                                                             };
+
+//   ---     ---     ---     ---     ---
+
+void RDPNG(char* fpath, uchar* buff)        {
 
     png_structp png_ptr;
     png_infop   info_ptr;
@@ -178,16 +227,12 @@ void RDPNG(char* fpath)                     {
     
     };*/
 
-    // read 8x8 square
+    uint idex=0;
     for(int y=0; y<height; y++) {
-        for(int x=0; x<(8*20)*3; x+=3) {
-            uchar r=rows[y][x];
-            if(r) { printf(" "); }
-            else  { printf("x"); };
+        for(int x=0; x<rowbytes; x+=4) {
+            buff[idex]=rows[y][x]; idex++;
 
         };
-
-        printf("\n");
 
     }; fclose(fp);
 
@@ -195,34 +240,3 @@ void RDPNG(char* fpath)                     {
 };
 
 //   ---     ---     ---     ---     ---
-
-/*
-    for(uchar layer = 0;    \
-        layer < tex->imcount;
-        layer++)            {
-
-        joj_subTexRead                      (dim, tex->imcount, layer, &pixels              );
-        glTexSubImage3D                     (GL_TEXTURE_2D_ARRAY, 0, 0, 0,                  \
-                                             layer, tex->width, tex->height, 1              ,
-                                             GL_RGBA32UI, GL_UNSIGNED_INT, pixels           );
-    };
-
-//   ---     ---     ---     ---     ---
-
-    glTexParameteri                         (GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BASE_LEVEL, 0  );
-    glTexParameteri                         (GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL,  3  );
-    glTexParameteri                         (GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S,        \
-                                             GL_REPEAT                                      );
-    glTexParameteri                         (GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T,        \
-                                             GL_REPEAT                                      );
-
-    glTexParameterf                         (GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER,    \
-                                             GL_NEAREST_MIPMAP_NEAREST                      );
-    glTexParameterf                         (GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER,    \
-                                             GL_NEAREST                                     );
-
-    glGenerateMipmap                        (GL_TEXTURE_2D_ARRAY                            );
-    glBindTexture                           (GL_TEXTURE_2D_ARRAY, 0                         );
-
-//   ---     ---     ---     ---     ---
-*/

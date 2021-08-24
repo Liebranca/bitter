@@ -14,7 +14,7 @@ int NTCHMNG     (char* title,  \
 int DLCHMNG     (void          );           // trashes it
 int GTCHMNGRUN  (void          );           // checks if window is open
 
-void  FRBEGCHMNG(void          );           // loop top
+int   FRBEGCHMNG(void          );           // loop top
 float FBYCHMNG  (void          );           // get 1*clock
 uint  UBYCHMNG  (void          );           // get (1*clock)*base
 void  FRENDCHMNG(void          );           // loop bottom
