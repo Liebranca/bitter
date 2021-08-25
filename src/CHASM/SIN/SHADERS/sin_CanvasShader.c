@@ -16,6 +16,8 @@
 /*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
 
 #include "sin_CanvasShader.h"
+#include "sin_lycon.h"
+
 #include "SIN/sin_globals.h"
 
 //   ---     ---     ---     ---     ---
@@ -26,53 +28,51 @@ cchar* SIN_CanvasShader_source_v[2] =
 SIN_GL_VER,
 
 "\
-                                                                                             \
-in  vec3  Position;                                                                          \
-in  vec2  UV;                                                                                \
-                                                                                             \
-out vec2  texCoords;                                                                         \
-                                                                                             \
-void main() {                                                                                \
-    gl_Position = vec4(Position.x, Position.y, 0, 1.0);                                      \
+in  vec3  Position;\
+in  vec2  UV;\
+\
+out vec2  texCoords;\
+\
+void main() {\
+    gl_Position = vec4(Position.x, Position.y, 0, 1.0);\
     texCoords   = (UV+1)*0.5;\
-};                                                                                           \
-                                                                                             \
+};\
 "
 
 };
 
 //   ---     ---     ---     ---     ---
 
-cchar* SIN_CanvasShader_source_f[2] =
+cchar* SIN_CanvasShader_source_f[3] =
 {
 
 SIN_GL_VER,
 
+FONTS_LYCON,
+
 "\
-                                                                                             \
-in vec2 texCoords;                                                                           \
-uniform sampler2DArray Surface;                                                              \
-                                                                                             \
-                                                                                             \
-const uint bmp[2] = uint[2](0x686C6FF, 0xF060606);                                           \
+\
+in vec2 texCoords;\
+uniform sampler2DArray Surface;\
+uniform uint drCH;\
 \
 \
-void main() {                                                                                \
+\
+void main() {\
 \
     uint x = uint(texCoords.x*8);\
     uint y = uint(texCoords.y*8);\
 \
-    uint i = x+(y*8);                                                                        \
-    uint z = uint(i > 31);                                                                   \
-                                                                                             \
-    i-=z*32;                                                                                 \
-    bool r = !bool(bmp[z]&(1<<i));                                                           \
+    uint i = x+(y*8);\
+    uint z = uint(i > 31);\
+\
+    i-=z*32;\
+    bool r = !bool(lycon[drCH][z]&(1<<i));\
 \
 \
     vec4 color = vec4(r,r,r,!r);\
-    gl_FragColor = color;                                                                    \
-}                                                                                            \
-                                                                                             \
+    gl_FragColor = color;\
+}\
 "
 };
 
@@ -86,16 +86,16 @@ const SHDP SIN_CanvasShader =
 
     { "Position", "UV"                      },      // Attributes
 
-    {                                       },      // Uniforms
+    { "drCH"                                },      // Uniforms
 
     {                                       },      // UBOs
 
     { "Surface"                             },      // Samplers
 
     2,                                              // Number of vertex shader blocks
-    2,                                              // Number of fragment shader blocks
+    3,                                              // Number of fragment shader blocks
     2,                                              // Number of attributes
-    0,                                              // Number of uniforms
+    1,                                              // Number of uniforms
     0,                                              // Number of UBOs
     1,                                              // Number of samplers
 

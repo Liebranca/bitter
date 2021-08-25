@@ -76,9 +76,10 @@ uint  GTWINHEI          (void)              { return w_height;                  
 int NTCHMNG(char* title, int fullscreen)    {
 
                                             // SDL setup boilerplate
-    SDL_GL_SetAttribute                     (SDL_GL_RED_SIZE,              3              );
-    SDL_GL_SetAttribute                     (SDL_GL_GREEN_SIZE,            3              );
-    SDL_GL_SetAttribute                     (SDL_GL_BLUE_SIZE,             2              );
+    SDL_GL_SetAttribute                     (SDL_GL_RED_SIZE,              8              );
+    SDL_GL_SetAttribute                     (SDL_GL_GREEN_SIZE,            8              );
+    SDL_GL_SetAttribute                     (SDL_GL_BLUE_SIZE,             8              );
+    SDL_GL_SetAttribute                     (SDL_GL_ALPHA_SIZE,            8              );
 
     SDL_GL_SetAttribute                     (SDL_GL_BUFFER_SIZE,          16              );
     SDL_GL_SetAttribute                     (SDL_GL_DEPTH_SIZE,           16              );
@@ -116,7 +117,7 @@ int NTCHMNG(char* title, int fullscreen)    {
     gladLoadGLLoader                        ((GLADloadproc)SDL_GL_GetProcAddress          );
 
     //SDL_MaximizeWindow(curwin->window);
-    //SDL_SetWindowOpacity(curwin->window, 0.5f);
+    //SDL_SetWindowOpacity(curwin->window, 0.0f);
     SDL_GL_SetSwapInterval(1);
 
 //   ---     ---     ---     ---     ---
@@ -136,6 +137,7 @@ int NTCHMNG(char* title, int fullscreen)    {
 
 //   ---     ---     ---     ---     ---
 
+    glEnable                                (GL_ALPHA_TEST                                );
     glEnable                                (GL_DEPTH_TEST                                );
     glEnable                                (GL_CULL_FACE                                 );
     glCullFace                              (GL_BACK                                      );

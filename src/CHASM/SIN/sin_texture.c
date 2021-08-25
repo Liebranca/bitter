@@ -217,20 +217,10 @@ void RDPNG(char* fpath, uchar* buff)        {
 
 //   ---     ---     ---     ---     ---
 
-    /*for (j = 0; j < height; j++) {
-        png_bytep row = rows[j];
-
-        for (i = 0; i < rowbytes; i++) {
-            png_byte r = row[i];
-
-        };
-    
-    };*/
-
     uint idex=0; uint b=0;
     for(int y=0; y<height; y++) {
         for(int x=0; x<rowbytes; x+=3) {
-            buff[idex]=rows[y][x]*255; idex++;
+            buff[idex]=rows[y][x]; idex++;
 
         };
 

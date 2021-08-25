@@ -101,9 +101,16 @@ void NTCANVAS(void)                         {
 
 //   ---     ---     ---     ---     ---
 
+static uint drch_d=0;
+
 void DRCANVAS(uint texloc)                  {
 
     glUseProgram                            (canvasProgram                               );
+
+    drch_d++; if(drch_d==256) { drch_d=0; };
+    int drCH_loc=glGetUniformLocation(canvasProgram, "drCH");
+    glUniform1ui(drCH_loc, drch_d);
+
     glActiveTexture                         (GL_TEXTURE0                                 );
     glBindTexture                           (GL_TEXTURE_2D_ARRAY, texloc                 );
 
