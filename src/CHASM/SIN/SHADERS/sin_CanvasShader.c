@@ -29,13 +29,18 @@ SIN_GL_VER,
 
 "\
 in  vec3  Position;\
-in  vec2  UV;\
+uniform vec4 Transform;\
 \
 out vec2  texCoords;\
+out uint  chidex;\
 \
 void main() {\
-    gl_Position = vec4(Position.x, Position.y, 0, 1.0);\
-    texCoords   = (UV+1)*0.5;\
+\
+    gl_Position = vec4((Position.x*Transform[0])+Transform[1],\
+                       (Position.y*Transform[0])+(Transform[2]-Transform[0]), 0, 1.0);\
+\
+    texCoords   = vec2(Position.x>0, Position.y>0);\
+    chidex      = uint(Transform[3]);\
 };\
 "
 
@@ -53,8 +58,8 @@ FONTS_LYCON,
 "\
 \
 in vec2 texCoords;\
+flat in uint chidex;\
 uniform sampler2DArray Surface;\
-uniform uint drCH;\
 \
 \
 \
@@ -67,10 +72,10 @@ void main() {\
     uint z = uint(i > 31);\
 \
     i-=z*32;\
-    bool r = !bool(lycon[drCH][z]&(1<<i));\
+    bool r = bool(lycon[chidex][z]&(1<<i)); r=r&&chidex!=0;\
 \
 \
-    vec4 color = vec4(r,r,r,!r);\
+    vec4 color = vec4(192.0/255.0,206.0/255.0,192.0/255.0,r);\
     gl_FragColor = color;\
 }\
 "
@@ -84,20 +89,20 @@ const SHDP SIN_CanvasShader =
     SIN_CanvasShader_source_v,                      // Vertex sources
     SIN_CanvasShader_source_f,                      // Fragment sources
 
-    { "Position", "UV"                      },      // Attributes
+    { "Position"                            },      // Attributes
 
-    { "drCH"                                },      // Uniforms
+    { "Transform"                           },      // Uniforms
 
     {                                       },      // UBOs
 
-    { "Surface"                             },      // Samplers
+    {                                       },      // Samplers
 
     2,                                              // Number of vertex shader blocks
     3,                                              // Number of fragment shader blocks
-    2,                                              // Number of attributes
+    1,                                              // Number of attributes
     1,                                              // Number of uniforms
     0,                                              // Number of UBOs
-    1,                                              // Number of samplers
+    0,                                              // Number of samplers
 
     0                                               // Flags
 

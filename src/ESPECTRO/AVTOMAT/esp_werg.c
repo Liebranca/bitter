@@ -45,15 +45,12 @@ int main(int argc, char** argv) {
 
     NTSIN();
 
-    uint tex_idex = MKTEX(8, "test");
-    uint tex_loc  = GTTEXLOC(tex_idex);
-
     while(GTCHMNGRUN()) {
 
         int evilstate=FRBEGCHMNG();
         if(evilstate) { break; };
 
-        DRCANVAS  (tex_loc);
+        DRCANVAS();
 
         FRENDCHMNG();
         SLEEPCHMNG();

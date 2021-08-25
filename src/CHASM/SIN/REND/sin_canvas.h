@@ -9,9 +9,9 @@ extern "C" {
 
 //   ---     ---     ---     ---     ---
 
-void NTCANVAS(void       );                 // kyknit
-void DRCANVAS(uint texloc);                 // draw rect
-void DLCANVAS(void       );                 // kykdel
+void NTCANVAS(void);                        // kyknit
+void DRCANVAS(void);                        // draw rect
+void DLCANVAS(void);                        // kykdel
 
 //   ---     ---     ---     ---     ---
 
