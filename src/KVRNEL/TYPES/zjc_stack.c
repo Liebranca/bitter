@@ -43,4 +43,6 @@ uint POPSTK(STK* s)                         {
 
     return value;                                                                           };
 
+void INCSTK(STK* s)                         { s->buff[s->top]++;                            };
+
 //  - --- - --- - --- - --- -

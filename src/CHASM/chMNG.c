@@ -32,9 +32,6 @@ static SDL_GLContext ogl_context;
 static CLCK*         chmang_clock    = NULL;
 static WIN*          curwin          = NULL;
 
-static uint          w_width         =  640;
-static uint          w_height        =  480;
-
 static uchar         openwins;
 
 static float         ambientColor[4] = { 22.0f/255.0f, 30.0f/255.0f, 35.0f/255.0f, 1.0f };
@@ -68,8 +65,8 @@ float FBYCHMNG          (void)              { return chmang_clock->fBy;         
 uint  UBYCHMNG          (void)              { return chmang_clock->uBy;                     };
 void  FRENDCHMNG        (void)              { KFREND();                                     };
 void  SLEEPCHMNG        (void)              { if(GTSLEEP()) { SDL_Delay(GTSLTIM()); };      };
-uint  GTWINWID          (void)              { return w_width;                               };
-uint  GTWINHEI          (void)              { return w_height;                              };
+uint  GTWINWID          (void)              { return SIN_WSIZX;                             };
+uint  GTWINHEI          (void)              { return SIN_WSIZY;                             };
 
 //   ---     ---     ---     ---     ---
 
@@ -105,14 +102,14 @@ int NTCHMNG(char* title, int fullscreen)    {
     SDL_GetCurrentDisplayMode(0, &DM);
 
     if(fullscreen) {
-        w_width  = DM.w;
-        w_height = DM.h;
+        SIN_WSIZX = DM.w;
+        SIN_WSIZY = DM.h;
     
     };
 
 //   ---     ---     ---     ---     ---    // make window
 
-    curwin          = MKWIN                 (title, w_height, w_width                     );
+    curwin          = MKWIN                 (title, SIN_WSIZY, SIN_WSIZX                  );
     ogl_context     = SDL_GL_CreateContext  (curwin->window                               );
     gladLoadGLLoader                        ((GLADloadproc)SDL_GL_GetProcAddress          );
 

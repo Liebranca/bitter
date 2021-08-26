@@ -77,12 +77,11 @@ $(TRSH)/%.o: %.c %.h $(TRSH)/MKLOG
 
 #   ---     ---     ---     ---     ---
 
-.PHONY: clean
+.PHONY: clean flags
 clean:
 	@rm -rf $(TRSH)/*
 	@if test -f $(MAIN); then rm $(MAIN); fi
 
-.PHONY: flags
 ifeq "$(DFLG)" "$(DFLG_OLD)"
 flags:
 	@if ! test -f $(TRSH)/MKLOG; then echo $(DFLG) > $(TRSH)/MKLOG; fi

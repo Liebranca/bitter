@@ -57,7 +57,7 @@ void NTSINTEX()                             {
                                             // set name and alloc to SIN_TEXTURES
     ID id=IDNEW                             ("DATA", "_SIN_TEXIDS"                 );       \
     MEMGET                                  (TEXMNG, SIN_TEXTURES                  ,        \
-                                            xBYTES(SIN_TEXNIDS, uint), &id         );       \
+                                             xBYTES(SIN_TEXNIDS, uint), &id        );       \
 
                                             // init the slotstack
     MKSTK                                   (byref(SIN_TEXTURES->stack), SIN_TEXNIDS   );

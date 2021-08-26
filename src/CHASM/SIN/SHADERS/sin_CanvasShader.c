@@ -30,6 +30,7 @@ SIN_GL_VER,
 "\
 in  vec3  Position;\
 uniform vec4 Transform;\
+uniform uvec4 CharData;\
 \
 out vec2  texCoords;\
 out uint  chidex;\
@@ -37,10 +38,10 @@ out uint  chidex;\
 void main() {\
 \
     gl_Position = vec4((Position.x*Transform[0])+Transform[1],\
-                       (Position.y*Transform[0])+(Transform[2]-Transform[0]), 0, 1.0);\
+                       (Position.y*Transform[2])+(Transform[3]-Transform[2]), 0, 1.0);\
 \
     texCoords   = vec2(Position.x>0, Position.y>0);\
-    chidex      = uint(Transform[3]);\
+    chidex      = CharData[0];\
 };\
 "
 
@@ -59,7 +60,6 @@ FONTS_LYCON,
 \
 in vec2 texCoords;\
 flat in uint chidex;\
-uniform sampler2DArray Surface;\
 \
 \
 \
@@ -72,7 +72,7 @@ void main() {\
     uint z = uint(i > 31);\
 \
     i-=z*32;\
-    bool r = bool(lycon[chidex][z]&(1<<i)); r=r&&chidex!=0;\
+    bool r = bool(lycon[chidex][z]&(1<<i)); r=r&&chidex>0x1F;\
 \
 \
     vec4 color = vec4(192.0/255.0,206.0/255.0,192.0/255.0,r);\
@@ -91,7 +91,7 @@ const SHDP SIN_CanvasShader =
 
     { "Position"                            },      // Attributes
 
-    { "Transform"                           },      // Uniforms
+    { "Transform", "CharData"               },      // Uniforms
 
     {                                       },      // UBOs
 
