@@ -27,3 +27,8 @@ void NTSIN() { NTSINHASH(); NTSINTEX(); NTSINSHD (); NTCANVAS (); };
 void DLSIN() { DLCANVAS (); DLSINSHD(); DLSINTEX (); DLSINHASH(); };
 
 //   ---     ---     ---     ---     ---
+
+void GTCHRSZ (float* dst, uint chsiz)       { dst[0]=((float) chsiz)/((float) SIN_WSIZX);   \
+                                              dst[1]=((float) chsiz)/((float) SIN_WSIZY);   };
+
+//   ---     ---     ---     ---     ---

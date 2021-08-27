@@ -36,26 +36,26 @@ void ldbus8  (ustr8* b)                     { LUS8(b)=b;                        
 void staus8  (uint   F)                     { LUS8(a)->F=F;                                 };
 void stbus8  (uint   F)                     { LUS8(b)->F=F;                                 };
 
-void shaus8  (void    )                     { CALOUT('E', "[x%u y%u z%u w%u]",              \
+void shaus8  (void    )                     { CALOUT(P, "[x%u y%u z%u w%u]",                \
                                                      LUS8(a)->x, LUS8(a)->y ,               \
                                                      LUS8(a)->z, LUS8(a)->w);               };
 
-void shbus8  (void    )                     { CALOUT('E', "[x%u y%u z%u w%u]",              \
+void shbus8  (void    )                     { CALOUT(P, "[x%u y%u z%u w%u]",                \
                                                      LUS8(b)->x, LUS8(b)->y ,               \
                                                      LUS8(b)->z, LUS8(b)->w);               };
 
-void fshaus8 (void    )                     { CALOUT('E', "0x%02X", LUS8(a)->F);            };
-void fshbus8 (void    )                     { CALOUT('E', "0x%02X", LUS8(b)->F);            };
+void fshaus8 (void    )                     { CALOUT(P, "0x%08X", LUS8(a)->F);            };
+void fshbus8 (void    )                     { CALOUT(P, "0x%08X", LUS8(b)->F);            };
 
-void bshaus8 (void    )                     { CALOUT('E', "0b"          );
+void bshaus8 (void    )                     { CALOUT(P, "0b"          );
                                               for(uchar i=0; i<32; i++) {                   \
-                                                  CALOUT('E', "%d"      ,                   \
+                                                  CALOUT(P, "%d"      ,                     \
                                                      nthbit(LUS8(a)->F, i%8));              \
                                             };                                              };
 
-void bshbus8 (void    )                     { CALOUT('E', "0b"          );
+void bshbus8 (void    )                     { CALOUT(P, "0b"          );
                                               for(uchar i=0; i<32; i++) {                   \
-                                                  CALOUT('E', "%d"      ,                   \
+                                                  CALOUT(P, "%d"      ,                     \
                                                      nthbit(LUS8(b)->F, i%8));              \
                                             };                                              };
 

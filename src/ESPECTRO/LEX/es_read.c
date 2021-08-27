@@ -1,5 +1,5 @@
 /*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
-/*    ESP_READ                              *
+/*    ES_READ                               *
 *                                           *
 *     -espectro reader                      *
 *     -displays buffs on termo              *
@@ -15,7 +15,7 @@
 *     lyeb,                                 *
 *                                           */
 /*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
-
+/*
 #include "KVRNEL/zjc_CommonTypes.h"
 #include "KVRNEL/zjc_evil.h"
 #include "KVRNEL/TYPES/zjc_id.h"
@@ -23,6 +23,8 @@
 #include "KVRNEL/MEM/kvr_str.h"
 #include "KVRNEL/MEM/kvr_bin.h"
 #include "KVRNEL/lymath.h"
+
+#include "es_read.h"
 
 #include <sys/ioctl.h>
 #include <sys/socket.h>
@@ -159,5 +161,5 @@ void main(void) {
     } while(kvr.kb.x!=10);
 
     DLKVR();                                                                                };
-
+*/
 //   ---     ---     ---     ---     ---

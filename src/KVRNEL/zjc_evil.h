@@ -8,11 +8,16 @@ extern "C" {
 #endif
 
 //   ---     ---     ---     ---     ---
+
                                             // logflags. enables/disables certain logmesses
-#define KVR_CALOM 0x01                      // MEM
-#define KVR_CALOF 0x02                      // BIN
-#define KVR_CALOK 0x04                      // PROC
-#define KVR_CALOH 0x08                      // HASH
+#define KVR_CALOM 0x0001                    // MEM
+#define KVR_CALOF 0x0002                    // BIN
+#define KVR_CALOK 0x0004                    // PROC
+#define KVR_CALOE 0x0008                    // ERR
+#define KVR_CALOR 0x0010                    // RAW
+#define KVR_CALOH 0x0020                    // HASH
+#define KVR_CALOP 0x0040                    // PESO
+#define KVR_CALOS 0x0080                    // SIN
 
 #ifndef KVR_DEBUG                           /* should be created at compile-time through -D*/
 #define KVR_DEBUG 0x00                      /* this is just here as a safety net           */
@@ -111,11 +116,13 @@ void __printcalreg(int flush              );// prints __registered__ calls
 void __popcalreg  (                       );// pop from call register
 void __terminator (int errcode, char* info);// goes back in time to save john connor
 
-void CALOUT       (char fam,              \
+void __calout     (char fam,              \
                    char* format, ...      );// prints to KVNSLOG
 
 //   ---     ---     ---     ---     ---
 // some bug-tracking macros
+
+#include "AVTOMAT/calout.h"                 /* CALOUT boiler macros                        */
 
 #define ERRLOC                              /* macro paste for error locations             */\
     __shpath(__FILE__), __func__, __LINE__
@@ -133,11 +140,6 @@ void CALOUT       (char fam,              \
     retx = cal->state; __popcalreg();                                                       }
 
 //   ---     ---     ---     ---     ---
-
-// move these somewhere else
-void  timer_start(void);
-float timer_end  (void);
-float timer_ftime(void);
 
 #ifdef __cplusplus
 }

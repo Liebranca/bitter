@@ -41,12 +41,3 @@ int FNDSINHASH(char* key,void** dst,
                int pop             )        { STR_HASHGET(SIN_HASH, key, dst, pop);         };
 
 //   ---     ---     ---     ---     ---
-
-void GTCHRSZ (float* dst, uint chsiz)       {
-
-    dst[0]=((float) chsiz)/((float) SIN_WSIZX);
-    dst[1]=((float) chsiz)/((float) SIN_WSIZY);
-
-};
-
-//   ---     ---     ---     ---     ---

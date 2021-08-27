@@ -106,7 +106,7 @@ void CHKSHDERR(uint shader, uint flag  ,
         else {
             glGetShaderInfoLog              (shader, sizeof(error), NULL, error    );
 
-        }; CALOUT                           ('E', "%s: %s\n", errorMessage, error  );
+        }; CALOUT                           (S, "%s: %s\n", errorMessage, error    );
            SIN_EVILSTATE++;
 
     };                                                                                      };
@@ -120,7 +120,7 @@ uint CMPSHD(cchar** source  ,
     uint shader = glCreateShader            (shaderType                         );
 
     if (!shader) {                          // prelm duh errcatch
-        CALOUT                              ('E', "Shader couldn't be created\n");
+        CALOUT                              (S, "Shader couldn't be created\n"  );
 
     };
 

@@ -1,4 +1,4 @@
-# ESPECTRO GNU MAKEFILE
+# SIN GNU MAKEFILE
 
 #   ---     ---     ---     ---     ---
 # platform switch
@@ -17,8 +17,8 @@ OFLG      = -s -Os -fno-unwind-tables -fno-asynchronous-unwind-tables
 OFLG     += -fsingle-precision-constant -ffast-math -fno-ident
 LFLG      = -ffunction-sections -fdata-sections -Wl,--gc-sections
 
-FSWAT     = ESPECTRO
-MKWAT     = es-shell.exe
+FSWAT     = SIN
+MKWAT     = sin.dll
 
 DIRS      = $(shell find $(BASE_DIR) -type d)
 HEDS      = $(wildcard $(DIRS:%=%/*.h))
@@ -32,7 +32,7 @@ ODIR      = $(patsubst %,$(TRSH)/%,$(DIRS))
 
 INCLUDES  = -I$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 INCLUDES += -I$(dir $(abspath ..)/)
-LIBS      = -L$(BIN) -lkvrnel -lgl -lglew -lopengl32 -lsin -lSDL2main -lSDL2 -lchasm 
+LIBS      = -L$(BIN) -lkvrnel -lgl -lglew -lopengl32
 
 MAIN      = $(BIN)/$(MKWAT)
 
@@ -53,7 +53,7 @@ $(MAIN): $(ODIR) $(HEDS) $(SRCS) $(DEPS) $(OBJS) $(TRSH)/MKLOG
 	@echo $(MAIN)
 	@if ! test -d $(BIN); then mkdir -p $(BIN); fi
 	@if test -f $(MAIN); then rm $(MAIN); fi
-	@gcc $(LFLG) $(INCLUDES) $(PFLG) $(OBJS) $(LIBS) -o $(MAIN)
+	@gcc -shared $(LFLG) $(INCLUDES) $(PFLG) $(OBJS) $(LIBS) -o $(MAIN)
 	@if test -f $(MAIN); then make -t -s; fi
 
 #   ---     ---     ---     ---     ---

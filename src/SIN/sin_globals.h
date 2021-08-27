@@ -50,8 +50,6 @@ int  FNDSINHASH(char* key,void** dst  ,
                 int pop               );    // looks for id matching key and put it in dst
                                             // if pop, removes data from hash
 
-void GTCHRSZ   (float* dst, uint chsiz);    // calculates percent of screen used by square
-
 //   ---     ---     ---     ---     ---
 
 #ifdef __cplusplus

@@ -32,7 +32,7 @@ ODIR      = $(patsubst %,$(TRSH)/%,$(DIRS))
 
 INCLUDES  = -I$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 INCLUDES += -I$(dir $(abspath ..)/)
-LIBS      = -L$(BIN) -lkvrnel -lpng16 -lgl -lglew -lopengl32 -lSDL2main -lSDL2
+LIBS      = -L$(BIN) -lkvrnel -lgl -lglew -lopengl32 -lsin -lSDL2main -lSDL2
 
 MAIN      = $(BIN)/$(MKWAT)
 
@@ -44,10 +44,8 @@ DFLG  =
 ifdef DEBUG
 DFLG += -D KVR_DEBUG=$(DEBUG)
 else
-DFLG += $(shell cat $(TRSH)/MKLOG)
+DFLG += -D KVR_DEBUG=0xFF
 endif
-
-@DFLG_OLD = $(shell cat $(TRSH)/MKLOG)
 
 #   ---     ---     ---     ---     ---
 
@@ -77,25 +75,12 @@ $(TRSH)/%.o: %.c %.h $(TRSH)/MKLOG
 
 #   ---     ---     ---     ---     ---
 
-.PHONY: clean flags
+.PHONY: clean
 clean:
 	@rm -rf $(TRSH)/*
 	@if test -f $(MAIN); then rm $(MAIN); fi
 
-ifeq "$(DFLG)" "$(DFLG_OLD)"
-flags:
-	@if ! test -f $(TRSH)/MKLOG; then echo $(DFLG) > $(TRSH)/MKLOG; fi
-	@echo Using old flags -- no rebuild required
-else
-flags:
-	@echo Using new flags -- rebuild is needed
-	@echo "$(DFLG)" > $(TRSH)/MKLOG
-endif
-
-#   ---     ---     ---     ---     ---
-# dummies
-
 $(TRSH)/MKLOG:
-	@true
+	@echo "$(DFLG)" > $(TRSH)/MKLOG
 
 #   ---     ---     ---     ---     ---

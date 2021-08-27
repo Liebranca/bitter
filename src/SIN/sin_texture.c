@@ -21,7 +21,6 @@
 #include "KVRNEL/MEM/kvr_str.h"
 
 #include <stdio.h>
-#include <libpng16/png.h>
 
 //   ---     ---     ---     ---     ---
 
@@ -137,12 +136,15 @@ uint GTTEXLOC(uint idex)                    { return SIN_TEXTURES->slots[idex].l
 
 void LDTEX(uint idex)                       {
 
+
+    /* this func does nothing useful, rewrite it later
+
+    */
+
     TEX* tex = (SIN_TEXTURES->slots)+idex;
 
     LDLNG(64*256); MEM* lng=GTLNG();
     uchar* buff = MEMBUFF(lng, uchar, 0);
-
-    RDPNG                                   ("D:/lieb_git/KVR/bin/x64/lycon.png", buff      );
 
     glActiveTexture                         (GL_TEXTURE0                                    );
     glBindTexture                           (GL_TEXTURE_2D_ARRAY, tex->loc                  );
@@ -165,6 +167,7 @@ void LDTEX(uint idex)                       {
 
 //   ---     ---     ---     ---     ---
 
+/* leaving this in case i forget how to do it
 void RDPNG(char* fpath, uchar* buff)        {
 
     png_structp png_ptr;
@@ -188,17 +191,17 @@ void RDPNG(char* fpath, uchar* buff)        {
 
     fp = fopen (fpath, "rb");
     if (!fp) {
-        CALOUT                              ('E', "Cannot open <%s>\n", fpath       );
+        CALOUT                              (F, "Cannot open <%s>\n", fpath         );
 
     }; png_ptr = png_create_read_struct     (PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 
     if (!png_ptr) {
-        CALOUT                              ('E', "Cannot create PNG read structure");
+        CALOUT                              (F, "Cannot create PNG read structure"  );
 
     }; info_ptr = png_create_info_struct    (png_ptr                                );
 
     if (!png_ptr) {
-        CALOUT                              ('E', "Cannot create PNG info structure");
+        CALOUT                              (F, "Cannot create PNG info structure"  );
 
     };
 
@@ -228,5 +231,6 @@ void RDPNG(char* fpath, uchar* buff)        {
 
 
 };
+*/
 
 //   ---     ---     ---     ---     ---

@@ -117,7 +117,7 @@ float  GTFRDLT             (void          ) { return cclck->frdlt;              
 
 //   ---     ---     ---     ---     ---
 
-void   DRCLCK              (void          ) { CALOUT('C', "\x1b[%i;%iH%c %s",
+void   DRCLCK              (void          ) { CALOUT(K, "\x1b[%i;%iH%c %s",
 
                                                   cclck->display_pos[0],
                                                   cclck->display_pos[1],

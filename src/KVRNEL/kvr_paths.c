@@ -36,20 +36,15 @@ void __openlog(void)                        {
     CALLOG->file=freopen                    (PTHBIN(CALLOG), "w+", stderr);
 #endif
 
-#if KVR_DEBUG & KVR_CALOK
-    CALOUT                                  ('K', "\n\bKVR RUN\n\b"      );
-#endif
-                                                                                            };
+    CALOUT                                  (K, "\n\bKVR RUN\n\b"        );                 };
 
 void __closelog(void)                       {
 
     FILE* f=CALLOG->file;
 
     DLMEM                                   (CALLOG                );
+    CALOUT                                  (K, "KVR END\n\b\n\b"  );
 
-#if KVR_DEBUG & KVR_CALOK
-    CALOUT                                  ('K', "KVR END\n\b\n\b");
-#endif
 
 #if PECTROPATH
     fclose                                  (f                     );

@@ -6,8 +6,10 @@ extern "C" {
 
 //   ---     ---     ---     ---     ---
 
-void NTSIN();
-void DLSIN();
+void NTSIN  (void                  );
+void DLSIN  (void                  );
+
+void GTCHRSZ(float* dst, uint chsiz);       // calculates percent of screen used by square
 
 //   ---     ---     ---     ---     ---
 

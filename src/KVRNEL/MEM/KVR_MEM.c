@@ -141,7 +141,7 @@ void MEMCNT(MEM* m, char act)               {
 
     MEMCNT_STR[MEMCNT_I]='\0'; MEMCNT_I++;
 
-    CALOUT                                  ('M', "0x%" PRIXPTR  " %s USED\n\b",
+    CALOUT                                  (M, "0x%" PRIXPTR  " %s USED\n\b"  ,
                                                 (uintptr_t) m, MEMCNT_STR      );           };
 
 //   ---     ---     ---     ---     ---

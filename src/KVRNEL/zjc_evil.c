@@ -48,7 +48,7 @@ static char* PALETTE[] = {
 
 static char CALOUT_LAST=0x4D;
 
-void CALOUT(char fam, char* format, ...)    {
+void __calout(char fam, char* format, ...)  {
 
                                             // newline on fambreak
     if(fam!=CALOUT_LAST)                    { CALOUT_LAST=fam; fprintf(stderr, "\n\b");     };
@@ -76,7 +76,7 @@ DANG* __geterrloc(const char* p,
     if(CALDEPTH) {
 
                                             // avoid recursion or you'll see this one
-        if(CALDEPTH > 63)                   { CALOUT('E',"%s", "CALL DEPTH EXCEEDED!\n\b");
+        if(CALDEPTH > 63)                   { CALOUT(E,"%s", "CALL DEPTH EXCEEDED!\n\b");   \
                                               return NULL;                                  };
 
                                             /* fill callbranch so that it reads like so:   *
@@ -108,7 +108,7 @@ DANG* __geterrloc(const char* p,
 
 void __printcalreg(int flush)               {
 
-    for(int i = 0; i < CALREG_I; i++)       { CALOUT('E', "%s%s",               \
+    for(int i = 0; i < CALREG_I; i++)       { CALOUT(E, "%s%s",                 \
                                               PALETTE[4], CALREG[i].location    );
         if (flush)                          { CALREG[i].location[0] = '\0';     };          };
 
@@ -131,12 +131,9 @@ void __terminator (int errcode, char* info) {
     if (errcode < 0x40) { mstart = "$:MSCPX(PALETTE[3]);>FTL_"; ERRSTATE = FATAL; }
     else                { mstart = "$:MSCPX(PALETTE[2]);>ERR_"; ERRSTATE = ERROR; };
 
-    CALOUT('E',
-
-        "\n\b\x1b[7m%s0x%X\x1b[27m: %s",
-        mstart, errcode, PALETTE[4]
-
-    );
+    CALOUT(E                              ,
+           "\n\b\x1b[7m%s0x%X\x1b[27m: %s",
+           mstart, errcode, PALETTE[4]    );
 
     switch(errcode)                         {
 
@@ -170,16 +167,16 @@ void __terminator (int errcode, char* info) {
 
                                             };
 
-    CALOUT('E', mbody, PALETTE[0], info);
-    CALOUT('E',
+    CALOUT(E, mbody, PALETTE[0], info);
+    CALOUT(E,
         "\n\b%sERRLOC TRACKER: %i ENTRIES\n",
         PALETTE[4], CALREG_I
 
     ); __printcalreg(0);
 
-    CALOUT('E', "\n\b");
+    CALOUT(E, "\n\b");
 
-    if(ERRSTATE == FATAL)                   { CALOUT('E', "%s", "TERMINATED");              \
+    if(ERRSTATE == FATAL)                   { CALOUT(E, "%s", "TERMINATED");                \
                                               exit(ERRSTATE);                               }
     else                                    { /*?*/;                                        };
                                                                                             };

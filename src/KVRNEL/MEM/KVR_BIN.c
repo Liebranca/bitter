@@ -186,9 +186,7 @@ int RDBIN(BIN* bin)                         {
 
 //   ---     ---     ---     ---     ---
 
-#if KVR_DEBUG & KVR_CALOF
-    CALOUT('F', "Opened file <%s>\n\b", path);
-#endif
+    CALOUT(F, "Opened file <%s>\n\b", path);
 
     if  ( !strcmp(rmode, "wb+"))            { isnew = 2;                            };
     return isnew;                                                                           };
@@ -204,9 +202,7 @@ int BIN2BIN (uint size)                     {
     int  wb;
     uchar* buff = (uchar*) KVR_RD->buff;
 
-#if KVR_DEBUG & KVR_CALOF
-    CALOUT('F', "Writting from <%s> to <%s>\n\b", PTHBIN(KVR_FR), PTHBIN(KVR_TO));
-#endif
+    CALOUT(F, "Writting from <%s> to <%s>\n\b", PTHBIN(KVR_FR), PTHBIN(KVR_TO));
 
     while(size) {
         uint readsize  =                    (size<ZJC_DAFSIZE) ? size : ZJC_DAFSIZE;
@@ -231,9 +227,7 @@ int DLBIN(BIN* bin)                         {
     int failure = fclose                    (bin->file                                      );
     if  ( failure)                          { return ERROR;                                 }
 
-#if KVR_DEBUG & KVR_CALOF
-    CALOUT('F', "File closed <%s>\n\b", PTHBIN(bin));
-#endif
+    CALOUT(F, "File closed <%s>\n\b", PTHBIN(bin));
 
     bin->file   = NULL;
     return DONE;                                                                            };
@@ -246,9 +240,8 @@ int RMBIN(BIN* bin)                         {
     if(bin->file)                           { BINCLOSE(bin);                                };
     int retx=remove(PTHBIN(bin)); if(retx)  { return ERROR;                                 }
 
-#if KVR_DEBUG & KVR_CALOF
-    CALOUT('F', "Deleted file <%s>\n\b", PTHBIN(bin));
-#endif
+    CALOUT(F, "Deleted file <%s>\n\b", PTHBIN(bin));
+
 
     return DONE;                                                                            };
 

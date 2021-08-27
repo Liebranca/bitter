@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
 #include "KVRNEL/zjc_CommonTypes.h"
-#include "SIN/SHADERS/sin_ShaderParams.h"
+#include "SHADERS/sin_ShaderParams.h"
 
 //  - --- - --- - --- - --- -
 

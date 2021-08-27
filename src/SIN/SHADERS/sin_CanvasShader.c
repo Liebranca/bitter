@@ -18,7 +18,7 @@
 #include "sin_CanvasShader.h"
 #include "sin_lycon.h"
 
-#include "SIN/sin_globals.h"
+#include "sin_globals.h"
 
 //   ---     ---     ---     ---     ---
 

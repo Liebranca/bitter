@@ -44,7 +44,7 @@ int   GTCHMNGRUN        (void)              { return GTWINOPEN(curwin);         
 int   FRBEGCHMNG        (void)              { KFRBEG(); POLWIN(curwin);
 
     if(SIN_EVILSTATE) {
-        CALOUT('E', "SIN exception -- shutting down. Check the logs...");
+        CALOUT(S, "SIN exception -- shutting down; check the logs");
         return FATAL;
 
     };
@@ -91,7 +91,7 @@ int NTCHMNG(char* title, int fullscreen)    {
 
     if(SDL_Init(SDL_INIT_EVERYTHING) < 0) {
 
-        SDL_Quit(); CALOUT('E', "SDL FAIL\n");
+        SDL_Quit(); CALOUT(K, "SDL INIT FAILED\n");
         return FATAL;
 
     };
