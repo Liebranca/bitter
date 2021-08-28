@@ -37,6 +37,15 @@
 
 //   ---     ---     ---     ---     ---
 
+#define PESO_RDRULE(s)         \
+        ( ((**s == 0x00)     ) \
+        | ((**s == 0x3B) << 1) )
+
+#define PESO_RDNULL(x) (x & 0x01)
+#define PESO_RDSCLN(x) (x & 0x02)
+
+//   ---     ---     ---     ---     ---
+
 void NOPE(void* nope) {
     CALOUT(P, "\e[67;0HYou nope!");
 
@@ -75,7 +84,7 @@ void NTPEOP(PEOP* op,
 
 typedef struct PESO_MACHINE {
 
-    MEM*  m;                                // mem header
+    MEM   m;                                // mem header
 
     char  rdop[PESO_OPWIDTH];
     ustr8 args;
@@ -96,9 +105,9 @@ void NTPCON(void)                          {
     GNAMES        = MKHASH                  (5, "GNAMES"                      );
 
                                             // for opcode-to-funptr fetch
-    NTPEOP                                  (PE_OPS+1, "np", 0x00, &NOPE      );
-    NTPEOP                                  (PE_OPS+2, "gb", 0x01, &GBPE      );
-    NTPEOP                                  (PE_OPS+3, "wt", 0x02, &WTPE      );
+    NTPEOP                                  (PE_OPS+1, "np", 0x0000, &NOPE    );
+    NTPEOP                                  (PE_OPS+2, "gb", 0x0101, &GBPE    );
+    NTPEOP                                  (PE_OPS+3, "wt", 0x0002, &WTPE    );
 
                                             // upload opcodes to gnames
     HASHSET                                 (GNAMES, byref(PE_OPS[1].id)      );
@@ -123,7 +132,15 @@ void RDCON(char** st  ,
            ustr8* d   ,
            float* t   )                     {
 
-    int lstate=0;
+//   ---     ---     ---     ---     ---
+
+    PEOP* op   = PE_OPS+0;
+    ustr8 arg  = {0};
+    uint  lap  = 0;
+    uint  flg  = 0;
+    int lstate = 0;
+
+//   ---     ---     ---     ---     ---
 
     VERIFY_PE_STATE:
     d[0].x=(**st);
@@ -152,10 +169,10 @@ void RDCON(char** st  ,
                  PCON->state & PESO_ESCAPED,
                  PCON->state & PESO_ESCREAD);
 
-    if(PCON->state & PESO_ESCREAD) {
+    /*if(PCON->state & PESO_ESCREAD) {
         INCSTK(&(PCON->stack));
 
-    };
+    };*/
 
 //   ---     ---     ---     ---     ---
 
@@ -174,50 +191,46 @@ void RDCON(char** st  ,
 
 //   ---     ---     ---     ---     ---
 
-        uint   i = 0;
-        PEOP* op = PE_OPS+0;
+        uint i=0;
+        for(flg=0; !flg; flg=PESO_RDRULE(st)) {
+            if(!lap) { PCON->rdop[i]=(**st); i++;     };
+            if( lap) { arg.V[lap-1]+=(**st);          };
+            (*st)++; if(**st==0x20) { (*st)++; lap++; };
 
-        CLMEM2(PCON->rdop, PESO_OPWIDTH);
-
-        do {
-
-            if(**st && **st != 0x3B) {
-                PCON->rdop[i]=(**st);
-                i++; (*st)++; continue;
-
-            }; break;
-
-
-        } while(**st && **st != 0x3B);
+        }; PCON->rdop[i]='\0';
 
 //   ---     ---     ---     ---     ---
 
-        PCON->rdop[i]='\0';
-
+        CALOUT(P, "\e[60;48HFLG 0x%02X", flg       );
         STR_HASHGET(GNAMES, PCON->rdop, op, 0      );
         CALOUT(P, "\e[60;0H0x%" PRIXPTR "\e[60;10H:\
-                     \e[60;12HPE_OPCODE %s"        ,
-                     (uintptr_t) op, PCON->rdop    );
-        if(op) {
-            CALOUT(P, " -> INS 0x%02X", op->data.x );
+                   \e[60;12HPE_OPCODE %s"          ,
+                   (uintptr_t) op, PCON->rdop      );
 
-            if(PCON->state & PESO_ESCREAD) {
+//   ---     ---     ---     ---     ---
+
+        if(op) {
+            CALOUT(P, "\e[60;24H -> INS 0x%02X", op->data.x );
+
+            /*if(PCON->state & PESO_ESCREAD) {
                 STACKPUSH(byref(PCON->stack), 0);
 
             } else {
                 STACKPOP(byref(PCON->stack), PCON->args.F);
 
-            }; op->fun((void*) byref(PCON->args));
+            };*/
 
-        } else { CALOUT(P, " -> CANNOT FETCH"); }
+            CALOUT(P, "\e[61;0HARG 0x%02X", arg.F);
+            op->fun((void*) &arg);
+
+        } else { CALOUT(P, "\e[60;24H -> CANNOT FETCH"); };
+
         goto VERIFY_PE_STATE;
-
     }
 
 //   ---     ---     ---     ---     ---
 
     else {
-        CALOUT(P, "\e[68;0H\e[2KWRITING %c", d[0].x);
         switch(last) {                      // printing
 
             case 0x00: return;
@@ -226,13 +239,12 @@ void RDCON(char** st  ,
 
             default  : t[1]+=t[0]; break;
 
-        };
+        }; CALOUT(P, "\e[68;0H\e[2KWRITING %c", d[0].x);
 
     };                                                                                      };
 
 //   ---     ---     ---     ---     ---
-
-char* es_notice="\
+/*
 < ESPECTRO~GNU >\n\
 ~es-shell\n\
 \n\
@@ -240,7 +252,15 @@ LIBRE SOFTWARE\n\
 >Licenced under GPL3\n\
 \n\
 Copyleft (c) CIXXPAKK 2021\n\
-\n";
+*/
+
+
+char* es_notice="\
+\xFF" "es-shell\xFF\n\
+$:gb \x24;>\
+";
+
+static uint anim_i=0;
 
 void HICON(void)                            {
 
