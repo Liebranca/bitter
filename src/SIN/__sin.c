@@ -31,4 +31,17 @@ void DLSIN() { DLCANVAS (); DLSINSHD(); DLSINTEX (); DLSINHASH(); };
 void GTCHRSZ (float* dst, uint chsiz)       { dst[0]=((float) chsiz)/((float) SIN_WSIZX);   \
                                               dst[1]=((float) chsiz)/((float) SIN_WSIZY);   };
 
+void GTSCRSZ (uint* dst, uint chsiz)        {
+
+    uint z[2] = { SIN_WSIZX, SIN_WSIZY };
+
+    for(uint x=0, i=0; x<2; x++) {
+        while(z[x]>chsiz) {
+            z[x]-=chsiz; i++;
+
+        }; if(z[x]>=(chsiz/2)) { i++; };
+        dst[x]=i;
+
+    };                                                                                      };
+
 //   ---     ---     ---     ---     ---

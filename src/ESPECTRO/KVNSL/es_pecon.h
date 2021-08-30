@@ -12,7 +12,7 @@ extern "C" {
 void NTPCON(void);                          // kyknit
 void DLPCON(void);                          // kykdel
 
-void HICON (void);                          // yaa espectro say hello
+void HICON (void);                          // yaa-shbh say hello
 
 
 //   ---     ---     ---     ---     ---

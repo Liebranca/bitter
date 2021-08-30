@@ -16,12 +16,11 @@
 /*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
 
 #include "KVRNEL/MEM/kvr_mem.h"
-#include "KVRNEL/lymath.h"
 
 #include "KVRNEL/TYPES/zjc_hash.h"
-
-#include "SIN/__sin.h"
 #include "SIN/REND/sin_canvas.h"
+
+#include "es_CoreTypes.h"
 
 #include <string.h>
 #include <inttypes.h>
@@ -41,53 +40,14 @@
         ( ((**s == 0x00)     ) \
         | ((**s == 0x3B) << 1) )
 
-#define PESO_RDNULL(x) (x & 0x01)
-#define PESO_RDSCLN(x) (x & 0x02)
-
-//   ---     ---     ---     ---     ---
-
-void NOPE(void* nope) {
-    CALOUT(P, "\e[67;0HYou nope!");
-
-};
-
-void GBPE(void* buff) {
-    ustr8 data = *((ustr8*) buff);
-    CALOUT(P, "\e[67;0HYou gb 0x%08X", data.F);
-
-};
-
-void WTPE(void* buff) {
-    CALOUT(P, "\e[67;0HYou wt!");
-
-};
-
-//   ---     ---     ---     ---     ---
-
-typedef struct PESO_OPERATION {
-
-    ID    id;
-
-    ustr8 data;
-    STARK fun;
-
-} PEOP; static PEOP PE_OPS[4];
-
-void NTPEOP(PEOP* op,
-            char* opcode,
-            uint  data  ,
-            STARK fun   )                   { op->id     = IDNEW("FUN*", opcode);           \
-                                              op->data.F = data;                            \
-                                              op->fun    = fun;                             };
-
 //   ---     ---     ---     ---     ---
 
 typedef struct PESO_MACHINE {
 
     MEM   m;                                // mem header
 
-    char  rdop[PESO_OPWIDTH];
-    ustr8 args;
+    char  rdop[PESO_OPWIDTH];               // read buffer
+    ustr8 args;                             // args container
 
     uint  state;                            // state bitflags
     STK   stack;                            // loaded codes; push on lvlup pop on lvldw
@@ -101,44 +61,34 @@ static HASH*  GNAMES;
 
 void NTPCON(void)                          {
 
-                                            // global names
-    GNAMES        = MKHASH                  (5, "GNAMES"                      );
-
-                                            // for opcode-to-funptr fetch
-    NTPEOP                                  (PE_OPS+1, "np", 0x0000, &NOPE    );
-    NTPEOP                                  (PE_OPS+2, "gb", 0x0101, &GBPE    );
-    NTPEOP                                  (PE_OPS+3, "wt", 0x0002, &WTPE    );
-
-                                            // upload opcodes to gnames
-    HASHSET                                 (GNAMES, byref(PE_OPS[1].id)      );
-    HASHSET                                 (GNAMES, byref(PE_OPS[2].id)      );
-    HASHSET                                 (GNAMES, byref(PE_OPS[3].id)      );
+    NTKVR                                   (16                               );
 
     ID id    = IDNEW                        ("PE$O", "_MACHINE"               );
     MEMGET                                  (PECON, PCON                      ,
                                              xBYTES(PESO_STKSIZE, uint), &id  );
 
                                             // init the callstack
-    MKSTK                                   (byref(PCON->stack), PESO_STKSIZE);            };
+    MKSTK                                   (byref(PCON->stack), PESO_STKSIZE );           };
 
 //   ---     ---     ---     ---     ---
 
-void DLPCON(void)                          { DLMEM(PCON); DLMEM(GNAMES);                    };
+void DLPCON(void)                          { DLMEM(PCON); DLKVR();                          };
 
 //   ---     ---     ---     ---     ---
 
-void RDCON(char** st  ,
-           char   last,
-           ustr8* d   ,
-           float* t   )                     {
+void RDCON(uchar** st  ,
+           uchar  last ,
+           ustr8* d    ,
+           float* t    )                    {
 
 //   ---     ---     ---     ---     ---
 
-    PEOP* op   = PE_OPS+0;
-    ustr8 arg  = {0};
-    uint  lap  = 0;
-    uint  flg  = 0;
-    int lstate = 0;
+    PEOP* op   = GTPENOP();                 // container for embedded hooks
+    ustr8 arg  = {0};                       // holds args for those hooks
+    uint  lap  = 0;                         // ntimes the read loop was entered
+    uint  flg  = 0;                         // flags set by the read loop
+
+    int lstate = 0;                         // 1 if jumping back from a escape read
 
 //   ---     ---     ---     ---     ---
 
@@ -149,6 +99,11 @@ void RDCON(char** st  ,
         case 0x00: PCON->state &=~PESO_RUNNING; break;
         case 0x24: PCON->state |= PESO_ESCAPED * ((*((*st)+1))==0x3A); break;
         case 0x3B: PCON->state &=~PESO_ESCAPED * ((*((*st)+1))==0x3E); break;
+
+        case 0xB4: t[3]+=t[2]*0.5; break; // acute
+        case 0x60: t[3]+=t[2]*0.5; break; // grave
+        case 0x5E: t[3]+=t[2]*0.5; break; // circum
+        case 0x7E: t[3]+=t[2]*0.5; break; // tilde
 
         default  : break;
 
@@ -169,14 +124,9 @@ void RDCON(char** st  ,
                  PCON->state & PESO_ESCAPED,
                  PCON->state & PESO_ESCREAD);
 
-    /*if(PCON->state & PESO_ESCREAD) {
-        INCSTK(&(PCON->stack));
-
-    };*/
-
 //   ---     ---     ---     ---     ---
 
-    if(PCON->state & PESO_ESCAPED) {       // process current state
+    if(PCON->state & PESO_ESCAPED) {        // process current state
 
         (*st)+=2; d[0].x=(**st); lstate=1;
 
@@ -189,7 +139,7 @@ void RDCON(char** st  ,
 
         };
 
-//   ---     ---     ---     ---     ---
+//   ---     ---     ---     ---     ---    // read sequence token by token
 
         uint i=0;
         for(flg=0; !flg; flg=PESO_RDRULE(st)) {
@@ -201,31 +151,26 @@ void RDCON(char** st  ,
 
 //   ---     ---     ---     ---     ---
 
-        CALOUT(P, "\e[60;48HFLG 0x%02X", flg       );
-        STR_HASHGET(GNAMES, PCON->rdop, op, 0      );
-        CALOUT(P, "\e[60;0H0x%" PRIXPTR "\e[60;10H:\
-                   \e[60;12HPE_OPCODE %s"          ,
-                   (uintptr_t) op, PCON->rdop      );
+                                            // get op matching key from gnames
+        CALOUT                              (P, "\e[60;48HFLG 0x%02X", flg       );
+        GTOP                                (&op, PCON->rdop                     );
+        CALOUT                              (P, "\e[60;0H0x%" PRIXPTR "\e[60;10H:\
+                                                 \e[60;12HPE_OPCODE %s"          ,
+                                                 (uintptr_t) op, PCON->rdop      );
 
 //   ---     ---     ---     ---     ---
 
-        if(op) {
-            CALOUT(P, "\e[60;24H -> INS 0x%02X", op->data.x );
+        if(op) {                            // if match found, execute
+            CALOUT                          (P, "\e[60;24H -> INS 0x%02X", op->data.x );
+            CALOUT                          (P, "\e[61;0HARG 0x%02X", arg.F           );
+            op->fun                         ((void*) &arg                             );
 
-            /*if(PCON->state & PESO_ESCREAD) {
-                STACKPUSH(byref(PCON->stack), 0);
+        }
 
-            } else {
-                STACKPOP(byref(PCON->stack), PCON->args.F);
+        else {                              // else do nothing
+            CALOUT                          (P, "\e[60;24H -> CANNOT FETCH"           );
 
-            };*/
-
-            CALOUT(P, "\e[61;0HARG 0x%02X", arg.F);
-            op->fun((void*) &arg);
-
-        } else { CALOUT(P, "\e[60;24H -> CANNOT FETCH"); };
-
-        goto VERIFY_PE_STATE;
+        }; goto VERIFY_PE_STATE;            // check end of sequence
     }
 
 //   ---     ---     ---     ---     ---
@@ -236,6 +181,11 @@ void RDCON(char** st  ,
             case 0x00: return;
             case 0x0A: t[1]=(-1); t[3]-=(t[2]*1.5); break;
             case 0x08: t[1]-=t[0]; break;
+
+            case 0xB4: t[3]-=t[2]*0.5; break; // acute
+            case 0x60: t[3]-=t[2]*0.5; break; // grave
+            case 0x5E: t[3]-=t[2]*0.5; break; // circum
+            case 0x7E: t[3]-=t[2]*0.5; break; // tilde
 
             default  : t[1]+=t[0]; break;
 
@@ -255,23 +205,23 @@ Copyleft (c) CIXXPAKK 2021\n\
 */
 
 
-char* es_notice="\
-\xFF" "es-shell\xFF\n\
-$:gb \x24;>\
+uchar* es_notice="\
+\xFF" "ES" "\x7F" "SHELL\xFF\n\
+$:jmp \x01 \x01 \x02;>\
 ";
 
-static uint anim_i=0;
+uchar* es_clock="\xA9\xAA\xAB\xAC\xAD\xAE\xAF\xB0";
 
 void HICON(void)                            {
 
                                             // begin pushing chars
     BEGPSH                                  (                         );
-    float sc[2]; GTCHRSZ                    (sc, 16                   );
-    float t [4]  =                          { sc[0], -1.0, sc[1], 1.0 };
-    ustr8 d [4]  =                          { 0,0,0,0                 };
 
-    char* tstr = es_notice;
-    char  last='\0';
+    uchar* tstr = es_notice;
+    uchar  last ='\0';
+
+    float* t    = GTKVRCHRT();
+    ustr8* d    = GTKVRCHRD();
 
     do {                                    // process input and push
         RDCON                               (&tstr, last, d, t        );

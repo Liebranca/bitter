@@ -111,17 +111,15 @@ void BEGPSH(void)                           {
     glBindVertexArray                       (canvasVAO                                   ); };
 
 void PSHCHR(float* t, ustr8* d)             {
-    glUniform4f                             (canvasUniforms[0], t[0], t[1], t[2], t[3]);    \
-    glUniform4ui                            (canvasUniforms[1], d[0].F, d[1].F        ,     \
-                                            /*///////////////*/ d[2].F, d[3].F        );    \
-    glDrawArrays                            (GL_TRIANGLES, 0, 6                       );    };
+    glUniform4fv                            (canvasUniforms[0], 1, t        );              \
+    glUniform4uiv                           (canvasUniforms[1], 1, (uint*) d);              \
+    glDrawArrays                            (GL_TRIANGLES, 0, 6             );              };
 
 void ENDPSH(ustr8* d)                       {
-    glUniform4ui                            (canvasUniforms[1], d[0].F, d[1].F        ,     \
-                                            /*///////////////*/ d[2].F, d[3].F        );    \
-    glDrawArrays                            (GL_TRIANGLES, 0, 6                       );    \
-    glEnable                                (GL_DEPTH_TEST                            );    \
-    RSTSHDLOC                               (                                         );    };
+    glUniform4uiv                           (canvasUniforms[1], 1, (uint*) d);              \
+    glDrawArrays                            (GL_TRIANGLES, 0, 6             );              \
+    glEnable                                (GL_DEPTH_TEST                  );              \
+    RSTSHDLOC                               (                               );              };
 
 //   ---     ---     ---     ---     ---
 

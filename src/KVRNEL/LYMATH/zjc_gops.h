@@ -9,10 +9,12 @@ extern "C" {
 
 //   ---     ---     ---     ---     ---
 
-uint mxui  (uint a, uint b);                // return bigger
-uint mnui  (uint a, uint b);                // return smaller
-uint sbmxui(uint a, uint b);                // sub bigger from smaller
-uint sbmnui(uint a, uint b);                // sub smaller from bigger
+uint mxui   (uint a, uint b          );     // return bigger
+uint mnui   (uint a, uint b          );     // return smaller
+uint sbmxui (uint a, uint b          );     // sub bigger from smaller
+uint sbmnui (uint a, uint b          );     // sub smaller from bigger
+
+uint clampui(uint x, uint mn, uint mx);     // clamp x to {mn, mx}
 
 //   ---     ---     ---     ---     ---
 

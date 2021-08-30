@@ -17,26 +17,19 @@
 *                                           */
 /*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
 
-#include "../zjc_evil.h"
+#include "zjc_evil.h"
 #include "zjc_BinTypes.h"
+#include "lymath.h"
 
 #include <math.h>
 
 //   ---     ---     ---     ---     ---
 // move this to lymath later
-
-uint  clampui(uint v,
-              uint start,
-              uint end  )                   { if      (v < start) { v = start; }
-                                              else if (v > end  ) { v = end;   };
-
-                                              return v;                                     };
 
 float clampf(float v,
              float start,

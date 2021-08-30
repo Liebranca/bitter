@@ -10,6 +10,7 @@ void NTSIN  (void                  );
 void DLSIN  (void                  );
 
 void GTCHRSZ(float* dst, uint chsiz);       // calculates percent of screen used by square
+void GTSCRSZ(uint* dst, uint chsiz );       // calculates how many chars fit in screen
 
 //   ---     ---     ---     ---     ---
 

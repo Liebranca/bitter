@@ -24,14 +24,7 @@
 #include "SIN/sin_texture.h"
 #include "SIN/REND/sin_canvas.h"
 
-#include "es_pecon.h"
-
-#include <libpng16/png.h>
-#include <stdio.h>
-#include <errno.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdarg.h>
+#include "KVNSL/es_pecon.h"
 
 //   ---     ---     ---     ---     ---
 
