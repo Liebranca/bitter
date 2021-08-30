@@ -35,12 +35,14 @@ void GTSCRSZ (uint* dst, uint chsiz)        {
 
     uint z[2] = { SIN_WSIZX, SIN_WSIZY };
 
-    for(uint x=0, i=0; x<2; x++) {
+    for(uint x=0; x<2; x++) {
+        uint i=0;
+
         while(z[x]>chsiz) {
             z[x]-=chsiz; i++;
 
         }; if(z[x]>=(chsiz/2)) { i++; };
-        dst[x]=i;
+        dst[x]=i*2;
 
     };                                                                                      };
 

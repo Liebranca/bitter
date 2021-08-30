@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <termios.h>
 #include <unistd.h>
+#include <string.h>
 
 //   ---     ---     ---     ---     ---
 
@@ -34,46 +35,6 @@
 static PEOP  PE_OPS[4];                     // container for ops
 static HASH* GNAMES;                        // globals and built-ins
 static HASH* LNAMES;                        // user-defined or runtime-generated values
-
-//   ---     ---     ---     ---     ---
-
-void NTPEOP(uint  idex  ,
-            char* opcode,
-            uint  data  ,
-            STARK fun   )                   { PEOP* op   = PE_OPS+idex;                     \
-                                              op->id     = IDNEW("FUN*", opcode);           \
-                                              op->data.F = data;                            \
-                                              op->fun    = fun;                             };
-
-PEOP* GTPENOP(void)                         { return PE_OPS+0;                              };
-
-//   ---     ---     ---     ---     ---
-
-CHRSPRT MKCHRSPRT(char* buff)               {
-
-    CHRSPRT sprite = {0};
-    sprite.buff    = buff;
-    sprite.length  = strlen(buff);
-    sprite.current = 0;
-
-    return sprite;                                                                          };
-
-char* PLCHRSPRT(CHRSPRT* sprite, int dirn)  {
-
-    if(sprite->current > sprite->length) {
-        sprite->current=0;
-
-    }
-
-    elif(sprite->current < 0) {
-        sprite->current=sprite->length;
-
-    };
-
-    char* c          = sprite->buff[sprite->current];
-    sprite->current += dirn;
-
-    return c;                                                                               };
 
 //   ---     ---     ---     ---     ---
 
@@ -95,6 +56,56 @@ typedef struct ES_KVNSLRAT {                // it's a modern typewriter
 } KVR; static KVR kvr={0};
 
 #include "es_builtins.paste"
+
+//   ---     ---     ---     ---     ---
+
+void NTPEOP(uint  idex  ,
+            char* opcode,
+            uint  data  ,
+            STARK fun   )                   { PEOP* op   = PE_OPS+idex;                     \
+                                              op->id     = IDNEW("FUN*", opcode);           \
+                                              op->data.F = data;                            \
+                                              op->fun    = fun;                             };
+
+PEOP* GTPENOP(void)                         { return PE_OPS+0;                              };
+
+//   ---     ---     ---     ---     ---
+
+CHRSPRT MKCHRSPRT(char* buff, uint co)      {
+
+    CHRSPRT sprite = {0};
+    sprite.buff    = buff;
+    sprite.length  = strlen(buff);
+    sprite.current = 0.0f;
+
+                                            // clamp position to screen
+    sprite.co.x    = clampui                ((co&0x00FF), 1, kvr.nchars_x);
+    sprite.co.y    = clampui                ((co&0xFF00), 1, kvr.nchars_y);
+
+                                            // init draw buffer
+    PLCHRSPRT                               (&sprite, 0.0f               );
+
+    return sprite;                                                                          };
+
+void PLCHRSPRT(CHRSPRT* sprite,
+               float dirn     )             {
+
+    if(sprite->current >= sprite->length) { // wrap around end
+        sprite->current=0.0f;
+
+    }
+
+    elif(sprite->current < 0) {             // wrap around start
+        sprite->current=sprite->length-1;
+
+    };
+
+    char c           = sprite->buff         [(uint) (sprite->current)      ];
+    sprite->current += dirn;
+
+                                            // load data into frame
+    sprintf                                 (sprite->frame, "$:jmp %c %c \x02;>%c",
+                                             sprite->co.x, sprite->co.y, c         );       };
 
 //   ---     ---     ---     ---     ---
 
@@ -124,7 +135,7 @@ void NTKVR(uint chrsz)                      {
                                             // zero-out chardata
     CLMEM2                                  (kvr.chrd, xBYTES(4, ustr8)       );
 
-    uint ws[2]; GTSCRSZ(sc, chrsz);         // screen size calculation, needed for jumps
+    uint ws[2]; GTSCRSZ(ws, chrsz);         // screen size calculation, needed for jumps
     kvr.nchars_x = ws[0];
     kvr.nchars_y = ws[1];
 

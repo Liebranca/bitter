@@ -54,21 +54,27 @@ typedef struct PESO_MACHINE {
 
 } PECON;
 
-static PECON* PCON;
-static HASH*  GNAMES;
+static PECON*  PCON;
+static HASH*   GNAMES;
+static CHRSPRT UI_SPRITES[1];
 
 //   ---     ---     ---     ---     ---
 
 void NTPCON(void)                          {
 
-    NTKVR                                   (16                               );
+    NTKVR                                   (16                                );
 
-    ID id    = IDNEW                        ("PE$O", "_MACHINE"               );
-    MEMGET                                  (PECON, PCON                      ,
-                                             xBYTES(PESO_STKSIZE, uint), &id  );
+    ID id    = IDNEW                        ("PE$O", "_MACHINE"                );
+    MEMGET                                  (PECON, PCON                       ,
+                                             xBYTES(PESO_STKSIZE, uint), &id   );
 
                                             // init the callstack
-    MKSTK                                   (byref(PCON->stack), PESO_STKSIZE );           };
+    MKSTK                                   (byref(PCON->stack), PESO_STKSIZE  );
+
+                                            // init sprites for ui
+    UI_SPRITES[0] = MKCHRSPRT               ("\xA9\xAA\xAB\xAC\xAD\xAE\xAF\xB0",
+                                             0x0FF01                           );
+                                                                                            };
 
 //   ---     ---     ---     ---     ---
 
@@ -206,11 +212,9 @@ Copyleft (c) CIXXPAKK 2021\n\
 
 
 uchar* es_notice="\
-\xFF" "ES" "\x7F" "SHELL\xFF\n\
 $:jmp \x01 \x01 \x02;>\
+\xFF" "ES" "\x7F" "SHELL\xFF\n\
 ";
-
-uchar* es_clock="\xA9\xAA\xAB\xAC\xAD\xAE\xAF\xB0";
 
 void HICON(void)                            {
 
@@ -220,16 +224,34 @@ void HICON(void)                            {
     uchar* tstr = es_notice;
     uchar  last ='\0';
 
-    float* t    = GTKVRCHRT();
+    float* t    = GTKVRCHRT();              // get cursor/next char values
     ustr8* d    = GTKVRCHRD();
 
-    do {                                    // process input and push
-        RDCON                               (&tstr, last, d, t        );
-        PSHCHR                              (t, d                     );
+    uint   i    = 0;                        // pass index
 
-        last=d[0].x;                        // save last for scp-chk
+//   ---     ---     ---     ---     ---
 
-    } while(*tstr++);
+    ES_DRAW:                                // draw next pass
+
+        do {                                // process input and push
+            RDCON                           (&tstr, last, d, t        );
+            PSHCHR                          (t, d                     );
+
+            last=d[0].x;                    // save last for scp-chk
+
+        } while(*tstr++); i++;
+
+//   ---     ---     ---     ---     ---
+
+    switch(i) {                             // get next pass
+        case 1 : tstr=UI_SPRITES[0].frame;      goto ES_DRAW;
+        case 2 : tstr="$:jmp \x01 \x01 \x02;>"; goto ES_DRAW;
+
+        default: break;
+
+    }; PLCHRSPRT(UI_SPRITES+0, 0.5);
+
+//   ---     ---     ---     ---     ---
 
     d[0].x=226;                             // draw cursor and close
     ENDPSH                                  (d                        );                    };

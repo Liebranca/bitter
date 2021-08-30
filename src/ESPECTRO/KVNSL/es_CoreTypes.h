@@ -37,15 +37,18 @@ void  GTOP   (PEOP** dst  ,
 typedef struct PESO_CHARSPRITE {            // animated char sequence
 
     char* buff;                             // characters to draw each frame
-    int   current;                          // current frame
+    char  frame[16];                        // draw buffer
+    float current;                          // current frame
     uint  length;                           // length of buff
+    ustr8 co;                               // position in chargrid
 
 } CHRSPRT;
 
-CHRSPRT MKCHRSPRT(char* buff     );         // make char sprite from a buffer
+CHRSPRT MKCHRSPRT(char* buff,
+                  uint  co  );              // make char sprite from a buffer
 
-char*   PLCHRSPRT(CHRSPRT* sprite,
-                  int dirn       );         // get current frame for animation
+void    PLCHRSPRT(CHRSPRT* sprite,
+                  float dirn     );         // get next frame for animation
 
 //   ---     ---     ---     ---     ---
 
