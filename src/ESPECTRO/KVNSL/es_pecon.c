@@ -60,9 +60,9 @@ static CHRSPRT UI_SPRITES[1];
 
 //   ---     ---     ---     ---     ---
 
-void NTPCON(void)                          {
+void NTPCON(void)                           {
 
-    NTKVR                                   (16                                );
+    NTKVR                                   (1                                 );
 
     ID id    = IDNEW                        ("PE$O", "_MACHINE"                );
     MEMGET                                  (PECON, PCON                       ,
@@ -73,7 +73,7 @@ void NTPCON(void)                          {
 
                                             // init sprites for ui
     UI_SPRITES[0] = MKCHRSPRT               ("\xA9\xAA\xAB\xAC\xAD\xAE\xAF\xB0",
-                                             0x0FF01                           );
+                                             0xFF01                            );
                                                                                             };
 
 //   ---     ---     ---     ---     ---
@@ -167,14 +167,14 @@ void RDCON(uchar** st  ,
 //   ---     ---     ---     ---     ---
 
         if(op) {                            // if match found, execute
-            CALOUT                          (P, "\e[60;24H -> INS 0x%02X", op->data.x );
+            CALOUT                          (P, "\e[60;32H -> INS 0x%02X", op->data.x );
             CALOUT                          (P, "\e[61;0HARG 0x%02X", arg.F           );
             op->fun                         ((void*) &arg                             );
 
         }
 
         else {                              // else do nothing
-            CALOUT                          (P, "\e[60;24H -> CANNOT FETCH"           );
+            CALOUT                          (P, "\e[60;32H -> CANNOT FETCH"           );
 
         }; goto VERIFY_PE_STATE;            // check end of sequence
     }

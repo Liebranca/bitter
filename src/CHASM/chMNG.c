@@ -21,7 +21,9 @@
 #include "chWIN.h"
 
 #include "KVRNEL/MEM/zjc_clock.h"
+
 #include "SIN/sin_globals.h"
+#include "SIN/__sin.h"
 
 //   ---     ---     ---     ---     ---
 
@@ -143,6 +145,7 @@ int NTCHMNG(char* title, int fullscreen)    {
 
     chmang_clock = MKCLCK                   (".*^~", 8, 1.0f                              );
     STCLCK                                  (chmang_clock                                 );
+    GTCHRGRD                                (16                                           );
 
     return DONE;                                                                            };
 

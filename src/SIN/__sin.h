@@ -9,8 +9,12 @@ extern "C" {
 void NTSIN  (void                  );
 void DLSIN  (void                  );
 
-void GTCHRSZ(float* dst, uint chsiz);       // calculates percent of screen used by square
-void GTSCRSZ(uint* dst, uint chsiz );       // calculates how many chars fit in screen
+//   ---     ---     ---     ---     ---
+
+void GTCHRGRD(uint chrsz          );        // gets dimentions of chargrid for new screen size
+
+void GTCHRSZ (float* dst, uint mul);        // calculates percent of screen used by square
+void GTSCRSZ (uint* dst,  uint mul);        // calculates how many chars fit in screen
 
 //   ---     ---     ---     ---     ---
 
