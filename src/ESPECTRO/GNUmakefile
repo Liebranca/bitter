@@ -44,7 +44,7 @@ DFLG  =
 ifdef DEBUG
 DFLG += -D KVR_DEBUG=$(DEBUG)
 else
-DFLG += -D KVR_DEBUG=0xFF
+DFLG += $(shell cat $(TRSH)/MKLOG)
 endif
 
 #   ---     ---     ---     ---     ---

@@ -115,7 +115,8 @@ void PSHCHR(float* t, ustr8* d)             {
     glUniform4uiv                           (canvasUniforms[1], 1, (uint*) d);              \
     glDrawArrays                            (GL_TRIANGLES, 0, 6             );              };
 
-void ENDPSH(ustr8* d)                       {
+void ENDPSH(float* t, ustr8* d)             {
+    glUniform4fv                            (canvasUniforms[0], 1, t        );              \
     glUniform4uiv                           (canvasUniforms[1], 1, (uint*) d);              \
     glDrawArrays                            (GL_TRIANGLES, 0, 6             );              \
     glEnable                                (GL_DEPTH_TEST                  );              \

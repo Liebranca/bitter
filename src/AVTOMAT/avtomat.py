@@ -43,10 +43,10 @@ for fold in ["KVRNEL", "SIN", "CHASM", "ESPECTRO"]:
         r = r + f"\\{sp}";
         if not os.path.exists(r): os.makedir(r);
 
-    if not os.path.exists(dpath+"/MKFLAGS"):
+    if not os.path.exists(dpath+"/MKLOG"):
         print(f"->generated {fold} can");
-        with open(dpath+"/MKFLAGS", "w+") as mkflags:
-            mkflags.write("-D KVR_DEBUG=0xFF");
+        with open(dpath+"/MKLOG", "w+") as mkflags:
+            mkflags.write("-D KVR_DEBUG=0x01");
 
 print("\n Ready\n");
 

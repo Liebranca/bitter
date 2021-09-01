@@ -44,11 +44,26 @@ typedef struct PESO_CHARSPRITE {            // animated char sequence
 
 } CHRSPRT;
 
+//   ---     ---     ---     ---     ---
+
 CHRSPRT MKCHRSPRT(char* buff,
                   uint  co  );              // make char sprite from a buffer
 
 void    PLCHRSPRT(CHRSPRT* sprite,
                   float dirn     );         // get next frame for animation
+
+//   ---     ---     ---     ---     ---
+
+#define ES_SPRITE_SLOTS 8
+
+typedef struct PESO_CHARBUFF {              // basic constr container
+
+    float   t[4];                           // transform; scale & startof in screen coords
+    uint    chrsz;                          // base charsize multiplier
+
+    CHRSPRT sprites[ES_SPRITE_SLOTS];       // fixed-size array for animated char sequences
+
+} CHRBUFF;
 
 //   ---     ---     ---     ---     ---
 

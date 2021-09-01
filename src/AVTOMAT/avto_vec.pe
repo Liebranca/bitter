@@ -1,0 +1,74 @@
+/*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
+/*    AVTO_VEC                              *
+*                                           *
+*     -generates vector types & ops         *
+*                                           */
+// *   ---     ---     ---     ---     ---  *
+/*    LIBRE SOFTWARE                        *
+*                                           *
+*     Licenced under GNU GPL3               *
+*     be a bro and inherit                  *
+*                                           */
+// *   ---     ---     ---     ---     ---  *
+/* CONTRIBUTORS                             *
+*     lyeb,                                 *
+*                                           */
+/*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
+
+//   ---     ---     ---     ---     ---
+
+decl <flags> name { <type> vname; }
+reg  <flags> name { <type> vname; }
+
+reg static r0 {
+    int a;
+
+};
+
+
+
+unreg r0;
+
+\x00: $:%rfr from reg r0;>
+	alias a is r0#0;
+
+\x00: $:/rfr;>
+
+//   ---     ---     ---     ---     ---
+
+/*
+\x00: $:%itr type,dtype in {f,float,i,int,u,uint} for size in {2,3,4};>
+	alias VEC  is dtype:vec:size;
+	alias VECF is type:v:size;
+
+	wrap ($:%itr name in {x,y,z,w};> { ... } $:/itr;>) into naxis;
+
+//   ---     ---     ---     ---     ---
+
+hed typedef struct LYMTH_:VEC {
+    pun { naxis(dtype name) } with { mute dtype v[size] };
+
+} VEC;
+
+reg static {
+    VEC* VECF:_a bind VEC* a;
+    VEC* VECF:_b bind VEC* b;
+
+};
+
+//   ---     ---     ---     ---     ---
+
+hed decl {
+    void add:VECF VEC* a,b;
+    void sub:VECF VEC* a,b;
+
+};
+
+defn add:VECF                               { naxis(a->name+=b->name);                      };
+defn sub:VECF                               { naxis(a->name-=b->name);                      };
+
+//   ---     ---     ---     ---     ---
+
+\x00: $:/itr;>*/
+
+//   ---     ---     ---     ---     ---

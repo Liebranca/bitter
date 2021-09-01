@@ -1,0 +1,47 @@
+/*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
+/*    LEX                                   *
+*                                           *
+*     -generates peso lexer                 *
+*                                           */
+// *   ---     ---     ---     ---     ---  *
+/*    LIBRE SOFTWARE                        *
+*                                           *
+*     Licenced under GNU GPL3               *
+*     be a bro and inherit                  *
+*                                           */
+// *   ---     ---     ---     ---     ---  *
+/* CONTRIBUTORS                             *
+*     lyeb,                                 *
+*                                           */
+/*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
+
+
+//   ---     ---     ---     ---     ---
+
+$:%lex;>
+
+$:key type;>
+	void stark nihil
+
+	char str
+	short int long
+
+	uchar ustr
+	ushort uint ulong
+
+	float double;
+
+$:key typeflag;>
+	static extern const inline mute bound;
+
+$:form vardecl;>
+	(<typeflag> <type> <name>) || (<type> <name>)
+	&& (\; || =<value>);
+
+$:form fundecl;>
+	(<typeflag> <type> <name>) || (<type> <name>)
+	&& (void || #N{<type> <arg,(=)>});
+
+$:/lex;>
+
+//   ---     ---     ---     ---     ---

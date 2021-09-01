@@ -15,7 +15,7 @@ void DLCANVAS(void              );          // kykdel
 
 void BEGPSH  (void              );          // frbeg for char pushing
 void PSHCHR  (float* t, ustr8* d);          // pushchar to screen
-void ENDPSH  (ustr8* d          );          // frend for char pushing
+void ENDPSH  (float* t, ustr8* d);          // frend for char pushing
 
 //   ---     ---     ---     ---     ---
 

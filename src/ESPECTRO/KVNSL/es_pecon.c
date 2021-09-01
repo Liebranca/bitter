@@ -55,7 +55,6 @@ typedef struct PESO_MACHINE {
 } PECON;
 
 static PECON*  PCON;
-static HASH*   GNAMES;
 static CHRSPRT UI_SPRITES[1];
 
 //   ---     ---     ---     ---     ---
@@ -224,7 +223,7 @@ void HICON(void)                            {
     uchar* tstr = es_notice;
     uchar  last ='\0';
 
-    float* t    = GTKVRCHRT();              // get cursor/next char values
+    float* t    = GTKVRCHRT();              // get next char values
     ustr8* d    = GTKVRCHRD();
 
     uint   i    = 0;                        // pass index
@@ -253,7 +252,8 @@ void HICON(void)                            {
 
 //   ---     ---     ---     ---     ---
 
-    d[0].x=226;                             // draw cursor and close
+    t      = GTKVRCURT();                   // get cursor values
+    d[0].x = 226;                           // draw cursor and close
     ENDPSH                                  (d                        );                    };
 
 //   ---     ---     ---     ---     ---
