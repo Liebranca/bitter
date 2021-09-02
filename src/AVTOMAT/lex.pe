@@ -21,7 +21,7 @@
 $:%lex;>
 
 $:key type;>
-	void stark nihil
+	void
 
 	char str
 	short int long
@@ -34,13 +34,27 @@ $:key type;>
 $:key typeflag;>
 	static extern const inline mute bound;
 
+$:key vfunct;>
+	nihil stark;
+
+$:rule name;>
+	\\w+ ;
+
+$:rule namelist;>
+	[\\w+,*]+ ;
+
 $:form vardecl;>
-	(<typeflag> <type> <name>) || (<type> <name>)
-	&& (\; || =<value>);
+	<type> <name> \;
+	<typeflag> <type> <name> \;
+	<type> <name> = <value> \;
+	<typeflag> <type> <name> = <value> ;
 
 $:form fundecl;>
-	(<typeflag> <type> <name>) || (<type> <name>)
-	&& (void || #N{<type> <arg,(=)>});
+	<vfunct> <name> \;
+	<type> <name> : void \;
+//	<type> <name> : #N <type> <namelist> \;
+	<typeflag> <type> <name> : void \;
+//	<typeflag> <type> <name> : #N <type> <namelist>;
 
 $:/lex;>
 
