@@ -69,9 +69,9 @@ class READER
 
         i=0; @forms.each_key { |k|
             @forms[k].each { |f|
-                m=s.match(eval("/#{f}/"));
+                m=s.match(eval("/#{f[0]}/"));
                 if(m.to_s==s);
-                    puts "#{s} is a form ##{i} #{k};\nMatching regex /#{f}/";
+                    puts "#{s} == #{k} #{f[1]}";
                     return 1;
 
                 end; i+=1;
@@ -100,7 +100,7 @@ class READER
     end;
 
     def stform(val)
-        @forms[val] = [""]
+        @forms[val] = [["", ""]]
         @formi      = 0;
 
         @onins      = ->(t) {
@@ -111,10 +111,12 @@ class READER
 #   ---     ---     ---     ---     ---
 
                 if   (@keys.include?(tag))
-                    forms["#{val}"][@formi] << "(#{@keys[tag]})"
+                    forms["#{val}"][@formi][0] << "(#{@keys[tag]})"
+                    forms["#{val}"][@formi][1] << "#{tag} ";
 
                 elsif(@rules.include?(tag))
-                    forms["#{val}"][@formi] << "#{@rules[tag][0..-2]}"
+                    forms["#{val}"][@formi][0] << "#{@rules[tag][0..-2]}"
+                    forms["#{val}"][@formi][1] << "#{tag} ";
 
                 else
                     puts "Invalid tag #{t} in form <#{val}>"
@@ -122,11 +124,12 @@ class READER
                 end;
 
             elsif(t==';')
-                #forms["#{val}"][@formi]=@forms["#{val}"][@formi][0..-2];
-                @formi+=1; forms["#{val}"].append("");
+                forms["#{val}"][@formi][1]=forms["#{val}"][@formi][1][0..-2];
+                @formi+=1; forms["#{val}"].append(["",""]);
 
             else
-                forms["#{val}"][@formi] << t;
+                forms["#{val}"][@formi][0] << t;
+                forms["#{val}"][@formi][1] << "#{t} ";
 
             end;
 
@@ -444,6 +447,6 @@ File.foreach(fpath) { |pe|
     }; if(abort==1); break; end;
 };
 
-puts perd.parse("nihil* witch");
+perd.parse("uint x=0x00 * 0x00");
 
 #   ---     ---     ---     ---     ---
