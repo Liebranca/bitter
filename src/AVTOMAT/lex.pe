@@ -43,18 +43,36 @@ $:rule name;>
 $:rule namelist;>
 	[\\w+,*]+ ;
 
+$:rule space;>
+	\\s+ ;
+
+$:rule *;>
+	(\\s*\\*\\s+|\\s+\\*\\s*|\\s+) ;
+
+$:rule ptr;>
+	(\\s*\\*\\s+|\\s+\\*\\s*) ;
+
+$:rule :;>
+	\\s*:\\s* ;
+
+$:rule =;>
+	\\s*=\\s* ;
+
 $:form vardecl;>
-	<type> <name> \;
-	<typeflag> <type> <name> \;
-	<type> <name> = <value> \;
-	<typeflag> <type> <name> = <value> ;
+	<type> <*> <name> \;
+	<vfunct> <ptr> <name> \;
+	<typeflag> <space> <type> <*> <name> \;
+	<typeflag> <space> <vfunct> <ptr> <name> \;
+	<type> <*> <name> <=> <value> \;
+	<typeflag> <space> <type> <*> <name> <=> <value> ;
 
 $:form fundecl;>
-	<vfunct> <name> \;
-	<type> <name> : void \;
-//	<type> <name> : #N <type> <namelist> \;
-	<typeflag> <type> <name> : void \;
-//	<typeflag> <type> <name> : #N <type> <namelist>;
+	<vfunct> <space> <name> \;
+	<typeflag> <space> <vfunct> <space> <name> \;
+	<type> <*> <name> <:> void \;
+	<type> <*> <name> <:> [ <type> <*> <namelist> ]* \;
+	<typeflag> <space> <type> <*> <name> <:> void \;
+	<typeflag> <space> <type> <*> <name> <:> [ <type> <*> <namelist> ]*;
 
 $:/lex;>
 

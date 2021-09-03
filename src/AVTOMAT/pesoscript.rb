@@ -71,12 +71,12 @@ class READER
             @forms[k].each { |f|
                 m=s.match(eval("/#{f}/"));
                 if(m.to_s==s);
-                    puts "#{s} is a form ##{i} #{k};\nMatching reg /#{f}/";
+                    puts "#{s} is a form ##{i} #{k};\nMatching regex /#{f}/";
                     return 1;
 
                 end; i+=1;
 
-            };
+            }; i=0;
         }; return 0;
 
     end;
@@ -87,9 +87,15 @@ class READER
         eval("@#{wr}['#{val}'] = ''");
         @onins = ->(t) {
             sep="|"; if(@cchar==';'); sep=''; end;
-            eval("@#{wr}['#{val}'] << '\\b#{t}\\b#{sep}';");
+            if("#{wr}"=="rules")
+                eval("@#{wr}['#{val}'] << '#{t}#{sep}';");
 
-        }
+            else
+                eval("@#{wr}['#{val}'] << '\\b#{t}\\b#{sep}';");
+
+            end;
+
+        };
 
     end;
 
@@ -105,10 +111,10 @@ class READER
 #   ---     ---     ---     ---     ---
 
                 if   (@keys.include?(tag))
-                    forms["#{val}"][@formi] << "(#{@keys[tag]}) "
+                    forms["#{val}"][@formi] << "(#{@keys[tag]})"
 
                 elsif(@rules.include?(tag))
-                    forms["#{val}"][@formi] << "#{@rules[tag][0..-2]} "
+                    forms["#{val}"][@formi] << "#{@rules[tag][0..-2]}"
 
                 else
                     puts "Invalid tag #{t} in form <#{val}>"
@@ -116,8 +122,11 @@ class READER
                 end;
 
             elsif(t==';')
-                forms["#{val}"][@formi]=@forms["#{val}"][@formi][0..-2];
+                #forms["#{val}"][@formi]=@forms["#{val}"][@formi][0..-2];
                 @formi+=1; forms["#{val}"].append("");
+
+            else
+                forms["#{val}"][@formi] << t;
 
             end;
 
@@ -434,5 +443,7 @@ File.foreach(fpath) { |pe|
 
     }; if(abort==1); break; end;
 };
+
+puts perd.parse("nihil* witch");
 
 #   ---     ---     ---     ---     ---
