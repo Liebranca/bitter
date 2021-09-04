@@ -32,7 +32,10 @@ $:key type;>
 	float double;
 
 $:key typeflag;>
-	static extern const inline mute bound;
+	static extern inline mute bound parent const;
+
+$:rule #typeflags;>
+	\(( <typeflag> \)\\s+ \)* ;
 
 $:key vfunct;>
 	nihil stark;
@@ -41,7 +44,7 @@ $:rule name;>
 	\\w+ ;
 
 $:rule namelist;>
-	[\\w+,*]+ ;
+	\(\\w+,*\\s*\)+ ;
 
 $:rule space;>
 	\\s+ ;
@@ -62,27 +65,26 @@ $:rule value;>
 	\\(*(0x[0-9A-F]*|0b[0-1]*|[0-9]*\\.?[0-9])\\)* ;
 
 $:rule opsign;>                             // this is atrocious. find a more readable way
-	\\s*\(\\-|\\-\\-|\\+|\\+\\+|\\*|\\*\\*|\\/|\\%|\\||\\|\\||\\&|\\&\\&|\\^|\\!|\\<|\\<\\<
-	|\\>|\\>\\>\)\\s* ;
+	\\s* \(\\-|\\-\\-|\\+|\\+\\+|\\*|\\*\\*|\\/|\\%|\\||\\|\\||\\&|\\&\\&|\\^|\\!|\\<|\\<\\<
+	|\\>|\\>\\>\) \\s* ;
 
 $:rule #opvalue;>
 	<value> [ <opsign> <value> ]* ;
 
+$:rule #arglist;>
+	 \(( <type> \) <*> <namelist> \)+ ;
+
 $:form vardecl;>
-	<type> <*> <name> \;
 	<vfunct> <ptr> <name> \;
-	<typeflag> <space> <type> <*> <name> \;
-	<typeflag> <space> <vfunct> <ptr> <name> \;
-	<type> <*> <name> <=> <#opvalue> \;
-	<typeflag> <space> <type> <*> <name> <=> <#opvalue>;
+	<#typeflags> <type> <*> <name> \;
+	<#typeflags> <vfunct> <ptr> <name> \;
+	<#typeflags> <type> <*> <name> <=> <#opvalue> ;
 
 $:form fundecl;>
 	<vfunct> <space> <name> \;
-	<typeflag> <space> <vfunct> <space> <name> \;
-	<type> <*> <name> <:> void \;
-	<type> <*> <name> <:> [ <type> <*> <namelist> ]* \;
-	<typeflag> <space> <type> <*> <name> <:> void \;
-	<typeflag> <space> <type> <*> <name> <:> [ <type> <*> <namelist> ]*;
+	<#typeflags> <vfunct> <space> <name> \;
+	<#typeflags> <type> <*> <name> <:> void \;
+	<#typeflags> <type> <*> <name> <:> <#arglist> ;
 
 $:/lex;>
 

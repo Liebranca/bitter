@@ -68,11 +68,12 @@ class READER
     def parse(s)
 
         i=0; @forms.each_key { |k|
+
             @forms[k].each { |f|
                 m=s.match(eval("/#{f[0]}/"));
                 if(m.to_s==s);
 
-                    puts "#{k} #{s}\n\n";
+                    puts "#{k} #{s}\n#{f[1]}\n\n";
                     tags=f[1].split(' ');
 
                     tags.each { |t|; mt="";
@@ -82,6 +83,9 @@ class READER
 
                         elsif(@rules.include?(t))
                             mt=s.match(@rules[t]).to_s;
+
+                        elsif(s[0..t.length]==t)
+                            mt=t;
 
                         end;
 
@@ -117,11 +121,17 @@ class READER
         eval("@#{wr}['#{val}'] = ''");
         @onins = ->(t) {
 
-            sep="|"; if(@cchar==';'); sep=''; end;
+            sep="|"; if(@cchar==';' || "#{val}".include?('#')); sep=''; end;
             if("#{wr}"=="rules")
                 if(t[0]=='<' && t[-1]=='>')
-                    t=t[1..-2]; t=@rules[t][0..-2];
-                    @rules["#{val}"] << "#{t}";
+                    t=t[1..-2];
+                    if(@rules.include?(t))
+                        t=@rules[t][0..-2];
+
+                    else
+                        t=@keys[t][0..-1];
+
+                    end; @rules["#{val}"] << "#{t}";
 
                 else
                     @rules["#{val}"] << "#{t}#{sep}";
@@ -430,7 +440,7 @@ class READER
     def SQ_CLSE(c)
         @lvl-=1;
         return c; #"#{c} #{@lvl}"
-
+                                        º1
     end;
 
 #   ---     ---     ---     ---     ---
@@ -490,9 +500,11 @@ File.foreach(fpath) { |pe|
     }; if(abort==1); break; end;
 };
 
-#puts perd.forms["vardecl"][4][0]
-#puts perd.forms["vardecl"][4][1]
+#static const uint x = ((1+1)*1.25)/0x05FA
+#rule=perd.forms["fundecl"][3][0];
+#puts rule;
+#puts "static void* getx: void* a,b int d".match(/#{rule}/);
 
-perd.parse("uint x=((1+1)*1.25)/0x05FA");
+perd.parse("static void* getx: void* a,b int c");
 
 #   ---     ---     ---     ---     ---
