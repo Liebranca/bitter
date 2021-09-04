@@ -47,10 +47,10 @@ $:rule space;>
 	\\s+ ;
 
 $:rule *;>
-	(\\s*\\*\\s+|\\s+\\*\\s*|\\s+) ;
+	\(\\s*\\*\\s+|\\s+\\*\\s*|\\s+\) ;
 
 $:rule ptr;>
-	(\\s*\\*\\s+|\\s+\\*\\s*) ;
+	\(\\s*\\*\\s+|\\s+\\*\\s*\) ;
 
 $:rule :;>
 	\\s*:\\s* ;
@@ -59,19 +59,22 @@ $:rule =;>
 	\\s*=\\s* ;
 
 $:rule value;>
-	\\s*(0x[0-9A-F]*|0b[0-1]*|[0-9]*\\.?[0-9]) ;
+	\\(*(0x[0-9A-F]*|0b[0-1]*|[0-9]*\\.?[0-9])\\)* ;
 
-$:rule op;>                                 // this is atrocious. find a more readable way
-	\\s*(\\-|\\-\\-|\\+|\\+\\+|\\*|\\*\\*|\\/|\\%|\\||\\|\\||\\&|\\&\\&|\\^|\\!|\\<|\\<\\<
-	|\\>|\\>\\>)\\s* ;
+$:rule opsign;>                             // this is atrocious. find a more readable way
+	\\s*\(\\-|\\-\\-|\\+|\\+\\+|\\*|\\*\\*|\\/|\\%|\\||\\|\\||\\&|\\&\\&|\\^|\\!|\\<|\\<\\<
+	|\\>|\\>\\>\)\\s* ;
+
+$:rule #opvalue;>
+	<value> [ <opsign> <value> ]* ;
 
 $:form vardecl;>
 	<type> <*> <name> \;
 	<vfunct> <ptr> <name> \;
 	<typeflag> <space> <type> <*> <name> \;
 	<typeflag> <space> <vfunct> <ptr> <name> \;
-	<type> <*> <name> <=> <value> [ <op> <value> ]* \;
-	<typeflag> <space> <type> <*> <name> <=> <value> [<op> <value>]* ;
+	<type> <*> <name> <=> <#opvalue> \;
+	<typeflag> <space> <type> <*> <name> <=> <#opvalue>;
 
 $:form fundecl;>
 	<vfunct> <space> <name> \;

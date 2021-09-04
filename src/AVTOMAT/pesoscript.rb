@@ -71,7 +71,37 @@ class READER
             @forms[k].each { |f|
                 m=s.match(eval("/#{f[0]}/"));
                 if(m.to_s==s);
-                    puts "#{s} == #{k} #{f[1]}";
+
+                    puts "#{k} #{s}\n\n";
+                    tags=f[1].split(' ');
+
+                    tags.each { |t|; mt="";
+
+                        if(@keys.include?(t))
+                            mt=s.match(@keys[t]).to_s;
+
+                        elsif(@rules.include?(t))
+                            mt=s.match(@rules[t]).to_s;
+
+                        end;
+
+                        if(!(mt.empty?))
+                            s=s[mt.length..-1];
+                            while(s[0]==' ')
+                                s=s[1..-1];
+
+                            end;
+
+                            sep=""; for i in 0..16-t.length
+                                sep << ' ';
+
+                            end; puts "#{t} #{sep} >> #{mt}";
+                        end;
+
+                    };
+
+                    puts;
+
                     return 1;
 
                 end; i+=1;
@@ -86,12 +116,20 @@ class READER
     def stcol(wr, val)
         eval("@#{wr}['#{val}'] = ''");
         @onins = ->(t) {
+
             sep="|"; if(@cchar==';'); sep=''; end;
             if("#{wr}"=="rules")
-                eval("@#{wr}['#{val}'] << '#{t}#{sep}';");
+                if(t[0]=='<' && t[-1]=='>')
+                    t=t[1..-2]; t=@rules[t][0..-2];
+                    @rules["#{val}"] << "#{t}";
+
+                else
+                    @rules["#{val}"] << "#{t}#{sep}";
+
+                end;
 
             else
-                eval("@#{wr}['#{val}'] << '\\b#{t}\\b#{sep}';");
+                @keys["#{val}"] << "#{t}#{sep}";
 
             end;
 
@@ -115,8 +153,13 @@ class READER
                     forms["#{val}"][@formi][1] << "#{tag} ";
 
                 elsif(@rules.include?(tag))
-                    forms["#{val}"][@formi][0] << "#{@rules[tag][0..-2]}"
-                    forms["#{val}"][@formi][1] << "#{tag} ";
+                    if(tag[0]=='#')
+                        forms["#{val}"][@formi][0] << "#{@rules[tag][0..-1]}"
+
+                    else
+                        forms["#{val}"][@formi][0] << "#{@rules[tag][0..-2]}"
+                    
+                    end; forms["#{val}"][@formi][1] << "#{tag} ";
 
                 else
                     puts "Invalid tag #{t} in form <#{val}>"
@@ -447,6 +490,9 @@ File.foreach(fpath) { |pe|
     }; if(abort==1); break; end;
 };
 
-perd.parse("uint x=0x00 * 0x00");
+#puts perd.forms["vardecl"][4][0]
+#puts perd.forms["vardecl"][4][1]
+
+perd.parse("uint x=((1+1)*1.25)/0x05FA");
 
 #   ---     ---     ---     ---     ---
