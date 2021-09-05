@@ -44,7 +44,7 @@ $:rule name;>
 	\\w+ ;
 
 $:rule namelist;>
-	\(\\w+,*\\s*\)+ ;
+	\(\\w+,*\)+ [\\s*|\\b] ;
 
 $:rule space;>
 	\\s+ ;
@@ -72,7 +72,7 @@ $:rule #opvalue;>
 	<value> [ <opsign> <value> ]* ;
 
 $:rule #arglist;>
-	 \(( <type> \) <*> <namelist> \)+ ;
+	\( ( <type> \) <*> <namelist> \)+ ;
 
 $:form vardecl;>
 	<vfunct> <ptr> <name> \;

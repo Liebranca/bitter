@@ -65,6 +65,54 @@ class READER
 
 #   ---     ---     ---     ---     ---
 
+    def brkdown_regex(r, s)
+
+        tags=r.split(' ');
+        tags.each { |t|; mt="";
+
+            if(@keys.include?(t))
+                mt=s.match(@keys[t]).to_s;
+
+            elsif(@rules.include?(t))
+                if(t[0]=='#')
+                    mt=s.match(@rules[t][0]).to_s;
+
+                else
+                    mt=s.match(@rules[t]).to_s;
+
+                end;
+
+            elsif(s[0..t.length]==t)
+                mt=t;
+
+            end;
+
+            if(!(mt.empty?))
+                s=s[mt.length..-1];
+                while(s[0]==' ')
+                    s=s[1..-1];
+
+                end;
+
+                sep=""; for i in 0..16-t.length
+                    sep << ' ';
+
+                end; puts "#{t} #{sep} >> #{mt}";
+
+                if(t[0]=='#')
+                    puts "\n^breakdown";
+                    while(!(mt.empty?))
+                        mt=brkdown_regex(@rules[t][1], mt);
+
+                    end; puts;
+                end;
+            end;
+
+        }; return s;
+    end;
+
+#   ---     ---     ---     ---     ---
+
     def parse(s)
 
         i=0; @forms.each_key { |k|
@@ -74,35 +122,7 @@ class READER
                 if(m.to_s==s);
 
                     puts "#{k} #{s}\n#{f[1]}\n\n";
-                    tags=f[1].split(' ');
-
-                    tags.each { |t|; mt="";
-
-                        if(@keys.include?(t))
-                            mt=s.match(@keys[t]).to_s;
-
-                        elsif(@rules.include?(t))
-                            mt=s.match(@rules[t]).to_s;
-
-                        elsif(s[0..t.length]==t)
-                            mt=t;
-
-                        end;
-
-                        if(!(mt.empty?))
-                            s=s[mt.length..-1];
-                            while(s[0]==' ')
-                                s=s[1..-1];
-
-                            end;
-
-                            sep=""; for i in 0..16-t.length
-                                sep << ' ';
-
-                            end; puts "#{t} #{sep} >> #{mt}";
-                        end;
-
-                    };
+                    brkdown_regex(f[1], s);
 
                     puts;
 
@@ -118,7 +138,17 @@ class READER
 #   ---     ---     ---     ---     ---
 
     def stcol(wr, val)
-        eval("@#{wr}['#{val}'] = ''");
+
+        if(val[0]=='#')
+            eval("@#{wr}['#{val}'] = ['','']");
+
+        else
+            eval("@#{wr}['#{val}'] = ''");
+
+        end;
+
+#   ---     ---     ---     ---     ---
+
         @onins = ->(t) {
 
             sep="|"; if(@cchar==';' || "#{val}".include?('#')); sep=''; end;
@@ -126,26 +156,44 @@ class READER
                 if(t[0]=='<' && t[-1]=='>')
                     t=t[1..-2];
                     if(@rules.include?(t))
-                        t=@rules[t][0..-2];
+                        tag=@rules[t][0..-2];
 
                     else
-                        t=@keys[t][0..-1];
+                        tag=@keys[t][0..-1];
 
-                    end; @rules["#{val}"] << "#{t}";
+                    end;
+
+#   ---     ---     ---     ---     ---
+
+                    if("#{val[0]}"=='#')
+                        @rules["#{val}"][0] << "#{tag}";
+                        @rules["#{val}"][1] << "#{t} ";
+
+                    else
+                        @rules["#{val}"] << "#{tag}";
+
+                    end;
+
+#   ---     ---     ---     ---     ---
 
                 else
-                    @rules["#{val}"] << "#{t}#{sep}";
+                    if("#{val[0]}"=='#')
+                        @rules["#{val}"][0] << "#{t}";
+                        @rules["#{val}"][1] << "#{t} ";
 
+                    else
+                        @rules["#{val}"] << "#{t}#{sep}";
+
+                    end;
                 end;
-
             else
                 @keys["#{val}"] << "#{t}#{sep}";
 
             end;
-
         };
-
     end;
+
+#   ---     ---     ---     ---     ---
 
     def stform(val)
         @forms[val] = [["", ""]]
@@ -164,11 +212,11 @@ class READER
 
                 elsif(@rules.include?(tag))
                     if(tag[0]=='#')
-                        forms["#{val}"][@formi][0] << "#{@rules[tag][0..-1]}"
+                        forms["#{val}"][@formi][0] << "#{@rules[tag][0][0..-1]}"
 
                     else
                         forms["#{val}"][@formi][0] << "#{@rules[tag][0..-2]}"
-                    
+
                     end; forms["#{val}"][@formi][1] << "#{tag} ";
 
                 else
