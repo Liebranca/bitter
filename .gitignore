@@ -22,7 +22,7 @@ src/TEST.c
 KVR.px
 src/CHASM/glad/glad.c
 src/CHASM/glad/glad.h
-rprules.md
+rprules.txt
 *.stackdump
 *.c~
 *.png

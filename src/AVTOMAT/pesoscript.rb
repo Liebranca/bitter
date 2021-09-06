@@ -24,13 +24,61 @@ PE_ESCAPED = 0x02;
 PE_LITERAL = 0x04;
 
 PE_INSLEX  = 0x08;
+PE_INSDEF  = 0x10;
 
 LEX        = {};
 
 #   ---     ---     ---     ---     ---
 
+class PEEX
+    attr_accessor :type, :tokens
+    def initialize
+        @type   = "";
+        @tokens = {};
+
+    end;
+
+    def inspect
+
+        if(@type[0]!='#')
+            sep=""; for i in 0..16-("#BLOCK").length
+                sep << ' ';
+
+            end; puts "#BLOCK#{sep} >> #{@type}\n\n";
+
+        else
+            sep=""; for i in 0..16-("breakdown").length
+                sep << ' ';
+
+            end; puts "\nbreakdown#{sep} >> #{@type}";
+
+        end;
+
+        @tokens.each_key { |t|
+
+            if(@tokens[t].kind_of?(Array))
+                @tokens[t].each { |sub|
+                    sub.inspect; puts;
+
+                };
+
+            else
+                sep=""; for i in 0..16-t.length
+                    sep << ' ';
+
+                end; puts "#{t}#{sep} >> #{@tokens[t]}";
+
+            end;
+
+        };
+    end;
+
+end;
+
+#   ---     ---     ---     ---     ---
+
 class READER
-    attr_accessor :act, :tokens, :keys, :rules, :forms
+    attr_accessor :act, :defs, :forms
     def initialize
 
         @lvl    = 0;
@@ -53,6 +101,10 @@ class READER
         @forms  = {};
         @formi  = 0;
 
+        @trans  = {};
+        @defs   = {};
+        @mstr   = {};
+
         @onins  = nil;
 
         @peopcd = nil;
@@ -65,7 +117,7 @@ class READER
 
 #   ---     ---     ---     ---     ---
 
-    def brkdown_regex(r, s)
+    def brkdown_regex(r, s, ex)
 
         tags=r.split(' ');
         tags.each { |t|; mt="";
@@ -94,17 +146,20 @@ class READER
 
                 end;
 
-                sep=""; for i in 0..16-t.length
-                    sep << ' ';
-
-                end; puts "#{t} #{sep} >> #{mt}";
-
                 if(t[0]=='#')
-                    puts "\n^breakdown";
-                    while(!(mt.empty?))
-                        mt=brkdown_regex(@rules[t][1], mt);
 
-                    end; puts;
+                    ex.tokens[t] = [];
+                    while(!(mt.empty?))
+                        nx=PEEX.new; nx.type=t;
+                        ex.tokens[t].append(nx);
+
+                        mt=brkdown_regex(@rules[t][1], mt, ex.tokens[t][-1]);
+
+                    end;
+
+                else
+                    ex.tokens[t] = mt;
+
                 end;
             end;
 
@@ -115,23 +170,68 @@ class READER
 
     def parse(s)
 
+        ex=PEEX.new;
+
+        while(s.include?("\n")); s["\n"]=' '; end;
         i=0; @forms.each_key { |k|
 
             @forms[k].each { |f|
                 m=s.match(eval("/#{f[0]}/"));
                 if(m.to_s==s);
 
-                    puts "#{k} #{s}\n#{f[1]}\n\n";
-                    brkdown_regex(f[1], s);
+                    ex.type=k;
+                    brkdown_regex(f[1], s.squeeze(' '), ex);
 
-                    puts;
-
-                    return 1;
+                    return ex;
 
                 end; i+=1;
 
             }; i=0;
-        }; return 0;
+        }; return nil;
+
+    end;
+
+#   ---     ---     ---     ---     ---
+
+    def stdef(val)
+
+        @state    &=~PE_INSDEF; 
+
+        @mstr      = "";
+        @defs[val] = {};
+
+        @onins = ->(t) {
+
+            if((@state&PE_INSDEF)==0)
+                if(t=="is")
+                    @state|=PE_INSDEF;
+                    @defs["#{val}"][@mstr] = "";
+
+                else
+                    sep=' '; if(@mstr.empty?); sep=''; end;
+                    @mstr << sep+t;
+
+                end;
+
+            else
+                if(t==";")
+                    @state&=~PE_INSDEF;
+                    @mstr  = "";
+
+                else
+                    sep=' '; if(@defs["#{val}"][@mstr].empty?); sep=''; end;
+                    @defs["#{val}"][@mstr] << sep+t;
+
+                end;
+            end;
+
+        };
+    end;
+
+#   ---     ---     ---     ---     ---
+
+    def sttrans(val)
+        puts;
 
     end;
 
@@ -186,6 +286,7 @@ class READER
 
                     end;
                 end;
+
             else
                 @keys["#{val}"] << "#{t}#{sep}";
 
@@ -515,7 +616,9 @@ LEX["itr" ]=PEOP.new(0x00000002, nil                                );
 LEX["lex" ]=PEOP.new(0x00000000, ->(x) { perd.lexbit(x)           } );
 LEX["key" ]=PEOP.new(0x00000001, ->(x) { perd.stcol("keys",  x)   } );
 LEX["rule"]=PEOP.new(0x00000001, ->(x) { perd.stcol("rules", x)   } );
-LEX["form"]=PEOP.new(0x00000001, ->(x) { perd.stform(x)  } );
+LEX["form"]=PEOP.new(0x00000001, ->(x) { perd.stform(x)           } );
+LEX["def" ]=PEOP.new(0x00000001, ->(x) { perd.stdef(x)            } );
+
 
 LEX["chk_in"] = ->(var_name) {
     Module.constants.include?(var_name.to_sym);
@@ -553,6 +656,7 @@ File.foreach(fpath) { |pe|
 #puts rule;
 #puts "static void* getx: void* a,b int d".match(/#{rule}/);
 
-perd.parse("static void* getx: void* a,b int c");
+ex = perd.parse("static void* getx: void* a,b \n \n int c");
+ex.inspect;
 
 #   ---     ---     ---     ---     ---

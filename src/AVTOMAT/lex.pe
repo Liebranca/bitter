@@ -31,6 +31,17 @@ $:key type;>
 
 	float double;
 
+$:def type;>
+	char   is int8_t \;
+	short  is int16_t \;
+	int    is int32_t \;
+	long   is int64_t \;
+
+	uchar  is uint8_t \;
+	ushort is uint16_t \;
+	uint   is uint32_t \;
+	ulong  is uint64_t ;
+
 $:key typeflag;>
 	static extern inline mute bound parent const;
 
@@ -72,19 +83,25 @@ $:rule #opvalue;>
 	<value> [ <opsign> <value> ]* ;
 
 $:rule #arglist;>
-	\( ( <type> \) <*> <namelist> \)+ ;
+	\( \( <type> \) <*> <namelist> \)+ ;
 
 $:form vardecl;>
-	<vfunct> <ptr> <name> \;
-	<#typeflags> <type> <*> <name> \;
 	<#typeflags> <vfunct> <ptr> <name> \;
+	<#typeflags> <type> <*> <name> \;
 	<#typeflags> <type> <*> <name> <=> <#opvalue> ;
 
+//$:trans vardecl;>
+//	0 (vfunct==nihil) #typeflags void \( ptr name \) \(void\) \;
+//	0 (vfunct==stark) #typeflags void \( ptr name \) \(void* buff\) \;
+
 $:form fundecl;>
-	<vfunct> <space> <name> \;
 	<#typeflags> <vfunct> <space> <name> \;
 	<#typeflags> <type> <*> <name> <:> void \;
 	<#typeflags> <type> <*> <name> <:> <#arglist> ;
+
+//$:trans fundecl;>
+//	0 (vfunct==nihil) #typeflags void name \(void\) \;
+//	0 (vfunct==stark) #typeflags void name \(void* buff\) \;
 
 $:/lex;>
 
