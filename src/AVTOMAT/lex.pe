@@ -92,7 +92,9 @@ $:form vardecl;>
 
 $:trans vardecl;>
 	0 (vfunct == nihil) #typeflags void \( ptr name \) \(void\) \;
-	0 (vfunct == stark) #typeflags void \( ptr name \) \(void* buff\) \; ;
+	0 (vfunct == stark) #typeflags void \( ptr name \) \(void* buff\) \;
+	1 (1 == 1) #typeflags type * name \;
+	2 (1 == 1) #typeflags type * name = #opvalue \; ;
 
 $:form fundecl;>
 	<#typeflags> <vfunct> <space> <name> \;
@@ -101,7 +103,9 @@ $:form fundecl;>
 
 $:trans fundecl;>
 	0 (vfunct == nihil) #typeflags void name \(void\) \;
-	0 (vfunct == stark) #typeflags void name \(void* buff\) \; ;
+	0 (vfunct == stark) #typeflags void name \(void* buff\) \;
+	1 (1 == 1) #typeflags type * name \(void\) \;
+	2 (1 == 1) #typeflags type * name \( #arglist \) \; ;
 
 $:/lex;>
 

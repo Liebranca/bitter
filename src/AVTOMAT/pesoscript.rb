@@ -19,15 +19,15 @@ require 'io/console' #getch
 
 #   ---     ---     ---     ---     ---
 
-PE_COMMTED = 0x01;
-PE_ESCAPED = 0x02;
-PE_LITERAL = 0x04;
+PE_COMMTED   = 0x01;
+PE_ESCAPED   = 0x02;
+PE_LITERAL   = 0x04;
 
-PE_INSLEX  = 0x08;
-PE_INSDEF  = 0x10;
+PE_INSLEX    = 0x08;
+PE_INSDEF    = 0x10;
 
-LEX        = {};
-perd       = nil;
+LEX          = {};
+perd         = nil;
 
 #   ---     ---     ---     ---     ---
 
@@ -41,6 +41,67 @@ class PEEX
         @trans  = "";
 
         @tokens = {};
+
+        @upk_namelist = ->(t, prev, sub, k) {
+
+            if(!(prev.empty?))
+                i=1; names=sub.tokens[k].split(',')
+                ut=""; names.each { |n|;
+                    sep=', '; if(i==names.length);
+                        sep='';
+
+                    end; ut << "#{prev} #{n}#{sep}"; i+=1;
+
+                }; return ut;
+
+            end; return "";
+
+        };
+
+    end;
+
+#   ---     ---     ---     ---     ---
+
+    def upkd(_perd, t)
+
+        ut="";
+        if(@tokens[t].kind_of?(Array))
+            lt="";
+            @tokens[t].each { |sub|; prev="";
+                sub.tokens.each_key { |k|;
+
+#   ---     ---     ---     ---     ---
+
+                    tr=sub.tokens[k];
+                    if(_perd.defs.include?(k))
+                        if(_perd.defs[k].include?(tr))
+                            tr=_perd.defs[k][tr];
+
+                        end;
+                    end;
+
+                    if(t=="#arglist")
+                        if(lt=="namelist")
+                            ut << ", ";
+
+                        end; ut << @upk_namelist.call(t, prev, sub, k);
+                        prev=tr;
+
+#   ---     ---     ---     ---     ---
+
+                    else
+                        ut << "#{sub.tokens[k]} ";
+
+                    end; lt=k;
+                };
+            };
+
+#   ---     ---     ---     ---     ---
+
+        else
+            ut=@tokens[t];
+
+        end; return ut;
 
     end;
 
@@ -96,21 +157,29 @@ class PEEX
             i=i.to_i; if(i!=@idex); next; end;
 
             chktag, op, lit = b.split(' ');
-            if(eval("'#{@tokens[chktag]}'#{op}'#{lit}'"))
+            avail           = 1;
+
+            if(@tokens.include?(chktag))
+                avail=eval("'#{@tokens[chktag]}'#{op}'#{lit}'")
+
+            end;
+
+#   ---     ---     ---     ---     ---
+
+            if(avail==1)
                 e.split(' ').each { |t|;
 
-                    sep=''; if(t[-1]=='*' && t[0]!='*'); sep=' '; end;
+                    sep=' ';
                     if(@tokens.include?(t))
-                        @trans << "#{@tokens[t]}#{sep}";
+                        @trans << "#{self.upkd(_perd, t)}#{sep}";
 
                     elsif( !(_perd.rules.include?(t)) \
                         && !(_perd.keys.include?(t) ) )
                         @trans << "#{t}#{sep}";
 
                     end;
-                };
+                }; break;
             end;
-
         };
     end;
 
@@ -739,7 +808,7 @@ File.foreach(fpath) { |line|
 #puts rule;
 #puts "static void* getx: void* a,b int d".match(/#{rule}/);
 
-ex=perd.parse("stark* f");
+ex=perd.parse("void f: void x,y uint z");
 ex.sbs;
 
 
