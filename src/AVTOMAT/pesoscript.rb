@@ -808,8 +808,8 @@ File.foreach(fpath) { |line|
 #puts rule;
 #puts "static void* getx: void* a,b int d".match(/#{rule}/);
 
-ex=perd.parse("void f: void x,y uint z");
-ex.sbs;
-
+ex=perd.parse("int f = ((a + a) * b)/0xFF");
+ex.inspect;
+ex.sbs
 
 #   ---     ---     ---     ---     ---
