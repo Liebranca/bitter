@@ -27,16 +27,24 @@ PE_INSLEX  = 0x08;
 PE_INSDEF  = 0x10;
 
 LEX        = {};
+perd       = nil;
 
 #   ---     ---     ---     ---     ---
 
 class PEEX
-    attr_accessor :type, :tokens
+    attr_accessor :type, :tokens, :idex, :origin, :trans
     def initialize
         @type   = "";
+        @idex   = 0;
+
+        @origin = "";
+        @trans  = "";
+
         @tokens = {};
 
     end;
+
+#   ---     ---     ---     ---     ---
 
     def inspect
 
@@ -54,6 +62,8 @@ class PEEX
 
         end;
 
+#   ---     ---     ---     ---     ---
+
         @tokens.each_key { |t|
 
             if(@tokens[t].kind_of?(Array))
@@ -61,6 +71,8 @@ class PEEX
                     sub.inspect; puts;
 
                 };
+
+#   ---     ---     ---     ---     ---
 
             else
                 sep=""; for i in 0..16-t.length
@@ -73,12 +85,48 @@ class PEEX
         };
     end;
 
+#   ---     ---     ---     ---     ---
+
+    def translate(_perd)
+
+        pos = _perd.trans[@type];
+        pos.each { |entry|;
+
+            i, b, e = entry.split('|#');
+            i=i.to_i; if(i!=@idex); next; end;
+
+            chktag, op, lit = b.split(' ');
+            if(eval("'#{@tokens[chktag]}'#{op}'#{lit}'"))
+                e.split(' ').each { |t|;
+
+                    sep=''; if(t[-1]=='*' && t[0]!='*'); sep=' '; end;
+                    if(@tokens.include?(t))
+                        @trans << "#{@tokens[t]}#{sep}";
+
+                    elsif( !(_perd.rules.include?(t)) \
+                        && !(_perd.keys.include?(t) ) )
+                        @trans << "#{t}#{sep}";
+
+                    end;
+                };
+            end;
+
+        };
+    end;
+
+#   ---     ---     ---     ---     ---
+
+    def sbs
+        puts "$: #{@origin}";
+        puts "C: #{@trans}";
+
+    end;
 end;
 
 #   ---     ---     ---     ---     ---
 
 class READER
-    attr_accessor :act, :defs, :forms
+    attr_accessor :act, :keys, :rules, :defs, :forms, :trans
     def initialize
 
         @lvl    = 0;
@@ -102,6 +150,7 @@ class READER
         @formi  = 0;
 
         @trans  = {};
+        @transi = 0;
         @defs   = {};
         @mstr   = {};
 
@@ -179,8 +228,9 @@ class READER
                 m=s.match(eval("/#{f[0]}/"));
                 if(m.to_s==s);
 
-                    ex.type=k;
+                    ex.type=k; ex.idex=i; ex.origin=s;
                     brkdown_regex(f[1], s.squeeze(' '), ex);
+                    ex.translate(self);
 
                     return ex;
 
@@ -231,8 +281,36 @@ class READER
 #   ---     ---     ---     ---     ---
 
     def sttrans(val)
-        puts;
+        @trans[val] = [];
 
+        @transi     = 0;
+        @mstr       = "";
+
+        @onins = ->(t) {
+
+            sep=' ';
+            if(@mstr.empty?)
+                @trans["#{val}"].append("");
+                sep='';
+
+            end;
+
+            if(@transi==0 && t=='(')
+                @mstr << "|#"; @transi += 1;
+
+            elsif(@transi==1 && t==')')
+                @mstr << "\b|#"; @transi += 1;
+
+            elsif(t==';')
+                @trans["#{val}"][-1] = @mstr[0..-2];
+                @mstr=""; @transi=0;
+
+            else
+                @mstr << "#{t}#{sep}";
+
+            end;
+
+        };
     end;
 
 #   ---     ---     ---     ---     ---
@@ -607,17 +685,18 @@ end;
 
 #   ---     ---     ---     ---     ---
 
-LEX["("   ]=PEOP.new(0x00000000, ->(x) { perd.RQ_OPEN(x)          } );
-LEX[")"   ]=PEOP.new(0x00000000, ->(x) { perd.RQ_CLSE(x)          } );
-LEX["{"   ]=PEOP.new(0x00000000, ->(x) { perd.SQ_OPEN(x)          } );
-LEX["}"   ]=PEOP.new(0x00000000, ->(x) { perd.SQ_CLSE(x)          } );
+LEX["("    ]=PEOP.new(0x00000000, ->(x) { perd.RQ_OPEN(x)          } );
+LEX[")"    ]=PEOP.new(0x00000000, ->(x) { perd.RQ_CLSE(x)          } );
+LEX["{"    ]=PEOP.new(0x00000000, ->(x) { perd.SQ_OPEN(x)          } );
+LEX["}"    ]=PEOP.new(0x00000000, ->(x) { perd.SQ_CLSE(x)          } );
 
-LEX["itr" ]=PEOP.new(0x00000002, nil                                );
-LEX["lex" ]=PEOP.new(0x00000000, ->(x) { perd.lexbit(x)           } );
-LEX["key" ]=PEOP.new(0x00000001, ->(x) { perd.stcol("keys",  x)   } );
-LEX["rule"]=PEOP.new(0x00000001, ->(x) { perd.stcol("rules", x)   } );
-LEX["form"]=PEOP.new(0x00000001, ->(x) { perd.stform(x)           } );
-LEX["def" ]=PEOP.new(0x00000001, ->(x) { perd.stdef(x)            } );
+LEX["itr"  ]=PEOP.new(0x00000002, nil                                );
+LEX["lex"  ]=PEOP.new(0x00000000, ->(x) { perd.lexbit(x)           } );
+LEX["key"  ]=PEOP.new(0x00000001, ->(x) { perd.stcol("keys",  x)   } );
+LEX["rule" ]=PEOP.new(0x00000001, ->(x) { perd.stcol("rules", x)   } );
+LEX["form" ]=PEOP.new(0x00000001, ->(x) { perd.stform(x)           } );
+LEX["def"  ]=PEOP.new(0x00000001, ->(x) { perd.stdef(x)            } );
+LEX["trans"]=PEOP.new(0x00000001, ->(x) { perd.sttrans(x)          } );
 
 
 LEX["chk_in"] = ->(var_name) {
@@ -634,8 +713,9 @@ tk         = "";
 
 #   ---     ---     ---     ---     ---
 
-File.foreach(fpath) { |pe|
-    chars = pe.split('');
+File.foreach(fpath) { |line|
+
+    chars = line.split('');
     i     = 0;
     abort = 0;
 
@@ -643,7 +723,10 @@ File.foreach(fpath) { |pe|
 
         perd.rdchk(c, chars[i]);
         if(perd.act!=0);
-            if(perd.act==1); perd.act=0; break; end;
+            if(perd.act==1);
+                perd.act=0; break;
+
+            end;
         end;
 
 #   ---     ---     ---     ---     ---
@@ -656,7 +739,8 @@ File.foreach(fpath) { |pe|
 #puts rule;
 #puts "static void* getx: void* a,b int d".match(/#{rule}/);
 
-ex = perd.parse("static void* getx: void* a,b \n \n int c");
-ex.inspect;
+ex=perd.parse("stark* f");
+ex.sbs;
+
 
 #   ---     ---     ---     ---     ---

@@ -90,18 +90,18 @@ $:form vardecl;>
 	<#typeflags> <type> <*> <name> \;
 	<#typeflags> <type> <*> <name> <=> <#opvalue> ;
 
-//$:trans vardecl;>
-//	0 (vfunct==nihil) #typeflags void \( ptr name \) \(void\) \;
-//	0 (vfunct==stark) #typeflags void \( ptr name \) \(void* buff\) \;
+$:trans vardecl;>
+	0 (vfunct == nihil) #typeflags void \( ptr name \) \(void\) \;
+	0 (vfunct == stark) #typeflags void \( ptr name \) \(void* buff\) \; ;
 
 $:form fundecl;>
 	<#typeflags> <vfunct> <space> <name> \;
 	<#typeflags> <type> <*> <name> <:> void \;
 	<#typeflags> <type> <*> <name> <:> <#arglist> ;
 
-//$:trans fundecl;>
-//	0 (vfunct==nihil) #typeflags void name \(void\) \;
-//	0 (vfunct==stark) #typeflags void name \(void* buff\) \;
+$:trans fundecl;>
+	0 (vfunct == nihil) #typeflags void name \(void\) \;
+	0 (vfunct == stark) #typeflags void name \(void* buff\) \; ;
 
 $:/lex;>
 
