@@ -13,7 +13,7 @@
             <Keywords name="Numbers, suffix1">f</Keywords>
             <Keywords name="Numbers, suffix2"></Keywords>
             <Keywords name="Numbers, range"></Keywords>
-            <Keywords name="Operators1">| ^ \ &lt; &gt; * - % + . , ; ( ) [ ] { } / &amp; : = @ $ ? ! #</Keywords>
+            <Keywords name="Operators1">| ^ \ &lt; &gt; * - % + . , ; ( ) [ ] { } / &amp; : = @ $ ? ! # ~</Keywords>
             <Keywords name="Operators2"></Keywords>
             <Keywords name="Folders in code1, open">{</Keywords>
             <Keywords name="Folders in code1, middle"></Keywords>
@@ -24,14 +24,14 @@
             <Keywords name="Folders in comment, open"></Keywords>
             <Keywords name="Folders in comment, middle"></Keywords>
             <Keywords name="Folders in comment, close"></Keywords>
-            <Keywords name="Keywords1">void union struct const static extern char short int float long double new clean range in out each not and or sizeof len inline this MEM HASH pun with from rep times str uint uchar ushort ulong ustr mute defn decl stark nihil null bind bound</Keywords>
+            <Keywords name="Keywords1">void union struct const static extern char short int float long double new clean range in out each not and or sizeof len inline pun with from rep times str uint uchar ushort ulong ustr mute defn decl stark nihil null bind bound parent</Keywords>
             <Keywords name="Keywords2">self other</Keywords>
-            <Keywords name="Keywords3">open close get set typedef queue for if elif else while do ret skip break jmp case deft halt then</Keywords>
+            <Keywords name="Keywords3">open close get set typedef queue for if eif else while do ret skip break jump case deft halt then</Keywords>
             <Keywords name="Keywords4"></Keywords>
             <Keywords name="Keywords5">alias as is by wrap into</Keywords>
-            <Keywords name="Keywords6"> bind</Keywords>
+            <Keywords name="Keywords6"></Keywords>
             <Keywords name="Keywords7">hed src reg unreg guard export include extends</Keywords>
-            <Keywords name="Keywords8">rd mv</Keywords>
+            <Keywords name="Keywords8"></Keywords>
             <Keywords name="Delimiters">00&apos; 01 02&apos; 03&quot; 04 05&quot; 06r&quot; 07 08&quot; 09$: 10 11;&gt; 12\x 13 14: 15 16 17 18 19 20 21 22 23</Keywords>
         </KeywordLists>
         <Styles>

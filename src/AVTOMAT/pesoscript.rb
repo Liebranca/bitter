@@ -78,6 +78,13 @@ class PEEX
                             tr=_perd.defs[k][tr];
 
                         end;
+
+                    elsif(_perd.defs.include?(sub.type))
+                        if(_perd.defs[sub.type].include?(tr))
+                            tr=_perd.defs[sub.type][tr];
+
+                        end;
+
                     end;
 
                     if(t=="#arglist")
@@ -90,7 +97,7 @@ class PEEX
 #   ---     ---     ---     ---     ---
 
                     else
-                        ut << "#{sub.tokens[k]} ";
+                        ut << "#{tr} ";
 
                     end; lt=k;
                 };
@@ -235,6 +242,16 @@ class READER
 
 #   ---     ---     ---     ---     ---
 
+    def find_reserved(mt)
+        @keys.each_key { |k|;
+            if(@keys[k].include?(mt)); return k; end;
+
+        }; return "";
+
+    end;
+
+#   ---     ---     ---     ---     ---
+
     def brkdown_regex(r, s, ex)
 
         tags=r.split(' ');
@@ -249,6 +266,12 @@ class READER
 
                 else
                     mt=s.match(@rules[t]).to_s;
+                    if(!(["flow", "vfunct", "type", "typeflag"].include?(ex.type)))
+                        if(!(mt.match(@rules["#reserved"][0]).to_s.empty?))
+                            ex.type=find_reserved(mt);
+
+                        end;
+                    end;
 
                 end;
 
@@ -258,6 +281,7 @@ class READER
             end;
 
             if(!(mt.empty?))
+
                 s=s[mt.length..-1];
                 while(s[0]==' ')
                     s=s[1..-1];
@@ -803,13 +827,39 @@ File.foreach(fpath) { |line|
     }; if(abort==1); break; end;
 };
 
-#static const uint x = ((1+1)*1.25)/0x05FA
-#rule=perd.forms["fundecl"][3][0];
-#puts rule;
-#puts "static void* getx: void* a,b int d".match(/#{rule}/);
+#   ---     ---     ---     ---     ---
+#test block
 
-ex=perd.parse("int f = ((a + a) * b)/0xFF");
-ex.inspect;
-ex.sbs
+s="if(a) then (b) {"\
+  "int c = 0x4A;"\
+  "}"\
+
+toks=[]; tk="";
+
+s.split('').each { |c|;
+    tk << c;
+    if("{};".include?(c))
+        if(c==';')
+             tk=tk[0..-2];
+
+        end; toks.append(tk); tk="";
+
+    end;
+
+};
+
+#   ---     ---     ---     ---     ---
+
+i=0; toks.each { |t|;
+    ex=perd.parse(t);
+
+    if(ex!=nil)
+        puts "\n# --  EXPR "+i.to_s+" ---   --  ---  --\n\n\n";
+        ex.inspect;
+        ex.sbs; i+=1;
+
+    end;
+
+};
 
 #   ---     ---     ---     ---     ---

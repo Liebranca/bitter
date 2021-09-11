@@ -51,8 +51,19 @@ $:rule #typeflags;>
 $:key vfunct;>
 	nihil stark;
 
+$:key flow;>
+	if eif else then jump;
+
+$:def flow;>
+	eif is else if \;
+	then is { if ;
+
 $:rule name;>
 	\\w+ ;
+
+$:rule #reserved;>
+	\(\( <flow> | <vfunct> | <type> | <typeflag> \)) ;
+//	^\(\(?! <flow> | <vfunct> | <type> | <typeflag> $ \).*)$ ;
 
 $:rule namelist;>
 	\(\\w+,*\)+ [\\s*|\\b] ;
@@ -73,13 +84,13 @@ $:rule =;>
 	\\s*=\\s* ;
 
 $:rule value;>
-	\\(*(0x[0-9A-F]*|0b[0-1]*|[0-9]*\\.?[0-9]*)\\)* ;
+	\(0x[0-9A-F]*|0b[0-1]*|[0-9]*\\.?[0-9]*) ;
 
-$:rule opsign;>                             // this is atrocious. find a more readable way
-	\(\\-|\\+|\\*|\\/|\\%|\\||\\&|\\^|\\!|\\<|\\>\|\\=)* ;
+$:rule opsign;>
+	\(\\~|\\[|\\]|\\(|\\)|\\{|\\}|\\-|\\+|\\*|\\/|\\%|\\||\\&|\\^|\\?|\\!|\\<|\\>\|\\=)* ;
 
 $:rule #opvalue;>
-	\( \\s* [ <opsign> | <value> | <name> ] \\s* \)+ ;
+	\( \\s* [ <opsign> | <value> | <name> ] \)+ ;
 
 $:rule #arglist;>
 	\( \( <type> \) <*> <namelist> \)+ ;
@@ -105,6 +116,14 @@ $:trans fundecl;>
 	0 (vfunct == stark) #typeflags void name \(void* buff\) \;
 	1 (1 == 1) #typeflags type * name \(void\) \;
 	2 (1 == 1) #typeflags type * name \( #arglist \) \; ;
+
+$:form flow;>
+	<flow> \\s* <#opvalue> ;
+
+$:trans flow;>
+	0 (flow == else) flow \;
+	0 (flow == jump) flow #opvalue \;
+	0 (1 == 1) flow #opvalue \; ;
 
 $:/lex;>
 
