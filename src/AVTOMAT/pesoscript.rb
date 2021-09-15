@@ -27,6 +27,9 @@ PE_INSLEX    = 0x08;
 PE_INSDEF    = 0x10;
 
 LEX          = {};
+LNAMES       = {};
+GNAMES       = {};
+
 perd         = nil;
 
 #   ---     ---     ---     ---     ---
@@ -106,9 +109,57 @@ class PEEX
 #   ---     ---     ---     ---     ---
 
         else
-            ut=@tokens[t];
+            tr=@tokens[t];
+            if(_perd.defs.include?(t))
+                if(_perd.defs[t].include?(tr))
+                    tr=_perd.defs[t][tr];
+
+                end;
+            end; ut=tr;
 
         end; return ut;
+
+    end;
+
+#   ---     ---     ---     ---     ---
+
+    def rtkval
+        r="";
+        @tokens.each_key { |t|
+            if(@type=="#opvalue")
+                s = self.tkval(t);
+                if(t=="name" && !(LNAMES.include?(s)))
+                    puts "Undefined symbol: \"#{s}\""
+
+                end; r << s;
+
+            else
+                r << self.tkval(t);
+
+            end;
+
+        }; return r;
+
+    end;
+
+    def tkval(t)
+
+        if(!(@tokens.include?(t)))
+            return nil;
+
+        end;
+
+        tk=@tokens[t]; r="";
+        if(tk.kind_of?(Array))
+            tk.each { |sub|
+                r << sub.rtkval;
+
+            };
+
+        else
+            r=tk;
+
+        end; return r;
 
     end;
 
@@ -185,7 +236,13 @@ class PEEX
                         @trans << "#{t}#{sep}";
 
                     end;
-                }; break;
+
+                };
+
+                if(!(["fundecl", "flow"].include?(@type)))
+                    @trans << ';'
+
+                end; break;
             end;
         };
     end;
@@ -830,14 +887,19 @@ File.foreach(fpath) { |line|
 #   ---     ---     ---     ---     ---
 #test block
 
-s="if(a) then (b) {"\
-  "int c = 0x4A;"\
+s="int a=0; int b=1;"\
+  "if(a) then (b) then(a) {"\
+  "int c = 0x4A * (a && b);"\
   "}"\
 
 toks=[]; tk="";
+cur_level=0; implicit_levels={};
 
 s.split('').each { |c|;
-    tk << c;
+    if(tk.empty? && c==' ')
+        next;
+
+    end; tk << c;
     if("{};".include?(c))
         if(c==';')
              tk=tk[0..-2];
@@ -850,16 +912,56 @@ s.split('').each { |c|;
 
 #   ---     ---     ---     ---     ---
 
-i=0; toks.each { |t|;
+toks.each { |t|;
     ex=perd.parse(t);
 
     if(ex!=nil)
-        puts "\n# --  EXPR "+i.to_s+" ---   --  ---  --\n\n\n";
-        ex.inspect;
-        ex.sbs; i+=1;
+
+        if(ex.type=="vardecl")
+            if(!(LNAMES.include?(ex.tokens["name"])))
+                LNAMES[ex.tokens["name"]] = ex.tkval("#opvalue");
+
+            else
+                puts "Re-declared symbol: \"#{ex.tokens['name']}\""
+
+            end;
+
+#   ---     ---     ---     ---     ---
+
+        elsif(ex.type=="flow")
+
+            then_count=t.scan(/(?=\s+then\s*\()/).count;
+            if(then_count>0)
+                puts then_count;
+                implicit_levels[cur_level] = then_count;
+
+            end; ex.tkval("#opvalue");
+
+        end; puts ex.trans;
+
+#   ---     ---     ---     ---     ---
+
+    else
+
+        if(t.include?("}"))
+            if(implicit_levels.include?(cur_level))
+                for x in 0..implicit_levels[cur_level]-1
+                    t << "}";
+
+                end;
+
+                oldv=implicit_levels[cur_level];
+                cur_level-=oldv; implicit_levels[oldv]=0;
+
+            end; cur_level-=1;
+
+        elsif(t.include?("{"))
+            cur_level+=1;
+
+        end; puts t;
 
     end;
 
-};
+}; puts LNAMES;
 
 #   ---     ---     ---     ---     ---
