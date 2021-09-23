@@ -128,8 +128,15 @@ class PEEX
         @tokens.each_key { |t|
             if(@type=="#opvalue")
                 s = self.tkval(t);
-                if(t=="name" && !(LNAMES.include?(s)))
-                    puts "Undefined symbol: \"#{s}\""
+                if(t=="name")
+
+                    if(!(LNAMES.include?(s)))
+                        puts "Undefined symbol: \"#{s}\""
+
+                    else
+                        s = "LNAMES['#{s}']";
+
+                    end;
 
                 end; r << s;
 
@@ -145,7 +152,7 @@ class PEEX
     def tkval(t)
 
         if(!(@tokens.include?(t)))
-            return nil;
+            return "nil";
 
         end;
 
@@ -240,7 +247,7 @@ class PEEX
                 };
 
                 if(!(["fundecl", "flow"].include?(@type)))
-                    @trans << ';'
+                    @trans << ';';
 
                 end; break;
             end;
@@ -887,10 +894,7 @@ File.foreach(fpath) { |line|
 #   ---     ---     ---     ---     ---
 #test block
 
-s="int a=0; int b=1;"\
-  "if(a) then (b) then(a) {"\
-  "int c = 0x4A * (a && b);"\
-  "}"\
+s="int a; int b=89*0x5FFB; a=52+b;";
 
 toks=[]; tk="";
 cur_level=0; implicit_levels={};
@@ -928,6 +932,35 @@ toks.each { |t|;
 
 #   ---     ---     ---     ---     ---
 
+        elsif(ex.type=="assign")
+            if(!(LNAMES.include?(ex.tokens["name"])))
+                puts "Undeclared symbol: \"#{ex.tokens['name']}\""
+
+            else
+                LNAMES[ex.tokens["name"]] = ex.tkval("#opvalue");
+
+            end
+
+        elsif(ex.type=="inplace")
+            if(!(LNAMES.include?(ex.tokens["name"])))
+                puts "Undeclared symbol: \"#{ex.tokens['name']}\""
+
+            else
+
+                sub=t[ex.tokens["name"].length..-1]; v=LNAMES[ex.tokens["name"]];
+                op=""; sub.split('').each { |c|;
+                    if(c==' ')
+                        next;
+
+                    end; op << c;
+                    
+
+                }; LNAMES[ex.tokens["name"]] = v;
+
+            end
+
+#   ---     ---     ---     ---     ---
+
         elsif(ex.type=="flow")
 
             then_count=t.scan(/(?=\s+then\s*\()/).count;
@@ -937,7 +970,7 @@ toks.each { |t|;
 
             end; ex.tkval("#opvalue");
 
-        end; puts ex.trans;
+        end; puts ex.sbs;
 
 #   ---     ---     ---     ---     ---
 
@@ -962,6 +995,16 @@ toks.each { |t|;
 
     end;
 
-}; puts LNAMES;
+}; puts; puts "SYMBOLS:"
+
+LNAMES.each_key { |k|; v=LNAMES[k];
+
+    while(v.include?("LNAMES"))
+        mt=v.match(/LNAMES\[\'\w+\'\]/).to_s;
+        v[mt]=eval(mt).to_s;
+
+    end; puts "'#{k}' == '#{LNAMES[k]}' == #{eval(v)}";
+
+}; puts;
 
 #   ---     ---     ---     ---     ---

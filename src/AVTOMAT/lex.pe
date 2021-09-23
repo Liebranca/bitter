@@ -83,6 +83,9 @@ $:rule :;>
 $:rule =;>
 	\\s*=\\s* ;
 
+$:rule op=;>
+	\\s*\(\\+|\\-|\\*\\/)\\s*\\= ;
+
 $:rule value;>
 	\(0x[0-9A-F]*|0b[0-1]*|[0-9]*\\.?[0-9]*) ;
 
@@ -105,6 +108,22 @@ $:trans vardecl;>
 	0 (vfunct == stark) #typeflags void \( ptr name \) \(void* buff\) \;
 	1 (1 == 1) #typeflags type * name \;
 	2 (1 == 1) #typeflags type * name = #opvalue \; ;
+
+$:form assign;>
+	<name> <=> <#opvalue> ;
+
+$:trans assign;>
+	0 (1 == 1) name = #opvalue \; ;
+
+$:form inplace;>
+	<name> \\s* \\+\\+ \;
+	<name> \\s* \\-\\- \;
+	<name> <op=> <#opvalue> ;
+
+$:trans inplace;>
+	0 (1==1) name ++ \;
+	1 (1==1) name -- \;
+	2 (1==1) name op= #opvalue \; ;
 
 $:form fundecl;>
 	<#typeflags> <vfunct> <space> <name> \;

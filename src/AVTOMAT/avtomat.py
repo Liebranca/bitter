@@ -35,7 +35,7 @@ if not os.path.exists(pwd+"/calout.h"):
 import struct; plat=struct.calcsize("P") * 8
 plat='x64' if plat==64 else 'x32'
 
-for fold in ["KVRNEL", "SIN", "CHASM", "ESPECTRO"]:
+for fold in ["KVRNEL", "MAMMOTH", "SIN", "CHASM", "ESPECTRO"]:
 
     dpath=os.path.abspath(pwd+f"/../../trashcan/{plat}/{fold}");
     d = dpath.split("\\"); r = d[0]; 
