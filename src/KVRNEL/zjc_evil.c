@@ -36,11 +36,13 @@ static       DANG   CALREG[64];             // call register; a call dump
 //   ---     ---     ---     ---     ---
 
 static char* PALETTE[] = {
-    "$:MSCPX(PALETTE[0]);>", "$:MSCPX(PALETTE[1]);>",
-    "$:MSCPX(PALETTE[2]);>", "$:MSCPX(PALETTE[3]);>",
+    "\e[38;2;0;255;255m\e[48;2;23;30;35m",
+    "\e[38;2;0;255;0m\e[48;2;23;30;35m",
+    "\e[38;2;255;255;0m\e[48;2;23;30;35m",
+    "\e[38;2;255;192;128m\e[48;2;23;30;35m",
 
-    "$:MSCPX(PALETTE['BACK']);>",
-    "$:MSCPX(PALETTE['SEL0']);>"
+    "\e[38;2;192;206;192m\e[48;2;23;30;35m",
+    "\e[38;2;192;206;192m\e[48;2;0;0;0m"
 
 };
 
@@ -126,10 +128,10 @@ void __popcalreg()                          {
 
 void __terminator (int errcode, char* info) {
 
-    char* mstart; char* mbody;
-
-    if (errcode < 0x40) { mstart = "$:MSCPX(PALETTE[3]);>FTL_"; ERRSTATE = FATAL; }
-    else                { mstart = "$:MSCPX(PALETTE[2]);>ERR_"; ERRSTATE = ERROR; };
+    char mstart[256]; char* mbody;
+                           
+    if (errcode < 0x40) { snprintf(mstart, 255, "%sFTL_", PALETTE[3]); ERRSTATE = FATAL; }
+    else                { snprintf(mstart, 255, "%sERR_", PALETTE[2]); ERRSTATE = ERROR; };
 
     CALOUT(E                              ,
            "\n\b\x1b[7m%s0x%X\x1b[27m: %s",

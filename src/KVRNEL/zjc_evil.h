@@ -65,6 +65,7 @@ typedef struct ZJC_RET {                    // a command's return
 
 typedef void (*COMMAND)(RET*  r   );        // pointer to void func taking a RET* arg
 typedef void (*STARK  )(void* buff);        // pointer to void func taking a void* arg
+typedef void (*NIHIL  )(void      );        // pointer to void func taking no args
 
 //   ---     ---     ---     ---     ---
 /* utils */                                 /* generally i wouldn't define shit in a  *

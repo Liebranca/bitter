@@ -70,7 +70,7 @@ void NITHASH(HASH* h)                       {
         HSLOT* slot=MEMBUFF(byref(h->m), HSLOT, offset);
 
         MKSTK(byref(slot->stack), ZJC_HASH_STKLEN);
-        for(uint y=ZJC_HASH_STKLEN; y>0; y--) {
+        for(uint y=ZJC_HASH_STKLEN-1; y>0; y--) {
             STACKPUSH(byref(slot->stack), y-1);
         };
 
