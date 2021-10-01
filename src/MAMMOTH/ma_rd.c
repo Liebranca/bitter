@@ -41,6 +41,12 @@
 #define MAMMIT_SF_CCLA 0x00000800
 #define MAMMIT_SF_CFUN 0x00001000
 
+#define MAMMIT_SF_OPS0 0x00FF0000
+#define MAMMIT_SF_EQUL 0x00010000
+
+#define MAMMIT_SF_OPS1 0xFF000000
+#define MAMMIT_SF_SETR 0x00010000
+
 // (...)
 
 // constants
@@ -164,6 +170,24 @@ typedata.flags&0x04
 
                                                     };
 
+/*
+
+sh SHT_
+st TRK_
+
+v  VO__
+n  NHL_
+
+c  CHR_
+i  INT_
+l  LNG_
+
+f  FLT_
+d  DBL_
+
+*/
+
+
 //   ---     ---     ---     ---     ---
 
 typedef struct MAMM_SYNTX_SYMBOL {          // used for string to funcall mambo
@@ -181,6 +205,83 @@ typedef struct MAMM_SYNTX_SYMBOL {          // used for string to funcall mambo
     sym.onrd   = fun;                       // when !fun, you're bored and null
 
     return sym;                                                                             };
+
+//   ---     ---     ---     ---     ---
+
+typedef struct MAMM_WIDE_LVAL {             // a big box for values
+
+    ID    id;                               // identifier
+    uchar box[32];                          // put your stuff here
+
+} LVAL;                                     // now let's explain: ID is 32 bytes,
+                                            // +32 bytes from box, you have 64
+                                            // that's enough for most common uses
+                                            // if you have a bigger value (or an array... )
+                                            // then you'll simply take up the next slot
+                                            // so, read next 64 bytes as (u)chars
+                                            // the problem with this is, of course, ABSPITA
+                                            // but we're willing to make sacrifices
+
+//   ---     ---     ---     ---     ---
+
+typedef struct MAMM_LVAL_ARRSLOT {          // a block of big boxes
+
+    uint start;                             // offset to first box
+    uint end;                               // offset to last box
+
+    uint bytesize;                          // total size of the read
+    uint pad;                               // manual padding
+
+} LARS;
+
+//   ---     ---     ---     ---     ---
+
+LVAL VALNEW(uchar* type,
+            uchar* name,
+            uchar* val ,
+
+            uint   size,
+
+            LARS*  lars,
+            LVAL*  slot)                    {
+
+    LVAL v         = {0};
+    slot->id       = IDNEW(type, name);
+
+    uint len       = 1;                     // how many slots this value takes up
+    uint off       = 0;                     // offset in bytes into val, from first slot
+
+    lars->bytesize = size;                  // let lars know how big val is
+
+//   ---     ---     ---     ---     ---
+
+    if(size>32) {                           // bigger values take up more slots
+
+        for(uint x=0; x<32; x++) {          // fill out the first box
+            slot->box[x]=val[x];
+
+        }; off=32;
+
+        uint left=size-32;                  // discount the first box
+        while(left) {                       // maybe we could do without loop: LAZYSOL
+            uint nx = (64>left) ? left : 64;
+
+            LVAL* box=(uchar*) slot+len;    // use slot as a byte array
+            for(uint x=0; x<nx; x++) {      // walk through it and copy from val
+                 box[x]=val[off+x];
+
+            }; left-=nx; len++; off+=nx;    // move to next slot
+        };
+    }
+
+//   ---     ---     ---     ---     ---
+
+    else {
+        for(uint x=0; x<size; x++) {        // fill out the box...
+            slot->box[x]=val[x];
+
+        };
+    }; lars->end=lars->start+len;           /* let lars know how many slots to read */      };
 
 //   ---     ---     ---     ---     ---
 
@@ -202,6 +303,10 @@ typedef struct MAMM_INTERPRETER {           // smach for pe-text input
     };
 
     uchar  lvla_stack[256];                 // markers for recalling previous context
+
+    uint   larstop;                         // next offset @lvalues that's free
+    LARS   lvalsl    [256];                 // yer vars kypr
+    LVAL   lvalues   [256];                 // yer vars arrrr
 
     SYMBOL slots[GNAMES_SZ];                // array of built-ins
     STK    slstack;                         // stack of (free)indices into built-ins array
@@ -231,19 +336,97 @@ void REGTP(void)                            {
     uchar* type = typedata.base;  rd_tkx++; // fetch, move to next token
     uchar* name = tokens[rd_tkx]; rd_tkx++; // fetch, move moar
 
-    if(rd_tkx<rd_tki) {                     // if token count > 2 we have an assignment
-        if(tokens[rd_tkx][0] != 0x3D) {     // single equal only
+    CALOUT(K, "%s %s", type, name);
+    if(rd_tkx<rd_tki) {
+        CALOUT(K, " %s\n", tokens[rd_tkx]);
 
-                                            // obligatory pop culture reference
-            CALOUT                          (E, "You are NOT a walrus, John!\n");
-            return;
+        // pop next, so to speak
+        // just get slot from idex and set start
+        uint  off        = mammi->larstop;
+        LARS* lars       = mammi->lvalsl+off;
+        LVAL* slot       = mammi->lvalues+off;
+        lars->start      = mammi->larstop;
 
-        }; rd_tkx++;
+        // set aside some memory, measure...
+        uchar* value     = "\x00\x00\x00\x00";
+        uchar* raw_value = tokens[rd_tkx];
+        uint   len       = strlen(raw_value);
 
-        // name = expression... goes here
-        return;
+//   ---     ---     ---     ---     ---    STRING->INTEGER
 
-    };                                                                                };
+        if( (0x30 <= raw_value[0])
+        &&  (0x39 >= raw_value[0]) {
+            if(len>1) {                     // go through string...
+                uchar c=raw_value[0];       // try not to die before the gate opens
+
+                if(c==0x30) {
+
+                    // is hexlit
+                    if  (raw_value[1] == 0x78) {
+                        goto RD_ASHEXN;
+                    }
+
+                    // is bitlit
+                    elif(raw_value[1] == 0x62) {
+                        goto RD_ASBITS;
+
+                    };
+
+                    return;                 // zero in front and it's not a lit? insolence!
+
+//   ---     ---     ---     ---     ---
+
+                    RD_ASHEXN:              // string -> hex
+
+                    raw_value += 2;         // skip the 0x
+                    uint cbyte = 0;         // current hex digit
+                    uint hxval = 0;         // value of char, in hex
+
+                    do { c=*raw_value;      // redundant deref for shorts
+
+                        if(c<=0x39) {       // if 0-9
+                            hxval=c-0x30;
+
+                        }
+//ihatehadoukens
+                        elif( (0x41<=c)
+                        &&    (0x46>=c) ) { // if A-F
+                            hxval=c-0x37;
+// cleanup this rubbish
+                        }; if(cbyte%2) {    // is first digit
+                            value[cbyte/2]  = hxval;
+// or im gonna be mad
+                        } else {            // is second digit
+                            value[cbyte/2] += hxval*16;
+
+                        }; cbyte++;         // move to next
+                    } while(*raw_value++); goto DONE;
+
+                }
+
+                else {
+                    
+
+                }
+
+            }
+
+//   ---     ---     ---     ---     ---
+
+            else {                          // boring corner case: single digit
+                value[0]=raw_value[0]-0x30;
+
+            };
+
+        };
+
+//   ---     ---     ---     ---     ---
+
+        DONE: VALNEW(type, name, val, size, lars, slot);
+
+    };
+
+                                                                                };
 
 //   ---     ---     ---     ---     ---
 
@@ -341,6 +524,8 @@ void CHKTKNS(void)                          {
 
         SEQN   = "CREG";
         SEQ[0] = "TYPE\x02";
+        SEQ[1] = "<OP>\x01";
+        SEQ[2] = "EXPR\xFF";
         SEQI   = 1;
 
     };
@@ -446,6 +631,9 @@ void CHKTKNS(void)                          {
 
 void RDNXT(void)                            {
 
+    // operators left to write cases for...
+    // | ^ \ < > * - % + . , ; ( ) [ ] { } / & : = @ $ ? ! # ~ ' "
+
     TOP:
         rd_prv=rd_cur;                      // remember current
         rd_cur=rd_buff[rd_pos];             // advance to next
@@ -465,6 +653,9 @@ void RDNXT(void)                            {
 
         case 0x3B3E:
             mammi->state &=~MAMMIT_SF_PESC; rd_pos++; goto TOP;
+
+        case 0x3D3D:
+            mammi->state |= MAMMIT_SF_EQUL; rd_pos++; goto TOP;
 
     };
 
@@ -523,6 +714,12 @@ void RDNXT(void)                            {
 
             }; break;
 
+//   ---     ---     ---     ---     ---    OPERATORS
+
+        case 0x3D:
+            mammi->state |= MAMMIT_SF_SETR;
+            goto APTOK;
+
 //   ---     ---     ---     ---     ---    TERMINATORS
 
         case 0x7B: MAMMIT_LVLA_NXT
@@ -561,7 +758,7 @@ int main(void)                              {
     NTNAMES();
     MEM* s=MKSTR("MAMM_RD", 1024, 1); CLMEM(s);
 
-    RPSTR(&s, "reg vars { uint8* x; }", 0);
+    RPSTR(&s, "reg vars { int x=1; }", 0);
     rd_buff = MEMBUFF(s, uchar, 0);
 
     RDNXT();
