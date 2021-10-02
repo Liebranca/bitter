@@ -266,7 +266,7 @@ LVAL VALNEW(uchar* type,
         while(left) {                       // maybe we could do without loop: LAZYSOL
             uint nx = (64>left) ? left : 64;
 
-            LVAL* box=(uchar*) slot+len;    // use slot as a byte array
+            uchar* box=(uchar*) slot+len;   // use slot as a byte array
             for(uint x=0; x<nx; x++) {      // walk through it and copy from val
                  box[x]=val[off+x];
 
@@ -335,10 +335,10 @@ void REGTP(void)                            {
 
     uchar* type = typedata.base;  rd_tkx++; // fetch, move to next token
     uchar* name = tokens[rd_tkx]; rd_tkx++; // fetch, move moar
+    uint   size = 4;
 
     CALOUT(K, "%s %s", type, name);
     if(rd_tkx<rd_tki) {
-        CALOUT(K, " %s\n", tokens[rd_tkx]);
 
         // pop next, so to speak
         // just get slot from idex and set start
@@ -348,16 +348,17 @@ void REGTP(void)                            {
         lars->start      = mammi->larstop;
 
         // set aside some memory, measure...
-        uchar* value     = "\x00\x00\x00\x00";
+        uchar  value[4]  = { '\0', '\0', '\0', '\0' };
         uchar* raw_value = tokens[rd_tkx];
         uint   len       = strlen(raw_value);
 
 //   ---     ---     ---     ---     ---    STRING->INTEGER
 
         if( (0x30 <= raw_value[0])
-        &&  (0x39 >= raw_value[0]) {
+        &&  (0x39 >= raw_value[0]) ) {
             if(len>1) {                     // go through string...
-                uchar c=raw_value[0];       // try not to die before the gate opens
+                uchar c     = raw_value[0]; // try not to die before the gate opens
+                uint  cbyte = 0;            // current byte
 
                 if(c==0x30) {
 
@@ -379,7 +380,7 @@ void REGTP(void)                            {
                     RD_ASHEXN:              // string -> hex
 
                     raw_value += 2;         // skip the 0x
-                    uint cbyte = 0;         // current hex digit
+                    uint chxd  = 0;         // current hex digit
                     uint hxval = 0;         // value of char, in hex
 
                     do { c=*raw_value;      // redundant deref for shorts
@@ -393,27 +394,60 @@ void REGTP(void)                            {
                         &&    (0x46>=c) ) { // if A-F
                             hxval=c-0x37;
 // cleanup this rubbish
-                        }; if(cbyte%2) {    // is first digit
-                            value[cbyte/2]  = hxval;
+                        }; if(!chxd) {      // is first digit
+                            value[cbyte]  = hxval*16;
+                            chxd++;
 // or im gonna be mad
                         } else {            // is second digit
-                            value[cbyte/2] += hxval*16;
+                            value[cbyte] += hxval;
+                            chxd--; cbyte++;
 
-                        }; cbyte++;         // move to next
-                    } while(*raw_value++); goto DONE;
+                        }} while(*raw_value++); goto BOT;
+
+//   ---     ---     ---     ---     ---
+
+                    RD_ASBITS:              // string -> binary
+
+                    raw_value += 2;         // skip the 0b
+                    uint cbit  = (len-3)%7; // current bit
+
+                    do { c=*raw_value;      // redundant deref for shorts
+
+                        // easy money
+                        value[cbyte] |= (c==0x31) << cbit;
+                        if(!cbit) {
+                            cbyte++; len-=cbit;
+                            cbit=(len-3)%7;
+
+                            continue;
+
+                        }; cbit--;
+
+                    } while(*raw_value++);
 
                 }
 
-                else {
-                    
+//   ---     ---     ---     ---     ---
 
+                else {                      // string -> decimal
+
+                    uint decval = 0;        // value in decimal
+                    do { c=*raw_value;      // redundant deref for shorts
+                        decval *= 10;       // left shift
+                        decval += c-0x30;
+
+                    } while(*raw_value++);
+
+                    for(uint x=0; x<4; x++) {
+                        value[x]=(decval&(0xFF<<(x*8)))>>(x*8);
+
+                    };
                 }
-
             }
 
 //   ---     ---     ---     ---     ---
 
-            else {                          // boring corner case: single digit
+            elif(len==1) {                  // boring corner case: single decimal digit
                 value[0]=raw_value[0]-0x30;
 
             };
@@ -422,7 +456,8 @@ void REGTP(void)                            {
 
 //   ---     ---     ---     ---     ---
 
-        DONE: VALNEW(type, name, val, size, lars, slot);
+        BOT: CALOUT(K, " %u\n", *((uint*) value));
+        //VALNEW(type, name, value, size, lars, slot);
 
     };
 
@@ -758,7 +793,7 @@ int main(void)                              {
     NTNAMES();
     MEM* s=MKSTR("MAMM_RD", 1024, 1); CLMEM(s);
 
-    RPSTR(&s, "reg vars { int x=1; }", 0);
+    RPSTR(&s, "reg vars { int x=0b101000; }", 0);
     rd_buff = MEMBUFF(s, uchar, 0);
 
     RDNXT();
