@@ -53,7 +53,7 @@ static char CALOUT_LAST=0x4D;
 void __calout(char fam, char* format, ...)  {
 
                                             // newline on fambreak
-    if(fam!=CALOUT_LAST)                    { CALOUT_LAST=fam; fprintf(stderr, "\n\b");     };
+    if(fam!=CALOUT_LAST)                    { CALOUT_LAST=fam; fprintf(stderr, "\n");     };
 
     va_list args;
 
@@ -78,7 +78,7 @@ DANG* __geterrloc(const char* p,
     if(CALDEPTH) {
 
                                             // avoid recursion or you'll see this one
-        if(CALDEPTH > 63)                   { CALOUT(E,"%s", "CALL DEPTH EXCEEDED!\n\b");   \
+        if(CALDEPTH > 63)                   { CALOUT(E,"%s", "CALL DEPTH EXCEEDED!\n");   \
                                               return NULL;                                  };
 
                                             /* fill callbranch so that it reads like so:   *
@@ -101,7 +101,7 @@ DANG* __geterrloc(const char* p,
                                             // paste everything into the errloc itself
     snprintf(
         cal->location, 255,
-        "%s%s%i:\x1b[0m %s<%s>\x1b[0m on func %s%s\x1b[0m line %s%i\n\b",
+        "%s%s%i:\x1b[0m %s<%s>\x1b[0m on func %s%s\x1b[0m line %s%i\e[0m\n",
         PALETTE[1], callbranch, CALREG_I, PALETTE[0], p, PALETTE[2], f, PALETTE[3], l
         );
 
@@ -134,7 +134,7 @@ void __terminator (int errcode, char* info) {
     else                { snprintf(mstart, 255, "%sERR_", PALETTE[2]); ERRSTATE = ERROR; };
 
     CALOUT(E                              ,
-           "\n\b\x1b[7m%s0x%X\x1b[27m: %s",
+           "\n\x1b[7m%s0x%X\x1b[27m: %s",
            mstart, errcode, PALETTE[4]    );
 
     switch(errcode)                         {
@@ -165,18 +165,22 @@ void __terminator (int errcode, char* info) {
         case 72: mbody =                    "Can't insert key %s<%s>";                  break;
         case 73: mbody =                    "Key %s<%s>\x1b[0m not found";              break;
 
+        // 0x010000 onwards is PE$O debug
+        case 0x010001:
+            mbody =                         "Multiple declarations of value %s'%s'";    break;
+
         default: mbody =                    "UNRECOGNIZED %s%s";                        break;
 
                                             };
 
     CALOUT(E, mbody, PALETTE[0], info);
     CALOUT(E,
-        "\n\b%sERRLOC TRACKER: %i ENTRIES\n",
+        "\n%sERRLOC TRACKER: %i ENTRIES\n",
         PALETTE[4], CALREG_I
 
     ); __printcalreg(0);
 
-    CALOUT(E, "\n\b");
+    CALOUT(E, "\n");
 
     if(ERRSTATE == FATAL)                   { CALOUT(E, "%s", "TERMINATED");                \
                                               exit(ERRSTATE);                               }

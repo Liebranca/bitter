@@ -47,8 +47,33 @@
 #define MAMMIT_SF_OPS1 0xFF000000
 #define MAMMIT_SF_SETR 0x00010000
 
-// (...)
+//   ---     ---     ---     ---     ---
+// debug/errcatch stuff
 
+static uint gblevil =  0x00000000;          // global evilstate
+static uint rd_line =  1;                   // current line
+
+#define MAMMIT_EV_BEG  0x00010000
+#define MAMMIT_EV_DECL 0x00000001
+
+// ommited __shpath(__FILE__)
+#define MAMMLOC "TEST", "NON", rd_line
+#define GTMAMMLOC __geterrloc(MAMMLOC)
+
+// mammi-oriented errcatch
+#define MAMMCTCH(func, retx, errcode, info) { DANG* cal = GTMAMMLOC;                         \
+                                                                                             \
+    cal->state            = func;                                                            \
+    if  ( (cal->state    == FATAL        )                                                   \
+        | (cal->state    == ERROR        )                                                   \
+        | (retx && (retx != cal->state)) ) {                                                 \
+                                                                                             \
+            gblevil |= errcode;                                                              \
+            __terminator(MAMMIT_EV_BEG+errcode, info); return;                               \
+                                                                                             \
+    }; retx = cal->state; __popcalreg();                                                     }
+
+//   ---     ---     ---     ---     ---
 // constants
 #ifndef MAMMIT_TK_WIDTH
     #define MAMMIT_TK_WIDTH 64
@@ -77,6 +102,9 @@ static uchar  rd_nxt  = '\0';               // next char in buff
 
 static ushort rd_wid  = 0x0000;             // next | (cur<<8)
 static uint   rd_pos  = 0;                  // position into buffer
+
+static HASH*  GNAMES_HASH;                  // globals and built-ins
+static HASH*  LNAMES_HASH;                  // user-defined symbols
 
 //   ---     ---     ---     ---     ---
 
@@ -156,15 +184,16 @@ MID:switch(c) {
     }; BOT: i++; if(i<len) { goto TOP; }
 
 CALOUT(E,"\
-Base: %s\n\
-Size: %u\n\
-Astr: %u\n\
-Usig: %u\n",
+base: %s\n\
+size: %u\n\
+astr: %u\n\
+usig: %u\n",
 
 typedata.base,
 typedata.arrsize,
 typedata.indlvl,
-typedata.flags&0x04
+
+(typedata.flags&0x04)!=0
 
 );
 
@@ -281,7 +310,10 @@ LVAL VALNEW(uchar* type,
             slot->box[x]=val[x];
 
         };
-    }; lars->end=lars->start+len;           /* let lars know how many slots to read */      };
+    }; lars->end=lars->start+len;           // let lars know how many slots to read
+
+                                            // insert in hash for later fetch by key
+    HASHSET                                 (LNAMES_HASH, byref(slot->id)         );        };
 
 //   ---     ---     ---     ---     ---
 
@@ -329,7 +361,28 @@ void REGMA(void)                            {
 
         return;
 
-    }; mammi->state &=~MAMMIT_SF_CREG;      /* effectively, an implicit else */             };
+    }; mammi->state &=~MAMMIT_SF_CREG;      // effectively, an implicit else
+                                                                                            };
+
+//   ---     ---     ---     ---     ---
+
+int NOREDCL(uchar* name)                    {
+
+    void* nulmy = NULL;                     // check if name exists in global scope
+    STR_HASHGET                             (GNAMES_HASH, name, nulmy, 0            );
+
+    if(nulmy) {                             // freak out if it does;
+        return ERROR;
+
+                                            // now check if name exists in *local* scope
+    }; STR_HASHGET                          (LNAMES_HASH, name, nulmy, 0);
+
+    if(nulmy) {                             // ... and freak out if it does
+        return ERROR;
+
+    }; return DONE;                                                                         };
+
+//   ---     ---     ---     ---     ---
 
 void REGTP(void)                            {
 
@@ -337,7 +390,10 @@ void REGTP(void)                            {
     uchar* name = tokens[rd_tkx]; rd_tkx++; // fetch, move moar
     uint   size = 4;
 
-    CALOUT(K, "%s %s", type, name);
+                                            // redeclaration block
+    int    evil = 0; MAMMCTCH               (NOREDCL(name), evil, MAMMIT_EV_DECL, name);
+    CALOUT                                  (K, "DECL: %s %s", type, name             );
+
     if(rd_tkx<rd_tki) {
 
         // pop next, so to speak
@@ -456,16 +512,15 @@ void REGTP(void)                            {
 
 //   ---     ---     ---     ---     ---
 
-        BOT: CALOUT(K, " %u\n", *((uint*) value));
-        //VALNEW(type, name, value, size, lars, slot);
+        BOT: VALNEW(type, name, value, size, lars, slot);
+        uchar* vtest = (uchar*) slot->box;
+        CALOUT(K, " = %u (%s)\n", *((uint*) vtest), tokens[rd_tkx]);
 
     };
 
                                                                                 };
 
 //   ---     ---     ---     ---     ---
-
-static HASH* GNAMES_HASH;
 
 void NTNAMES(void)                          {
 
@@ -477,8 +532,9 @@ void NTNAMES(void)                          {
     for(int x=GNAMES_SZ-1; x>0; x--) {      // fill stack with indices
         STACKPUSH(byref(mammi->slstack), x);
 
-                                            // nit the hash
+                                            // nit the hashes
     }; GNAMES_HASH = MKHASH                 (7, "gnames_hash"                          );
+       LNAMES_HASH = MKHASH                 (5, "lnames_hash"                          );
 
 //   ---     ---     ---     ---     ---
 
@@ -532,7 +588,8 @@ void NTNAMES(void)                          {
 
     };                                                                                      };
 
-void DLNAMES(void)                          { DLMEM(GNAMES_HASH); DLMEM(mammi);             };
+void DLNAMES(void)                          { DLMEM(LNAMES_HASH);                           \
+                                              DLMEM(GNAMES_HASH); DLMEM(mammi);             };
 
 //   ---     ---     ---     ---     ---
 
@@ -667,9 +724,12 @@ void CHKTKNS(void)                          {
 void RDNXT(void)                            {
 
     // operators left to write cases for...
-    // | ^ \ < > * - % + . , ; ( ) [ ] { } / & : = @ $ ? ! # ~ ' "
+    // | ^ \ < > * - % + . , ; ( ) [ ] { } / & : @ $ ? ! # ~ ' "
 
     TOP:
+
+        if(gblevil) { return; }             // something went wrong last pass
+
         rd_prv=rd_cur;                      // remember current
         rd_cur=rd_buff[rd_pos];             // advance to next
 
@@ -709,7 +769,9 @@ void RDNXT(void)                            {
         case 0x07: goto APTOK;
         case 0x08: goto APTOK;
         case 0x09: goto APTOK;
-        case 0x0A: goto APTOK;
+
+        case 0x0A: rd_line++; goto APTOK;   // inc line counter on \n ;)
+
         case 0x0B: goto APTOK;
         case 0x0C: goto APTOK;
         case 0x0D: goto APTOK;
@@ -777,7 +839,13 @@ void RDNXT(void)                            {
                 CLMEM2(tokens[i], MAMMIT_TK_WIDTH);
 
             }; rd_tkp=0; rd_tki=0;
-            rd_tk=tokens[rd_tki]; break;
+            rd_tk=tokens[rd_tki];
+
+            // clean non-context stateflags
+            // ruins multi-statement peso escapes, ill fix that later
+            mammi->state ^= MAMMIT_SF_PESO | MAMMIT_SF_OPS0 | MAMMIT_SF_OPS1;
+
+            break;
 
 //   ---     ---     ---     ---     ---    CHARACTERS
 
@@ -793,10 +861,14 @@ int main(void)                              {
     NTNAMES();
     MEM* s=MKSTR("MAMM_RD", 1024, 1); CLMEM(s);
 
-    RPSTR(&s, "reg vars { int x=0b101000; }", 0);
+    RPSTR(&s, "reg vars {\n int x=0b101000;\n uint4 x = 0xF4;\n}\n", 0);
     rd_buff = MEMBUFF(s, uchar, 0);
 
+    CALOUT(E, "\e[38;2;128;255;128m\n$PEIN:\n%s\n\e[0m\e[38;2;255;128;128m$OUT:", rd_buff);
+
     RDNXT();
+    CALOUT(E, "\e[0m");
+
     DLMEM(s);
     DLNAMES();
 
