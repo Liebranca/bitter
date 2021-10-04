@@ -421,7 +421,13 @@ void REGTP(void)                            {
                 uchar c     = raw_value[0]; // try not to die before the gate opens
                 uint  cbyte = 0;            // current byte
 
-                if(c==0x30) {
+                // is float
+                if(strstr(raw_value, ".")) {
+                    goto RD_ASFLTP;
+
+                }
+
+                elif(c==0x30) {
 
                     // is hexlit
                     if  (raw_value[1] == 0x78) {
@@ -476,22 +482,28 @@ void REGTP(void)                            {
 
                     RD_ASBITS:              // string -> binary
 
-                    raw_value += 2;         // skip the 0b
-                    uint cbit  = (len-3)%7; // current bit
+                    raw_value += len-neg-1; // skip to end and read backwards
+                    uint cbit  = 0;         // current bit
 
                     do { c=*raw_value;      // redundant deref for shorts
 
+                        if(c != 0x31\
+                        && c != 0x30) {     // nuuuuuuuuuuull!
+                            break;
+
+                        };
+
                         // easy money
                         value[cbyte] |= (c==0x31) << cbit;
-                        if(!cbit) {
-                            cbyte++; len-=cbit;
-                            cbit=(len-3)%7;
+                        if(cbit==7) {
+                            cbyte++;
+                            cbit=0;
 
                             continue;
 
-                        }; cbit--;
+                        }; cbit++;
 
-                    } while(*raw_value++);
+                    } while(*raw_value-- != 0x62);
 
                 }
 
@@ -526,6 +538,49 @@ void REGTP(void)                            {
 
 //   ---     ---     ---     ---     ---
 
+        elif(raw_value[0]==0x2E) {          // cool corner case: floats
+        RD_ASFLTP:
+
+            float  whole = 0.0f;            // integer portion of number
+            float  fract = 0.0f;            // fraction portion of number
+            float  fval  = 0.0f;            // value at current char
+            uint   dotd  = 0;               // right shift multiplier
+            uchar  c     = 0x00;            // blank char
+
+            do { c=*raw_value;
+
+                if(!c) { break; }           // nuuuuuuuuuuull!
+
+                fval=(float) c-0x30;        // fval be in (0,9), else is dot
+
+                if(c==0x2E) {               // dot spotted, do fractions now
+                    dotd=1;                 // start fractions at 0.1 and advance that
+                    continue;               // skip to next char...
+
+                }
+
+                elif(!dotd) {
+                    whole*=10;              // left shift
+                    whole+=fval;            // add to total
+
+                    continue;               // skip!
+
+                };
+
+                dotd  *= 10;                // up the right shift factor
+                fract += fval*(1.0f/dotd);  // right shift value and add
+
+            } while(*raw_value++); whole+=fract;
+
+            uint uval = *((uint*) &whole);  // read these bytes as an int
+            for(uint x=0; x<size; x++) {    // copy them over
+                value[x]=(uval&(0xFF<<(x*8))) >> (x*8);
+
+            };
+        }
+
+//   ---     ---     ---     ---     ---
+
         //elif(raw_value[0])
 
 //   ---     ---     ---     ---     ---
@@ -537,32 +592,32 @@ void REGTP(void)                            {
             if(strstr(type, "float") != NULL) {
                 value[3] |= 0x80;
 
-            } else {
+            }
+
+            else {
 
                 for(uint x=0, carry=0;
                     x<size; x++      ) {    // take two's
-                    value[x]=(~value[x]);
+                    value[x]=(~value[x]);   // flip bits
                     if(!x || carry) {
                         if(value[x]==0xFF) {
-                            value[x] += 1;
+                            value[x] += 1;  // overflows. add one and set carry
                             carry     = 1;
                         }
 
                         else {
-                            value[x] += 1;
+                            value[x] += 1;  // won't overflow, so add and no carry
                             carry     = 0;
 
                         };
-
                     };
-
                 };
             };
 
         }; VALNEW(type, name, value, size, lars, slot);
 
         uchar* vtest = (uchar*) slot->box;
-        CALOUT(K, " = %i : 0x%08X (%s)\n", *((int*) vtest), *((uint*) vtest), tokens[rd_tkx]);
+        CALOUT(K, " = %f : 0x%08X (%s)\n", *((float*) vtest), *((uint*) vtest), tokens[rd_tkx]);
     };                                                                                      };
 
 //   ---     ---     ---     ---     ---
@@ -917,7 +972,7 @@ int main(void)                              {
     NTNAMES();
     MEM* s=MKSTR("MAMM_RD", 1024, 1); CLMEM(s);
 
-    RPSTR(&s, "reg vars { int x=0x7F000000; int y=-0x7F000000;\n}\n", 0);
+    RPSTR(&s, "reg vars { float x=-658.9987561254; }\n", 0);
     rd_buff = MEMBUFF(s, uchar, 0);
 
     CALOUT(E, "\e[38;2;128;255;128m\n$PEIN:\n%s\n\e[0m\e[38;2;255;128;128m$OUT:", rd_buff);
