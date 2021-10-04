@@ -45,7 +45,8 @@
 #define MAMMIT_SF_EQUL 0x00010000
 
 #define MAMMIT_SF_OPS1 0xFF000000
-#define MAMMIT_SF_SETR 0x00010000
+#define MAMMIT_SF_SETR 0x01000000
+#define MAMMIT_SF_MINS 0x02000000
 
 //   ---     ---     ---     ---     ---
 // debug/errcatch stuff
@@ -369,7 +370,7 @@ void REGMA(void)                            {
 int NOREDCL(uchar* name)                    {
 
     void* nulmy = NULL;                     // check if name exists in global scope
-    STR_HASHGET                             (GNAMES_HASH, name, nulmy, 0            );
+    STR_HASHGET                             (GNAMES_HASH, name, nulmy, 0);
 
     if(nulmy) {                             // freak out if it does;
         return ERROR;
@@ -408,6 +409,10 @@ void REGTP(void)                            {
         uchar* raw_value = tokens[rd_tkx];
         uint   len       = strlen(raw_value);
 
+        // 'isNegative' flag
+        uint   neg       = raw_value[0]==0x2D;
+        if(neg) { raw_value++; }            // skip the minus
+
 //   ---     ---     ---     ---     ---    STRING->INTEGER
 
         if( (0x30 <= raw_value[0])
@@ -435,7 +440,7 @@ void REGTP(void)                            {
 
                     RD_ASHEXN:              // string -> hex
 
-                    raw_value += 2;         // skip the 0x
+                    raw_value += len-neg-1; // skip to end and read backwards
                     uint chxd  = 0;         // current hex digit
                     uint hxval = 0;         // value of char, in hex
 
@@ -450,15 +455,22 @@ void REGTP(void)                            {
                         &&    (0x46>=c) ) { // if A-F
                             hxval=c-0x37;
 // cleanup this rubbish
-                        }; if(!chxd) {      // is first digit
-                            value[cbyte]  = hxval*16;
+                        }
+
+                        else {            // nuuuuuuuuuuuuuuuull!
+                            break;
+
+                        };
+
+                        if(!chxd) {       // is first digit
+                            value[cbyte]  = hxval;
                             chxd++;
 // or im gonna be mad
                         } else {            // is second digit
-                            value[cbyte] += hxval;
+                            value[cbyte] += hxval*16;
                             chxd--; cbyte++;
 
-                        }} while(*raw_value++); goto BOT;
+                        }} while(*raw_value-- != 0x78); goto BOT;
 
 //   ---     ---     ---     ---     ---
 
@@ -489,13 +501,15 @@ void REGTP(void)                            {
 
                     uint decval = 0;        // value in decimal
                     do { c=*raw_value;      // redundant deref for shorts
+                        if(!c) { break; }   // lazy while
+
                         decval *= 10;       // left shift
-                        decval += c-0x30;
+                        decval += c - 0x30;
 
                     } while(*raw_value++);
 
-                    for(uint x=0; x<4; x++) {
-                        value[x]=(decval&(0xFF<<(x*8)))>>(x*8);
+                    for(uint x=0; x<size; x++) {
+                        value[x]=(decval&(0xFF<<(x*8))) >> (x*8);
 
                     };
                 }
@@ -508,17 +522,48 @@ void REGTP(void)                            {
 
             };
 
-        };
+        }
 
 //   ---     ---     ---     ---     ---
 
-        BOT: VALNEW(type, name, value, size, lars, slot);
+        //elif(raw_value[0])
+
+//   ---     ---     ---     ---     ---
+
+        BOT:
+
+        if(neg) {                           // if negative, do the bit flipping
+
+            if(strstr(type, "float") != NULL) {
+                value[3] |= 0x80;
+
+            } else {
+
+                for(uint x=0, carry=0;
+                    x<size; x++      ) {    // take two's
+                    value[x]=(~value[x]);
+                    if(!x || carry) {
+                        if(value[x]==0xFF) {
+                            value[x] += 1;
+                            carry     = 1;
+                        }
+
+                        else {
+                            value[x] += 1;
+                            carry     = 0;
+
+                        };
+
+                    };
+
+                };
+            };
+
+        }; VALNEW(type, name, value, size, lars, slot);
+
         uchar* vtest = (uchar*) slot->box;
-        CALOUT(K, " = %u (%s)\n", *((uint*) vtest), tokens[rd_tkx]);
-
-    };
-
-                                                                                };
+        CALOUT(K, " = %i : 0x%08X (%s)\n", *((int*) vtest), *((uint*) vtest), tokens[rd_tkx]);
+    };                                                                                      };
 
 //   ---     ---     ---     ---     ---
 
@@ -682,7 +727,7 @@ void CHKTKNS(void)                          {
             }
 
             else { uint x;
-                for(x=0; x<len; x++) {      // now copy
+                for(x=0; x<len; x++) {       // now copy
                     key[x]=tokens[rd_tkx][x];// key == base typename
 
                 }; key[x]=0x00;
@@ -813,6 +858,10 @@ void RDNXT(void)                            {
 
 //   ---     ---     ---     ---     ---    OPERATORS
 
+        case 0x2D:
+            mammi->state |= MAMMIT_SF_MINS;
+            goto APTOK;
+
         case 0x3D:
             mammi->state |= MAMMIT_SF_SETR;
             goto APTOK;
@@ -843,14 +892,21 @@ void RDNXT(void)                            {
 
             // clean non-context stateflags
             // ruins multi-statement peso escapes, ill fix that later
-            mammi->state ^= MAMMIT_SF_PESO | MAMMIT_SF_OPS0 | MAMMIT_SF_OPS1;
+            mammi->state &=~MAMMIT_SF_PESO | MAMMIT_SF_OPS0 | MAMMIT_SF_OPS1;
 
             break;
 
 //   ---     ---     ---     ---     ---    CHARACTERS
 
         default:                            // 'cat' char to cur token
-            rd_tk[rd_tkp]=rd_cur; rd_tkp++; break;
+
+            if(mammi->state&MAMMIT_SF_MINS) {
+
+                // prefix minus and clear flag
+                mammi->state &=~MAMMIT_SF_MINS;
+                rd_tk[rd_tkp]=0x2D; rd_tkp++;
+
+            }; rd_tk[rd_tkp]=rd_cur; rd_tkp++; break;
 
     }; if(rd_nxt) { goto TOP; };                                                            };
 
@@ -861,7 +917,7 @@ int main(void)                              {
     NTNAMES();
     MEM* s=MKSTR("MAMM_RD", 1024, 1); CLMEM(s);
 
-    RPSTR(&s, "reg vars {\n int x=0b101000;\n uint4 x = 0xF4;\n}\n", 0);
+    RPSTR(&s, "reg vars { int x=0x7F000000; int y=-0x7F000000;\n}\n", 0);
     rd_buff = MEMBUFF(s, uchar, 0);
 
     CALOUT(E, "\e[38;2;128;255;128m\n$PEIN:\n%s\n\e[0m\e[38;2;255;128;128m$OUT:", rd_buff);
