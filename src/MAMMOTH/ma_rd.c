@@ -23,6 +23,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <inttypes.h>
 
 //   ---     ---     ---     ---     ---
 // state flags...
@@ -109,6 +110,25 @@ static HASH*  LNAMES_HASH;                  // user-defined symbols
 
 //   ---     ---     ---     ---     ---
 
+static uint   rd_cast = 0;                  // for "dynamic" type-casting;
+                                            // actually, just cases in a switch
+
+                                            // 0x00 void
+                                            // 0x01 nihil
+                                            // 0x02 stark
+
+                                            // 0x03 int8_t
+                                            // 0x04 int16_t
+                                            // 0x05 int32_t
+                                            // 0x06 int64_t
+
+                                            // 0x07-010 ^unsigned idem...
+
+                                            // 0x11 float
+                                            // 0x12 double
+
+//   ---     ---     ---     ---     ---
+
 typedef struct MAMM_TYPEVAL_DATA {          // to simplify reading wacky types
 
     uchar base[MAMMIT_TK_WIDTH];            // type-name
@@ -184,6 +204,7 @@ MID:switch(c) {
 
     }; BOT: i++; if(i<len) { goto TOP; }
 
+/*
 CALOUT(E,"\
 base: %s\n\
 size: %u\n\
@@ -196,27 +217,9 @@ typedata.indlvl,
 
 (typedata.flags&0x04)!=0
 
-);
+);*/
 
-                                                    };
-
-/*
-
-sh SHT_
-st TRK_
-
-v  VO__
-n  NHL_
-
-c  CHR_
-i  INT_
-l  LNG_
-
-f  FLT_
-d  DBL_
-
-*/
-
+                                                                                            };
 
 //   ---     ---     ---     ---     ---
 
@@ -353,6 +356,8 @@ typedef struct MAMM_INTERPRETER {           // smach for pe-text input
 
 //   ---     ---     ---     ---     ---
 
+void REGTP(void);                           // fwd decl
+
 void REGMA(void)                            {
     if(!(mammi->state&MAMMIT_SF_CREG)) {    // if unset, do and ret
         mammi->state |= MAMMIT_SF_CREG;     // set state
@@ -385,11 +390,101 @@ int NOREDCL(uchar* name)                    {
 
 //   ---     ---     ---     ---     ---
 
+// these funcs below? lazy nihil way to identify type
+// without having to do a strcmp or str_hashget...
+
+// it IS a little silly to hardcode it like this
+// BUT: aren't base types HARDCODED to BEG with?
+
+// the initial hash-gotten symbol can redirect
+// to a single function, that function KNOWS
+// how to interpret the data; this is simpler
+
+// repetitive? yes
+// does it work? yes
+// optimal? depends
+
+// its either this or using arguments
+// AND yet more branches per call, mind you
+// so no thanks, this mess will do
+
+//   ---     ---     ---     ---     ---    void, nihil, stark
+
+void REGVOI(void)                           { rd_cast = 0x00; REGTP();                      };
+void REGNHL(void)                           { rd_cast = 0x01; REGTP();                      };
+void REGTRK(void)                           { rd_cast = 0x02; REGTP();                      };
+
+//   ---     ---     ---     ---     ---    char
+
+void REGCHR(void)                           {
+
+                                            // int(bitsize) type + is_unsigned
+    rd_cast =                                 0x03                              \
+            +                               ( 0x04 * ((typedata.flags&0x04)!=0) );
+
+                                            // evaluate the expression;
+    REGTP                                   (                                   );          };
+
+//   ---     ---     ---     ---     ---    short, same^
+
+void REGSHR(void)                           {
+    rd_cast =                                 0x04                              \
+            +                               ( 0x04 * ((typedata.flags&0x04)!=0) );
+    REGTP                                   (                                   );          };
+
+//   ---     ---     ---     ---     ---    int, same^
+
+void REGINT(void)                           {
+    rd_cast =                                 0x05                              \
+            +                               ( 0x04 * ((typedata.flags&0x04)!=0) );
+    REGTP                                   (                                   );          };
+
+//   ---     ---     ---     ---     ---    long, same^
+
+void REGLNG(void)                           {
+    rd_cast =                                 0x06                              \
+            +                               ( 0x04 * ((typedata.flags&0x04)!=0) );
+    REGTP                                   (                                   );          };
+
+//   ---     ---     ---     ---     ---    float, double
+
+void REGFLT(void)                           { rd_cast = 0x11; REGTP();                      };
+void REGDBL(void)                           { rd_cast = 0x12; REGTP();                      };
+
+//   ---     ---     ---     ---     ---
+
 void REGTP(void)                            {
 
     uchar* type = typedata.base;  rd_tkx++; // fetch, move to next token
     uchar* name = tokens[rd_tkx]; rd_tkx++; // fetch, move moar
+
     uint   size = 4;
+
+    switch(rd_cast) {                       // for 'dynamic' type-casting
+                                            // we set size to sizeof x C type!
+                                            // wait, you dunno whats a ulong??
+                                            // look at KVRNEL/zjc_CommonTypes.h
+
+        case 0x00: size=sizeof(void  ); break;
+        case 0x01: size=sizeof(NIHIL ); break;
+        case 0x02: size=sizeof(STARK ); break;
+
+        case 0x03: size=sizeof(schar ); break;
+        case 0x04: size=sizeof(sshort); break;
+        case 0x05: size=sizeof(sint  ); break;
+        case 0x06: size=sizeof(slong ); break;
+
+        case 0x07: size=sizeof(uchar ); break;
+        case 0x08: size=sizeof(ushort); break;
+        case 0x09: size=sizeof(uint  ); break;
+        case 0x10: size=sizeof(ulong ); break;
+
+        case 0x11: size=sizeof(float ); break;
+        case 0x12: size=sizeof(double);
+
+        default  :                      break;
+
+    };
 
                                             // redeclaration block
     int    evil = 0; MAMMCTCH               (NOREDCL(name), evil, MAMMIT_EV_DECL, name);
@@ -438,9 +533,7 @@ void REGTP(void)                            {
                     elif(raw_value[1] == 0x62) {
                         goto RD_ASBITS;
 
-                    };
-
-                    return;                 // zero in front and it's not a lit? insolence!
+                    }; return;              // zero in front and it's not a lit? insolence!
 
 //   ---     ---     ---     ---     ---
 
@@ -594,6 +687,13 @@ void REGTP(void)                            {
 
             }
 
+            elif(strstr(type, "double") != NULL) {
+                value[7] |= 0x80;
+
+            }
+
+//   ---     ---     ---     ---     ---
+
             else {
 
                 for(uint x=0, carry=0;
@@ -614,10 +714,107 @@ void REGTP(void)                            {
                 };
             };
 
+//   ---     ---     ---     ---     ---
+
         }; VALNEW(type, name, value, size, lars, slot);
 
         uchar* vtest = (uchar*) slot->box;
-        CALOUT(K, " = %f : 0x%08X (%s)\n", *((float*) vtest), *((uint*) vtest), tokens[rd_tkx]);
+
+        switch(rd_cast) {
+
+            case 0x00: break;               // we'll see how to handle these later
+            case 0x01: break;
+            case 0x02: break;
+
+//   ---     ---     ---     ---     ---
+
+            case 0x03:
+                CALOUT(
+                    K, " = \x27%c\x27 : 0x%02X (%s)\n",
+                    *((schar*) vtest),
+                    *((schar*) vtest),
+                    tokens[rd_tkx]
+
+                ); break;
+
+            case 0x04:
+                CALOUT(
+                    K, " = %" PRId16 ": 0x%" PRIX16 "(%s)\n",
+                    *((sshort*) vtest),
+                    *((sshort*) vtest),
+                    tokens[rd_tkx]
+
+                ); break;
+
+            case 0x05:
+                CALOUT(
+                    K, " = %" PRId32 ": 0x%" PRIX32 "(%s)\n",
+                    *((sint*) vtest),
+                    *((sint*) vtest),
+                    tokens[rd_tkx]
+
+                ); break;
+
+            case 0x06:
+                CALOUT(
+                    K, " = %" PRId64 ": 0x%" PRIX64 "(%s)\n",
+                    *((slong*) vtest),
+                    *((slong*) vtest),
+                    tokens[rd_tkx]
+
+                ); break;
+
+//   ---     ---     ---     ---     ---
+
+            case 0x07:
+                CALOUT(
+                    K, " = \x27%c\x27 : 0x%02X (%s)\n",
+                    *((uchar*) vtest),
+                    *((uchar*) vtest),
+                    tokens[rd_tkx]
+
+                ); break;
+
+            case 0x08:
+                CALOUT(
+                    K, " = %" PRIu16 ": 0x%" PRIX16 "(%s)\n",
+                    *((ushort*) vtest),
+                    *((ushort*) vtest),
+                    tokens[rd_tkx]
+
+                ); break;
+
+            case 0x09:
+                CALOUT(
+                    K, " = %" PRIu32 ": 0x%" PRIX32 "(%s)\n",
+                    *((uint*) vtest),
+                    *((uint*) vtest),
+                    tokens[rd_tkx]
+
+                ); break;
+
+            case 0x10:
+                CALOUT(
+                    K, " = %" PRIu64 ": 0x%" PRIX64 "(%s)\n",
+                    *((ulong*) vtest),
+                    *((ulong*) vtest),
+                    tokens[rd_tkx]
+
+                ); break;
+
+//   ---     ---     ---     ---     ---
+
+            default:
+
+                CALOUT(
+                    K, " = %f : 0x%08X (%s)\n",
+                    *((float*) vtest),
+                    *((uint*) vtest),
+                    tokens[rd_tkx]
+
+                ); break;
+
+        };
     };                                                                                      };
 
 //   ---     ---     ---     ---     ---
@@ -638,19 +835,20 @@ void NTNAMES(void)                          {
 
 //   ---     ---     ---     ---     ---
 
-    char* base_dtypes[]={                   // basic types
 
-        "void" ,
-        "stark",
-        "nihil",
+    SYMBOL base_dtypes[]={                  // note how each type has it's own lazy call ;>
 
-        "char" ,
-        "short",
-        "int"  ,
-        "long" ,
+        SYMNEW("TYPE", "void",   REGVOI),
+        SYMNEW("TYPE", "stark",  REGTRK),
+        SYMNEW("TYPE", "nihil",  REGNHL),
 
-        "float",
-        "double"
+        SYMNEW("TYPE", "char",   REGCHR),
+        SYMNEW("TYPE", "short",  REGSHR),
+        SYMNEW("TYPE", "int",    REGINT),
+        SYMNEW("TYPE", "long",   REGLNG),
+
+        SYMNEW("TYPE", "float",  REGFLT),
+        SYMNEW("TYPE", "double", REGDBL)
 
     };
 
@@ -658,7 +856,8 @@ void NTNAMES(void)                          {
 
                                             // insert basic types into table
         STACKPOP                            (byref(mammi->slstack), y                  );
-        mammi->slots[y] = SYMNEW            ("TYPE", base_dtypes[x], REGTP             );
+
+        mammi->slots[y] = base_dtypes[x];   // copy data to array and insert in lkp table
         HASHSET                             (GNAMES_HASH, byref(mammi->slots[y].id)    );
 
     };
@@ -804,8 +1003,8 @@ void CHKTKNS(void)                          {
 
         if(valid) {                         // debugger's falacy:
                                             // "if it prints something, it does something!"
-            CALOUT                          (K, "%u: %s %s\n",                         \
-                                             rd_tkx, seq_k, tokens[rd_tkx]             );
+            /*CALOUT                          (K, "%u: %s %s\n",                         \
+                                             rd_tkx, seq_k, tokens[rd_tkx]             );*/
 
             if(sym) { if(sym->onrd) {       // this is why I want if x then y syntax
                 sym->onrd();
@@ -814,8 +1013,8 @@ void CHKTKNS(void)                          {
         }
 
         else {                              // very much the same as above
-            CALOUT                          (K, "%u: INVALID %s: '%s'\n",              \
-                                             rd_tkx, seq_k, tokens[rd_tkx]             );
+            /*CALOUT                          (K, "%u: INVALID %s: '%s'\n",              \
+                                             rd_tkx, seq_k, tokens[rd_tkx]             );*/
 
     }};                                                                                     };
 
@@ -972,7 +1171,7 @@ int main(void)                              {
     NTNAMES();
     MEM* s=MKSTR("MAMM_RD", 1024, 1); CLMEM(s);
 
-    RPSTR(&s, "reg vars { float x=-658.9987561254; }\n", 0);
+    RPSTR(&s, "reg vars {\n float x=12.9984;\n int y=-65;\n uint z=-7;\n short w=65537;\n char a=0xF161;\n uchar b=0xFF62;\n}\n", 0);
     rd_buff = MEMBUFF(s, uchar, 0);
 
     CALOUT(E, "\e[38;2;128;255;128m\n$PEIN:\n%s\n\e[0m\e[38;2;255;128;128m$OUT:", rd_buff);
