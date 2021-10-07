@@ -348,10 +348,18 @@ typedef struct MAMM_INTERPRETER {           // smach for pe-text input
 //   ---     ---     ---     ---     ---
 
 #define MAMMIT_LVLA_NXT { mammi->lvla_stack[mammi->lvla]=mammi->cntx; mammi->lvla++;    }
-#define MAMMIT_LVLA_PRV { mammi->lvla++; mammi->cntx=mammi->lvla_stack[mammi->lvla];    }
+#define MAMMIT_LVLA_PRV { mammi->lvla--; mammi->cntx=mammi->lvla_stack[mammi->lvla];    }
 
-#define MAMMIT_LVLB_NXT { mammi->lvlb_stack[mammi->lvlb]=flags; mammi->lvlb++; flags=0; }
-#define MAMMIT_LVLB_PRV { mammi->lvlb++; flags=mammi->lvlb_stack[mammi->lvlb];          }
+//   ---     ---     ---     ---     ---
+
+#define MAMMIT_LVLB_NXT {                                                                   \
+    mammi->lvlb_stack[mammi->lvlb]=flags;                                                   \
+    mammi->lvlb++; flags=0;                                                                 \
+    lhand+=size; value+=size;                                                               }
+
+#define MAMMIT_LVLB_PRV {                                                                   \
+    mammi->lvlb--; flags=mammi->lvlb_stack[mammi->lvlb];                                    \
+    lhand-=size; value-=size;                                                               }
 
 //   ---     ---     ---     ---     ---
 
@@ -656,6 +664,7 @@ void REGTP(void)                            {
 
     uint ex_f         = rd_tkx+1;           // idex to first token in expression
     uchar* result     = (uchar*) memlng->buff+0;
+    uchar* lhand      = result;
 
     // pop next, so to speak
     // just get slot from idex and set start
@@ -674,12 +683,12 @@ void REGTP(void)                            {
     EVAL_EXP: rd_tkx++;                     // read next token in expression
     if(!(rd_tkx<rd_tki)) { goto RESULT; }   // ... or jump to end if all tokens read
 
-    uchar* value      = (uchar*) memlng->buff+size;
+    uchar* value      = lhand+size;
     CLMEM2(value, size);
 
     uchar* raw_value  = tokens[rd_tkx];
 
-    flags            &=~0x02;
+    flags            &=~0x02;               // clear is_float part
 
 //   ---     ---     ---     ---     ---
 
@@ -689,10 +698,7 @@ void REGTP(void)                            {
         default: break;
 
         case 0x28: MAMMIT_LVLB_NXT
-            raw_value++; goto POP_OPERATORS;
-
-        case 0x29: MAMMIT_LVLB_PRV
-            raw_value++; goto POP_OPERATORS;
+            goto POP_OPSTOP;
 
 //   ---     ---     ---     ---     ---
 
@@ -735,8 +741,24 @@ void REGTP(void)                            {
 //   ---     ---     ---     ---     ---
 
     uint   len        = strlen              (raw_value                    );
-    uint   vlen       = len-1;
 
+    POP_TERMINATORS:                        // same as oppies, but at end of token
+    switch(raw_value[len-1]) {
+
+        default: break;
+
+        case 0x29: MAMMIT_LVLB_PRV          // only case now but just in... *case* i want more
+            //goto POP_TESTOP;
+
+        POP_TESTOP:
+            //raw_value[len-1]=0x00;
+            len--; goto POP_TERMINATORS;
+
+    };
+
+//   ---     ---     ---     ---     ---
+
+    uint   vlen       = len-1;
     flags            |=                     (strstr(type, "float") != NULL) << 1;
 
 //   ---     ---     ---     ---     ---
@@ -833,61 +855,61 @@ void REGTP(void)                            {
 
 //   ---     ---     ---     ---     ---
 
-    }; switch(rd_cast) {
+    };
+
+    COL_LHAND: switch(rd_cast) {
 
         case 0x03: {
-            schar* r = (schar*) result;
+            schar* r = (schar*) lhand;
             schar* v = (schar*) value;
             MAMMIT_OPSWITCH;
 
         } case 0x07: {
-            uchar* r = (uchar*) result;
+            uchar* r = (uchar*) lhand;
             uchar* v = (uchar*) value;
             MAMMIT_OPSWITCH;
 
 //   ---     ---     ---     ---     ---
 
         } case 0x04: {
-            sshort* r = (sshort*) result;
+            sshort* r = (sshort*) lhand;
             sshort* v = (sshort*) value;
             MAMMIT_OPSWITCH;
 
         } case 0x08: {
-            ushort* r = (ushort*) result;
+            ushort* r = (ushort*) lhand;
             ushort* v = (ushort*) value;
             MAMMIT_OPSWITCH;
 
 //   ---     ---     ---     ---     ---
 
         } case 0x05: {
-            sint* r = (sint*) result;
+            sint* r = (sint*) lhand;
             sint* v = (sint*) value;
-
-            CALOUT(E, "%i : %i\n", *r, *v);
 
             MAMMIT_OPSWITCH;
 
         } case 0x09: {
-            uint* r = (uint*) result;
+            uint* r = (uint*) lhand;
             uint* v = (uint*) value;
             MAMMIT_OPSWITCH;
 
 //   ---     ---     ---     ---     ---
 
         } case 0x06: {
-            slong* r = (slong*) result;
+            slong* r = (slong*) lhand;
             slong* v = (slong*) value;
             MAMMIT_OPSWITCH;
 
         } case 0x0A: {
-            ulong* r = (ulong*) result;
+            ulong* r = (ulong*) lhand;
             ulong* v = (ulong*) value;
             MAMMIT_OPSWITCH;
 
 //   ---     ---     ---     ---     ---
 
         } default: {
-            float* r = (float*) result;
+            float* r = (float*) lhand;
             float* v = (float*) value;
             MAMMIT_OPSWITCH;
 
@@ -1301,7 +1323,6 @@ void RDNXT(void)                            {
         case 0x26:
         case 0x27:
         case 0x28:
-        case 0x29:
 
         case 0x2A:                          // handle pointers here...
 
@@ -1325,6 +1346,10 @@ void RDNXT(void)                            {
         case 0x7C:
         case 0x7E:
             op[opi]=rd_cur; opi++;
+            goto APTOK;
+
+        case 0x29:
+            rd_tk[rd_tkp]=rd_cur; rd_tkp++;
             goto APTOK;
 
 //   ---     ---     ---     ---     ---    TERMINATORS
@@ -1378,7 +1403,7 @@ int main(void)                              {
     MEM* s  = MKSTR("MAMM_RD", 1024, 1); CLMEM(s);
     LDLNG(ZJC_DAFPAGE); memlng = GTLNG(); CLMEM(memlng);
 
-    RPSTR(&s, "reg vars {\n float x=1/2;\n}\n", 0);
+    RPSTR(&s, "reg vars {\n float x=1*-(2+1);\n}\n", 0);
     rd_buff = MEMBUFF(s, uchar, 0);
 
     CALOUT(E, "\e[38;2;128;255;128m\n$PEIN:\n%s\n\e[0m\e[38;2;255;128;128m$OUT:", rd_buff);
