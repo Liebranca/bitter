@@ -169,6 +169,9 @@ void __terminator (int errcode, char* info) {
         case 0x010001:
             mbody =                         "Multiple declarations of value %s'%s'";    break;
 
+        case 0x010002:
+            mbody =                         "Oversized value for type %s%s";            break;
+
         default: mbody =                    "UNRECOGNIZED %s%s";                        break;
 
                                             };

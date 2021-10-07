@@ -57,6 +57,7 @@ static uint rd_line =  1;                   // current line
 
 #define MAMMIT_EV_BEG  0x00010000
 #define MAMMIT_EV_DECL 0x00000001
+#define MAMMIT_EV_VSIZ 0x00000002
 
 // ommited __shpath(__FILE__)
 #define MAMMLOC "TEST", "NON", rd_line
@@ -108,6 +109,8 @@ static uint   rd_pos  = 0;                  // position into buffer
 static HASH*  GNAMES_HASH;                  // globals and built-ins
 static HASH*  LNAMES_HASH;                  // user-defined symbols
 
+static MEM*   memlng  = NULL;               // big block of memory
+
 //   ---     ---     ---     ---     ---
 
 static uint   rd_cast = 0;                  // for "dynamic" type-casting;
@@ -125,7 +128,6 @@ static uint   rd_cast = 0;                  // for "dynamic" type-casting;
                                             // 0x07-010 ^unsigned idem...
 
                                             // 0x11 float
-                                            // 0x12 double
 
 //   ---     ---     ---     ---     ---
 
@@ -388,6 +390,8 @@ int NOREDCL(uchar* name)                    {
 
     }; return DONE;                                                                         };
 
+int NOOVERSZ(uint sz, uint f)               { if(sz%f) { return ERROR; }; return DONE;      };
+
 //   ---     ---     ---     ---     ---
 
 // these funcs below? lazy nihil way to identify type
@@ -446,17 +450,16 @@ void REGLNG(void)                           {
             +                               ( 0x04 * ((typedata.flags&0x04)!=0) );
     REGTP                                   (                                   );          };
 
-//   ---     ---     ---     ---     ---    float, double
+//   ---     ---     ---     ---     ---    float
 
 void REGFLT(void)                           { rd_cast = 0x11; REGTP();                      };
-void REGDBL(void)                           { rd_cast = 0x12; REGTP();                      };
 
 //   ---     ---     ---     ---     ---
 
 void REGTP(void)                            {
 
     uchar* type = typedata.base;  rd_tkx++; // fetch, move to next token
-    uchar* name = tokens[rd_tkx]; rd_tkx++; // fetch, move moar
+    uchar* name = tokens[rd_tkx];           // fetch, stay put
 
     uint   size = 4;
 
@@ -479,343 +482,408 @@ void REGTP(void)                            {
         case 0x09: size=sizeof(uint  ); break;
         case 0x10: size=sizeof(ulong ); break;
 
-        case 0x11: size=sizeof(float ); break;
-        case 0x12: size=sizeof(double);
-
-        default  :                      break;
+        default  : size=sizeof(float ); break;
 
     };
 
                                             // redeclaration block
-    int    evil = 0; MAMMCTCH               (NOREDCL(name), evil, MAMMIT_EV_DECL, name);
+    int    evil      = 0; MAMMCTCH          (NOREDCL(name), evil, MAMMIT_EV_DECL, name);
     CALOUT                                  (K, "DECL: %s %s", type, name             );
 
-    if(rd_tkx<rd_tki) {
+    uint ex_f        = rd_tkx+1;            // idex to first token in expression
+    uchar* result    = (uchar*) memlng->buff+0;
 
-        // pop next, so to speak
-        // just get slot from idex and set start
-        uint  off        = mammi->larstop;
-        LARS* lars       = mammi->lvalsl+off;
-        LVAL* slot       = mammi->lvalues+off;
-        lars->start      = mammi->larstop;
+    // pop next, so to speak
+    // just get slot from idex and set start
+    uint  off        = mammi->larstop;
+    LARS* lars       = mammi->lvalsl+off;
+    LVAL* slot       = mammi->lvalues+off;
+    lars->start      = mammi->larstop;
 
-        // set aside some memory, measure...
-        uchar  value[4]  = { '\0', '\0', '\0', '\0' };
-        uchar* raw_value = tokens[rd_tkx];
-        uint   len       = strlen(raw_value);
+    EVAL_EXP: rd_tkx++;
+    if(!(rd_tkx<rd_tki)) { goto RESULT; }
 
-        // 'isNegative' flag
-        uint   neg       = raw_value[0]==0x2D;
-        if(neg) { raw_value++; }            // skip the minus
+    // set aside some memory, measure...
+    uchar* value     = (uchar*) memlng->buff+size;
+    uchar* raw_value = tokens[rd_tkx];
+    uint   len       = strlen(raw_value);
+
+    // 'isNegative' flag
+    uint   neg       = raw_value[0]==0x2D;
+    if(neg) { raw_value++; }                // skip the minus
 
 //   ---     ---     ---     ---     ---    STRING->INTEGER
 
-        if( (0x30 <= raw_value[0])
-        &&  (0x39 >= raw_value[0]) ) {
-            if(len>1) {                     // go through string...
-                uchar c     = raw_value[0]; // try not to die before the gate opens
-                uint  cbyte = 0;            // current byte
+    if( (0x30 <= raw_value[0])
+    &&  (0x39 >= raw_value[0]) ) {
+        if(len>1) {                         // go through string...
+            uchar c     = raw_value[0];     // try not to die before the gate opens
+            uint  cbyte = 0;                // current byte
 
-                // is float
-                if(strstr(raw_value, ".")) {
-                    goto RD_ASFLTP;
+            // is float
+            if(strstr(raw_value, ".")) {
+                goto RD_ASFLTP;
 
+            }
+
+            elif(c==0x30) {
+
+                // is hexlit
+                if  (raw_value[1] == 0x78) {
+                    goto RD_ASHEXN;
                 }
 
-                elif(c==0x30) {
+                // is bitlit
+                elif(raw_value[1] == 0x62) {
+                    goto RD_ASBITS;
 
-                    // is hexlit
-                    if  (raw_value[1] == 0x78) {
-                        goto RD_ASHEXN;
+                }; return;                  // zero in front and it's not a lit? insolence!
+
+//   ---     ---     ---     ---     ---
+
+                RD_ASHEXN:                  // string -> hex
+
+                raw_value += len-neg-1;     // skip to end and read backwards
+                uint chxd  = 0;             // current hex digit
+                uint hxval = 0;             // value of char, in hex
+
+                do { c=*raw_value;          // redundant deref for shorts
+
+                    if(c<=0x39) {           // if 0-9
+                        hxval=c-0x30;
+
                     }
 
-                    // is bitlit
-                    elif(raw_value[1] == 0x62) {
-                        goto RD_ASBITS;
+                    elif( (0x41<=c)
+                    &&    (0x46>=c) ) {     // if A-F
+                        hxval=c-0x37;
 
-                    }; return;              // zero in front and it's not a lit? insolence!
+                    }
 
-//   ---     ---     ---     ---     ---
-
-                    RD_ASHEXN:              // string -> hex
-
-                    raw_value += len-neg-1; // skip to end and read backwards
-                    uint chxd  = 0;         // current hex digit
-                    uint hxval = 0;         // value of char, in hex
-
-                    do { c=*raw_value;      // redundant deref for shorts
-
-                        if(c<=0x39) {       // if 0-9
-                            hxval=c-0x30;
-
-                        }
-//ihatehadoukens
-                        elif( (0x41<=c)
-                        &&    (0x46>=c) ) { // if A-F
-                            hxval=c-0x37;
-// cleanup this rubbish
-                        }
-
-                        else {            // nuuuuuuuuuuuuuuuull!
-                            break;
-
-                        };
-
-                        if(!chxd) {       // is first digit
-                            value[cbyte]  = hxval;
-                            chxd++;
-// or im gonna be mad
-                        } else {            // is second digit
-                            value[cbyte] += hxval*16;
-                            chxd--; cbyte++;
-
-                        }} while(*raw_value-- != 0x78); goto BOT;
-
-//   ---     ---     ---     ---     ---
-
-                    RD_ASBITS:              // string -> binary
-
-                    raw_value += len-neg-1; // skip to end and read backwards
-                    uint cbit  = 0;         // current bit
-
-                    do { c=*raw_value;      // redundant deref for shorts
-
-                        if(c != 0x31\
-                        && c != 0x30) {     // nuuuuuuuuuuull!
-                            break;
-
-                        };
-
-                        // easy money
-                        value[cbyte] |= (c==0x31) << cbit;
-                        if(cbit==7) {
-                            cbyte++;
-                            cbit=0;
-
-                            continue;
-
-                        }; cbit++;
-
-                    } while(*raw_value-- != 0x62);
-
-                }
-
-//   ---     ---     ---     ---     ---
-
-                else {                      // string -> decimal
-
-                    uint decval = 0;        // value in decimal
-                    do { c=*raw_value;      // redundant deref for shorts
-                        if(!c) { break; }   // lazy while
-
-                        decval *= 10;       // left shift
-                        decval += c - 0x30;
-
-                    } while(*raw_value++);
-
-                    for(uint x=0; x<size; x++) {
-                        value[x]=(decval&(0xFF<<(x*8))) >> (x*8);
+                    else {                  // nuuuuuuuuuuuuuuuull!
+                        break;
 
                     };
-                }
+
+                    if(!chxd) {             // is first digit
+                        value[cbyte]  = hxval;
+                        chxd++;
+
+                    } else {                // is second digit
+                        value[cbyte] += hxval*16;
+                        chxd--; cbyte++;
+
+                    }} while(*raw_value-- != 0x78); goto BOT;
+
+//   ---     ---     ---     ---     ---
+
+                RD_ASBITS:                  // string -> binary
+
+                raw_value += len-neg-1;     // skip to end and read backwards
+                uint cbit  = 0;             // current bit
+
+                do { c=*raw_value;          // redundant deref for shorts
+
+                    if(c != 0x31\
+                    && c != 0x30) {         // nuuuuuuuuuuull!
+                        break;
+
+                    };
+
+                    // easy money
+                    value[cbyte] |= (c==0x31) << cbit;
+                    if(cbit==7) {
+                        cbyte++;
+                        cbit=0;
+
+                        continue;
+
+                    }; cbit++;
+
+                } while(*raw_value-- != 0x62);
+
             }
 
 //   ---     ---     ---     ---     ---
 
-            elif(len==1) {                  // boring corner case: single decimal digit
-                value[0]=raw_value[0]-0x30;
+            else {                          // string -> decimal
 
-            };
+                uint decval = 0;            // value in decimal
+                do { c=*raw_value;          // redundant deref for shorts
+                    if(!c) { break; }       // lazy while
 
+                    decval *= 10;           // left shift
+                    decval += c - 0x30;
+
+                } while(*raw_value++);
+
+                for(uint x=0; x<size; x++) {
+                    value[x]=(decval&(0xFF<<(x*8))) >> (x*8);
+
+                };
+            }
         }
 
 //   ---     ---     ---     ---     ---
 
-        elif(raw_value[0]==0x2E) {          // cool corner case: floats
-        RD_ASFLTP:
-
-            float  whole = 0.0f;            // integer portion of number
-            float  fract = 0.0f;            // fraction portion of number
-            float  fval  = 0.0f;            // value at current char
-            uint   dotd  = 0;               // right shift multiplier
-            uchar  c     = 0x00;            // blank char
-
-            do { c=*raw_value;
-
-                if(!c) { break; }           // nuuuuuuuuuuull!
-
-                fval=(float) c-0x30;        // fval be in (0,9), else is dot
-
-                if(c==0x2E) {               // dot spotted, do fractions now
-                    dotd=1;                 // start fractions at 0.1 and advance that
-                    continue;               // skip to next char...
-
-                }
-
-                elif(!dotd) {
-                    whole*=10;              // left shift
-                    whole+=fval;            // add to total
-
-                    continue;               // skip!
-
-                };
-
-                dotd  *= 10;                // up the right shift factor
-                fract += fval*(1.0f/dotd);  // right shift value and add
-
-            } while(*raw_value++); whole+=fract;
-
-            uint uval = *((uint*) &whole);  // read these bytes as an int
-            for(uint x=0; x<size; x++) {    // copy them over
-                value[x]=(uval&(0xFF<<(x*8))) >> (x*8);
-
-            };
-        }
-
-//   ---     ---     ---     ---     ---
-
-        //elif(raw_value[0])
-
-//   ---     ---     ---     ---     ---
-
-        BOT:
-
-        if(neg) {                           // if negative, do the bit flipping
-
-            if(strstr(type, "float") != NULL) {
-                value[3] |= 0x80;
-
-            }
-
-            elif(strstr(type, "double") != NULL) {
-                value[7] |= 0x80;
-
-            }
-
-//   ---     ---     ---     ---     ---
-
-            else {
-
-                for(uint x=0, carry=0;
-                    x<size; x++      ) {    // take two's
-                    value[x]=(~value[x]);   // flip bits
-                    if(!x || carry) {
-                        if(value[x]==0xFF) {
-                            value[x] += 1;  // overflows. add one and set carry
-                            carry     = 1;
-                        }
-
-                        else {
-                            value[x] += 1;  // won't overflow, so add and no carry
-                            carry     = 0;
-
-                        };
-                    };
-                };
-            };
-
-//   ---     ---     ---     ---     ---
-
-        }; VALNEW(type, name, value, size, lars, slot);
-
-        uchar* vtest = (uchar*) slot->box;
-
-        switch(rd_cast) {
-
-            case 0x00: break;               // we'll see how to handle these later
-            case 0x01: break;
-            case 0x02: break;
-
-//   ---     ---     ---     ---     ---
-
-            case 0x03:
-                CALOUT(
-                    K, " = \x27%c\x27 : 0x%02X (%s)\n",
-                    *((schar*) vtest),
-                    *((schar*) vtest),
-                    tokens[rd_tkx]
-
-                ); break;
-
-            case 0x04:
-                CALOUT(
-                    K, " = %" PRId16 ": 0x%" PRIX16 "(%s)\n",
-                    *((sshort*) vtest),
-                    *((sshort*) vtest),
-                    tokens[rd_tkx]
-
-                ); break;
-
-            case 0x05:
-                CALOUT(
-                    K, " = %" PRId32 ": 0x%" PRIX32 "(%s)\n",
-                    *((sint*) vtest),
-                    *((sint*) vtest),
-                    tokens[rd_tkx]
-
-                ); break;
-
-            case 0x06:
-                CALOUT(
-                    K, " = %" PRId64 ": 0x%" PRIX64 "(%s)\n",
-                    *((slong*) vtest),
-                    *((slong*) vtest),
-                    tokens[rd_tkx]
-
-                ); break;
-
-//   ---     ---     ---     ---     ---
-
-            case 0x07:
-                CALOUT(
-                    K, " = \x27%c\x27 : 0x%02X (%s)\n",
-                    *((uchar*) vtest),
-                    *((uchar*) vtest),
-                    tokens[rd_tkx]
-
-                ); break;
-
-            case 0x08:
-                CALOUT(
-                    K, " = %" PRIu16 ": 0x%" PRIX16 "(%s)\n",
-                    *((ushort*) vtest),
-                    *((ushort*) vtest),
-                    tokens[rd_tkx]
-
-                ); break;
-
-            case 0x09:
-                CALOUT(
-                    K, " = %" PRIu32 ": 0x%" PRIX32 "(%s)\n",
-                    *((uint*) vtest),
-                    *((uint*) vtest),
-                    tokens[rd_tkx]
-
-                ); break;
-
-            case 0x10:
-                CALOUT(
-                    K, " = %" PRIu64 ": 0x%" PRIX64 "(%s)\n",
-                    *((ulong*) vtest),
-                    *((ulong*) vtest),
-                    tokens[rd_tkx]
-
-                ); break;
-
-//   ---     ---     ---     ---     ---
-
-            default:
-
-                CALOUT(
-                    K, " = %f : 0x%08X (%s)\n",
-                    *((float*) vtest),
-                    *((uint*) vtest),
-                    tokens[rd_tkx]
-
-                ); break;
+        elif(len==1) {                      // boring corner case: single decimal digit
+            value[0]=raw_value[0]-0x30;
 
         };
-    };                                                                                      };
+
+    }
+
+//   ---     ---     ---     ---     ---
+
+    elif(raw_value[0]==0x2E) {              // cool corner case: floats
+    RD_ASFLTP:
+
+        uint   dotd  = 0;                   // right shift multiplier
+        uchar  c     = 0x00;                // blank char
+
+                                            // catch incorrect data size
+        MAMMCTCH                            (NOOVERSZ(size, sizeof(float)), evil,
+                                            MAMMIT_EV_VSIZ, type               );
+
+        float  whole = 0.0f;                // integer portion of number
+        float  fract = 0.0f;                // fraction portion of number
+        float  fval  = 0.0f;                // value at current char
+
+        do { c=*raw_value;
+
+            if(!c) { break; }               // nuuuuuuuuuuull!
+
+            fval=(float) c-0x30;            // fval be in (0,9), else is dot
+
+            if(c==0x2E) {                   // dot spotted, do fractions now
+                dotd=1;                     // start fractions at 0.1 and advance that
+                continue;                   // skip to next char...
+
+            }
+
+            elif(!dotd) {
+                whole*=10;                  // left shift
+                whole+=fval;                // add to total
+
+                continue;                   // skip!
+
+            };
+
+            dotd  *= 10;                    // up the right shift factor
+            fract += fval*(1.0f/dotd);      // right shift value and add
+
+        } while(*raw_value++); whole+=fract;
+
+        uint uval = *((uint*) &whole);      // read these bytes as an int
+        for(uint x=0; x<size; x++) {        // copy them over
+            value[x]=(uval&(0xFF<<(x*8))) >> (x*8);
+
+        };
+    }
+
+//   ---     ---     ---     ---     ---
+
+    //elif(....) reserved for fetching value from names
+
+//   ---     ---     ---     ---     ---
+
+    BOT:
+
+    if(neg) {                               // if negative, do the bit flipping
+
+        if(strstr(type, "float") != NULL) {
+            value[3] |= 0x80;
+
+        }
+
+//   ---     ---     ---     ---     ---
+
+        else {
+
+            for(uint x=0, carry=0;
+                x<size; x++      ) {        // take two's
+                value[x]=(~value[x]);       // flip bits
+                if(!x || carry) {
+                    if(value[x]==0xFF) {
+                        value[x] += 1;      // overflows. add one and set carry
+                        carry     = 1;
+                    }
+
+                    else {
+                        value[x] += 1;      // won't overflow, so add and no carry
+                        carry     = 0;
+
+                    };
+                };
+            };
+        };
+
+//   ---     ---     ---     ---     ---
+
+    }; switch(rd_cast) {
+
+
+        case 0x03: {
+            schar* r = (schar*) result;
+            schar* v = (schar*) value;
+            (*r)+=(*v); break;
+
+        } case 0x07: {
+            uchar* r = (uchar*) result;
+            uchar* v = (uchar*) value;
+            (*r)+=(*v); break;
+
+//   ---     ---     ---     ---     ---
+
+        } case 0x04: {
+            sshort* r = (sshort*) result;
+            sshort* v = (sshort*) value;
+            (*r)+=(*v); break;
+
+        } case 0x08: {
+            ushort* r = (ushort*) result;
+            ushort* v = (ushort*) value;
+            (*r)+=(*v); break;
+
+//   ---     ---     ---     ---     ---
+
+        } case 0x05: {
+            sint* r = (sint*) result;
+            sint* v = (sint*) value;
+            (*r)+=(*v); break;
+
+        } case 0x09: {
+            uint* r = (uint*) result;
+            uint* v = (uint*) value;
+            (*r)+=(*v); break;
+
+//   ---     ---     ---     ---     ---
+
+        } case 0x06: {
+            slong* r = (slong*) result;
+            slong* v = (slong*) value;
+            (*r)+=(*v); break;
+
+        } case 0x10: {
+            ulong* r = (ulong*) result;
+            ulong* v = (ulong*) value;
+            (*r)+=(*v); break;
+
+//   ---     ---     ---     ---     ---
+
+        } default: {
+            float* r = (float*) result;
+            float* v = (float*) value;
+            (*r)+=(*v); break;
+
+        };
+    };
+
+    goto EVAL_EXP;
+
+//   ---     ---     ---     ---     ---
+
+    RESULT: VALNEW(type, name, result, size, lars, slot);
+    uchar* vtest = (uchar*) slot->box;
+
+    switch(rd_cast) {
+
+        case 0x00: break;                   // we'll see how to handle these later
+        case 0x01: break;
+        case 0x02: break;
+
+//   ---     ---     ---     ---     ---
+
+        case 0x03:
+            CALOUT(
+                K, " = \x27%c\x27 : 0x%02X (",
+                *((schar*) vtest),
+                *((schar*) vtest),
+                tokens[rd_tkx]
+
+            ); break;
+
+        case 0x04:
+            CALOUT(
+                K, " = %" PRId16 ": 0x%" PRIX16 "(",
+                *((sshort*) vtest),
+                *((sshort*) vtest),
+                tokens[rd_tkx]
+
+            ); break;
+
+        case 0x05:
+            CALOUT(
+                K, " = %" PRId32 ": 0x%" PRIX32 "(",
+                *((sint*) vtest),
+                *((sint*) vtest),
+                tokens[rd_tkx]
+
+            ); break;
+
+        case 0x06:
+            CALOUT(
+                K, " = %" PRId64 ": 0x%" PRIX64 "(",
+                *((slong*) vtest),
+                *((slong*) vtest),
+                tokens[rd_tkx]
+
+            ); break;
+
+//   ---     ---     ---     ---     ---
+
+        case 0x07:
+            CALOUT(
+                K, " = \x27%c\x27 : 0x%02X (",
+                *((uchar*) vtest),
+                *((uchar*) vtest),
+                tokens[rd_tkx]
+
+            ); break;
+
+        case 0x08:
+            CALOUT(
+                K, " = %" PRIu16 ": 0x%" PRIX16 "(",
+                *((ushort*) vtest),
+                *((ushort*) vtest),
+                tokens[rd_tkx]
+
+            ); break;
+
+        case 0x09:
+            CALOUT(
+                K, " = %" PRIu32 ": 0x%" PRIX32 "(",
+                *((uint*) vtest),
+                *((uint*) vtest),
+                tokens[rd_tkx]
+
+            ); break;
+
+        case 0x10:
+            CALOUT(
+                K, " = %" PRIu64 ": 0x%" PRIX64 "(",
+                *((ulong*) vtest),
+                *((ulong*) vtest),
+                tokens[rd_tkx]
+
+            ); break;
+
+//   ---     ---     ---     ---     ---
+
+        default:
+
+            CALOUT(
+                K, " = %f : 0x%" PRIX32 "(",
+                *((float*) vtest),
+                *((uint*) vtest),
+                tokens[rd_tkx]
+
+            ); break;
+
+    }; for(uint x=ex_f; x<rd_tki; x++) {
+        CALOUT(K, "%s", tokens[x]);
+
+    }; CALOUT(K, ")\n");                                                                    };
 
 //   ---     ---     ---     ---     ---
 
@@ -847,8 +915,7 @@ void NTNAMES(void)                          {
         SYMNEW("TYPE", "int",    REGINT),
         SYMNEW("TYPE", "long",   REGLNG),
 
-        SYMNEW("TYPE", "float",  REGFLT),
-        SYMNEW("TYPE", "double", REGDBL)
+        SYMNEW("TYPE", "float",  REGFLT)
 
     };
 
@@ -1169,9 +1236,10 @@ void RDNXT(void)                            {
 int main(void)                              {
 
     NTNAMES();
-    MEM* s=MKSTR("MAMM_RD", 1024, 1); CLMEM(s);
+    MEM* s  = MKSTR("MAMM_RD", 1024, 1); CLMEM(s);
+    LDLNG(ZJC_DAFPAGE); memlng = GTLNG(); CLMEM(memlng);
 
-    RPSTR(&s, "reg vars {\n float x=12.9984;\n int y=-65;\n uint z=-7;\n short w=65537;\n char a=0xF161;\n uchar b=0xFF62;\n}\n", 0);
+    RPSTR(&s, "reg vars {\n char x=0x62-1;\n}\n", 0);
     rd_buff = MEMBUFF(s, uchar, 0);
 
     CALOUT(E, "\e[38;2;128;255;128m\n$PEIN:\n%s\n\e[0m\e[38;2;255;128;128m$OUT:", rd_buff);
@@ -1179,6 +1247,7 @@ int main(void)                              {
     RDNXT();
     CALOUT(E, "\e[0m");
 
+    DLMEM(memlng);
     DLMEM(s);
     DLNAMES();
 
