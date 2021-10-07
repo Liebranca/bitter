@@ -42,14 +42,6 @@
 #define MAMMIT_SF_CCLA 0x00000800
 #define MAMMIT_SF_CFUN 0x00001000
 
-#define MAMMIT_SF_OPS0 0x00FF0000
-#define MAMMIT_SF_EQUL 0x00010000
-
-#define MAMMIT_SF_OPS1 0xFF000000
-#define MAMMIT_SF_SETR 0x01000000
-#define MAMMIT_SF_MINS 0x02000000
-#define MAMMIT_SF_PLUS 0x04000000
-
 //   ---     ---     ---     ---     ---
 // debug/errcatch stuff
 
@@ -355,8 +347,11 @@ typedef struct MAMM_INTERPRETER {           // smach for pe-text input
 
 //   ---     ---     ---     ---     ---
 
-#define MAMMIT_LVLA_NXT { mammi->lvla_stack[mammi->lvla]=mammi->cntx; mammi->lvla++; }
-#define MAMMIT_LVLA_PRV { mammi->lvla++; mammi->cntx=mammi->lvla_stack[mammi->lvla]; }
+#define MAMMIT_LVLA_NXT { mammi->lvla_stack[mammi->lvla]=mammi->cntx; mammi->lvla++;    }
+#define MAMMIT_LVLA_PRV { mammi->lvla++; mammi->cntx=mammi->lvla_stack[mammi->lvla];    }
+
+#define MAMMIT_LVLB_NXT { mammi->lvlb_stack[mammi->lvlb]=flags; mammi->lvlb++; flags=0; }
+#define MAMMIT_LVLB_PRV { mammi->lvlb++; flags=mammi->lvlb_stack[mammi->lvlb];          }
 
 //   ---     ---     ---     ---     ---
 
@@ -611,6 +606,18 @@ void TRFLTVAL(uchar* src ,
 
 //   ---     ---     ---     ---     ---
 
+#define MAMMIT_OPSWITCH {                   \
+                                            \
+    if(flags&0x04) {                        \
+        (*r)*=(*v); break;                  \
+                                            \
+    } elif(flags&0x08) {                    \
+        (*r)/=(*v); break;                  \
+                                            \
+    }; (*r)+=(*v); break;                   }
+
+//   ---     ---     ---     ---     ---
+
 void REGTP(void)                            {
 
     uchar* type = typedata.base;  rd_tkx++; // fetch, move to next token
@@ -659,30 +666,73 @@ void REGTP(void)                            {
 
 //   ---     ---     ---     ---     ---
 
+    uint   flags      = 0;                  // 0x01 l min r
+                                            // 0x02 floating point
+                                            // 0x04 l mul r
+                                            // 0x08 l div r
+
     EVAL_EXP: rd_tkx++;                     // read next token in expression
     if(!(rd_tkx<rd_tki)) { goto RESULT; }   // ... or jump to end if all tokens read
 
     uchar* value      = (uchar*) memlng->buff+size;
+    CLMEM2(value, size);
+
     uchar* raw_value  = tokens[rd_tkx];
 
-    uint   flags      = 0;                  // 0x01 -> negative
-                                            // 0x02 -> floating point
-                                            // 0x04+-> whatever
-
-    uint   opn        = 0;                  // number of operators
+    flags            &=~0x02;
 
 //   ---     ---     ---     ---     ---
 
     POP_OPERATORS:                          // if operator chars in token, eval and pop them
     switch(raw_value[0]) {
 
+        default: break;
+
+        case 0x28: MAMMIT_LVLB_NXT
+            raw_value++; goto POP_OPERATORS;
+
+        case 0x29: MAMMIT_LVLB_PRV
+            raw_value++; goto POP_OPERATORS;
+
+//   ---     ---     ---     ---     ---
+
         case 0x2B:
-            opn++; goto POP_OPERATORS;
+            flags &=~0x01;
+            flags &=~0x04;
+            flags &=~0x08;
 
-        case 0x2D: flags |= 0x01;
-            opn++; goto POP_OPERATORS;
+            goto POP_OPSTOP;
 
-    };     raw_value += opn;                // skip opchars so we can get the values
+        case 0x2D:
+            flags |= 0x01;
+
+            goto POP_OPSTOP;
+
+        case 0x2A:
+            flags |= 0x04;
+            flags &=~0x08;
+
+            goto POP_OPSTOP;
+
+        case 0x2F:
+            flags &=~0x04;
+            flags |= 0x08;
+
+            goto POP_OPSTOP;
+
+//   ---     ---     ---     ---     ---
+
+        case 0x3D:
+            // wat
+
+//   ---     ---     ---     ---     ---
+
+        POP_OPSTOP:
+            raw_value++; goto POP_OPERATORS;
+
+    };
+
+//   ---     ---     ---     ---     ---
 
     uint   len        = strlen              (raw_value                    );
     uint   vlen       = len-1;
@@ -785,59 +835,61 @@ void REGTP(void)                            {
 
     }; switch(rd_cast) {
 
-
         case 0x03: {
             schar* r = (schar*) result;
             schar* v = (schar*) value;
-            (*r)+=(*v); break;
+            MAMMIT_OPSWITCH;
 
         } case 0x07: {
             uchar* r = (uchar*) result;
             uchar* v = (uchar*) value;
-            (*r)+=(*v); break;
+            MAMMIT_OPSWITCH;
 
 //   ---     ---     ---     ---     ---
 
         } case 0x04: {
             sshort* r = (sshort*) result;
             sshort* v = (sshort*) value;
-            (*r)+=(*v); break;
+            MAMMIT_OPSWITCH;
 
         } case 0x08: {
             ushort* r = (ushort*) result;
             ushort* v = (ushort*) value;
-            (*r)+=(*v); break;
+            MAMMIT_OPSWITCH;
 
 //   ---     ---     ---     ---     ---
 
         } case 0x05: {
             sint* r = (sint*) result;
             sint* v = (sint*) value;
-            (*r)+=(*v); break;
+
+            CALOUT(E, "%i : %i\n", *r, *v);
+
+            MAMMIT_OPSWITCH;
 
         } case 0x09: {
             uint* r = (uint*) result;
             uint* v = (uint*) value;
-            (*r)+=(*v); break;
+            MAMMIT_OPSWITCH;
 
 //   ---     ---     ---     ---     ---
 
         } case 0x06: {
             slong* r = (slong*) result;
             slong* v = (slong*) value;
-            (*r)+=(*v); break;
+            MAMMIT_OPSWITCH;
 
         } case 0x0A: {
             ulong* r = (ulong*) result;
             ulong* v = (ulong*) value;
-            (*r)+=(*v); break;
+            MAMMIT_OPSWITCH;
 
 //   ---     ---     ---     ---     ---
 
         } default: {
             float* r = (float*) result;
             float* v = (float*) value;
-            (*r)+=(*v); break;
+            MAMMIT_OPSWITCH;
 
         };
     };
@@ -1152,8 +1204,8 @@ void CHKTKNS(void)                          {
 
 void RDNXT(void)                            {
 
-    // operators left to write cases for...
-    // | ^ \ < > * % + . , ; ( ) [ ] { } / & : @ $ ? ! # ~ ' "
+    uchar op[16]; CLMEM2(op, 16);           // operator storage ;>
+    uint  opi=0;                            // idex into opstor
 
     TOP:
 
@@ -1177,9 +1229,6 @@ void RDNXT(void)                            {
 
         case 0x3B3E:
             mammi->state &=~MAMMIT_SF_PESC; rd_pos++; goto TOP;
-
-        case 0x3D3D:
-            mammi->state |= MAMMIT_SF_EQUL; rd_pos++; goto TOP;
 
     };
 
@@ -1242,16 +1291,40 @@ void RDNXT(void)                            {
 
 //   ---     ---     ---     ---     ---    OPERATORS
 
+        case 0x21:
+        case 0x22:
+        case 0x23:
+
+        case 0x24:                          // handle str/iter here...
+
+        case 0x25:
+        case 0x26:
+        case 0x27:
+        case 0x28:
+        case 0x29:
+
+        case 0x2A:                          // handle pointers here...
+
         case 0x2B:
-            mammi->state |= MAMMIT_SF_PLUS;
-            goto APTOK;
-
+        case 0x2C:
         case 0x2D:
-            mammi->state |= MAMMIT_SF_MINS;
-            goto APTOK;
-
+        case 0x2F:
+        case 0x3A:
+        case 0x3C:
         case 0x3D:
-            mammi->state |= MAMMIT_SF_SETR;
+        case 0x3E:
+        case 0x3F:
+
+        case 0x40:                          // handle @idex here...
+
+        case 0x5B:
+        case 0x5C:
+        case 0x5D:
+        case 0x5E:
+
+        case 0x7C:
+        case 0x7E:
+            op[opi]=rd_cur; opi++;
             goto APTOK;
 
 //   ---     ---     ---     ---     ---    TERMINATORS
@@ -1280,7 +1353,7 @@ void RDNXT(void)                            {
 
             // clean non-context stateflags
             // ruins multi-statement peso escapes, ill fix that later
-            mammi->state &=~MAMMIT_SF_PESO | MAMMIT_SF_OPS0 | MAMMIT_SF_OPS1;
+            mammi->state &=~MAMMIT_SF_PESO;
 
             break;
 
@@ -1288,21 +1361,12 @@ void RDNXT(void)                            {
 
         default:                            // 'cat' char to cur token
 
-            if(mammi->state&MAMMIT_SF_MINS) {
+            // prefix token with operator(s)
+            if(opi) { uint y=0; while(op[y]) {
+                rd_tk[rd_tkp]=op[y]; rd_tkp++;
+                op[y]=0x00; y++;
 
-                // prefix minus and clear flag
-                mammi->state &=~MAMMIT_SF_MINS;
-                rd_tk[rd_tkp]=0x2D; rd_tkp++;
-
-            };
-
-            if(mammi->state&MAMMIT_SF_PLUS) {
-                mammi->state &=~MAMMIT_SF_PLUS;
-                rd_tk[rd_tkp]=0x2B; rd_tkp++;
-
-            };
-
-            rd_tk[rd_tkp]=rd_cur; rd_tkp++; break;
+            } opi=0; }; rd_tk[rd_tkp]=rd_cur; rd_tkp++; break;
 
     }; if(rd_nxt) { goto TOP; };                                                            };
 
@@ -1314,7 +1378,7 @@ int main(void)                              {
     MEM* s  = MKSTR("MAMM_RD", 1024, 1); CLMEM(s);
     LDLNG(ZJC_DAFPAGE); memlng = GTLNG(); CLMEM(memlng);
 
-    RPSTR(&s, "reg vars {\n uint x=1.0;\n}\n", 0);
+    RPSTR(&s, "reg vars {\n float x=1/2;\n}\n", 0);
     rd_buff = MEMBUFF(s, uchar, 0);
 
     CALOUT(E, "\e[38;2;128;255;128m\n$PEIN:\n%s\n\e[0m\e[38;2;255;128;128m$OUT:", rd_buff);
