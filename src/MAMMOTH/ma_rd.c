@@ -48,6 +48,7 @@
 #define MAMMIT_SF_OPS1 0xFF000000
 #define MAMMIT_SF_SETR 0x01000000
 #define MAMMIT_SF_MINS 0x02000000
+#define MAMMIT_SF_PLUS 0x04000000
 
 //   ---     ---     ---     ---     ---
 // debug/errcatch stuff
@@ -125,9 +126,9 @@ static uint   rd_cast = 0;                  // for "dynamic" type-casting;
                                             // 0x05 int32_t
                                             // 0x06 int64_t
 
-                                            // 0x07-010 ^unsigned idem...
+                                            // 0x07-0A ^unsigned idem...
 
-                                            // 0x11 float
+                                            // 0x0B float
 
 //   ---     ---     ---     ---     ---
 
@@ -341,6 +342,7 @@ typedef struct MAMM_INTERPRETER {           // smach for pe-text input
     };
 
     uchar  lvla_stack[256];                 // markers for recalling previous context
+    uchar  lvlb_stack[256];                 // ^idem, for prev start of expression
 
     uint   larstop;                         // next offset @lvalues that's free
     LARS   lvalsl    [256];                 // yer vars kypr
@@ -452,7 +454,160 @@ void REGLNG(void)                           {
 
 //   ---     ---     ---     ---     ---    float
 
-void REGFLT(void)                           { rd_cast = 0x11; REGTP();                      };
+void REGFLT(void)                           { rd_cast = 0x0B; REGTP();                      };
+
+//   ---     ---     ---     ---     ---
+
+void TRHEXVAL(uchar* src ,
+              uchar* to  ,
+              uint   size)                  {
+
+    uint  cbyte = 0;                        // curent byte
+    uint  chxd  = 0;                        // current hex digit
+    uint  hxval = 0;                        // value of char, in hex
+
+    uchar c     = 0x00;                     // empty char
+
+//   ---     ---     ---     ---     ---
+
+    do { c=*src;                            // redundant deref for shorts
+
+        if(c<=0x39) {                       // if 0-9
+            hxval=c-0x30;
+
+        }
+
+        elif( (0x41<=c)
+        &&    (0x46>=c) ) {                 // if A-F
+            hxval=c-0x37;
+
+        }
+
+        else {                              // nuuuuuuuuuuuuuuuull!
+            break;
+
+        };
+
+//   ---     ---     ---     ---     ---
+
+        if(!chxd) {                         // is first digit
+            to[cbyte]  = hxval;
+            chxd++;
+
+        } else {                            // is second digit
+            to[cbyte] += hxval*16;
+            chxd--; cbyte++;
+
+    }} while(*src-- != 0x78);                                                               };
+
+//   ---     ---     ---     ---     ---
+
+void TRBITVAL(uchar* src ,
+              uchar* to  ,
+              uint   size)                  {
+
+    uint  cbit  = 0;                        // current bit
+    uint  cbyte = 0;                        // curent byte
+
+    uchar c     = 0x00;                     // empty char
+
+//   ---     ---     ---     ---     ---
+
+    do { c=*src;                            // redundant deref for shorts
+
+        if(c != 0x31\
+        && c != 0x30) {                     // nuuuuuuuuuuull!
+            break;
+
+        }; to[cbyte] |= (c==0x31) << cbit;  // easy money
+
+//   ---     ---     ---     ---     ---
+
+        if(cbit==7) {                       // if all bits set move to next byte
+            cbyte++; cbit=0;                // ... and go back to first bit!
+            continue;
+
+        }; cbit++;                          // else go to next bit
+
+    } while(*src-- != 0x62);                                                                };
+
+//   ---     ---     ---     ---     ---
+
+void TRDECVAL(uchar* src ,
+              uchar* to  ,
+              uint   size)                  {
+
+    uint decval = 0;                        // value in decimal
+    uchar c     = 0x00;                     // empty char
+
+//   ---     ---     ---     ---     ---
+
+    do { c=*src;                            // redundant deref for shorts
+        if(!c) { break; }                   // lazy while
+
+        decval *= 10;                       // left shift
+        decval += c - 0x30;
+
+    } while(*src++);
+
+//   ---     ---     ---     ---     ---
+
+    for(uint x=0; x<size; x++) {            // copy bytes over
+        to[x]=(decval&(0xFF<<(x*8))) >> (x*8);
+
+    };                                                                                      };
+
+//   ---     ---     ---     ---     ---
+
+void TRFLTVAL(uchar* src ,
+              uchar* to  ,
+              uint   size)                  {
+
+    float  whole = 0.0f;                    // integer portion of number
+    float  fract = 0.0f;                    // fraction portion of number
+    float  fval  = 0.0f;                    // value at current char
+
+    uint   dotd  = 0;                       // right shift multiplier
+    uchar  c     = 0x00;                    // blank char
+
+//   ---     ---     ---     ---     ---
+
+    do { c=*src;
+
+        if(!c) { break; }                   // nuuuuuuuuuuull!
+
+        fval=(float) c-0x30;                // fval be in (0,9), else is dot
+
+        if(c==0x2E) {                       // dot spotted, do fractions now
+            dotd=1;                         // start fractions at 0.1 and advance that
+            continue;                       // skip to next char...
+
+        }
+
+//   ---     ---     ---     ---     ---
+
+        elif(!dotd) {
+            whole*=10;                      // left shift
+            whole+=fval;                    // add to total
+
+            continue;                       // skip!
+
+        };
+
+//   ---     ---     ---     ---     ---
+
+        dotd  *= 10;                        // up the right shift factor
+        fract += fval*(1.0f/dotd);          // right shift value and add
+
+    } while(*src++); whole+=fract;
+
+//   ---     ---     ---     ---     ---
+
+    uint uval = *((uint*) &whole);          // read these bytes as an int
+    for(uint x=0; x<size; x++) {            // copy them over
+        to[x]=(uval&(0xFF<<(x*8))) >> (x*8);
+
+    };                                                                                      };
 
 //   ---     ---     ---     ---     ---
 
@@ -480,205 +635,113 @@ void REGTP(void)                            {
         case 0x07: size=sizeof(uchar ); break;
         case 0x08: size=sizeof(ushort); break;
         case 0x09: size=sizeof(uint  ); break;
-        case 0x10: size=sizeof(ulong ); break;
+        case 0x0A: size=sizeof(ulong ); break;
 
         default  : size=sizeof(float ); break;
 
     };
 
+//   ---     ---     ---     ---     ---
+
                                             // redeclaration block
-    int    evil      = 0; MAMMCTCH          (NOREDCL(name), evil, MAMMIT_EV_DECL, name);
+    int    evil       = 0; MAMMCTCH         (NOREDCL(name), evil, MAMMIT_EV_DECL, name);
     CALOUT                                  (K, "DECL: %s %s", type, name             );
 
-    uint ex_f        = rd_tkx+1;            // idex to first token in expression
-    uchar* result    = (uchar*) memlng->buff+0;
+    uint ex_f         = rd_tkx+1;           // idex to first token in expression
+    uchar* result     = (uchar*) memlng->buff+0;
 
     // pop next, so to speak
     // just get slot from idex and set start
-    uint  off        = mammi->larstop;
-    LARS* lars       = mammi->lvalsl+off;
-    LVAL* slot       = mammi->lvalues+off;
-    lars->start      = mammi->larstop;
+    uint  off         = mammi->larstop;
+    LARS* lars        = mammi->lvalsl+off;
+    LVAL* slot        = mammi->lvalues+off;
+    lars->start       = mammi->larstop;
 
-    EVAL_EXP: rd_tkx++;
-    if(!(rd_tkx<rd_tki)) { goto RESULT; }
+//   ---     ---     ---     ---     ---
 
-    // set aside some memory, measure...
-    uchar* value     = (uchar*) memlng->buff+size;
-    uchar* raw_value = tokens[rd_tkx];
-    uint   len       = strlen(raw_value);
+    EVAL_EXP: rd_tkx++;                     // read next token in expression
+    if(!(rd_tkx<rd_tki)) { goto RESULT; }   // ... or jump to end if all tokens read
 
-    // 'isNegative' flag
-    uint   neg       = raw_value[0]==0x2D;
-    if(neg) { raw_value++; }                // skip the minus
+    uchar* value      = (uchar*) memlng->buff+size;
+    uchar* raw_value  = tokens[rd_tkx];
 
-//   ---     ---     ---     ---     ---    STRING->INTEGER
+    uint   flags      = 0;                  // 0x01 -> negative
+                                            // 0x02 -> floating point
+                                            // 0x04+-> whatever
+
+    uint   opn        = 0;                  // number of operators
+
+//   ---     ---     ---     ---     ---
+
+    POP_OPERATORS:                          // if operator chars in token, eval and pop them
+    switch(raw_value[0]) {
+
+        case 0x2B:
+            opn++; goto POP_OPERATORS;
+
+        case 0x2D: flags |= 0x01;
+            opn++; goto POP_OPERATORS;
+
+    };     raw_value += opn;                // skip opchars so we can get the values
+
+    uint   len        = strlen              (raw_value                    );
+    uint   vlen       = len-1;
+
+    flags            |=                     (strstr(type, "float") != NULL) << 1;
+
+//   ---     ---     ---     ---     ---
 
     if( (0x30 <= raw_value[0])
     &&  (0x39 >= raw_value[0]) ) {
-        if(len>1) {                         // go through string...
-            uchar c     = raw_value[0];     // try not to die before the gate opens
-            uint  cbyte = 0;                // current byte
 
-            // is float
-            if(strstr(raw_value, ".")) {
-                goto RD_ASFLTP;
+        if(len>1) {                         // not a single digit
+
+            if(strstr(raw_value, ".")
+            || flags&0x02           ) {     // is float
+                flags|=0x02; goto RD_ASFLTP;
 
             }
 
-            elif(c==0x30) {
+            elif(raw_value[0]==0x30) {      // starts with a zero and is not 0.****
 
-                // is hexlit
-                if  (raw_value[1] == 0x78) {
-                    goto RD_ASHEXN;
+                if  (raw_value[1]==0x78) {  // is hexlit
+                    TRHEXVAL                (raw_value+vlen, value, size        );
                 }
 
-                // is bitlit
-                elif(raw_value[1] == 0x62) {
-                    goto RD_ASBITS;
+                elif(raw_value[1]==0x62) {  // is bitlit
+                    TRBITVAL                (raw_value+vlen, value, size        );
 
-                }; return;                  // zero in front and it's not a lit? insolence!
-
-//   ---     ---     ---     ---     ---
-
-                RD_ASHEXN:                  // string -> hex
-
-                raw_value += len-neg-1;     // skip to end and read backwards
-                uint chxd  = 0;             // current hex digit
-                uint hxval = 0;             // value of char, in hex
-
-                do { c=*raw_value;          // redundant deref for shorts
-
-                    if(c<=0x39) {           // if 0-9
-                        hxval=c-0x30;
-
-                    }
-
-                    elif( (0x41<=c)
-                    &&    (0x46>=c) ) {     // if A-F
-                        hxval=c-0x37;
-
-                    }
-
-                    else {                  // nuuuuuuuuuuuuuuuull!
-                        break;
-
-                    };
-
-                    if(!chxd) {             // is first digit
-                        value[cbyte]  = hxval;
-                        chxd++;
-
-                    } else {                // is second digit
-                        value[cbyte] += hxval*16;
-                        chxd--; cbyte++;
-
-                    }} while(*raw_value-- != 0x78); goto BOT;
-
-//   ---     ---     ---     ---     ---
-
-                RD_ASBITS:                  // string -> binary
-
-                raw_value += len-neg-1;     // skip to end and read backwards
-                uint cbit  = 0;             // current bit
-
-                do { c=*raw_value;          // redundant deref for shorts
-
-                    if(c != 0x31\
-                    && c != 0x30) {         // nuuuuuuuuuuull!
-                        break;
-
-                    };
-
-                    // easy money
-                    value[cbyte] |= (c==0x31) << cbit;
-                    if(cbit==7) {
-                        cbyte++;
-                        cbit=0;
-
-                        continue;
-
-                    }; cbit++;
-
-                } while(*raw_value-- != 0x62);
-
+                };
             }
 
 //   ---     ---     ---     ---     ---
 
             else {                          // string -> decimal
+                TRDECVAL                    (raw_value, value, size             );
 
-                uint decval = 0;            // value in decimal
-                do { c=*raw_value;          // redundant deref for shorts
-                    if(!c) { break; }       // lazy while
-
-                    decval *= 10;           // left shift
-                    decval += c - 0x30;
-
-                } while(*raw_value++);
-
-                for(uint x=0; x<size; x++) {
-                    value[x]=(decval&(0xFF<<(x*8))) >> (x*8);
-
-                };
             }
         }
 
 //   ---     ---     ---     ---     ---
 
         elif(len==1) {                      // boring corner case: single decimal digit
-            value[0]=raw_value[0]-0x30;
+            if(flags&0x02) {
+                goto RD_ASFLTP;
+
+            }; value[0]=raw_value[0]-0x30;
 
         };
-
     }
 
 //   ---     ---     ---     ---     ---
 
     elif(raw_value[0]==0x2E) {              // cool corner case: floats
-    RD_ASFLTP:
-
-        uint   dotd  = 0;                   // right shift multiplier
-        uchar  c     = 0x00;                // blank char
 
                                             // catch incorrect data size
-        MAMMCTCH                            (NOOVERSZ(size, sizeof(float)), evil,
-                                            MAMMIT_EV_VSIZ, type               );
+        RD_ASFLTP: MAMMCTCH                 (NOOVERSZ(size, sizeof(float)), evil,
+                                             MAMMIT_EV_VSIZ, type               );
 
-        float  whole = 0.0f;                // integer portion of number
-        float  fract = 0.0f;                // fraction portion of number
-        float  fval  = 0.0f;                // value at current char
-
-        do { c=*raw_value;
-
-            if(!c) { break; }               // nuuuuuuuuuuull!
-
-            fval=(float) c-0x30;            // fval be in (0,9), else is dot
-
-            if(c==0x2E) {                   // dot spotted, do fractions now
-                dotd=1;                     // start fractions at 0.1 and advance that
-                continue;                   // skip to next char...
-
-            }
-
-            elif(!dotd) {
-                whole*=10;                  // left shift
-                whole+=fval;                // add to total
-
-                continue;                   // skip!
-
-            };
-
-            dotd  *= 10;                    // up the right shift factor
-            fract += fval*(1.0f/dotd);      // right shift value and add
-
-        } while(*raw_value++); whole+=fract;
-
-        uint uval = *((uint*) &whole);      // read these bytes as an int
-        for(uint x=0; x<size; x++) {        // copy them over
-            value[x]=(uval&(0xFF<<(x*8))) >> (x*8);
-
-        };
+        TRFLTVAL                            (raw_value, value, size             );
     }
 
 //   ---     ---     ---     ---     ---
@@ -689,16 +752,16 @@ void REGTP(void)                            {
 
     BOT:
 
-    if(neg) {                               // if negative, do the bit flipping
+    if(flags&0x01) {                        // if negative, do the bit flipping
 
-        if(strstr(type, "float") != NULL) {
+        if(flags&0x02) {                    // floats
             value[3] |= 0x80;
 
         }
 
 //   ---     ---     ---     ---     ---
 
-        else {
+        else {                              // everything else
 
             for(uint x=0, carry=0;
                 x<size; x++      ) {        // take two's
@@ -764,7 +827,7 @@ void REGTP(void)                            {
             slong* v = (slong*) value;
             (*r)+=(*v); break;
 
-        } case 0x10: {
+        } case 0x0A: {
             ulong* r = (ulong*) result;
             ulong* v = (ulong*) value;
             (*r)+=(*v); break;
@@ -859,7 +922,7 @@ void REGTP(void)                            {
 
             ); break;
 
-        case 0x10:
+        case 0x0A:
             CALOUT(
                 K, " = %" PRIu64 ": 0x%" PRIX64 "(",
                 *((ulong*) vtest),
@@ -1090,7 +1153,7 @@ void CHKTKNS(void)                          {
 void RDNXT(void)                            {
 
     // operators left to write cases for...
-    // | ^ \ < > * - % + . , ; ( ) [ ] { } / & : @ $ ? ! # ~ ' "
+    // | ^ \ < > * % + . , ; ( ) [ ] { } / & : @ $ ? ! # ~ ' "
 
     TOP:
 
@@ -1179,6 +1242,10 @@ void RDNXT(void)                            {
 
 //   ---     ---     ---     ---     ---    OPERATORS
 
+        case 0x2B:
+            mammi->state |= MAMMIT_SF_PLUS;
+            goto APTOK;
+
         case 0x2D:
             mammi->state |= MAMMIT_SF_MINS;
             goto APTOK;
@@ -1227,7 +1294,15 @@ void RDNXT(void)                            {
                 mammi->state &=~MAMMIT_SF_MINS;
                 rd_tk[rd_tkp]=0x2D; rd_tkp++;
 
-            }; rd_tk[rd_tkp]=rd_cur; rd_tkp++; break;
+            };
+
+            if(mammi->state&MAMMIT_SF_PLUS) {
+                mammi->state &=~MAMMIT_SF_PLUS;
+                rd_tk[rd_tkp]=0x2B; rd_tkp++;
+
+            };
+
+            rd_tk[rd_tkp]=rd_cur; rd_tkp++; break;
 
     }; if(rd_nxt) { goto TOP; };                                                            };
 
@@ -1239,7 +1314,7 @@ int main(void)                              {
     MEM* s  = MKSTR("MAMM_RD", 1024, 1); CLMEM(s);
     LDLNG(ZJC_DAFPAGE); memlng = GTLNG(); CLMEM(memlng);
 
-    RPSTR(&s, "reg vars {\n char x=0x62-1;\n}\n", 0);
+    RPSTR(&s, "reg vars {\n uint x=1.0;\n}\n", 0);
     rd_buff = MEMBUFF(s, uchar, 0);
 
     CALOUT(E, "\e[38;2;128;255;128m\n$PEIN:\n%s\n\e[0m\e[38;2;255;128;128m$OUT:", rd_buff);
