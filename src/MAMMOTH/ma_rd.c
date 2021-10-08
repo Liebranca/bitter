@@ -679,11 +679,17 @@ void TRFLTVAL(uchar* src ,
     case OP_MODUS:                          \
         OP_FORCEBIN(%); OPSWITCH_MINUSX;    \
                                             \
+    case OP_RSHFT:                          \
+        OP_FORCEBIN(>>); OPSWITCH_MINUSX;   \
+                                            \
     case OP_GT:                             \
         (*r)=(*r)>(*v);  OPSWITCH_MINUSX;   \
                                             \
     case OP_GT | OP_EQUR:                   \
         (*r)=(*r)>=(*v); OPSWITCH_MINUSX;   \
+                                            \
+    case OP_LSHFT:                          \
+        OP_FORCEBIN(<<); OPSWITCH_MINUSX;   \
                                             \
     case OP_LT:                             \
         (*r)=(*r)<(*v);  OPSWITCH_MINUSX;   \
@@ -889,20 +895,45 @@ void REGTP(void)                            {
             &&  mammi->lvlb     ) {
                 mammi->lvlb_stack[mammi->lvlb-1] |= OP_EQUR;
 
-            } else {
-                flags |= OP_EQUL;
-                MAMMIT_LVLB_NXT
+                goto POP_OPSTOP;
 
-            }; goto POP_OPSTOP;
+            };
 
-//   ---     ---     ---     ---     ---
-
-        case 0x3C: flags |= OP_LT;
+            flags |= OP_EQUL;
             MAMMIT_LVLB_NXT
 
             goto POP_OPSTOP;
 
-        case 0x3E: flags |= OP_GT;
+//   ---     ---     ---     ---     ---
+
+        case 0x3C:
+
+            if(mammi->lvlb) {
+                if(mammi->lvlb_stack[mammi->lvlb-1]&OP_LT) {
+                    mammi->lvlb_stack[mammi->lvlb-1] &=~OP_LT;
+                    mammi->lvlb_stack[mammi->lvlb-1] |= OP_LSHFT;
+
+                    goto POP_OPSTOP;
+                };
+            };
+
+            flags |= OP_LT;
+            MAMMIT_LVLB_NXT
+
+            goto POP_OPSTOP;
+
+        case 0x3E:
+
+            if(mammi->lvlb) {
+                if(mammi->lvlb_stack[mammi->lvlb-1]&OP_GT) {
+                    mammi->lvlb_stack[mammi->lvlb-1] &=~OP_GT;
+                    mammi->lvlb_stack[mammi->lvlb-1] |= OP_RSHFT;
+
+                    goto POP_OPSTOP;
+                };
+            };
+
+            flags |= OP_GT;
             MAMMIT_LVLB_NXT
 
             goto POP_OPSTOP;
@@ -1080,6 +1111,9 @@ void REGTP(void)                            {
             } elif(flags&OP_MODUS) {
                 CALOUT(E, "%i %% %i\n", *r, *v);
 
+            } elif(flags&OP_RSHFT) {
+                CALOUT(E, "%i >> %i\n", *r, *v);
+
             } elif(flags&OP_GT) {
 
                 if(flags&OP_EQUR) {
@@ -1087,6 +1121,9 @@ void REGTP(void)                            {
                 } else {
                 CALOUT(E, "%i > %i\n", *r, *v);
                 }
+
+            } elif(flags&OP_LSHFT) {
+                CALOUT(E, "%i << %i\n", *r, *v);
 
             } elif(flags&OP_LT) {
                 if(flags&OP_EQUR) {
@@ -1662,7 +1699,7 @@ int main(void)                              {
     RPSTR(&s,
 
 "reg vars {\n\
- int x=2%2;\n\
+ int x=-~(1<<8)>>8;\n\
 }\n",
 0);
 
