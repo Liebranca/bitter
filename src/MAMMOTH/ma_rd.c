@@ -697,17 +697,11 @@ void REGTP(void)                            {
 
         default: break;
 
+        case 0x2B:
         case 0x28: MAMMIT_LVLB_NXT
             goto POP_OPSTOP;
 
 //   ---     ---     ---     ---     ---
-
-        case 0x2B:
-            flags &=~0x01;
-            flags &=~0x04;
-            flags &=~0x08;
-
-            goto POP_OPSTOP;
 
         case 0x2D:
             flags |= 0x01;
@@ -747,11 +741,10 @@ void REGTP(void)                            {
 
         default: break;
 
-        case 0x29: MAMMIT_LVLB_PRV          // only case now but just in... *case* i want more
-            //goto POP_TESTOP;
+        case 0x29: MAMMIT_LVLB_PRV
+            goto POP_TESTOP;
 
         POP_TESTOP:
-            //raw_value[len-1]=0x00;
             len--; goto POP_TERMINATORS;
 
     };
@@ -911,6 +904,18 @@ void REGTP(void)                            {
         } default: {
             float* r = (float*) lhand;
             float* v = (float*) value;
+
+            if(flags&0x04) {
+                CALOUT(E, "%f : %f * %f | %u\n", *result, *r, *v, mammi->lvlb);
+
+            } elif(flags&0x08) {
+                CALOUT(E, "%f : %f / %f | %u\n", *result, *r, *v, mammi->lvlb);
+
+            } else {
+                CALOUT(E, "%f : %f + %f | %u\n", *result, *r, *v, mammi->lvlb);
+
+            };
+
             MAMMIT_OPSWITCH;
 
         };
@@ -920,7 +925,15 @@ void REGTP(void)                            {
 
 //   ---     ---     ---     ---     ---
 
-    RESULT: VALNEW(type, name, result, size, lars, slot);
+    RESULT: if(mammi->lvlb>0) {             // collapse expression if unresolved
+        MAMMIT_LVLB_PRV                     // this doesn't account for unclosed () parens
+        goto COL_LHAND;                     // so beware! PE$O will not care for that mistake
+
+    };
+
+//   ---     ---     ---     ---     ---
+
+    VALNEW(type, name, result, size, lars, slot);
     uchar* vtest = (uchar*) slot->box;
 
     switch(rd_cast) {
@@ -1311,7 +1324,7 @@ void RDNXT(void)                            {
 
             }; break;
 
-//   ---     ---     ---     ---     ---    OPERATORS
+//   ---     ---     ---     ---     ---    OPERATORS L
 
         case 0x21:
         case 0x22:
@@ -1325,7 +1338,6 @@ void RDNXT(void)                            {
         case 0x28:
 
         case 0x2A:                          // handle pointers here...
-
         case 0x2B:
         case 0x2C:
         case 0x2D:
@@ -1347,6 +1359,8 @@ void RDNXT(void)                            {
         case 0x7E:
             op[opi]=rd_cur; opi++;
             goto APTOK;
+
+//   ---     ---     ---     ---     ---    OPERATORS R
 
         case 0x29:
             rd_tk[rd_tkp]=rd_cur; rd_tkp++;
@@ -1403,7 +1417,7 @@ int main(void)                              {
     MEM* s  = MKSTR("MAMM_RD", 1024, 1); CLMEM(s);
     LDLNG(ZJC_DAFPAGE); memlng = GTLNG(); CLMEM(memlng);
 
-    RPSTR(&s, "reg vars {\n float x=1*-(2+1);\n}\n", 0);
+    RPSTR(&s, "reg vars {\n float x=2+2*3;\n}\n", 0);
     rd_buff = MEMBUFF(s, uchar, 0);
 
     CALOUT(E, "\e[38;2;128;255;128m\n$PEIN:\n%s\n\e[0m\e[38;2;255;128;128m$OUT:", rd_buff);
