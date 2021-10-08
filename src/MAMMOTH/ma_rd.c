@@ -334,7 +334,7 @@ typedef struct MAMM_INTERPRETER {           // smach for pe-text input
     };
 
     uchar  lvla_stack[256];                 // markers for recalling previous context
-    uchar  lvlb_stack[256];                 // ^idem, for prev start of expression
+    uint   lvlb_stack[256];                 // ^idem, for prev evalstate of expression
 
     uint   larstop;                         // next offset @lvalues that's free
     LARS   lvalsl    [256];                 // yer vars kypr
@@ -614,15 +614,73 @@ void TRFLTVAL(uchar* src ,
 
 //   ---     ---     ---     ---     ---
 
+#define OP_MINUS 0x00000001
+#define OP_RADIX 0x00000002
+#define OP_MUL   0x00000004
+#define OP_DIV   0x00000008
+
+#define OP_GT    0x00000010
+#define OP_LT    0x00000020
+#define OP_EQUL  0x00000040
+#define OP_EQUR  0x00000080
+
+#define OP_BANG  0x00000100
+#define OP_TILDE 0x00000200
+#define OP_MONEY 0x00000400
+#define OP_KUSH  0x00000800
+
+#define OP_MODUS 0x00001000
+#define OP_AMPER 0x00002000
+#define OP_PIPE  0x00004000
+#define OP_QUEST 0x00008000
+
+#define OP_COLON 0x00010000
+#define OP_DPIPE 0x00020000
+#define OP_DAMPR 0x00040000
+#define OP_XORUS 0x00080000
+
+#define OP_LSHFT 0x00100000
+#define OP_RSHFT 0x00200000
+#define OP_AT    0x00400000
+#define OP_POINT 0x00800000
+
+#define OP_W_EQUR                           \
+    OP_GT    | OP_LT                        \
+  | OP_BANG  | OP_MODUS                     \
+  | OP_AMPER | OP_XORUS                     \
+  | OP_MINUS | OP_MUL                       \
+  | OP_DIV   | OP_PIPE                      \
+  | OP_EQUL
+
+//   ---     ---     ---     ---     ---
+
 #define MAMMIT_OPSWITCH {                   \
                                             \
-    if(flags&0x04) {                        \
+                                            \
+    switch(flags&0xFFFFFFFC) {              \
+                                            \
+    case OP_MUL:                            \
         (*r)*=(*v); break;                  \
                                             \
-    } elif(flags&0x08) {                    \
+    case OP_DIV:                            \
         (*r)/=(*v); break;                  \
                                             \
-    }; (*r)+=(*v); break;                   }
+    case OP_GT:                             \
+        (*r)=(*r)>(*v); break;              \
+                                            \
+    case OP_GT | OP_EQUR:                   \
+        (*r)=(*r)>=(*v); break;             \
+                                            \
+    case OP_LT:                             \
+        (*r)=(*r)<(*v); break;              \
+                                            \
+    case OP_LT | OP_EQUR:                   \
+        (*r)=(*r)<=(*v); break;             \
+                                            \
+    default:                                \
+        (*r)+=(*v); break;                  \
+                                            \
+    }; break;                               }
 
 //   ---     ---     ---     ---     ---
 
@@ -666,6 +724,8 @@ void REGTP(void)                            {
     uchar* result     = (uchar*) memlng->buff+0;
     uchar* lhand      = result;
 
+    CLMEM2(lhand, size);
+
     // pop next, so to speak
     // just get slot from idex and set start
     uint  off         = mammi->larstop;
@@ -675,10 +735,7 @@ void REGTP(void)                            {
 
 //   ---     ---     ---     ---     ---
 
-    uint   flags      = 0;                  // 0x01 l min r
-                                            // 0x02 floating point
-                                            // 0x04 l mul r
-                                            // 0x08 l div r
+    uint   flags      = 0;                  // values defined above MAMMIT_OPSWITCH
 
     EVAL_EXP: rd_tkx++;                     // read next token in expression
     if(!(rd_tkx<rd_tki)) { goto RESULT; }   // ... or jump to end if all tokens read
@@ -688,7 +745,7 @@ void REGTP(void)                            {
 
     uchar* raw_value  = tokens[rd_tkx];
 
-    flags            &=~0x02;               // clear is_float part
+    flags            &=~OP_RADIX;           // clear is_float part
 
 //   ---     ---     ---     ---     ---
 
@@ -698,32 +755,57 @@ void REGTP(void)                            {
         default: break;
 
         case 0x2B:
+            flags &=~OP_MUL;
+            flags &=~OP_DIV;
+
         case 0x28: MAMMIT_LVLB_NXT
             goto POP_OPSTOP;
 
 //   ---     ---     ---     ---     ---
 
         case 0x2D:
-            flags |= 0x01;
+            flags |= OP_MINUS;
 
             goto POP_OPSTOP;
 
         case 0x2A:
-            flags |= 0x04;
-            flags &=~0x08;
+            flags |= OP_MUL;
+            flags &=~OP_DIV;
 
             goto POP_OPSTOP;
 
         case 0x2F:
-            flags &=~0x04;
-            flags |= 0x08;
+            flags &=~OP_MUL;
+            flags |= OP_DIV;
 
             goto POP_OPSTOP;
 
 //   ---     ---     ---     ---     ---
 
         case 0x3D:
-            // wat
+
+            if(flags&OP_W_EQUR) {
+                if(mammi->lvlb) {
+                    mammi->lvlb_stack[mammi->lvlb-1] |= OP_EQUR;
+
+                };
+            } else {
+                flags |= OP_EQUL;
+                MAMMIT_LVLB_NXT
+
+            };
+
+            goto POP_OPSTOP;
+
+        case 0x3C: flags |= OP_LT;
+            MAMMIT_LVLB_NXT
+
+            goto POP_OPSTOP;
+
+        case 0x3E: flags |= OP_GT;
+            MAMMIT_LVLB_NXT
+
+            goto POP_OPSTOP;
 
 //   ---     ---     ---     ---     ---
 
@@ -741,8 +823,7 @@ void REGTP(void)                            {
 
         default: break;
 
-        case 0x29: MAMMIT_LVLB_PRV
-            goto POP_TESTOP;
+        case 0x29: MAMMIT_LVLB_PRV          // lonely parens >;
 
         POP_TESTOP:
             len--; goto POP_TERMINATORS;
@@ -751,7 +832,7 @@ void REGTP(void)                            {
 
 //   ---     ---     ---     ---     ---
 
-    uint   vlen       = len-1;
+    uint   vlen       = len-1;              // set OP_RADIX
     flags            |=                     (strstr(type, "float") != NULL) << 1;
 
 //   ---     ---     ---     ---     ---
@@ -762,8 +843,8 @@ void REGTP(void)                            {
         if(len>1) {                         // not a single digit
 
             if(strstr(raw_value, ".")
-            || flags&0x02           ) {     // is float
-                flags|=0x02; goto RD_ASFLTP;
+            || flags&OP_RADIX       ) {     // is float
+                goto RD_ASFLTP;
 
             }
 
@@ -790,7 +871,7 @@ void REGTP(void)                            {
 //   ---     ---     ---     ---     ---
 
         elif(len==1) {                      // boring corner case: single decimal digit
-            if(flags&0x02) {
+            if(flags&OP_RADIX) {
                 goto RD_ASFLTP;
 
             }; value[0]=raw_value[0]-0x30;
@@ -806,6 +887,8 @@ void REGTP(void)                            {
         RD_ASFLTP: MAMMCTCH                 (NOOVERSZ(size, sizeof(float)), evil,
                                              MAMMIT_EV_VSIZ, type               );
 
+        flags|=OP_RADIX;
+
         TRFLTVAL                            (raw_value, value, size             );
     }
 
@@ -817,9 +900,9 @@ void REGTP(void)                            {
 
     BOT:
 
-    if(flags&0x01) {                        // if negative, do the bit flipping
+    if(flags&OP_MINUS) {                    // if negative, do the bit flipping
 
-        if(flags&0x02) {                    // floats
+        if(flags&OP_RADIX) {                // floats
             value[3] |= 0x80;
 
         }
@@ -850,7 +933,9 @@ void REGTP(void)                            {
 
     };
 
-    COL_LHAND: switch(rd_cast) {
+    COL_LHAND:
+
+    switch(rd_cast) {
 
         case 0x03: {
             schar* r = (schar*) lhand;
@@ -880,6 +965,40 @@ void REGTP(void)                            {
             sint* r = (sint*) lhand;
             sint* v = (sint*) value;
 
+//   ---     ---     ---     ---     ---
+// need this abomination just to check operation order is "correct"
+// NOT necessarily mathematically correct, just what i want it to be
+
+            CALOUT(E, "%u : ", *result);
+
+            if(flags&OP_MUL) {
+                CALOUT(E, "%u * %u\n", *r, *v);
+
+            } elif(flags&OP_DIV) {
+                CALOUT(E, "%u / %u\n", *r, *v);
+
+            } elif(flags&OP_GT) {
+
+                if(flags&OP_EQUR) {
+                CALOUT(E, "%u >= %u\n", *r, *v);
+                } else {
+                CALOUT(E, "%u > %u\n", *r, *v);
+                }
+
+            } elif(flags&OP_LT) {
+                if(flags&OP_EQUR) {
+                CALOUT(E, "%u <= %u\n", *r, *v);
+                } else {
+                CALOUT(E, "%u < %u\n", *r, *v);
+                }
+
+            } else {
+                CALOUT(E, "%u + %u\n", *r, *v);
+
+            };
+
+//   ---     ---     ---     ---     ---
+
             MAMMIT_OPSWITCH;
 
         } case 0x09: {
@@ -904,18 +1023,6 @@ void REGTP(void)                            {
         } default: {
             float* r = (float*) lhand;
             float* v = (float*) value;
-
-            if(flags&0x04) {
-                CALOUT(E, "%f : %f * %f | %u\n", *result, *r, *v, mammi->lvlb);
-
-            } elif(flags&0x08) {
-                CALOUT(E, "%f : %f / %f | %u\n", *result, *r, *v, mammi->lvlb);
-
-            } else {
-                CALOUT(E, "%f : %f + %f | %u\n", *result, *r, *v, mammi->lvlb);
-
-            };
-
             MAMMIT_OPSWITCH;
 
         };
@@ -1417,7 +1524,7 @@ int main(void)                              {
     MEM* s  = MKSTR("MAMM_RD", 1024, 1); CLMEM(s);
     LDLNG(ZJC_DAFPAGE); memlng = GTLNG(); CLMEM(memlng);
 
-    RPSTR(&s, "reg vars {\n float x=2+2*3;\n}\n", 0);
+    RPSTR(&s, "reg vars {\n int x=5<5;\n int y=5<=5;\n}\n", 0);
     rd_buff = MEMBUFF(s, uchar, 0);
 
     CALOUT(E, "\e[38;2;128;255;128m\n$PEIN:\n%s\n\e[0m\e[38;2;255;128;128m$OUT:", rd_buff);
