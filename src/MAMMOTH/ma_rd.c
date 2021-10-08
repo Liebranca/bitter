@@ -660,6 +660,12 @@ void TRFLTVAL(uchar* src ,
         flags&=~OP_MINUS;                   \
     }; break
 
+#define OP_FORCEBIN(op)                     \
+    (*r)=((uint)(*r))op((uint)(*v))
+
+#define OP_FORCEUNA(op)                     \
+    (*r)=op(uint)(*v)
+
 #define MAMMIT_OPSWITCH {                   \
                                             \
     switch(flags&0xFFFFFFFC) {              \
@@ -693,6 +699,18 @@ void TRFLTVAL(uchar* src ,
                                             \
     case OP_EQUL | OP_EQUR:                 \
         (*r)=(*r)==(*v); OPSWITCH_MINUSX;   \
+                                            \
+    case OP_AMPER:                          \
+        OP_FORCEBIN(&); OPSWITCH_MINUSX;    \
+                                            \
+    case OP_PIPE:                           \
+        OP_FORCEBIN(|); OPSWITCH_MINUSX;    \
+                                            \
+    case OP_XORUS:                          \
+        OP_FORCEBIN(^); OPSWITCH_MINUSX;    \
+                                            \
+    case OP_TILDE:                          \
+        OP_FORCEUNA(~); OPSWITCH_MINUSX;    \
                                             \
     }; break;                               }
 
@@ -768,6 +786,23 @@ void REGTP(void)                            {
 
         default: break;
 
+        case 0x26:
+            flags |= OP_AMPER;
+
+            goto POP_OPSTOP;
+
+        case 0x7c:
+            flags |= OP_PIPE;
+
+            goto POP_OPSTOP;
+
+        case 0x5e:
+            flags |= OP_XORUS;
+
+            goto POP_OPSTOP;
+
+//   ---     ---     ---     ---     ---
+
         case 0x2B:
             flags &=~OP_MUL;
             flags &=~OP_DIV;
@@ -797,11 +832,22 @@ void REGTP(void)                            {
 //   ---     ---     ---     ---     ---
 
         case 0x21: MAMMIT_LVLB_NXT
-            flags  = mammi->lvlb_stack[mammi->lvlb-1];
+            flags  = mammi->lvlb_stack[mammi->lvlb-1]&OP_MINUS;
+            mammi->lvlb_stack[mammi->lvlb-1] &=~OP_MINUS;
             flags |= OP_BANG;
             MAMMIT_LVLB_NXT
 
             goto POP_OPSTOP;
+
+        case 0x7e: MAMMIT_LVLB_NXT
+            flags  = mammi->lvlb_stack[mammi->lvlb-1]&OP_MINUS;
+            mammi->lvlb_stack[mammi->lvlb-1] &=~OP_MINUS;
+            flags |= OP_TILDE;
+            MAMMIT_LVLB_NXT
+
+            goto POP_OPSTOP;
+
+//   ---     ---     ---     ---     ---
 
         case 0x3D:
 
@@ -1021,6 +1067,18 @@ void REGTP(void)                            {
 
             } elif(flags&OP_EQUL && flags&OP_EQUR) {
                 CALOUT(E, "%i == %i\n", *r, *v);
+
+            } elif(flags&OP_AMPER) {
+                CALOUT(E, "%i & %i\n", *r, *v);
+
+            } elif(flags&OP_PIPE) {
+                CALOUT(E, "%i | %i\n", *r, *v);
+
+            } elif(flags&OP_XORUS) {
+                CALOUT(E, "%i ^ %i\n", *r, *v);
+
+            } elif(flags&OP_TILDE) {
+                CALOUT(E, "~%i\n", v);
 
             } else {
                 if((*v)>=0) {
@@ -1558,7 +1616,13 @@ int main(void)                              {
     MEM* s  = MKSTR("MAMM_RD", 1024, 1); CLMEM(s);
     LDLNG(ZJC_DAFPAGE); memlng = GTLNG(); CLMEM(memlng);
 
-    RPSTR(&s, "reg vars {\n int x=-!0>=1;\n}\n", 0);
+    RPSTR(&s,
+
+"reg vars {\n\
+ int x=0xF0|-!0x00;\n\
+}\n",
+0);
+
     rd_buff = MEMBUFF(s, uchar, 0);
 
     CALOUT(E, "\e[38;2;128;255;128m\n$PEIN:\n%s\n\e[0m\e[38;2;255;128;128m$OUT:", rd_buff);
