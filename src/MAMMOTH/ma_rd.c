@@ -670,14 +670,14 @@ void TRFLTVAL(uchar* src ,
                                             \
     switch(flags&0xFFFFFFFC) {              \
                                             \
-    default:                                \
-        (*r)+=(*v); break;                  \
-                                            \
     case OP_MUL:                            \
         (*r)*=(*v); OPSWITCH_MINUSX;        \
                                             \
     case OP_DIV:                            \
         (*r)/=(*v); OPSWITCH_MINUSX;        \
+                                            \
+    case OP_MODUS:                          \
+        OP_FORCEBIN(%); OPSWITCH_MINUSX;    \
                                             \
     case OP_GT:                             \
         (*r)=(*r)>(*v);  OPSWITCH_MINUSX;   \
@@ -700,8 +700,14 @@ void TRFLTVAL(uchar* src ,
     case OP_EQUL | OP_EQUR:                 \
         (*r)=(*r)==(*v); OPSWITCH_MINUSX;   \
                                             \
+    case OP_DAMPR:                          \
+        OP_FORCEBIN(&&); OPSWITCH_MINUSX;   \
+                                            \
     case OP_AMPER:                          \
         OP_FORCEBIN(&); OPSWITCH_MINUSX;    \
+                                            \
+    case OP_DPIPE:                          \
+        OP_FORCEBIN(||); OPSWITCH_MINUSX;   \
                                             \
     case OP_PIPE:                           \
         OP_FORCEBIN(|); OPSWITCH_MINUSX;    \
@@ -711,6 +717,9 @@ void TRFLTVAL(uchar* src ,
                                             \
     case OP_TILDE:                          \
         OP_FORCEUNA(~); OPSWITCH_MINUSX;    \
+                                            \
+    default:                                \
+        (*r)+=(*v); break;                  \
                                             \
     }; break;                               }
 
@@ -767,10 +776,10 @@ void REGTP(void)                            {
 
 //   ---     ---     ---     ---     ---
 
-    uint   flags      = 0;                  // values defined above MAMMIT_OPSWITCH
-
     EVAL_EXP: rd_tkx++;                     // read next token in expression
     if(!(rd_tkx<rd_tki)) { goto RESULT; }   // ... or jump to end if all tokens read
+
+    uint   flags      = 0;                  // values defined above MAMMIT_OPSWITCH
 
     uchar* value      = lhand+size;
     CLMEM2(value, size);
@@ -787,12 +796,35 @@ void REGTP(void)                            {
         default: break;
 
         case 0x26:
-            flags |= OP_AMPER;
+            if(flags&OP_AMPER) {
+                flags &=~OP_AMPER;
+                flags |= OP_DAMPR;
+
+                MAMMIT_LVLB_NXT
+
+                goto POP_OPSTOP;
+
+            };  flags |= OP_AMPER;
 
             goto POP_OPSTOP;
 
         case 0x7c:
-            flags |= OP_PIPE;
+            if(flags&OP_PIPE) {
+                flags &=~OP_PIPE;
+                flags |= OP_DPIPE;
+
+                MAMMIT_LVLB_NXT
+
+                goto POP_OPSTOP;
+
+            };  flags |= OP_PIPE;
+
+            goto POP_OPSTOP;
+
+//   ---     ---     ---     ---     ---
+
+        case 0x25:
+            flags |= OP_MODUS;
 
             goto POP_OPSTOP;
 
@@ -862,6 +894,8 @@ void REGTP(void)                            {
                 MAMMIT_LVLB_NXT
 
             }; goto POP_OPSTOP;
+
+//   ---     ---     ---     ---     ---
 
         case 0x3C: flags |= OP_LT;
             MAMMIT_LVLB_NXT
@@ -1043,6 +1077,9 @@ void REGTP(void)                            {
             } elif(flags&OP_DIV) {
                 CALOUT(E, "%i / %i\n", *r, *v);
 
+            } elif(flags&OP_MODUS) {
+                CALOUT(E, "%i %% %i\n", *r, *v);
+
             } elif(flags&OP_GT) {
 
                 if(flags&OP_EQUR) {
@@ -1068,8 +1105,14 @@ void REGTP(void)                            {
             } elif(flags&OP_EQUL && flags&OP_EQUR) {
                 CALOUT(E, "%i == %i\n", *r, *v);
 
+            } elif(flags&OP_DAMPR) {
+                CALOUT(E, "%i && %i\n", *r, *v);
+
             } elif(flags&OP_AMPER) {
                 CALOUT(E, "%i & %i\n", *r, *v);
+
+            } elif(flags&OP_DPIPE) {
+                CALOUT(E, "%i || %i\n", *r, *v);
 
             } elif(flags&OP_PIPE) {
                 CALOUT(E, "%i | %i\n", *r, *v);
@@ -1619,7 +1662,7 @@ int main(void)                              {
     RPSTR(&s,
 
 "reg vars {\n\
- int x=0xF0|-!0x00;\n\
+ int x=2%2;\n\
 }\n",
 0);
 
