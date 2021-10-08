@@ -654,31 +654,45 @@ void TRFLTVAL(uchar* src ,
 
 //   ---     ---     ---     ---     ---
 
+#define OPSWITCH_MINUSX                     \
+    if(flags&OP_MINUS) {                    \
+        (*r)=-(*r);                         \
+        flags&=~OP_MINUS;                   \
+    }; break
+
 #define MAMMIT_OPSWITCH {                   \
-                                            \
                                             \
     switch(flags&0xFFFFFFFC) {              \
                                             \
-    case OP_MUL:                            \
-        (*r)*=(*v); break;                  \
-                                            \
-    case OP_DIV:                            \
-        (*r)/=(*v); break;                  \
-                                            \
-    case OP_GT:                             \
-        (*r)=(*r)>(*v); break;              \
-                                            \
-    case OP_GT | OP_EQUR:                   \
-        (*r)=(*r)>=(*v); break;             \
-                                            \
-    case OP_LT:                             \
-        (*r)=(*r)<(*v); break;              \
-                                            \
-    case OP_LT | OP_EQUR:                   \
-        (*r)=(*r)<=(*v); break;             \
-                                            \
     default:                                \
         (*r)+=(*v); break;                  \
+                                            \
+    case OP_MUL:                            \
+        (*r)*=(*v); OPSWITCH_MINUSX;        \
+                                            \
+    case OP_DIV:                            \
+        (*r)/=(*v); OPSWITCH_MINUSX;        \
+                                            \
+    case OP_GT:                             \
+        (*r)=(*r)>(*v);  OPSWITCH_MINUSX;   \
+                                            \
+    case OP_GT | OP_EQUR:                   \
+        (*r)=(*r)>=(*v); OPSWITCH_MINUSX;   \
+                                            \
+    case OP_LT:                             \
+        (*r)=(*r)<(*v);  OPSWITCH_MINUSX;   \
+                                            \
+    case OP_LT | OP_EQUR:                   \
+        (*r)=(*r)<=(*v); OPSWITCH_MINUSX;   \
+                                            \
+    case OP_BANG:                           \
+        (*r)=!(*v); OPSWITCH_MINUSX;        \
+                                            \
+    case OP_BANG | OP_EQUR:                 \
+        (*r)=(*r)!=(*v); OPSWITCH_MINUSX;   \
+                                            \
+    case OP_EQUL | OP_EQUR:                 \
+        (*r)=(*r)==(*v); OPSWITCH_MINUSX;   \
                                             \
     }; break;                               }
 
@@ -718,7 +732,7 @@ void REGTP(void)                            {
 
                                             // redeclaration block
     int    evil       = 0; MAMMCTCH         (NOREDCL(name), evil, MAMMIT_EV_DECL, name);
-    CALOUT                                  (K, "DECL: %s %s", type, name             );
+    CALOUT                                  (K, "\nDECL: %s %s", type, name           );
 
     uint ex_f         = rd_tkx+1;           // idex to first token in expression
     uchar* result     = (uchar*) memlng->buff+0;
@@ -782,20 +796,26 @@ void REGTP(void)                            {
 
 //   ---     ---     ---     ---     ---
 
+        case 0x21: MAMMIT_LVLB_NXT
+            flags  = mammi->lvlb_stack[mammi->lvlb-1];
+            flags |= OP_BANG;
+            MAMMIT_LVLB_NXT
+
+            goto POP_OPSTOP;
+
         case 0x3D:
 
-            if(flags&OP_W_EQUR) {
-                if(mammi->lvlb) {
-                    mammi->lvlb_stack[mammi->lvlb-1] |= OP_EQUR;
+            if(rd_tkx==ex_f) { goto POP_OPSTOP; }
 
-                };
+            elif( flags&OP_W_EQUR \
+            &&  mammi->lvlb     ) {
+                mammi->lvlb_stack[mammi->lvlb-1] |= OP_EQUR;
+
             } else {
                 flags |= OP_EQUL;
                 MAMMIT_LVLB_NXT
 
-            };
-
-            goto POP_OPSTOP;
+            }; goto POP_OPSTOP;
 
         case 0x3C: flags |= OP_LT;
             MAMMIT_LVLB_NXT
@@ -969,31 +989,45 @@ void REGTP(void)                            {
 // need this abomination just to check operation order is "correct"
 // NOT necessarily mathematically correct, just what i want it to be
 
-            CALOUT(E, "%u : ", *result);
+            CALOUT(E, "@%u | %i : ", mammi->lvlb, *((int*) result));
 
             if(flags&OP_MUL) {
-                CALOUT(E, "%u * %u\n", *r, *v);
+                CALOUT(E, "%i * %i\n", *r, *v);
 
             } elif(flags&OP_DIV) {
-                CALOUT(E, "%u / %u\n", *r, *v);
+                CALOUT(E, "%i / %i\n", *r, *v);
 
             } elif(flags&OP_GT) {
 
                 if(flags&OP_EQUR) {
-                CALOUT(E, "%u >= %u\n", *r, *v);
+                CALOUT(E, "%i >= %i\n", *r, *v);
                 } else {
-                CALOUT(E, "%u > %u\n", *r, *v);
+                CALOUT(E, "%i > %i\n", *r, *v);
                 }
 
             } elif(flags&OP_LT) {
                 if(flags&OP_EQUR) {
-                CALOUT(E, "%u <= %u\n", *r, *v);
+                CALOUT(E, "%i <= %i\n", *r, *v);
                 } else {
-                CALOUT(E, "%u < %u\n", *r, *v);
+                CALOUT(E, "%i < %i\n", *r, *v);
                 }
 
+            } elif(flags&OP_BANG) {
+                if(flags&OP_EQUR) {
+                CALOUT(E, "%i != %i\n", *r, *v);
+                } else {
+                CALOUT(E, "!%i\n", *v);
+                }
+
+            } elif(flags&OP_EQUL && flags&OP_EQUR) {
+                CALOUT(E, "%i == %i\n", *r, *v);
+
             } else {
-                CALOUT(E, "%u + %u\n", *r, *v);
+                if((*v)>=0) {
+                CALOUT(E, "%i + %i\n", *r, *v);
+                } else {
+                CALOUT(E, "%i - %i\n", *r, -*v);
+                };
 
             };
 
@@ -1524,7 +1558,7 @@ int main(void)                              {
     MEM* s  = MKSTR("MAMM_RD", 1024, 1); CLMEM(s);
     LDLNG(ZJC_DAFPAGE); memlng = GTLNG(); CLMEM(memlng);
 
-    RPSTR(&s, "reg vars {\n int x=5<5;\n int y=5<=5;\n}\n", 0);
+    RPSTR(&s, "reg vars {\n int x=-!0>=1;\n}\n", 0);
     rd_buff = MEMBUFF(s, uchar, 0);
 
     CALOUT(E, "\e[38;2;128;255;128m\n$PEIN:\n%s\n\e[0m\e[38;2;255;128;128m$OUT:", rd_buff);
