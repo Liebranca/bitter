@@ -646,6 +646,8 @@ void TRFLTVAL(uchar* src ,
 #define OP_AT    0x00400000
 #define OP_POINT 0x00800000
 
+#define OP_SEC   0x01000000
+
 #define OP_W_EQUR                           \
     OP_GT    | OP_LT                        \
   | OP_BANG  | OP_MODUS                     \
@@ -668,7 +670,7 @@ void TRFLTVAL(uchar* src ,
 #define OP_FORCEUNA(op)                     \
     (*r)=op(uint)(*v)
 
-#define MAMMIT_OPSWITCH {                   \
+#define CALCUS_OPSWITCH {                   \
                                             \
     switch(flags&0xFFFFFFFC) {              \
                                             \
@@ -733,9 +735,9 @@ void TRFLTVAL(uchar* src ,
 
 //   ---     ---     ---     ---     ---
 
-void COLLHAND(uchar** lhand_ptr,
-              uchar** value_ptr,
-              uint*   flags_ptr)            {
+void CALCUS_COLLAPSE(uchar** lhand_ptr,
+                     uchar** value_ptr,
+                     uint*   flags_ptr)     {
 
     uchar* lhand = *lhand_ptr;
     uchar* value = *value_ptr;
@@ -746,24 +748,24 @@ void COLLHAND(uchar** lhand_ptr,
         case 0x03: {
             schar* r = (schar*) lhand;
             schar* v = (schar*) value;
-            MAMMIT_OPSWITCH;
+            CALCUS_OPSWITCH;
 
         } case 0x07: {
             uchar* r = (uchar*) lhand;
             uchar* v = (uchar*) value;
-            MAMMIT_OPSWITCH;
+            CALCUS_OPSWITCH;
 
 //   ---     ---     ---     ---     ---
 
         } case 0x04: {
             sshort* r = (sshort*) lhand;
             sshort* v = (sshort*) value;
-            MAMMIT_OPSWITCH;
+            CALCUS_OPSWITCH;
 
         } case 0x08: {
             ushort* r = (ushort*) lhand;
             ushort* v = (ushort*) value;
-            MAMMIT_OPSWITCH;
+            CALCUS_OPSWITCH;
 
 //   ---     ---     ---     ---     ---
 
@@ -771,31 +773,31 @@ void COLLHAND(uchar** lhand_ptr,
             sint* r = (sint*) lhand;
             sint* v = (sint*) value;
 
-            MAMMIT_OPSWITCH;
+            CALCUS_OPSWITCH;
 
         } case 0x09: {
             uint* r = (uint*) lhand;
             uint* v = (uint*) value;
-            MAMMIT_OPSWITCH;
+            CALCUS_OPSWITCH;
 
 //   ---     ---     ---     ---     ---
 
         } case 0x06: {
             slong* r = (slong*) lhand;
             slong* v = (slong*) value;
-            MAMMIT_OPSWITCH;
+            CALCUS_OPSWITCH;
 
         } case 0x0A: {
             ulong* r = (ulong*) lhand;
             ulong* v = (ulong*) value;
-            MAMMIT_OPSWITCH;
+            CALCUS_OPSWITCH;
 
 //   ---     ---     ---     ---     ---
 
         } default: {
             float* r = (float*) lhand;
             float* v = (float*) value;
-            MAMMIT_OPSWITCH;
+            CALCUS_OPSWITCH;
 
         };
     };
@@ -808,7 +810,121 @@ void COLLHAND(uchar** lhand_ptr,
 
 //   ---     ---     ---     ---     ---
 
-void POPOPS(uchar** raw_value,
+void TRNVAL(uchar* raw_value,
+            uchar* value    ,
+            uint*  flags_ptr,
+
+            uint   len      ,
+            uint   size     )               {
+
+    int  evil  = 0;
+
+    uint flags = *flags_ptr;
+    uint vlen  = len-1;
+
+                                            // set OP_RADIX
+    flags |=                                (strstr(typedata.base, "float") != NULL) << 1;
+
+//   ---     ---     ---     ---     ---
+
+
+    if( (0x30 <= raw_value[0])
+    &&  (0x39 >= raw_value[0]) ) {
+
+        if(len>1) {                         // not a single digit
+
+            if(strstr(raw_value, ".")
+            || flags&OP_RADIX       ) {     // is float
+                goto RD_ASFLTP;
+
+            }
+
+            elif(raw_value[0]==0x30) {      // starts with a zero and is not 0.****
+
+                if  (raw_value[1]==0x78) {  // is hexlit
+                    TRHEXVAL                (raw_value+vlen, value, size        );
+                }
+
+                elif(raw_value[1]==0x62) {  // is bitlit
+                    TRBITVAL                (raw_value+vlen, value, size        );
+
+                };
+            }
+
+//   ---     ---     ---     ---     ---
+
+            else {                          // string -> decimal
+                TRDECVAL                    (raw_value, value, size             );
+
+            }
+        }
+
+//   ---     ---     ---     ---     ---
+
+        elif(len==1) {                      // boring corner case: single decimal digit
+            if(flags&OP_RADIX) {
+                goto RD_ASFLTP;
+
+            }; value[0]=raw_value[0]-0x30;
+
+        };
+    }
+
+//   ---     ---     ---     ---     ---
+
+    elif(raw_value[0]==0x2E) {              // cool corner case: floats
+
+                                            // catch incorrect data size
+        RD_ASFLTP: MAMMCTCH                 (NOOVERSZ(size, sizeof(float)), evil,
+                                             MAMMIT_EV_VSIZ, typedata.base      );
+
+        flags|=OP_RADIX;
+
+        TRFLTVAL                            (raw_value, value, size             );
+    }
+
+//   ---     ---     ---     ---     ---
+
+    //elif(....) reserved for fetching value from names
+
+//   ---     ---     ---     ---     ---
+
+    BOT:
+
+    if(flags&OP_MINUS) {                    // if negative, do the bit flipping
+
+        if(flags&OP_RADIX) {                // floats
+            value[3] |= 0x80;
+
+        }
+
+//   ---     ---     ---     ---     ---
+
+        else {                              // everything else
+
+            for(uint x=0, carry=0;
+                x<size; x++      ) {        // take two's
+                value[x]=(~value[x]);       // flip bits
+                if(!x || carry) {
+                    if(value[x]==0xFF) {
+                        value[x] += 1;      // overflows. add one and set carry
+                        carry     = 1;
+                    }
+
+                    else {
+                        value[x] += 1;      // won't overflow, so add and no carry
+                        carry     = 0;
+
+                    };
+                };
+            };
+        };
+
+    }; *flags_ptr=flags;                                                                    };
+
+//   ---     ---     ---     ---     ---
+
+void MAEXPS(uchar** raw_value,
             uchar** lhand_ptr,
             uchar** value_ptr,
 
@@ -853,6 +969,11 @@ void POPOPS(uchar** raw_value,
             goto POP_OPSTOP;
 
 //   ---     ---     ---     ---     ---
+
+        case 0x24:
+            flags |= OP_MONEY;
+
+            goto POP_OPSTOP;
 
         case 0x25:
             flags |= OP_MODUS;
@@ -968,116 +1089,34 @@ void POPOPS(uchar** raw_value,
 
 //   ---     ---     ---     ---     ---
 
+    uint len = strlen(*raw_value);
+
+    POP_TERMINATORS:                        // same as oppies, but at end of token
+    switch((*raw_value)[len-1]) {
+
+        default: break;
+
+        case 0x29:
+            if(mammi->lvlb) {
+                MAMMIT_LVLB_PRV             // lonely parens >;
+
+            };
+
+        POP_TESTOP:
+            len--; if(!len) { goto END; }
+            goto POP_TERMINATORS;
+
+    };
+
+//   ---     ---     ---     ---     ---
+
+                                            // translate string into value
+    TRNVAL                                  (*raw_value, value, &flags, len, size);
+
+    END:
     *flags_ptr=flags;
     *lhand_ptr=lhand;
     *value_ptr=value;                                                                       };
-
-void TRNVAL(uchar* raw_value,
-            uchar* value    ,
-            uint*  flags_ptr,
-
-            uint   len      ,
-            uint   size     )               {
-
-    int  evil  = 0;
-
-    uint flags = *flags_ptr;
-    uint vlen  = len-1;
-
-
-    if( (0x30 <= raw_value[0])
-    &&  (0x39 >= raw_value[0]) ) {
-
-        if(len>1) {                         // not a single digit
-
-            if(strstr(raw_value, ".")
-            || flags&OP_RADIX       ) {     // is float
-                goto RD_ASFLTP;
-
-            }
-
-            elif(raw_value[0]==0x30) {      // starts with a zero and is not 0.****
-
-                if  (raw_value[1]==0x78) {  // is hexlit
-                    TRHEXVAL                (raw_value+vlen, value, size        );
-                }
-
-                elif(raw_value[1]==0x62) {  // is bitlit
-                    TRBITVAL                (raw_value+vlen, value, size        );
-
-                };
-            }
-
-//   ---     ---     ---     ---     ---
-
-            else {                          // string -> decimal
-                TRDECVAL                    (raw_value, value, size             );
-
-            }
-        }
-
-//   ---     ---     ---     ---     ---
-
-        elif(len==1) {                      // boring corner case: single decimal digit
-            if(flags&OP_RADIX) {
-                goto RD_ASFLTP;
-
-            }; value[0]=raw_value[0]-0x30;
-
-        };
-    }
-
-//   ---     ---     ---     ---     ---
-
-    elif(raw_value[0]==0x2E) {              // cool corner case: floats
-
-                                            // catch incorrect data size
-        RD_ASFLTP: MAMMCTCH                 (NOOVERSZ(size, sizeof(float)), evil,
-                                             MAMMIT_EV_VSIZ, typedata.base      );
-
-        flags|=OP_RADIX;
-
-        TRFLTVAL                            (raw_value, value, size             );
-    }
-
-//   ---     ---     ---     ---     ---
-
-    //elif(....) reserved for fetching value from names
-
-//   ---     ---     ---     ---     ---
-
-    BOT:
-
-    if(flags&OP_MINUS) {                    // if negative, do the bit flipping
-
-        if(flags&OP_RADIX) {                // floats
-            value[3] |= 0x80;
-
-        }
-
-//   ---     ---     ---     ---     ---
-
-        else {                              // everything else
-
-            for(uint x=0, carry=0;
-                x<size; x++      ) {        // take two's
-                value[x]=(~value[x]);       // flip bits
-                if(!x || carry) {
-                    if(value[x]==0xFF) {
-                        value[x] += 1;      // overflows. add one and set carry
-                        carry     = 1;
-                    }
-
-                    else {
-                        value[x] += 1;      // won't overflow, so add and no carry
-                        carry     = 0;
-
-                    };
-                };
-            };
-        };
-
-    }; *flags_ptr=flags;                                                                    };
 
 //   ---     ---     ---     ---     ---
 
@@ -1159,50 +1198,73 @@ void REGTP(void)                            {
 
         while(mammi->lvlb) {
             MAMMIT_LVLB_PRV
-            COLLHAND(&lhand, &value, &flags);
+            CALCUS_COLLAPSE(&lhand, &value, &flags);
 
         }; parsed++; result+=size; lhand=result;
 
 //   ---     ---     ---     ---     ---
 
         raw_value++;
-        if(raw_value[0]==0x28) {
-            // eval ,(seq) here
+        if(raw_value[0]==0x28) {            // expand token (parse operators, fetch values)
+            raw_value++; MAEXPS             (&raw_value, &lhand, &value, &flags, size);
+
+            /*
+            @(sec) syntax:
+
+                $ lower bound
+                * ptr
+                Ç upper bound
+
+                ptr<N decrease ptr by N
+                ptr>N increase ptr by N
+
+                *>> move ptr to upper bound
+                *<< move ptr to lower bound
+
+                ptr#v exchange values betwen ptr && v
+                ptr=v set ptr to v
+                =v    flood fill $ to Ç with v
+                =     blank out $ to Ç
+                :     separate expressions
+
+                */
+
+            uint sec_cur = parsed;
+            uint sec_beg = parsed;
+            uint sec_end = elems;
+
+            switch(flags) {
+
+// BEG TEST-----------------
+                case OP_GT:
+                    if(mammi->lvlb_stack[mammi->lvlb-1]&OP_MUL) {
+                        sec_cur++;
+
+                    };
+
+                    flags&=~OP_GT;
+                    mammi->lvlb_stack[mammi->lvlb-1]&=~OP_MUL;
+                    break;
+// END TEST-----------------
+
+                case OP_EQUL:
+                    CLMEM2(lhand+(sec_cur*size), elems-sec_cur);
+
+            }; lhand=lhand+(sec_cur*size); value=lhand+size;
+
+            while(mammi->lvlb) {
+                MAMMIT_LVLB_PRV
+                CALCUS_COLLAPSE(&lhand, &value, &flags);
+
+            }; parsed++; result+=size; lhand=result;
 
         }; goto EVAL_EXP;
 
-    }; POPOPS(&raw_value, &lhand, &value, &flags, size);
+                                            // no @(sec) so just expand...
+    }; MAEXPS                               (&raw_value, &lhand, &value, &flags, size);
 
-//   ---     ---     ---     ---     ---
-
-    uint   len        = strlen              (raw_value                    );
-
-    POP_TERMINATORS:                        // same as oppies, but at end of token
-    switch(raw_value[len-1]) {
-
-        default: break;
-
-        case 0x29:
-            if(mammi->lvlb) {
-                MAMMIT_LVLB_PRV             // lonely parens >;
-
-            };
-
-        POP_TESTOP:
-            len--; goto POP_TERMINATORS;
-
-    };
-
-//   ---     ---     ---     ---     ---
-
-                                            // set OP_RADIX
-    flags |=                                (strstr(type, "float") != NULL) << 1;
-
-                                            // translate string into value
-    TRNVAL                                  (raw_value, value, &flags, len, size);
-
-                                            // do calcus
-    SOLVE: COLLHAND                         (&lhand, &value, &flags             );
+                                            // collapse arithmetic-wise
+    SOLVE: CALCUS_COLLAPSE                  (&lhand, &value, &flags                  );
     goto EVAL_EXP;
 
 //   ---     ---     ---     ---     ---
@@ -1615,34 +1677,34 @@ void RDNXT(void)                            {
 
 //   ---     ---     ---     ---     ---    OPERATORS L
 
-        case 0x21:                          // ,(seq) operators
-        case 0x2A:                          // used for memlng hackery
+        case 0x21:                          // @(sec) operators
+        case 0x24:                          // used for memlng hackery
+        case 0x28:
+        case 0x2A:
+        case 0x3C:
         case 0x3D:
-
+        case 0x3E:
         case 0x40:
+
+        case 0xC7:
             if(mammi->state&MAMMIT_SF_PARR) {
                 goto FORCE_INSERT;
 
             };
 
-//   ---     ---     ---     ---     ---    non ,(seq) operators
+//   ---     ---     ---     ---     ---    non @(sec) operators
 
         case 0x22:
         case 0x23:
 
-        case 0x24:                          // handle str/iter here...
-
         case 0x25:
         case 0x26:
         case 0x27:
-        case 0x28:
 
         case 0x2B:
         case 0x2D:
         case 0x2F:
         case 0x3A:
-        case 0x3C:
-        case 0x3E:
         case 0x3F:
 
         case 0x5B:
@@ -1741,7 +1803,7 @@ int main(void)                              {
     RPSTR(&s,
 
 "reg vars {\n\
- int2 x 1*4,2-1;\n\
+ int2 x 1*4,2-1,(*>)12;\n\
 }\n",
 0);
 
