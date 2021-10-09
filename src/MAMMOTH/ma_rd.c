@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
+#include <math.h>
 
 //   ---     ---     ---     ---     ---
 // state flags...
@@ -77,7 +78,7 @@ static uint rd_line =  1;                   // current line
 #endif
 
 #ifndef MAMMIT_TK_COUNT
-    #define MAMMIT_TK_COUNT 16
+    #define MAMMIT_TK_COUNT 64
 
 #endif
 
@@ -731,12 +732,84 @@ void TRFLTVAL(uchar* src ,
 
 //   ---     ---     ---     ---     ---
 
+void COLLHAND(uchar* lhand,
+              uchar* value,
+              uint*  flags_ptr)             {
+
+    uint flags = *flags_ptr;
+
+    switch(rd_cast) {
+
+        case 0x03: {
+            schar* r = (schar*) lhand;
+            schar* v = (schar*) value;
+            MAMMIT_OPSWITCH;
+
+        } case 0x07: {
+            uchar* r = (uchar*) lhand;
+            uchar* v = (uchar*) value;
+            MAMMIT_OPSWITCH;
+
+//   ---     ---     ---     ---     ---
+
+        } case 0x04: {
+            sshort* r = (sshort*) lhand;
+            sshort* v = (sshort*) value;
+            MAMMIT_OPSWITCH;
+
+        } case 0x08: {
+            ushort* r = (ushort*) lhand;
+            ushort* v = (ushort*) value;
+            MAMMIT_OPSWITCH;
+
+//   ---     ---     ---     ---     ---
+
+        } case 0x05: {
+            sint* r = (sint*) lhand;
+            sint* v = (sint*) value;
+
+            MAMMIT_OPSWITCH;
+
+        } case 0x09: {
+            uint* r = (uint*) lhand;
+            uint* v = (uint*) value;
+            MAMMIT_OPSWITCH;
+
+//   ---     ---     ---     ---     ---
+
+        } case 0x06: {
+            slong* r = (slong*) lhand;
+            slong* v = (slong*) value;
+            MAMMIT_OPSWITCH;
+
+        } case 0x0A: {
+            ulong* r = (ulong*) lhand;
+            ulong* v = (ulong*) value;
+            MAMMIT_OPSWITCH;
+
+//   ---     ---     ---     ---     ---
+
+        } default: {
+            float* r = (float*) lhand;
+            float* v = (float*) value;
+            MAMMIT_OPSWITCH;
+
+        };
+    }; *flags_ptr=flags;                                                                    };
+
+//   ---     ---     ---     ---     ---
+
 void REGTP(void)                            {
 
-    uchar* type = typedata.base;  rd_tkx++; // fetch, move to next token
-    uchar* name = tokens[rd_tkx];           // fetch, stay put
+    uchar* type  = typedata.base;  rd_tkx++;// fetch, move to next token
+    uchar* name  = tokens[rd_tkx];          // fetch, stay put
 
-    uint   size = 4;
+    uint   size  = 4;
+    uint   elems = (uint) (pow(2, typedata.arrsize)+0.5);
+
+    uint   paged = 0;
+
+//   ---     ---     ---     ---     ---
 
     switch(rd_cast) {                       // for 'dynamic' type-casting
                                             // we set size to sizeof x C type!
@@ -765,7 +838,7 @@ void REGTP(void)                            {
 
                                             // redeclaration block
     int    evil       = 0; MAMMCTCH         (NOREDCL(name), evil, MAMMIT_EV_DECL, name);
-    CALOUT                                  (K, "\nDECL: %s %s", type, name           );
+    CALOUT                                  (K, "\nDECL: %s %s[%u]", type, name, elems);
 
     uint ex_f         = rd_tkx+1;           // idex to first token in expression
     uchar* result     = (uchar*) memlng->buff+0;
@@ -783,7 +856,9 @@ void REGTP(void)                            {
 //   ---     ---     ---     ---     ---
 
     EVAL_EXP: rd_tkx++;                     // read next token in expression
-    if(!(rd_tkx<rd_tki)) { goto RESULT; }   // ... or jump to end if all tokens read
+
+    if( !(rd_tkx<rd_tki) \
+    ||   (paged>=elems ) ) { goto RESULT; } // ... or jump to end if all tokens read
 
     uint   flags      = 0;                  // values defined above MAMMIT_OPSWITCH
 
@@ -800,6 +875,15 @@ void REGTP(void)                            {
     switch(raw_value[0]) {
 
         default: break;
+
+        case 0x2C:
+
+            while(mammi->lvlb) {
+                MAMMIT_LVLB_PRV
+                COLLHAND(lhand, value, &flags);
+
+            }; paged++; result+=size; lhand=result;
+            goto EVAL_EXP;
 
         case 0x26:
             if(flags&OP_AMPER) {
@@ -954,7 +1038,11 @@ void REGTP(void)                            {
 
         default: break;
 
-        case 0x29: MAMMIT_LVLB_PRV          // lonely parens >;
+        case 0x29:
+            if(mammi->lvlb) {
+                MAMMIT_LVLB_PRV             // lonely parens >;
+
+            };
 
         POP_TESTOP:
             len--; goto POP_TERMINATORS;
@@ -1064,142 +1152,7 @@ void REGTP(void)                            {
 
     };
 
-    COL_LHAND:
-
-    switch(rd_cast) {
-
-        case 0x03: {
-            schar* r = (schar*) lhand;
-            schar* v = (schar*) value;
-            MAMMIT_OPSWITCH;
-
-        } case 0x07: {
-            uchar* r = (uchar*) lhand;
-            uchar* v = (uchar*) value;
-            MAMMIT_OPSWITCH;
-
-//   ---     ---     ---     ---     ---
-
-        } case 0x04: {
-            sshort* r = (sshort*) lhand;
-            sshort* v = (sshort*) value;
-            MAMMIT_OPSWITCH;
-
-        } case 0x08: {
-            ushort* r = (ushort*) lhand;
-            ushort* v = (ushort*) value;
-            MAMMIT_OPSWITCH;
-
-//   ---     ---     ---     ---     ---
-
-        } case 0x05: {
-            sint* r = (sint*) lhand;
-            sint* v = (sint*) value;
-
-//   ---     ---     ---     ---     ---
-// need this abomination just to check operation order is "correct"
-// NOT necessarily mathematically correct, just what i want it to be
-
-            CALOUT(E, "@%u | %i : ", mammi->lvlb, *((int*) result));
-
-            if(flags&OP_MUL) {
-                CALOUT(E, "%i * %i\n", *r, *v);
-
-            } elif(flags&OP_DIV) {
-                CALOUT(E, "%i / %i\n", *r, *v);
-
-            } elif(flags&OP_MODUS) {
-                CALOUT(E, "%i %% %i\n", *r, *v);
-
-            } elif(flags&OP_RSHFT) {
-                CALOUT(E, "%i >> %i\n", *r, *v);
-
-            } elif(flags&OP_GT) {
-
-                if(flags&OP_EQUR) {
-                CALOUT(E, "%i >= %i\n", *r, *v);
-                } else {
-                CALOUT(E, "%i > %i\n", *r, *v);
-                }
-
-            } elif(flags&OP_LSHFT) {
-                CALOUT(E, "%i << %i\n", *r, *v);
-
-            } elif(flags&OP_LT) {
-                if(flags&OP_EQUR) {
-                CALOUT(E, "%i <= %i\n", *r, *v);
-                } else {
-                CALOUT(E, "%i < %i\n", *r, *v);
-                }
-
-            } elif(flags&OP_BANG) {
-                if(flags&OP_EQUR) {
-                CALOUT(E, "%i != %i\n", *r, *v);
-                } else {
-                CALOUT(E, "!%i\n", *v);
-                }
-
-            } elif(flags&OP_EQUL && flags&OP_EQUR) {
-                CALOUT(E, "%i == %i\n", *r, *v);
-
-            } elif(flags&OP_DAMPR) {
-                CALOUT(E, "%i && %i\n", *r, *v);
-
-            } elif(flags&OP_AMPER) {
-                CALOUT(E, "%i & %i\n", *r, *v);
-
-            } elif(flags&OP_DPIPE) {
-                CALOUT(E, "%i || %i\n", *r, *v);
-
-            } elif(flags&OP_PIPE) {
-                CALOUT(E, "%i | %i\n", *r, *v);
-
-            } elif(flags&OP_XORUS) {
-                CALOUT(E, "%i ^ %i\n", *r, *v);
-
-            } elif(flags&OP_TILDE) {
-                CALOUT(E, "~%i\n", v);
-
-            } else {
-                if((*v)>=0) {
-                CALOUT(E, "%i + %i\n", *r, *v);
-                } else {
-                CALOUT(E, "%i - %i\n", *r, -*v);
-                };
-
-            };
-
-//   ---     ---     ---     ---     ---
-
-            MAMMIT_OPSWITCH;
-
-        } case 0x09: {
-            uint* r = (uint*) lhand;
-            uint* v = (uint*) value;
-            MAMMIT_OPSWITCH;
-
-//   ---     ---     ---     ---     ---
-
-        } case 0x06: {
-            slong* r = (slong*) lhand;
-            slong* v = (slong*) value;
-            MAMMIT_OPSWITCH;
-
-        } case 0x0A: {
-            ulong* r = (ulong*) lhand;
-            ulong* v = (ulong*) value;
-            MAMMIT_OPSWITCH;
-
-//   ---     ---     ---     ---     ---
-
-        } default: {
-            float* r = (float*) lhand;
-            float* v = (float*) value;
-            MAMMIT_OPSWITCH;
-
-        };
-    };
-
+    COL_LHAND: COLLHAND(lhand, value, &flags);
     goto EVAL_EXP;
 
 //   ---     ---     ---     ---     ---
@@ -1212,7 +1165,7 @@ void REGTP(void)                            {
 
 //   ---     ---     ---     ---     ---
 
-    VALNEW(type, name, result, size, lars, slot);
+    VALNEW(type, name, (uchar*) memlng->buff+0, size*elems, lars, slot);
     uchar* vtest = (uchar*) slot->box;
 
     switch(rd_cast) {
@@ -1242,13 +1195,20 @@ void REGTP(void)                            {
             ); break;
 
         case 0x05:
+
+            CALOUT(K, " = ");
+            for(uint x=0; x<elems; x++) {
             CALOUT(
-                K, " = %" PRId32 ": 0x%" PRIX32 "(",
+                K, "%" PRId32", ",
                 *((sint*) vtest),
                 *((sint*) vtest),
                 tokens[rd_tkx]
 
-            ); break;
+            ); vtest+=size; };
+
+            CALOUT(K, "(");
+
+            break;
 
         case 0x06:
             CALOUT(
@@ -1618,7 +1578,6 @@ void RDNXT(void)                            {
 
         case 0x2A:                          // handle pointers here...
         case 0x2B:
-        case 0x2C:
         case 0x2D:
         case 0x2F:
         case 0x3A:
@@ -1646,6 +1605,26 @@ void RDNXT(void)                            {
             goto APTOK;
 
 //   ---     ---     ---     ---     ---    TERMINATORS
+
+        case 0x2C:
+
+            // APTOK copy-paste
+            if(!(  0x01 <= rd_prv \
+                && 0x20 >= rd_prv ) ) {     // if previous is not *also* control char {1,32}
+
+                rd_tkp = 0; rd_tki++;       // reset position && advance slot
+                rd_tk  = tokens[rd_tki];    // push token
+
+            };
+
+            rd_tk[rd_tkp] = rd_cur;         // set comma
+            rd_tkp++;
+
+            if(rd_nxt!=0x28) {              // check for special sequence ,(
+                rd_tkp    = 0; rd_tki++;    // if not found, just leave the comma alone
+                rd_tk     = tokens[rd_tki];
+
+            }; break;
 
         case 0x7B: MAMMIT_LVLA_NXT
             goto PROCST;
@@ -1699,7 +1678,7 @@ int main(void)                              {
     RPSTR(&s,
 
 "reg vars {\n\
- int x=-~(1<<8)>>8;\n\
+ int2 x=1*4,2-1;\n\
 }\n",
 0);
 

@@ -26,6 +26,4 @@ rprules.txt
 *.stackdump
 *.c~
 *.png
-data/font/lycon.bdf
-data/font/lycon.bmp
-data/font/lycon.fnt
+data/font/*
