@@ -33,6 +33,7 @@
 
 #define MAMMIT_SF_PESC 0x00000001
 #define MAMMIT_SF_PLIT 0x00000002
+#define MAMMIT_SF_PARR 0x00000004
 
 #define MAMMIT_SF_CNTX 0x0000FF00
 
@@ -732,11 +733,13 @@ void TRFLTVAL(uchar* src ,
 
 //   ---     ---     ---     ---     ---
 
-void COLLHAND(uchar* lhand,
-              uchar* value,
-              uint*  flags_ptr)             {
+void COLLHAND(uchar** lhand_ptr,
+              uchar** value_ptr,
+              uint*   flags_ptr)            {
 
-    uint flags = *flags_ptr;
+    uchar* lhand = *lhand_ptr;
+    uchar* value = *value_ptr;
+    uint   flags = *flags_ptr;
 
     switch(rd_cast) {
 
@@ -795,95 +798,33 @@ void COLLHAND(uchar* lhand,
             MAMMIT_OPSWITCH;
 
         };
-    }; *flags_ptr=flags;                                                                    };
-
-//   ---     ---     ---     ---     ---
-
-void REGTP(void)                            {
-
-    uchar* type  = typedata.base;  rd_tkx++;// fetch, move to next token
-    uchar* name  = tokens[rd_tkx];          // fetch, stay put
-
-    uint   size  = 4;
-    uint   elems = (uint) (pow(2, typedata.arrsize)+0.5);
-
-    uint   paged = 0;
-
-//   ---     ---     ---     ---     ---
-
-    switch(rd_cast) {                       // for 'dynamic' type-casting
-                                            // we set size to sizeof x C type!
-                                            // wait, you dunno whats a ulong??
-                                            // look at KVRNEL/zjc_CommonTypes.h
-
-        case 0x00: size=sizeof(void  ); break;
-        case 0x01: size=sizeof(NIHIL ); break;
-        case 0x02: size=sizeof(STARK ); break;
-
-        case 0x03: size=sizeof(schar ); break;
-        case 0x04: size=sizeof(sshort); break;
-        case 0x05: size=sizeof(sint  ); break;
-        case 0x06: size=sizeof(slong ); break;
-
-        case 0x07: size=sizeof(uchar ); break;
-        case 0x08: size=sizeof(ushort); break;
-        case 0x09: size=sizeof(uint  ); break;
-        case 0x0A: size=sizeof(ulong ); break;
-
-        default  : size=sizeof(float ); break;
-
     };
 
 //   ---     ---     ---     ---     ---
 
-                                            // redeclaration block
-    int    evil       = 0; MAMMCTCH         (NOREDCL(name), evil, MAMMIT_EV_DECL, name);
-    CALOUT                                  (K, "\nDECL: %s %s[%u]", type, name, elems);
-
-    uint ex_f         = rd_tkx+1;           // idex to first token in expression
-    uchar* result     = (uchar*) memlng->buff+0;
-    uchar* lhand      = result;
-
-    CLMEM2(lhand, size);
-
-    // pop next, so to speak
-    // just get slot from idex and set start
-    uint  off         = mammi->larstop;
-    LARS* lars        = mammi->lvalsl+off;
-    LVAL* slot        = mammi->lvalues+off;
-    lars->start       = mammi->larstop;
+    *flags_ptr=flags;
+    *lhand_ptr=lhand;
+    *value_ptr=value;                                                                       };
 
 //   ---     ---     ---     ---     ---
 
-    EVAL_EXP: rd_tkx++;                     // read next token in expression
+void POPOPS(uchar** raw_value,
+            uchar** lhand_ptr,
+            uchar** value_ptr,
 
-    if( !(rd_tkx<rd_tki) \
-    ||   (paged>=elems ) ) { goto RESULT; } // ... or jump to end if all tokens read
+            uint*   flags_ptr,
+            uint    size     )              {
 
-    uint   flags      = 0;                  // values defined above MAMMIT_OPSWITCH
+    uchar* lhand = *lhand_ptr;
+    uchar* value = *value_ptr;
+    uint   flags = *flags_ptr;
 
-    uchar* value      = lhand+size;
-    CLMEM2(value, size);
-
-    uchar* raw_value  = tokens[rd_tkx];
-
-    flags            &=~OP_RADIX;           // clear is_float part
-
-//   ---     ---     ---     ---     ---
-
-    POP_OPERATORS:                          // if operator chars in token, eval and pop them
-    switch(raw_value[0]) {
+    TOP:                                    // if operator chars in token, eval and pop them
+    switch((*raw_value)[0]) {
 
         default: break;
 
-        case 0x2C:
-
-            while(mammi->lvlb) {
-                MAMMIT_LVLB_PRV
-                COLLHAND(lhand, value, &flags);
-
-            }; paged++; result+=size; lhand=result;
-            goto EVAL_EXP;
+//   ---     ---     ---     ---     ---
 
         case 0x26:
             if(flags&OP_AMPER) {
@@ -973,9 +914,7 @@ void REGTP(void)                            {
 
         case 0x3D:
 
-            if(rd_tkx==ex_f) { goto POP_OPSTOP; }
-
-            elif( flags&OP_W_EQUR \
+            if( flags&OP_W_EQUR \
             &&  mammi->lvlb     ) {
                 mammi->lvlb_stack[mammi->lvlb-1] |= OP_EQUR;
 
@@ -1020,41 +959,31 @@ void REGTP(void)                            {
             flags |= OP_GT;
             MAMMIT_LVLB_NXT
 
-            goto POP_OPSTOP;
-
 //   ---     ---     ---     ---     ---
 
         POP_OPSTOP:
-            raw_value++; goto POP_OPERATORS;
+            (*raw_value)++; goto TOP;
 
     };
 
 //   ---     ---     ---     ---     ---
 
-    uint   len        = strlen              (raw_value                    );
+    *flags_ptr=flags;
+    *lhand_ptr=lhand;
+    *value_ptr=value;                                                                       };
 
-    POP_TERMINATORS:                        // same as oppies, but at end of token
-    switch(raw_value[len-1]) {
+void TRNVAL(uchar* raw_value,
+            uchar* value    ,
+            uint*  flags_ptr,
 
-        default: break;
+            uint   len      ,
+            uint   size     )               {
 
-        case 0x29:
-            if(mammi->lvlb) {
-                MAMMIT_LVLB_PRV             // lonely parens >;
+    int  evil  = 0;
 
-            };
+    uint flags = *flags_ptr;
+    uint vlen  = len-1;
 
-        POP_TESTOP:
-            len--; goto POP_TERMINATORS;
-
-    };
-
-//   ---     ---     ---     ---     ---
-
-    uint   vlen       = len-1;              // set OP_RADIX
-    flags            |=                     (strstr(type, "float") != NULL) << 1;
-
-//   ---     ---     ---     ---     ---
 
     if( (0x30 <= raw_value[0])
     &&  (0x39 >= raw_value[0]) ) {
@@ -1104,7 +1033,7 @@ void REGTP(void)                            {
 
                                             // catch incorrect data size
         RD_ASFLTP: MAMMCTCH                 (NOOVERSZ(size, sizeof(float)), evil,
-                                             MAMMIT_EV_VSIZ, type               );
+                                             MAMMIT_EV_VSIZ, typedata.base      );
 
         flags|=OP_RADIX;
 
@@ -1148,18 +1077,139 @@ void REGTP(void)                            {
             };
         };
 
+    }; *flags_ptr=flags;                                                                    };
+
 //   ---     ---     ---     ---     ---
+
+void REGTP(void)                            {
+
+    uchar* type       = typedata.base;      // fetch
+    rd_tkx++;                               // move to next
+
+    uchar* name       = tokens[rd_tkx];     // fetch, stay put
+
+    uint   size       = 4;                  // ensure elem count is always a power of 2
+    uint   elems      =                     (uint) (pow(2, typedata.arrsize)+0.5      );
+
+    uint   parsed     = 0;                  // how many *expressions* have been read
+
+//   ---     ---     ---     ---     ---
+
+    switch(rd_cast) {                       // for 'dynamic' type-casting
+                                            // we set size to sizeof x C type!
+                                            // wait, you dunno whats a ulong??
+                                            // look at KVRNEL/zjc_CommonTypes.h
+
+        case 0x00: size=sizeof(void  ); break;
+        case 0x01: size=sizeof(NIHIL ); break;
+        case 0x02: size=sizeof(STARK ); break;
+
+        case 0x03: size=sizeof(schar ); break;
+        case 0x04: size=sizeof(sshort); break;
+        case 0x05: size=sizeof(sint  ); break;
+        case 0x06: size=sizeof(slong ); break;
+
+        case 0x07: size=sizeof(uchar ); break;
+        case 0x08: size=sizeof(ushort); break;
+        case 0x09: size=sizeof(uint  ); break;
+        case 0x0A: size=sizeof(ulong ); break;
+
+        default  : size=sizeof(float ); break;
 
     };
 
-    COL_LHAND: COLLHAND(lhand, value, &flags);
+//   ---     ---     ---     ---     ---
+
+                                            // redeclaration block
+    int    evil       = 0; MAMMCTCH         (NOREDCL(name), evil, MAMMIT_EV_DECL, name);
+    CALOUT                                  (K, "\nDECL: %s %s[%u]", type, name, elems);
+
+    uint ex_f         = rd_tkx+1;           // idex to first token in expression
+    uchar* result     = (uchar*) memlng->buff+0;
+    uchar* lhand      = result;
+
+    CLMEM2(lhand, size);
+
+    // pop next, so to speak
+    // just get slot from idex and set start
+    uint  off         = mammi->larstop;
+    LARS* lars        = mammi->lvalsl+off;
+    LVAL* slot        = mammi->lvalues+off;
+    lars->start       = mammi->larstop;
+
+//   ---     ---     ---     ---     ---
+
+    EVAL_EXP: rd_tkx++;                     // read next token in expression
+
+    if( !(rd_tkx<rd_tki) \
+    ||   (parsed>=elems ) ) { goto RESULT; }// ... or jump to end if all tokens read
+
+    uint   flags      = 0;                  // values defined above MAMMIT_OPSWITCH
+
+    uchar* value      = lhand+size;
+    CLMEM2(value, size);
+
+    uchar* raw_value  = tokens[rd_tkx];
+
+    flags            &=~OP_RADIX;           // clear is_float part
+
+//   ---     ---     ---     ---     ---
+
+    if(raw_value[0]==0x2C) {
+
+        while(mammi->lvlb) {
+            MAMMIT_LVLB_PRV
+            COLLHAND(&lhand, &value, &flags);
+
+        }; parsed++; result+=size; lhand=result;
+
+//   ---     ---     ---     ---     ---
+
+        raw_value++;
+        if(raw_value[0]==0x28) {
+            // eval ,(seq) here
+
+        }; goto EVAL_EXP;
+
+    }; POPOPS(&raw_value, &lhand, &value, &flags, size);
+
+//   ---     ---     ---     ---     ---
+
+    uint   len        = strlen              (raw_value                    );
+
+    POP_TERMINATORS:                        // same as oppies, but at end of token
+    switch(raw_value[len-1]) {
+
+        default: break;
+
+        case 0x29:
+            if(mammi->lvlb) {
+                MAMMIT_LVLB_PRV             // lonely parens >;
+
+            };
+
+        POP_TESTOP:
+            len--; goto POP_TERMINATORS;
+
+    };
+
+//   ---     ---     ---     ---     ---
+
+                                            // set OP_RADIX
+    flags |=                                (strstr(type, "float") != NULL) << 1;
+
+                                            // translate string into value
+    TRNVAL                                  (raw_value, value, &flags, len, size);
+
+                                            // do calcus
+    SOLVE: COLLHAND                         (&lhand, &value, &flags             );
     goto EVAL_EXP;
 
 //   ---     ---     ---     ---     ---
 
     RESULT: if(mammi->lvlb>0) {             // collapse expression if unresolved
         MAMMIT_LVLB_PRV                     // this doesn't account for unclosed () parens
-        goto COL_LHAND;                     // so beware! PE$O will not care for that mistake
+        goto SOLVE;                         // so beware! PE$O will not care for that mistake
 
     };
 
@@ -1565,7 +1615,18 @@ void RDNXT(void)                            {
 
 //   ---     ---     ---     ---     ---    OPERATORS L
 
-        case 0x21:
+        case 0x21:                          // ,(seq) operators
+        case 0x2A:                          // used for memlng hackery
+        case 0x3D:
+
+        case 0x40:
+            if(mammi->state&MAMMIT_SF_PARR) {
+                goto FORCE_INSERT;
+
+            };
+
+//   ---     ---     ---     ---     ---    non ,(seq) operators
+
         case 0x22:
         case 0x23:
 
@@ -1576,17 +1637,13 @@ void RDNXT(void)                            {
         case 0x27:
         case 0x28:
 
-        case 0x2A:                          // handle pointers here...
         case 0x2B:
         case 0x2D:
         case 0x2F:
         case 0x3A:
         case 0x3C:
-        case 0x3D:
         case 0x3E:
         case 0x3F:
-
-        case 0x40:                          // handle @idex here...
 
         case 0x5B:
         case 0x5C:
@@ -1601,7 +1658,8 @@ void RDNXT(void)                            {
 //   ---     ---     ---     ---     ---    OPERATORS R
 
         case 0x29:
-            rd_tk[rd_tkp]=rd_cur; rd_tkp++;
+            mammi->state  &=~MAMMIT_SF_PARR;
+            rd_tk[rd_tkp]  = rd_cur; rd_tkp++;
             goto APTOK;
 
 //   ---     ---     ---     ---     ---    TERMINATORS
@@ -1623,6 +1681,8 @@ void RDNXT(void)                            {
             if(rd_nxt!=0x28) {              // check for special sequence ,(
                 rd_tkp    = 0; rd_tki++;    // if not found, just leave the comma alone
                 rd_tk     = tokens[rd_tki];
+
+                mammi->state |= MAMMIT_SF_PARR;
 
             }; break;
 
@@ -1663,7 +1723,10 @@ void RDNXT(void)                            {
                 rd_tk[rd_tkp]=op[y]; rd_tkp++;
                 op[y]=0x00; y++;
 
-            } opi=0; }; rd_tk[rd_tkp]=rd_cur; rd_tkp++; break;
+            } opi=0; };
+
+            FORCE_INSERT:
+                rd_tk[rd_tkp]=rd_cur; rd_tkp++; break;
 
     }; if(rd_nxt) { goto TOP; };                                                            };
 
@@ -1678,7 +1741,7 @@ int main(void)                              {
     RPSTR(&s,
 
 "reg vars {\n\
- int2 x=1*4,2-1;\n\
+ int2 x 1*4,2-1;\n\
 }\n",
 0);
 
