@@ -105,6 +105,7 @@ static HASH*  GNAMES_HASH;                  // globals and built-ins
 static HASH*  LNAMES_HASH;                  // user-defined symbols
 
 static MEM*   memlng  = NULL;               // big block of memory
+static uint   lngptr  = 0;                  // cur idex into mem, in bytes
 
 //   ---     ---     ---     ---     ---
 
@@ -357,11 +358,11 @@ typedef struct MAMM_INTERPRETER {           // smach for pe-text input
 #define MAMMIT_LVLB_NXT {                                                                   \
     mammi->lvlb_stack[mammi->lvlb]=flags;                                                   \
     mammi->lvlb++; flags=0;                                                                 \
-    lhand+=size; value+=size;                                                               }
+    lhand+=size; value+=size; lngptr+=size;                                                 }
 
 #define MAMMIT_LVLB_PRV {                                                                   \
     mammi->lvlb--; flags=mammi->lvlb_stack[mammi->lvlb];                                    \
-    lhand-=size; value-=size;                                                               }
+    lhand-=size; value-=size; lngptr-=size;                                                 }
 
 //   ---     ---     ---     ---     ---
 
@@ -1167,6 +1168,8 @@ void REGTP(void)                            {
     uchar* result     = (uchar*) memlng->buff+0;
     uchar* lhand      = result;
 
+    lngptr            = 0;
+
     CLMEM2(lhand, size);
 
     // pop next, so to speak
@@ -1200,7 +1203,7 @@ void REGTP(void)                            {
             MAMMIT_LVLB_PRV
             CALCUS_COLLAPSE(&lhand, &value, &flags);
 
-        }; parsed++; result+=size; lhand=result;
+        }; parsed++; result+=size; lhand=result; lngptr+=size;
 
 //   ---     ---     ---     ---     ---
 
@@ -1234,46 +1237,66 @@ void REGTP(void)                            {
 
                 */
 
-            uint  sec_cur  = parsed;
-            uint  sec_beg  = parsed;
-            uint  sec_end  = elems;
+            uint  sec_beg  = lngptr;
+            uint  sec_end  = elems*size;
 
             uint  sflags_i = 0;
             uint* sflags   = mammi->lvlb_stack+0;
 
             sint  sec_val  = *((sint*) value);
-            if(!sec_val) { sec_val++; };
-
             for(uint x=0; x<size; x++) {
                 value[x]=old_value[x];
 
             }; SECTOP:
             switch(sflags[sflags_i]) {
 
-// BEG TEST-----------------
-                case OP_GT | OP_MUL:
-                    sec_cur+=sec_val; sflags[sflags_i] &=~ (OP_GT | OP_MUL);
+//   ---     ---     ---     ---     ---
+
+                case OP_GT | OP_MUL: sflags[sflags_i] &=~ (OP_GT | OP_MUL);
+                    if(!sec_val) { lngptr+=size; break; }
+                    lngptr += sec_val*size; break;
+
+                case OP_LT | OP_MUL: sflags[sflags_i] &=~ (OP_LT | OP_MUL);
+                    if(!sec_val) { lngptr-=size; break; }
+                    lngptr -= sec_val*size; break;
+
+//   ---     ---     ---     ---     ---
+
+                case OP_LSHFT | OP_MUL: sflags[sflags_i] &=~ (OP_LSHFT | OP_MUL);
+                    lngptr = 0; break;
+
+                case OP_RSHFT | OP_MUL: sflags[sflags_i] &=~ (OP_RSHFT | OP_MUL);
+                    lngptr = sec_end-size; break;
+
+//   ---     ---     ---     ---     ---
+
+                case OP_EQUL: sflags[sflags_i] &=~ OP_EQUL;
+                    uchar* addr=((uchar*) memlng->buff)+sec_beg;
+
+                    if(!sec_val) {
+                        CLMEM2(addr, sec_end-sec_beg);
+
+                    } else {
+                        for(uint x=sec_beg; x<sec_end; x+=size, addr+=size) {
+                            for(uint y=0; y<size; y++) {
+                                addr[y]=sec_val>>(y*8);
+
+                            };
+                        };
+                    };
+
                     break;
 
-                case OP_LT | OP_MUL:
-                    CALOUT(E, "%u\n", parsed);
-                    sec_cur-=sec_val; sflags[sflags_i] &=~ (OP_LT | OP_MUL);
-                    break;
-
-// END TEST-----------------
-
-                case OP_EQUL:
-                    CLMEM2(memlng->buff+(sec_cur*size), size*(sec_end-sec_beg));
-                    break;
+//   ---     ---     ---     ---     ---
 
             }; sflags_i++; if(sflags_i<=mammi->lvlb) { goto SECTOP; }
-            lhand=((uchar*) memlng->buff)+(sec_cur*size); value=lhand+size;
 
-            while(mammi->lvlb) {
-                MAMMIT_LVLB_PRV
-                CALCUS_COLLAPSE(&lhand, &value, &flags);
+            lhand       = ((uchar*) memlng->buff)+lngptr;
 
-            }; result=lhand;
+            result      = lhand;
+            value       = lhand+size;
+
+            mammi->lvlb = 0;
 
         }; goto EVAL_EXP;
 
@@ -1821,7 +1844,7 @@ int main(void)                              {
     RPSTR(&s,
 
 "reg vars {\n\
- int2 x 1,(*<)5;\n\
+ int2 x 1,(=);\n\
 }\n",
 0);
 
