@@ -731,7 +731,7 @@ void TRFLTVAL(uchar* src ,
     default:                                \
         (*r)+=(*v); break;                  \
                                             \
-    }; break;                               }
+    }; (*v)=0; break;                       }
 
 //   ---     ---     ---     ---     ---
 
@@ -1206,7 +1206,12 @@ void REGTP(void)                            {
 
         raw_value++;
         if(raw_value[0]==0x28) {            // expand token (parse operators, fetch values)
-            raw_value++; MAEXPS             (&raw_value, &lhand, &value, &flags, size);
+
+            uchar* old_value = value+size;
+            for(uint x=0; x<size; x++) {
+                old_value[x]=value[x];
+
+            }; raw_value++; MAEXPS          (&raw_value, &lhand, &value, &flags, size);
 
             /*
             @(sec) syntax:
@@ -1222,41 +1227,53 @@ void REGTP(void)                            {
                 *<< move ptr to lower bound
 
                 ptr#v exchange values betwen ptr && v
-                ptr=v set ptr to v
+                ptr=v set *ptr to v
                 =v    flood fill $ to Ç with v
                 =     blank out $ to Ç
                 :     separate expressions
 
                 */
 
-            uint sec_cur = parsed;
-            uint sec_beg = parsed;
-            uint sec_end = elems;
+            uint  sec_cur  = parsed;
+            uint  sec_beg  = parsed;
+            uint  sec_end  = elems;
 
-            switch(flags) {
+            uint  sflags_i = 0;
+            uint* sflags   = mammi->lvlb_stack+0;
+
+            sint  sec_val  = *((sint*) value);
+            if(!sec_val) { sec_val++; };
+
+            for(uint x=0; x<size; x++) {
+                value[x]=old_value[x];
+
+            }; SECTOP:
+            switch(sflags[sflags_i]) {
 
 // BEG TEST-----------------
-                case OP_GT:
-                    if(mammi->lvlb_stack[mammi->lvlb-1]&OP_MUL) {
-                        sec_cur++;
-
-                    };
-
-                    flags&=~OP_GT;
-                    mammi->lvlb_stack[mammi->lvlb-1]&=~OP_MUL;
+                case OP_GT | OP_MUL:
+                    sec_cur+=sec_val; sflags[sflags_i] &=~ (OP_GT | OP_MUL);
                     break;
+
+                case OP_LT | OP_MUL:
+                    CALOUT(E, "%u\n", parsed);
+                    sec_cur-=sec_val; sflags[sflags_i] &=~ (OP_LT | OP_MUL);
+                    break;
+
 // END TEST-----------------
 
                 case OP_EQUL:
-                    CLMEM2(lhand+(sec_cur*size), elems-sec_cur);
+                    CLMEM2(memlng->buff+(sec_cur*size), size*(sec_end-sec_beg));
+                    break;
 
-            }; lhand=lhand+(sec_cur*size); value=lhand+size;
+            }; sflags_i++; if(sflags_i<=mammi->lvlb) { goto SECTOP; }
+            lhand=((uchar*) memlng->buff)+(sec_cur*size); value=lhand+size;
 
             while(mammi->lvlb) {
                 MAMMIT_LVLB_PRV
                 CALCUS_COLLAPSE(&lhand, &value, &flags);
 
-            }; parsed++; result+=size; lhand=result;
+            }; result=lhand;
 
         }; goto EVAL_EXP;
 
@@ -1744,6 +1761,7 @@ void RDNXT(void)                            {
                 rd_tkp    = 0; rd_tki++;    // if not found, just leave the comma alone
                 rd_tk     = tokens[rd_tki];
 
+            } else {
                 mammi->state |= MAMMIT_SF_PARR;
 
             }; break;
@@ -1803,7 +1821,7 @@ int main(void)                              {
     RPSTR(&s,
 
 "reg vars {\n\
- int2 x 1*4,2-1,(*>)12;\n\
+ int2 x 1,(*<)5;\n\
 }\n",
 0);
 
