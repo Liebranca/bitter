@@ -267,6 +267,8 @@ typedef struct MAMM_LVAL_ARRSLOT {          // a block of big boxes
 
 //   ---     ---     ---     ---     ---
 
+static uchar STOR[256];
+
 LVAL VALNEW(uchar* type,
             uchar* name,
             uchar* val ,
@@ -289,7 +291,7 @@ LVAL VALNEW(uchar* type,
     if(size>32) {                           // bigger values take up more slots
 
         for(uint x=0; x<32; x++) {          // fill out the first box
-            slot->box[x]=val[x];
+            STOR[x]=val[x];
 
         }; off=32;
 
@@ -299,7 +301,7 @@ LVAL VALNEW(uchar* type,
 
             uchar* box=(uchar*) slot+len;   // use slot as a byte array
             for(uint x=0; x<nx; x++) {      // walk through it and copy from val
-                 box[x]=val[off+x];
+                STOR[off+x]=val[off+x];
 
             }; left-=nx; len++; off+=nx;    // move to next slot
         };
@@ -1104,6 +1106,7 @@ void MAEXPS(uchar** raw_value,
             }; mammi->state &=~MAMMIT_SF_PSEC;
 
         POP_TESTOP:
+            (*raw_value)[len-1]=0x00;
             len--; if(!len) { goto END; }
             goto POP_TERMINATORS;
 
@@ -1245,7 +1248,7 @@ void REGTP(void)                            {
 
                 $ lower bound                           x
                 * ptr                                   x
-                Ç upper bound
+                & upper bound
 
                 ptr<N decrease ptr by N                 x
                 ptr>N increase ptr by N                 x
@@ -1283,9 +1286,6 @@ void REGTP(void)                            {
                     } else {
                         sec_beg+=sec_val*size;
 
-                    }; if(lngptr<sec_beg) {
-                        lngptr=sec_beg;
-
                     }; break;
 
                 case OP_LT | OP_MONEY: sflags[sflags_i] &=~ (OP_LT | OP_MONEY);
@@ -1311,9 +1311,6 @@ void REGTP(void)                            {
 
                     }; if(sec_end>elems*size) {
                         sec_end=elems*size;
-
-                    }; if(lngptr>sec_end) {
-                        lngptr=sec_end-size;
 
                     }; break;
 
@@ -1349,7 +1346,28 @@ void REGTP(void)                            {
 
 //   ---     ---     ---     ---     ---
 
-                case OP_EQUL: sflags[sflags_i] &=~ OP_EQUL;
+                case OP_EQUL | OP_MUL: { sflags[sflags_i] &=~ (OP_EQUL | OP_MUL);
+
+                    CALOUT(E, "%u\n", lngptr);
+
+                    uchar* addr=((uchar*) memlng->buff)+lngptr;
+
+                    if(!sec_val) {
+                        CLMEM2(addr, size);
+
+                    } else {
+                        for(uint x=0; x<size; x++) {
+                            addr[x]=sec_val>>(x*8);
+
+                        };
+                    };
+
+                    break;
+                }
+
+//   ---     ---     ---     ---     ---
+
+                case OP_EQUL: { sflags[sflags_i] &=~ OP_EQUL;
                     uchar* addr=((uchar*) memlng->buff)+sec_beg;
 
                     if(!sec_val) {
@@ -1365,6 +1383,7 @@ void REGTP(void)                            {
                     };
 
                     break;
+                }
 
 //   ---     ---     ---     ---     ---
 
@@ -1397,7 +1416,7 @@ void REGTP(void)                            {
 //   ---     ---     ---     ---     ---
 
     VALNEW(type, name, (uchar*) memlng->buff+0, size*elems, lars, slot);
-    uchar* vtest = (uchar*) slot->box;
+    uchar* vtest = STOR+0;
 
     switch(rd_cast) {
 
@@ -1417,13 +1436,20 @@ void REGTP(void)                            {
             ); break;
 
         case 0x04:
+
+            CALOUT(K, " = ");
+            for(uint x=0; x<elems; x++) {
             CALOUT(
-                K, " = %" PRId16 ": 0x%" PRIX16 "(",
+                K, "%" PRId16", ",
                 *((sshort*) vtest),
                 *((sshort*) vtest),
                 tokens[rd_tkx]
 
-            ); break;
+            ); vtest+=size; };
+
+            CALOUT(K, "(");
+
+            break;
 
         case 0x05:
 
@@ -1923,7 +1949,7 @@ int main(void)                              {
     RPSTR(&s,
 
 "reg vars {\n\
- int2 x 1,($>:&<:=5);\n\
+ int4 x 1,(*>>:*=10);\n\
 }\n",
 0);
 
