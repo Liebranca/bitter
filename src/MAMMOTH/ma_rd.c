@@ -33,7 +33,7 @@
 
 #define MAMMIT_SF_PESC 0x00000001
 #define MAMMIT_SF_PLIT 0x00000002
-#define MAMMIT_SF_PARR 0x00000004
+#define MAMMIT_SF_PSEC 0x00000004
 
 #define MAMMIT_SF_CNTX 0x0000FF00
 
@@ -647,8 +647,6 @@ void TRFLTVAL(uchar* src ,
 #define OP_AT    0x00400000
 #define OP_POINT 0x00800000
 
-#define OP_SEC   0x01000000
-
 #define OP_W_EQUR                           \
     OP_GT    | OP_LT                        \
   | OP_BANG  | OP_MODUS                     \
@@ -948,7 +946,7 @@ void MAEXPS(uchar** raw_value,
                 flags &=~OP_AMPER;
                 flags |= OP_DAMPR;
 
-                MAMMIT_LVLB_NXT
+                MAMMIT_LVLB_NXT;
 
                 goto POP_OPSTOP;
 
@@ -961,7 +959,7 @@ void MAEXPS(uchar** raw_value,
                 flags &=~OP_PIPE;
                 flags |= OP_DPIPE;
 
-                MAMMIT_LVLB_NXT
+                MAMMIT_LVLB_NXT;
 
                 goto POP_OPSTOP;
 
@@ -992,7 +990,7 @@ void MAEXPS(uchar** raw_value,
             flags &=~OP_MUL;
             flags &=~OP_DIV;
 
-        case 0x28: MAMMIT_LVLB_NXT
+        case 0x28: MAMMIT_LVLB_NXT;
             goto POP_OPSTOP;
 
 //   ---     ---     ---     ---     ---
@@ -1016,19 +1014,19 @@ void MAEXPS(uchar** raw_value,
 
 //   ---     ---     ---     ---     ---
 
-        case 0x21: MAMMIT_LVLB_NXT
+        case 0x21: MAMMIT_LVLB_NXT;
             flags  = mammi->lvlb_stack[mammi->lvlb-1]&OP_MINUS;
             mammi->lvlb_stack[mammi->lvlb-1] &=~OP_MINUS;
             flags |= OP_BANG;
-            MAMMIT_LVLB_NXT
+            MAMMIT_LVLB_NXT;
 
             goto POP_OPSTOP;
 
-        case 0x7e: MAMMIT_LVLB_NXT
+        case 0x7e: MAMMIT_LVLB_NXT;
             flags  = mammi->lvlb_stack[mammi->lvlb-1]&OP_MINUS;
             mammi->lvlb_stack[mammi->lvlb-1] &=~OP_MINUS;
             flags |= OP_TILDE;
-            MAMMIT_LVLB_NXT
+            MAMMIT_LVLB_NXT;
 
             goto POP_OPSTOP;
 
@@ -1045,7 +1043,7 @@ void MAEXPS(uchar** raw_value,
             };
 
             flags |= OP_EQUL;
-            MAMMIT_LVLB_NXT
+            MAMMIT_LVLB_NXT;
 
             goto POP_OPSTOP;
 
@@ -1063,7 +1061,7 @@ void MAEXPS(uchar** raw_value,
             };
 
             flags |= OP_LT;
-            MAMMIT_LVLB_NXT
+            MAMMIT_LVLB_NXT;
 
             goto POP_OPSTOP;
 
@@ -1079,7 +1077,7 @@ void MAEXPS(uchar** raw_value,
             };
 
             flags |= OP_GT;
-            MAMMIT_LVLB_NXT
+            MAMMIT_LVLB_NXT;
 
 //   ---     ---     ---     ---     ---
 
@@ -1091,6 +1089,7 @@ void MAEXPS(uchar** raw_value,
 //   ---     ---     ---     ---     ---
 
     uint len = strlen(*raw_value);
+    if(!len) { goto END; }
 
     POP_TERMINATORS:                        // same as oppies, but at end of token
     switch((*raw_value)[len-1]) {
@@ -1098,10 +1097,11 @@ void MAEXPS(uchar** raw_value,
         default: break;
 
         case 0x29:
-            if(mammi->lvlb) {
-                MAMMIT_LVLB_PRV             // lonely parens >;
 
-            };
+            if(mammi->lvlb) {
+                MAMMIT_LVLB_PRV;            // lonely parens >;
+
+            }; mammi->state &=~MAMMIT_SF_PSEC;
 
         POP_TESTOP:
             len--; if(!len) { goto END; }
@@ -1170,6 +1170,9 @@ void REGTP(void)                            {
 
     lngptr            = 0;
 
+    uint  sec_beg     = lngptr;
+    uint  sec_end     = elems*size;
+
     CLMEM2(lhand, size);
 
     // pop next, so to speak
@@ -1187,58 +1190,78 @@ void REGTP(void)                            {
     ||   (parsed>=elems ) ) { goto RESULT; }// ... or jump to end if all tokens read
 
     uint   flags      = 0;                  // values defined above MAMMIT_OPSWITCH
+    uchar* raw_value  = tokens[rd_tkx];     // current token
+
+    if(mammi->state&MAMMIT_SF_PSEC) {
+        goto SECEVAL;
+
+    };
 
     uchar* value      = lhand+size;
     CLMEM2(value, size);
-
-    uchar* raw_value  = tokens[rd_tkx];
-
-    flags            &=~OP_RADIX;           // clear is_float part
 
 //   ---     ---     ---     ---     ---
 
     if(raw_value[0]==0x2C) {
 
         while(mammi->lvlb) {
-            MAMMIT_LVLB_PRV
+            MAMMIT_LVLB_PRV;
             CALCUS_COLLAPSE(&lhand, &value, &flags);
 
-        }; parsed++; result+=size; lhand=result; lngptr+=size;
+        }; parsed++;
+
+        result += size;
+        lhand   = result;
+        value   = lhand+size;
+        CLMEM2(value, size);
+
+        lngptr += size;
 
 //   ---     ---     ---     ---     ---
 
         raw_value++;
-        if(raw_value[0]==0x28) {            // expand token (parse operators, fetch values)
+        if(raw_value[0]==0x28) {
+
+            sec_beg          = lngptr;
+            sec_end          = elems*size;
+            raw_value++;
+
+            SECEVAL:
 
             uchar* old_value = value+size;
+
             for(uint x=0; x<size; x++) {
                 old_value[x]=value[x];
 
-            }; raw_value++; MAEXPS          (&raw_value, &lhand, &value, &flags, size);
+            }; mammi->state |= MAMMIT_SF_PSEC;
+
+                                            // expand token (parse operators, fetch values)
+            MAEXPS                          (&raw_value, &lhand, &value, &flags, size);
+
+//   ---     ---     ---     ---     ---
 
             /*
             @(sec) syntax:
 
-                $ lower bound
-                * ptr
+                $ lower bound                           x
+                * ptr                                   x
                 Ç upper bound
 
-                ptr<N decrease ptr by N
-                ptr>N increase ptr by N
+                ptr<N decrease ptr by N                 x
+                ptr>N increase ptr by N                 x
 
-                *>> move ptr to upper bound
-                *<< move ptr to lower bound
+                *>> move ptr to upper bound             x
+                *<< move ptr to lower bound             x
 
                 ptr#v exchange values betwen ptr && v
                 ptr=v set *ptr to v
-                =v    flood fill $ to Ç with v
-                =     blank out $ to Ç
-                :     separate expressions
+                =v    flood fill $ to Ç with v          x
+                =     blank out $ to Ç                  x
+                :     separate expressions              x
 
                 */
 
-            uint  sec_beg  = lngptr;
-            uint  sec_end  = elems*size;
+//   ---     ---     ---     ---     ---
 
             uint  sflags_i = 0;
             uint* sflags   = mammi->lvlb_stack+0;
@@ -1247,8 +1270,64 @@ void REGTP(void)                            {
             for(uint x=0; x<size; x++) {
                 value[x]=old_value[x];
 
-            }; SECTOP:
-            switch(sflags[sflags_i]) {
+            };
+
+//   ---     ---     ---     ---     ---
+
+            SECTOP: switch(sflags[sflags_i]) {
+
+                case OP_GT | OP_MONEY: sflags[sflags_i] &=~ (OP_GT | OP_MONEY);
+                    if(!sec_val) {
+                        sec_beg+=size;
+
+                    } else {
+                        sec_beg+=sec_val*size;
+
+                    }; if(lngptr<sec_beg) {
+                        lngptr=sec_beg;
+
+                    }; break;
+
+                case OP_LT | OP_MONEY: sflags[sflags_i] &=~ (OP_LT | OP_MONEY);
+                    if(!sec_val) {
+                        sec_beg-=size;
+
+                    } else {
+                        sec_beg-=sec_val*size;
+
+                    }; if(sec_beg>=sec_end) {
+                        sec_beg=sec_end-size;
+
+                    }; break;
+
+//   ---     ---     ---     ---     ---
+
+                case OP_GT | OP_AMPER: sflags[sflags_i] &=~ (OP_GT | OP_AMPER);
+                    if(!sec_val) {
+                        sec_end+=size;
+
+                    } else {
+                        sec_end+=sec_val*size;
+
+                    }; if(sec_end>elems*size) {
+                        sec_end=elems*size;
+
+                    }; if(lngptr>sec_end) {
+                        lngptr=sec_end-size;
+
+                    }; break;
+
+                case OP_LT | OP_AMPER: sflags[sflags_i] &=~ (OP_LT | OP_AMPER);
+                    if(!sec_val) {
+                        sec_end-=size;
+
+                    } else {
+                        sec_end-=sec_val*size;
+
+                    }; if(sec_beg>=sec_end) {
+                        sec_end=sec_beg+size;
+
+                    }; break;
 
 //   ---     ---     ---     ---     ---
 
@@ -1310,7 +1389,7 @@ void REGTP(void)                            {
 //   ---     ---     ---     ---     ---
 
     RESULT: if(mammi->lvlb>0) {             // collapse expression if unresolved
-        MAMMIT_LVLB_PRV                     // this doesn't account for unclosed () parens
+        MAMMIT_LVLB_PRV;                     // this doesn't account for unclosed () parens
         goto SOLVE;                         // so beware! PE$O will not care for that mistake
 
     };
@@ -1422,7 +1501,7 @@ void REGTP(void)                            {
             ); break;
 
     }; for(uint x=ex_f; x<rd_tki; x++) {
-        CALOUT(K, "%s", tokens[x]);
+        CALOUT(K, ": %s ", tokens[x]);
 
     }; CALOUT(K, ")\n");                                                                    };
 
@@ -1717,17 +1796,19 @@ void RDNXT(void)                            {
 
 //   ---     ---     ---     ---     ---    OPERATORS L
 
+        case 0x3A:
+            goto APTOK;
+
         case 0x21:                          // @(sec) operators
         case 0x24:                          // used for memlng hackery
+        case 0x26:
         case 0x28:
         case 0x2A:
         case 0x3C:
         case 0x3D:
         case 0x3E:
         case 0x40:
-
-        case 0xC7:
-            if(mammi->state&MAMMIT_SF_PARR) {
+            if(mammi->state&MAMMIT_SF_PSEC) {
                 goto FORCE_INSERT;
 
             };
@@ -1738,13 +1819,11 @@ void RDNXT(void)                            {
         case 0x23:
 
         case 0x25:
-        case 0x26:
         case 0x27:
 
         case 0x2B:
         case 0x2D:
         case 0x2F:
-        case 0x3A:
         case 0x3F:
 
         case 0x5B:
@@ -1760,7 +1839,7 @@ void RDNXT(void)                            {
 //   ---     ---     ---     ---     ---    OPERATORS R
 
         case 0x29:
-            mammi->state  &=~MAMMIT_SF_PARR;
+            mammi->state  &=~MAMMIT_SF_PSEC;
             rd_tk[rd_tkp]  = rd_cur; rd_tkp++;
             goto APTOK;
 
@@ -1785,7 +1864,7 @@ void RDNXT(void)                            {
                 rd_tk     = tokens[rd_tki];
 
             } else {
-                mammi->state |= MAMMIT_SF_PARR;
+                mammi->state |= MAMMIT_SF_PSEC;
 
             }; break;
 
@@ -1844,7 +1923,7 @@ int main(void)                              {
     RPSTR(&s,
 
 "reg vars {\n\
- int2 x 1,(=);\n\
+ int2 x 1,($>:&<:=5);\n\
 }\n",
 0);
 
