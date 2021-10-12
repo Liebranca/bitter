@@ -15,11 +15,9 @@
 *                                           */
 /*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
 
-#include "KVRNEL/zjc_CommonTypes.h"
-#include "KVRNEL/kvr_paths.h"
 #include "KVRNEL/MEM/kvr_str.h"
-
-#include "KVRNEL/TYPES/zjc_hash.h"
+#include "ma_boiler.h"
+#include "ma_trans.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -27,283 +25,6 @@
 #include <math.h>
 
 //   ---     ---     ---     ---     ---
-// state flags...
-
-#define MAMMIT_SF_PESO 0x000000FF
-
-#define MAMMIT_SF_PESC 0x00000001
-#define MAMMIT_SF_PLIT 0x00000002
-#define MAMMIT_SF_PSEC 0x00000004
-
-#define MAMMIT_SF_CNTX 0x0000FF00
-
-#define MAMMIT_SF_CREG 0x00000100
-#define MAMMIT_SF_CDEC 0x00000200
-#define MAMMIT_SF_CDEF 0x00000400
-
-#define MAMMIT_SF_CCLA 0x00000800
-#define MAMMIT_SF_CFUN 0x00001000
-
-//   ---     ---     ---     ---     ---
-// debug/errcatch stuff
-
-static uint gblevil =  0x00000000;          // global evilstate
-static uint rd_line =  1;                   // current line
-
-#define MAMMIT_EV_BEG  0x00010000
-#define MAMMIT_EV_DECL 0x00000001
-#define MAMMIT_EV_VSIZ 0x00000002
-
-// ommited __shpath(__FILE__)
-#define MAMMLOC "TEST", "NON", rd_line
-#define GTMAMMLOC __geterrloc(MAMMLOC)
-
-// mammi-oriented errcatch
-#define MAMMCTCH(func, retx, errcode, info) { DANG* cal = GTMAMMLOC;                         \
-                                                                                             \
-    cal->state            = func;                                                            \
-    if  ( (cal->state    == FATAL        )                                                   \
-        | (cal->state    == ERROR        )                                                   \
-        | (retx && (retx != cal->state)) ) {                                                 \
-                                                                                             \
-            gblevil |= errcode;                                                              \
-            __terminator(MAMMIT_EV_BEG+errcode, info); return;                               \
-                                                                                             \
-    }; retx = cal->state; __popcalreg();                                                     }
-
-//   ---     ---     ---     ---     ---
-// constants
-#ifndef MAMMIT_TK_WIDTH
-    #define MAMMIT_TK_WIDTH 64
-
-#endif
-
-#ifndef MAMMIT_TK_COUNT
-    #define MAMMIT_TK_COUNT 64
-
-#endif
-
-//   ---     ---     ---     ---     ---
-
-static uchar  tokens[MAMMIT_TK_COUNT][MAMMIT_TK_WIDTH];
-
-static uchar* rd_tk   = tokens[0];          // components of current statement
-static uint   rd_tki  = 0;                  // num of tokens
-static uint   rd_tkp  = 0;                  // token char idex
-static uint   rd_tkx  = 0;                  // (iter) current token idex
-
-static uchar* rd_buff = NULL;               // char buffer containing statements
-
-static uchar  rd_cur  = '\0';               // current char in buff
-static uchar  rd_prv  = '\0';               // previous char in buff
-static uchar  rd_nxt  = '\0';               // next char in buff
-
-static ushort rd_wid  = 0x0000;             // next | (cur<<8)
-static uint   rd_pos  = 0;                  // position into buffer
-
-static HASH*  GNAMES_HASH;                  // globals and built-ins
-static HASH*  LNAMES_HASH;                  // user-defined symbols
-
-static MEM*   memlng  = NULL;               // big block of memory
-static uint   lngptr  = 0;                  // cur idex into mem, in bytes
-
-//   ---     ---     ---     ---     ---
-
-static uint   rd_cast = 0;                  // for "dynamic" type-casting;
-                                            // actually, just cases in a switch
-
-                                            // 0x00 void
-                                            // 0x01 nihil
-                                            // 0x02 stark
-
-                                            // 0x03 int8_t
-                                            // 0x04 int16_t
-                                            // 0x05 int32_t
-                                            // 0x06 int64_t
-
-                                            // 0x07-0A ^unsigned idem...
-
-                                            // 0x0B float
-
-//   ---     ---     ---     ---     ---
-
-typedef struct MAMM_TYPEVAL_DATA {          // to simplify reading wacky types
-
-    uchar base[MAMMIT_TK_WIDTH];            // type-name
-
-    union {
-        struct {
-            uchar indlvl;                   // indirection level (ptr depth!)
-            uchar arrsize;                  // >1 equals pow(2, arrsize), else 1
-            uchar flags;                    // static, const, unsigned...
-            uchar pad;                      // idk what to do with the last byte
-
-        };  uint  F;
-    };
-
-} TYPEDATA; static TYPEDATA typedata = {0};
-
-//   ---     ---     ---     ---     ---
-
-void UPKTYPE(uchar* typeval)                {
-
-    CLMEM2(                                 // clean-up leftovers from previous use
-        (void*) &typedata,
-        sizeof(TYPEDATA)
-
-    );
-
-    uchar* base = typedata.base+0;          // point to our static block of chars
-    uint   len  = strlen(typeval);          // length of original string
-
-    ushort i    = 0;                        // offset into original string
-    ushort j    = 0;                        // offset into __target__ string
-
-    uchar  c    = 0x00;                     // character currently being pointed at
-
-//   ---     ---     ---     ---     ---
-
-    TOP:                                    // read through original string and decompose
-
-        c=typeval[i];                       // get next char
-
-        if((c >= 0x30) && (0x39 >= c)) {    // if char is number
-            typedata.arrsize*=10;           // left-shift
-            typedata.arrsize+=c-0x30;       // add unit
-            goto BOT;                       // skip to end
-
-        }; if(j || i>2) { goto MID; };      // skip if char > original[0-2]
-
-//   ---     ---     ---     ---     ---
-
-    switch(c) {
-
-        case 0x7A:                          // z, zzzzstatic (lots o' volts)
-            typedata.flags|=0x01; goto BOT;
-        case 0x71:                          // q, qqqqconstant
-            typedata.flags|=0x02; goto BOT;
-        case 0x75:                          // u, uuuuunsigned
-            typedata.flags|=0x04; goto BOT;
-
-        default:
-            break;
-
-    };
-
-//   ---     ---     ---     ---     ---
-
-MID:switch(c) {
-
-        case 0x2A:                          // ptr to ptr to ptr to ptr to ptpr to what
-            typedata.indlvl++; break;
-
-        default:                            // everything else goes
-            base[j]=c; j++; break;
-
-    }; BOT: i++; if(i<len) { goto TOP; }
-
-/*
-CALOUT(E,"\
-base: %s\n\
-size: %u\n\
-astr: %u\n\
-usig: %u\n",
-
-typedata.base,
-typedata.arrsize,
-typedata.indlvl,
-
-(typedata.flags&0x04)!=0
-
-);*/
-
-                                                                                            };
-
-//   ---     ---     ---     ---     ---
-
-typedef struct MAMM_SYNTX_SYMBOL {          // used for string to funcall mambo
-
-    ID    id;                               // polyheader, makes this block hashable
-    NIHIL onrd;                             // links block with a given funcall
-
-} SYMBOL; SYMBOL SYMNEW(uchar* fam,
-                        uchar* key,
-                        NIHIL  fun)         {
-
-    SYMBOL sym = {0};                       // simple 'constructor', so to speak
-
-    sym.id     = IDNEW(fam, key);           // fill out the id
-    sym.onrd   = fun;                       // when !fun, you're bored and null
-
-    return sym;                                                                             };
-
-
-
-#define GNAMES_SZ 1024
-
-typedef struct MAMM_INTERPRETER {           // smach for pe-text input
-
-    MEM m;                                  // mem header
-
-    union {                                 // state, subdivided
-        struct {
-            uchar ctrl;                     // control chars affect reading
-            uchar cntx;                     // context symbols affect interpreting
-            uchar lvla;                     // x depth into context
-            uchar lvlb;                     // y depth into statement or expression
-
-        };  uint  state;                    // ^all four as one uint
-
-    };
-
-    uchar  lvla_stack[256      ];           // markers for recalling previous context
-    uint   lvlb_stack[256      ];           // ^idem, for prev evalstate of expression
-
-    uint   lvaltop;                         // next offset @lvalues that's free
-    uchar  lvalues   [GNAMES_SZ];           // yer vars arrrr
-
-    SYMBOL slots     [GNAMES_SZ];           // array of built-ins
-    STK    slstack;                         // stack of (free)indices into built-ins array
-
-} MAMMIT; MAMMIT* mammi;
-
-//   ---     ---     ---     ---     ---
-
-void VALNEW(uchar* type,
-            uchar* name,
-            uchar* val ,
-
-            uint   size)                    {
-
-    ID id           = IDNEW(type, name);
-    uchar* box      = mammi->lvalues+mammi->lvaltop;
-
-    mammi->lvaltop += size;
-
-    for(uint x=0; x<size; x++) {            // copy bytes over
-        box[x]=val[x];
-                                            // insert in hash for later fetch by key
-    }; HASHSET                              (LNAMES_HASH, byref(id));                       };
-
-//   ---     ---     ---     ---     ---
-
-#define MAMMIT_LVLA_NXT { mammi->lvla_stack[mammi->lvla]=mammi->cntx; mammi->lvla++;    }
-#define MAMMIT_LVLA_PRV { mammi->lvla--; mammi->cntx=mammi->lvla_stack[mammi->lvla];    }
-
-//   ---     ---     ---     ---     ---
-
-#define MAMMIT_LVLB_NXT {                                                                   \
-    mammi->lvlb_stack[mammi->lvlb]=flags;                                                   \
-    mammi->lvlb++; flags=0;                                                                 \
-    lhand+=size; value+=size; lngptr+=size;                                                 }
-
-#define MAMMIT_LVLB_PRV {                                                                   \
-    mammi->lvlb--; flags=mammi->lvlb_stack[mammi->lvlb];                                    \
-    lhand-=size; value-=size; lngptr-=size;                                                 }
-
-//   ---     ---     ---     ---     ---
-
-void REGTP(void);                           // fwd decl
 
 void REGMA(void)                            {
     if(!(mammi->state&MAMMIT_SF_CREG)) {    // if unset, do and ret
@@ -316,357 +37,6 @@ void REGMA(void)                            {
 
     }; mammi->state &=~MAMMIT_SF_CREG;      // effectively, an implicit else
                                                                                             };
-
-//   ---     ---     ---     ---     ---
-
-int NOREDCL(uchar* name)                    {
-
-    void* nulmy = NULL;                     // check if name exists in global scope
-    STR_HASHGET                             (GNAMES_HASH, name, nulmy, 0);
-
-    if(nulmy) {                             // freak out if it does;
-        return ERROR;
-
-                                            // now check if name exists in *local* scope
-    }; STR_HASHGET                          (LNAMES_HASH, name, nulmy, 0);
-
-    if(nulmy) {                             // ... and freak out if it does
-        return ERROR;
-
-    }; return DONE;                                                                         };
-
-int NOOVERSZ(uint sz, uint f)               { if(sz%f) { return ERROR; }; return DONE;      };
-
-//   ---     ---     ---     ---     ---
-
-// these funcs below? lazy nihil way to identify type
-// without having to do a strcmp or str_hashget...
-
-// it IS a little silly to hardcode it like this
-// BUT: aren't base types HARDCODED to BEG with?
-
-// the initial hash-gotten symbol can redirect
-// to a single function, that function KNOWS
-// how to interpret the data; this is simpler
-
-// repetitive? yes
-// does it work? yes
-// optimal? depends
-
-// its either this or using arguments
-// AND yet more branches per call, mind you
-// so no thanks, this mess will do
-
-//   ---     ---     ---     ---     ---    void, nihil, stark
-
-void REGVOI(void)                           { rd_cast = 0x00; REGTP();                      };
-void REGNHL(void)                           { rd_cast = 0x01; REGTP();                      };
-void REGTRK(void)                           { rd_cast = 0x02; REGTP();                      };
-
-//   ---     ---     ---     ---     ---    char
-
-void REGCHR(void)                           {
-
-                                            // int(bitsize) type + is_unsigned
-    rd_cast =                                 0x03                              \
-            +                               ( 0x04 * ((typedata.flags&0x04)!=0) );
-
-                                            // evaluate the expression;
-    REGTP                                   (                                   );          };
-
-//   ---     ---     ---     ---     ---    wide, same^
-
-void REGWID(void)                           {
-    rd_cast =                                 0x04                              \
-            +                               ( 0x04 * ((typedata.flags&0x04)!=0) );
-    REGTP                                   (                                   );          };
-
-//   ---     ---     ---     ---     ---    long, same^
-
-void REGLNG(void)                           {
-    rd_cast =                                 0x05                              \
-            +                               ( 0x04 * ((typedata.flags&0x04)!=0) );
-    REGTP                                   (                                   );          };
-
-//   ---     ---     ---     ---     ---    quat, same^
-
-void REGQAT(void)                           {
-    rd_cast =                                 0x06                              \
-            +                               ( 0x04 * ((typedata.flags&0x04)!=0) );
-    REGTP                                   (                                   );          };
-
-//   ---     ---     ---     ---     ---    float
-
-void REGFLT(void)                           { rd_cast = 0x0B; REGTP();                      };
-
-//   ---     ---     ---     ---     ---
-
-void TRHEXVAL(uchar* src ,
-              uchar* to  ,
-              uint   size)                  {
-
-    uchar cbyte = 0x00;                     // curent byte
-    uchar chxd  = 0x00;                     // current hex digit
-    uchar hxval = 0x00;                     // value of char, in hex
-
-    uchar c     = 0x00;                     // empty char
-
-//   ---     ---     ---     ---     ---
-
-    do { c=*src;                            // redundant deref for shorts
-
-        if(c<=0x39) {                       // if 0-9
-            hxval=c-0x30;
-
-        }
-
-        elif( (0x41<=c)
-        &&    (0x46>=c) ) {                 // if A-F
-            hxval=c-0x37;
-
-        }
-
-        else {                              // nuuuuuuuuuuuuuuuull!
-            break;
-
-        };
-
-//   ---     ---     ---     ---     ---
-
-        if(!chxd) {                         // is first digit
-            to[cbyte]  = hxval;
-            chxd++;
-
-        } else {                            // is second digit
-            to[cbyte] += hxval*16;
-            chxd--; cbyte++;
-
-    }} while(*src-- != 0x78);                                                               };
-
-//   ---     ---     ---     ---     ---
-
-void TRBITVAL(uchar* src ,
-              uchar* to  ,
-              uint   size)                  {
-
-    uchar cbit  = 0x00;                     // current bit
-    uchar cbyte = 0x00;                     // curent byte
-    uchar c     = 0x00;                     // empty char
-
-//   ---     ---     ---     ---     ---
-
-    do { c=*src;                            // redundant deref for shorts
-
-        if(c != 0x31\
-        && c != 0x30) {                     // nuuuuuuuuuuull!
-            break;
-
-        }; to[cbyte] |= (c==0x31) << cbit;  // easy money
-
-//   ---     ---     ---     ---     ---
-
-        if(cbit==7) {                       // if all bits set move to next byte
-            cbyte++; cbit=0;                // ... and go back to first bit!
-            continue;
-
-        }; cbit++;                          // else go to next bit
-
-    } while(*src-- != 0x62);                                                                };
-
-//   ---     ---     ---     ---     ---
-
-void TRDECVAL(uchar* src ,
-              uchar* to  ,
-              uint   size)                  {
-
-    ulong decval = 0x0000000000000000;      // value in decimal
-    uchar c      = 0x00;                    // empty char
-
-//   ---     ---     ---     ---     ---
-
-    do { c=*src;                            // redundant deref for shorts
-        if(!c) { break; }                   // lazy while
-
-        decval *= 10;                       // left shift
-        decval += c - 0x30;
-
-    } while(*src++);
-
-//   ---     ---     ---     ---     ---
-
-    for(uint x=0; x<size; x++) {            // copy bytes over
-        to[x]=(decval&(0xFF<<(x*8))) >> (x*8);
-
-    };                                                                                      };
-
-//   ---     ---     ---     ---     ---
-
-void TRFLTVAL(uchar* src ,
-              uchar* to  ,
-              uint   size)                  {
-
-    float  whole = 0.0f;                    // integer portion of number
-    float  fract = 0.0f;                    // fraction portion of number
-    float  fval  = 0.0f;                    // value at current char
-
-    uint   dotd  = 0;                       // right shift multiplier
-    uchar  c     = 0x00;                    // blank char
-
-//   ---     ---     ---     ---     ---
-
-    do { c=*src;
-
-        if(!c) { break; }                   // nuuuuuuuuuuull!
-
-        fval=(float) c-0x30;                // fval be in (0,9), else is dot
-
-        if(c==0x2E) {                       // dot spotted, do fractions now
-            dotd=1;                         // start fractions at 0.1 and advance that
-            continue;                       // skip to next char...
-
-        }
-
-//   ---     ---     ---     ---     ---
-
-        elif(!dotd) {
-            whole*=10;                      // left shift
-            whole+=fval;                    // add to total
-
-            continue;                       // skip!
-
-        };
-
-//   ---     ---     ---     ---     ---
-
-        dotd  *= 10;                        // up the right shift factor
-        fract += fval*(1.0f/dotd);          // right shift value and add
-
-    } while(*src++); whole+=fract;
-
-//   ---     ---     ---     ---     ---
-
-    uint uval = *((uint*) &whole);          // read these bytes as an int
-    for(uint x=0; x<size; x++) {            // copy them over
-        to[x]=(uval&(0xFF<<(x*8))) >> (x*8);
-
-    };                                                                                      };
-
-//   ---     ---     ---     ---     ---
-
-#define OP_MINUS 0x00000001
-#define OP_RADIX 0x00000002
-#define OP_MUL   0x00000004
-#define OP_DIV   0x00000008
-
-#define OP_GT    0x00000010
-#define OP_LT    0x00000020
-#define OP_EQUL  0x00000040
-#define OP_EQUR  0x00000080
-
-#define OP_BANG  0x00000100
-#define OP_TILDE 0x00000200
-#define OP_MONEY 0x00000400
-#define OP_KUSH  0x00000800
-
-#define OP_MODUS 0x00001000
-#define OP_AMPER 0x00002000
-#define OP_PIPE  0x00004000
-#define OP_QUEST 0x00008000
-
-#define OP_COLON 0x00010000
-#define OP_DPIPE 0x00020000
-#define OP_DAMPR 0x00040000
-#define OP_XORUS 0x00080000
-
-#define OP_LSHFT 0x00100000
-#define OP_RSHFT 0x00200000
-#define OP_AT    0x00400000
-#define OP_POINT 0x00800000
-
-#define OP_W_EQUR                           \
-    OP_GT    | OP_LT                        \
-  | OP_BANG  | OP_MODUS                     \
-  | OP_AMPER | OP_XORUS                     \
-  | OP_MINUS | OP_MUL                       \
-  | OP_DIV   | OP_PIPE                      \
-  | OP_EQUL
-
-//   ---     ---     ---     ---     ---
-
-#define OPSWITCH_MINUSX                     \
-    if(flags&OP_MINUS) {                    \
-        (*r)=-(*r);                         \
-        flags&=~OP_MINUS;                   \
-    }; break
-
-#define OP_FORCEBIN(op)                     \
-    (*r)=((uint)(*r))op((uint)(*v))
-
-#define OP_FORCEUNA(op)                     \
-    (*r)=op(uint)(*v)
-
-#define CALCUS_OPSWITCH {                   \
-                                            \
-    switch(flags&0xFFFFFFFC) {              \
-                                            \
-    case OP_MUL:                            \
-        (*r)*=(*v); OPSWITCH_MINUSX;        \
-                                            \
-    case OP_DIV:                            \
-        (*r)/=(*v); OPSWITCH_MINUSX;        \
-                                            \
-    case OP_MODUS:                          \
-        OP_FORCEBIN(%); OPSWITCH_MINUSX;    \
-                                            \
-    case OP_RSHFT:                          \
-        OP_FORCEBIN(>>); OPSWITCH_MINUSX;   \
-                                            \
-    case OP_GT:                             \
-        (*r)=(*r)>(*v);  OPSWITCH_MINUSX;   \
-                                            \
-    case OP_GT | OP_EQUR:                   \
-        (*r)=(*r)>=(*v); OPSWITCH_MINUSX;   \
-                                            \
-    case OP_LSHFT:                          \
-        OP_FORCEBIN(<<); OPSWITCH_MINUSX;   \
-                                            \
-    case OP_LT:                             \
-        (*r)=(*r)<(*v);  OPSWITCH_MINUSX;   \
-                                            \
-    case OP_LT | OP_EQUR:                   \
-        (*r)=(*r)<=(*v); OPSWITCH_MINUSX;   \
-                                            \
-    case OP_BANG:                           \
-        (*r)=!(*v); OPSWITCH_MINUSX;        \
-                                            \
-    case OP_BANG | OP_EQUR:                 \
-        (*r)=(*r)!=(*v); OPSWITCH_MINUSX;   \
-                                            \
-    case OP_EQUL | OP_EQUR:                 \
-        (*r)=(*r)==(*v); OPSWITCH_MINUSX;   \
-                                            \
-    case OP_DAMPR:                          \
-        OP_FORCEBIN(&&); OPSWITCH_MINUSX;   \
-                                            \
-    case OP_AMPER:                          \
-        OP_FORCEBIN(&); OPSWITCH_MINUSX;    \
-                                            \
-    case OP_DPIPE:                          \
-        OP_FORCEBIN(||); OPSWITCH_MINUSX;   \
-                                            \
-    case OP_PIPE:                           \
-        OP_FORCEBIN(|); OPSWITCH_MINUSX;    \
-                                            \
-    case OP_XORUS:                          \
-        OP_FORCEBIN(^); OPSWITCH_MINUSX;    \
-                                            \
-    case OP_TILDE:                          \
-        OP_FORCEUNA(~); OPSWITCH_MINUSX;    \
-                                            \
-    default:                                \
-        (*r)+=(*v); break;                  \
-                                            \
-    }; (*v)=0; break;                       }
 
 //   ---     ---     ---     ---     ---
 
@@ -1058,65 +428,6 @@ void MAEXPS(uchar** raw_value,
 
 //   ---     ---     ---     ---     ---
 
-#define PRCAST_CHR                         \
-    CALOUT(K, " = 0x");                    \
-    for(uint x=0; x<elems; x++) {          \
-        CALOUT(                            \
-            K, "%02X ",                    \
-            *((uchar*) vtest)              \
-                                           \
-        ); vtest+=size; };                 \
-                                           \
-    CALOUT(K, "(")
-
-#define PRCAST_WID                         \
-    CALOUT(K, " = 0x");                    \
-    for(uint x=0; x<elems; x++) {          \
-        CALOUT(                            \
-            K, "%04X ",                    \
-            *((ushort*) vtest)             \
-                                           \
-        ); vtest+=size; };                 \
-                                           \
-    CALOUT(K, "(")
-
-#define PRCAST_LNG                         \
-    CALOUT(K, " = 0x");                    \
-    for(uint x=0; x<elems; x++) {          \
-        CALOUT(                            \
-            K, "%08X ",                    \
-            *((uint*) vtest)               \
-                                           \
-        ); vtest+=size; };                 \
-                                           \
-    CALOUT(K, "(")
-
-#define PRCAST_FLT                         \
-    CALOUT(K, " = 0x");                    \
-    for(uint x=0; x<elems; x++) {          \
-        CALOUT(                            \
-            K, "%08X ",                    \
-            *((float*) vtest)              \
-                                           \
-        ); vtest+=size; };                 \
-                                           \
-    CALOUT(K, "(")
-
-#define PRCAST_QAT                         \
-    CALOUT(K, " = 0x");                    \
-    for(uint x=0; x<elems; x++) {          \
-        CALOUT(                            \
-            K, "%16X ",                    \
-            *((ulong*) vtest)              \
-                                           \
-        ); vtest+=size; };                 \
-                                           \
-    CALOUT(K, "(")
-
-#define PRCAST(T) PRCAST##_##T
-
-//   ---     ---     ---     ---     ---
-
 void REGTP(void)                            {
 
     uchar* type       = typedata.base;      // fetch
@@ -1418,8 +729,8 @@ void REGTP(void)                            {
 
 //   ---     ---     ---     ---     ---
 
-    uchar* vtest = mammi->lvalues+mammi->lvaltop;
-    VALNEW(type, name, (uchar*) memlng->buff+0, size*elems);
+    uchar* vtest = mammi->lvalues+mammi->lvaltop+sizeof(ID);
+    VALNEW(name, (uchar*) memlng->buff+0, size*elems);
 
     switch(rd_cast) {
 
@@ -1456,10 +767,10 @@ void NTNAMES(void)                          {
 
                                             // interpreter nit
     ID id = IDNEW                           ("MAMM", "I"                               );
-    MEMGET                                  (MAMMIT, mammi, GNAMES_SZ*sizeof(uint), &id);
-    MKSTK                                   (byref(mammi->slstack), GNAMES_SZ          );
+    MEMGET                                  (MAMMIT, mammi, NAMESZ*sizeof(uint), &id   );
+    MKSTK                                   (byref(mammi->slstack), NAMESZ             );
 
-    for(int x=GNAMES_SZ-1; x>0; x--) {      // fill stack with indices
+    for(int x=NAMESZ-1; x>0; x--) {         // fill stack with indices
         STACKPUSH(byref(mammi->slstack), x);
 
                                             // nit the hashes
@@ -1869,8 +1180,7 @@ int main(void)                              {
     RPSTR(&s,
 
 "reg vars {\n\
- long2 x 1,(*>>:*=10);\n\
- long2 y 2,(=0xFFFF);\n\
+ ulong2 x 1,(*>>:*=10);\n\
 }\n",
 0);
 
@@ -1881,17 +1191,35 @@ int main(void)                              {
     RDNXT();
     CALOUT(E, "\e[0m");
 
-    /* post parse fetch-test
+    void* nulmy=NULL;
+    STR_HASHGET(LNAMES_HASH, "x", nulmy, 0);
 
-    uint* pe_x = (uint*) (mammi->lvalues +  0);
-    uint* pe_y = (uint*) (mammi->lvalues + 16);
+    if(nulmy!=NULL) {
+        uint* x = ADDRFET(uint, nulmy);
 
-    for(uint i=0;i<4;i++) {
-        CALOUT(K, "%u: x%u \t y%u\n", i, pe_x[i], pe_y[i]);
+        uchar* type=((ADDR*) nulmy)->id.type;
+        CALOUT(K, "\
+BASE: %u\n\
+ARSZ: %u\n\
+INLV: %u\n\
+FLGS: %u\n\n",
+
+type[0],
+type[1],
+type[2],
+type[3]
+
+        );
+
+        for(uint i=0;i<4;i++) {
+            CALOUT(K, "%u: %u\n", i, x[i]);
+
+        };
+
+    } else {
+        CALOUT(E, "Can't fetch key!\n");
 
     };
-
-    */
 
     DLMEM(memlng);
     DLMEM(s);
