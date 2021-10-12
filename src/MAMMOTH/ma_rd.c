@@ -237,89 +237,7 @@ typedef struct MAMM_SYNTX_SYMBOL {          // used for string to funcall mambo
 
     return sym;                                                                             };
 
-//   ---     ---     ---     ---     ---
 
-typedef struct MAMM_WIDE_LVAL {             // a big box for values
-
-    ID    id;                               // identifier
-    uchar box[32];                          // put your stuff here
-
-} LVAL;                                     // now let's explain: ID is 32 bytes,
-                                            // +32 bytes from box, you have 64
-                                            // that's enough for most common uses
-                                            // if you have a bigger value (or an array... )
-                                            // then you'll simply take up the next slot
-                                            // so, read next 64 bytes as (u)chars
-                                            // the problem with this is, of course, ABSPITA
-                                            // but we're willing to make sacrifices
-
-//   ---     ---     ---     ---     ---
-
-typedef struct MAMM_LVAL_ARRSLOT {          // a block of big boxes
-
-    uint start;                             // offset to first box
-    uint end;                               // offset to last box
-
-    uint bytesize;                          // total size of the read
-    uint pad;                               // manual padding
-
-} LARS;
-
-//   ---     ---     ---     ---     ---
-
-static uchar STOR[256];
-
-LVAL VALNEW(uchar* type,
-            uchar* name,
-            uchar* val ,
-
-            uint   size,
-
-            LARS*  lars,
-            LVAL*  slot)                    {
-
-    LVAL v         = {0};
-    slot->id       = IDNEW(type, name);
-
-    uint len       = 1;                     // how many slots this value takes up
-    uint off       = 0;                     // offset in bytes into val, from first slot
-
-    lars->bytesize = size;                  // let lars know how big val is
-
-//   ---     ---     ---     ---     ---
-
-    if(size>32) {                           // bigger values take up more slots
-
-        for(uint x=0; x<32; x++) {          // fill out the first box
-            STOR[x]=val[x];
-
-        }; off=32;
-
-        uint left=size-32;                  // discount the first box
-        while(left) {                       // maybe we could do without loop: LAZYSOL
-            uint nx = (64>left) ? left : 64;
-
-            uchar* box=(uchar*) slot+len;   // use slot as a byte array
-            for(uint x=0; x<nx; x++) {      // walk through it and copy from val
-                STOR[off+x]=val[off+x];
-
-            }; left-=nx; len++; off+=nx;    // move to next slot
-        };
-    }
-
-//   ---     ---     ---     ---     ---
-
-    else {
-        for(uint x=0; x<size; x++) {        // fill out the box...
-            slot->box[x]=val[x];
-
-        };
-    }; lars->end=lars->start+len;           // let lars know how many slots to read
-
-                                            // insert in hash for later fetch by key
-    HASHSET                                 (LNAMES_HASH, byref(slot->id)         );        };
-
-//   ---     ---     ---     ---     ---
 
 #define GNAMES_SZ 1024
 
@@ -338,17 +256,34 @@ typedef struct MAMM_INTERPRETER {           // smach for pe-text input
 
     };
 
-    uchar  lvla_stack[256];                 // markers for recalling previous context
-    uint   lvlb_stack[256];                 // ^idem, for prev evalstate of expression
+    uchar  lvla_stack[256      ];           // markers for recalling previous context
+    uint   lvlb_stack[256      ];           // ^idem, for prev evalstate of expression
 
-    uint   larstop;                         // next offset @lvalues that's free
-    LARS   lvalsl    [256];                 // yer vars kypr
-    LVAL   lvalues   [256];                 // yer vars arrrr
+    uint   lvaltop;                         // next offset @lvalues that's free
+    uchar  lvalues   [GNAMES_SZ];           // yer vars arrrr
 
-    SYMBOL slots[GNAMES_SZ];                // array of built-ins
+    SYMBOL slots     [GNAMES_SZ];           // array of built-ins
     STK    slstack;                         // stack of (free)indices into built-ins array
 
 } MAMMIT; MAMMIT* mammi;
+
+//   ---     ---     ---     ---     ---
+
+void VALNEW(uchar* type,
+            uchar* name,
+            uchar* val ,
+
+            uint   size)                    {
+
+    ID id           = IDNEW(type, name);
+    uchar* box      = mammi->lvalues+mammi->lvaltop;
+
+    mammi->lvaltop += size;
+
+    for(uint x=0; x<size; x++) {            // copy bytes over
+        box[x]=val[x];
+                                            // insert in hash for later fetch by key
+    }; HASHSET                              (LNAMES_HASH, byref(id));                       };
 
 //   ---     ---     ---     ---     ---
 
@@ -439,23 +374,23 @@ void REGCHR(void)                           {
                                             // evaluate the expression;
     REGTP                                   (                                   );          };
 
-//   ---     ---     ---     ---     ---    short, same^
+//   ---     ---     ---     ---     ---    wide, same^
 
-void REGSHR(void)                           {
+void REGWID(void)                           {
     rd_cast =                                 0x04                              \
-            +                               ( 0x04 * ((typedata.flags&0x04)!=0) );
-    REGTP                                   (                                   );          };
-
-//   ---     ---     ---     ---     ---    int, same^
-
-void REGINT(void)                           {
-    rd_cast =                                 0x05                              \
             +                               ( 0x04 * ((typedata.flags&0x04)!=0) );
     REGTP                                   (                                   );          };
 
 //   ---     ---     ---     ---     ---    long, same^
 
 void REGLNG(void)                           {
+    rd_cast =                                 0x05                              \
+            +                               ( 0x04 * ((typedata.flags&0x04)!=0) );
+    REGTP                                   (                                   );          };
+
+//   ---     ---     ---     ---     ---    quat, same^
+
+void REGQAT(void)                           {
     rd_cast =                                 0x06                              \
             +                               ( 0x04 * ((typedata.flags&0x04)!=0) );
     REGTP                                   (                                   );          };
@@ -470,9 +405,9 @@ void TRHEXVAL(uchar* src ,
               uchar* to  ,
               uint   size)                  {
 
-    uint  cbyte = 0;                        // curent byte
-    uint  chxd  = 0;                        // current hex digit
-    uint  hxval = 0;                        // value of char, in hex
+    uchar cbyte = 0x00;                     // curent byte
+    uchar chxd  = 0x00;                     // current hex digit
+    uchar hxval = 0x00;                     // value of char, in hex
 
     uchar c     = 0x00;                     // empty char
 
@@ -514,9 +449,8 @@ void TRBITVAL(uchar* src ,
               uchar* to  ,
               uint   size)                  {
 
-    uint  cbit  = 0;                        // current bit
-    uint  cbyte = 0;                        // curent byte
-
+    uchar cbit  = 0x00;                     // current bit
+    uchar cbyte = 0x00;                     // curent byte
     uchar c     = 0x00;                     // empty char
 
 //   ---     ---     ---     ---     ---
@@ -545,8 +479,8 @@ void TRDECVAL(uchar* src ,
               uchar* to  ,
               uint   size)                  {
 
-    uint decval = 0;                        // value in decimal
-    uchar c     = 0x00;                     // empty char
+    ulong decval = 0x0000000000000000;      // value in decimal
+    uchar c      = 0x00;                    // empty char
 
 //   ---     ---     ---     ---     ---
 
@@ -1124,6 +1058,65 @@ void MAEXPS(uchar** raw_value,
 
 //   ---     ---     ---     ---     ---
 
+#define PRCAST_CHR                         \
+    CALOUT(K, " = 0x");                    \
+    for(uint x=0; x<elems; x++) {          \
+        CALOUT(                            \
+            K, "%02X ",                    \
+            *((uchar*) vtest)              \
+                                           \
+        ); vtest+=size; };                 \
+                                           \
+    CALOUT(K, "(")
+
+#define PRCAST_WID                         \
+    CALOUT(K, " = 0x");                    \
+    for(uint x=0; x<elems; x++) {          \
+        CALOUT(                            \
+            K, "%04X ",                    \
+            *((ushort*) vtest)             \
+                                           \
+        ); vtest+=size; };                 \
+                                           \
+    CALOUT(K, "(")
+
+#define PRCAST_LNG                         \
+    CALOUT(K, " = 0x");                    \
+    for(uint x=0; x<elems; x++) {          \
+        CALOUT(                            \
+            K, "%08X ",                    \
+            *((uint*) vtest)               \
+                                           \
+        ); vtest+=size; };                 \
+                                           \
+    CALOUT(K, "(")
+
+#define PRCAST_FLT                         \
+    CALOUT(K, " = 0x");                    \
+    for(uint x=0; x<elems; x++) {          \
+        CALOUT(                            \
+            K, "%08X ",                    \
+            *((float*) vtest)              \
+                                           \
+        ); vtest+=size; };                 \
+                                           \
+    CALOUT(K, "(")
+
+#define PRCAST_QAT                         \
+    CALOUT(K, " = 0x");                    \
+    for(uint x=0; x<elems; x++) {          \
+        CALOUT(                            \
+            K, "%16X ",                    \
+            *((ulong*) vtest)              \
+                                           \
+        ); vtest+=size; };                 \
+                                           \
+    CALOUT(K, "(")
+
+#define PRCAST(T) PRCAST##_##T
+
+//   ---     ---     ---     ---     ---
+
 void REGTP(void)                            {
 
     uchar* type       = typedata.base;      // fetch
@@ -1138,26 +1131,45 @@ void REGTP(void)                            {
 
 //   ---     ---     ---     ---     ---
 
+    ulong szmask_a    = 0x0000000000000000;
+    ulong szmask_b    = 0x0000000000000000;
+
     switch(rd_cast) {                       // for 'dynamic' type-casting
                                             // we set size to sizeof x C type!
                                             // wait, you dunno whats a ulong??
                                             // look at KVRNEL/zjc_CommonTypes.h
 
-        case 0x00: size=sizeof(void  ); break;
-        case 0x01: size=sizeof(NIHIL ); break;
-        case 0x02: size=sizeof(STARK ); break;
+        case 0x00: szmask_a = 0xFFFFFFFFFFFFFFFF;
+            size=sizeof(void* ); break;
 
-        case 0x03: size=sizeof(schar ); break;
-        case 0x04: size=sizeof(sshort); break;
-        case 0x05: size=sizeof(sint  ); break;
-        case 0x06: size=sizeof(slong ); break;
+        case 0x01:
+        case 0x02: szmask_a = 0xFFFFFFFFFFFFFFFF;
+                   szmask_b = 0xFFFFFFFFFFFFFFFF;
 
-        case 0x07: size=sizeof(uchar ); break;
-        case 0x08: size=sizeof(ushort); break;
-        case 0x09: size=sizeof(uint  ); break;
-        case 0x0A: size=sizeof(ulong ); break;
+            size=sizeof(STARK ); break;
 
-        default  : size=sizeof(float ); break;
+//   ---     ---     ---     ---     ---
+
+        case 0x03:
+        case 0x07: szmask_a = 0x00000000000000FF;
+            size=sizeof(uchar ); break;
+
+        case 0x04:
+        case 0x08: szmask_a = 0x000000000000FFFF;
+            size=sizeof(ushort); break;
+
+        case 0x05:
+        case 0x09: szmask_a = 0x00000000FFFFFFFF;
+            size=sizeof(uint  ); break;
+
+        case 0x06:
+        case 0x0A: szmask_a = 0xFFFFFFFFFFFFFFFF;
+            size=sizeof(ulong ); break;
+
+//   ---     ---     ---     ---     ---
+
+        default  : szmask_a = 0x00000000FFFFFFFF;
+            size=sizeof(float ); break;
 
     };
 
@@ -1165,7 +1177,7 @@ void REGTP(void)                            {
 
                                             // redeclaration block
     int    evil       = 0; MAMMCTCH         (NOREDCL(name), evil, MAMMIT_EV_DECL, name);
-    CALOUT                                  (K, "\nDECL: %s %s[%u]", type, name, elems);
+    CALOUT                                  (K, "DECL: %s %s[%u]", type, name, elems  );
 
     uint ex_f         = rd_tkx+1;           // idex to first token in expression
     uchar* result     = (uchar*) memlng->buff+0;
@@ -1177,13 +1189,6 @@ void REGTP(void)                            {
     uint  sec_end     = elems*size;
 
     CLMEM2(lhand, size);
-
-    // pop next, so to speak
-    // just get slot from idex and set start
-    uint  off         = mammi->larstop;
-    LARS* lars        = mammi->lvalsl+off;
-    LVAL* slot        = mammi->lvalues+off;
-    lars->start       = mammi->larstop;
 
 //   ---     ---     ---     ---     ---
 
@@ -1268,8 +1273,8 @@ void REGTP(void)                            {
 
             uint  sflags_i = 0;
             uint* sflags   = mammi->lvlb_stack+0;
+            ulong sec_val  = (*((ulong*) value)) & szmask_a;
 
-            sint  sec_val  = *((sint*) value);
             for(uint x=0; x<size; x++) {
                 value[x]=old_value[x];
 
@@ -1348,8 +1353,6 @@ void REGTP(void)                            {
 
                 case OP_EQUL | OP_MUL: { sflags[sflags_i] &=~ (OP_EQUL | OP_MUL);
 
-                    CALOUT(E, "%u\n", lngptr);
-
                     uchar* addr=((uchar*) memlng->buff)+lngptr;
 
                     if(!sec_val) {
@@ -1415,8 +1418,8 @@ void REGTP(void)                            {
 
 //   ---     ---     ---     ---     ---
 
-    VALNEW(type, name, (uchar*) memlng->buff+0, size*elems, lars, slot);
-    uchar* vtest = STOR+0;
+    uchar* vtest = mammi->lvalues+mammi->lvaltop;
+    VALNEW(type, name, (uchar*) memlng->buff+0, size*elems);
 
     switch(rd_cast) {
 
@@ -1426,105 +1429,21 @@ void REGTP(void)                            {
 
 //   ---     ---     ---     ---     ---
 
-        case 0x03:
-            CALOUT(
-                K, " = \x27%c\x27 : 0x%02X (",
-                *((schar*) vtest),
-                *((schar*) vtest),
-                tokens[rd_tkx]
+        case 0x09:
+        case 0x05: PRCAST(LNG); break;
 
-            ); break;
+        case 0x03:
+        case 0x07: PRCAST(CHR); break;
 
         case 0x04:
-
-            CALOUT(K, " = ");
-            for(uint x=0; x<elems; x++) {
-            CALOUT(
-                K, "%" PRId16", ",
-                *((sshort*) vtest),
-                *((sshort*) vtest),
-                tokens[rd_tkx]
-
-            ); vtest+=size; };
-
-            CALOUT(K, "(");
-
-            break;
-
-        case 0x05:
-
-            CALOUT(K, " = ");
-            for(uint x=0; x<elems; x++) {
-            CALOUT(
-                K, "%" PRId32", ",
-                *((sint*) vtest),
-                *((sint*) vtest),
-                tokens[rd_tkx]
-
-            ); vtest+=size; };
-
-            CALOUT(K, "(");
-
-            break;
+        case 0x08: PRCAST(WID); break;
 
         case 0x06:
-            CALOUT(
-                K, " = %" PRId64 ": 0x%" PRIX64 "(",
-                *((slong*) vtest),
-                *((slong*) vtest),
-                tokens[rd_tkx]
+        case 0x0A: PRCAST(QAT); break;
 
-            ); break;
+        default  : PRCAST(FLT); break;
 
 //   ---     ---     ---     ---     ---
-
-        case 0x07:
-            CALOUT(
-                K, " = \x27%c\x27 : 0x%02X (",
-                *((uchar*) vtest),
-                *((uchar*) vtest),
-                tokens[rd_tkx]
-
-            ); break;
-
-        case 0x08:
-            CALOUT(
-                K, " = %" PRIu16 ": 0x%" PRIX16 "(",
-                *((ushort*) vtest),
-                *((ushort*) vtest),
-                tokens[rd_tkx]
-
-            ); break;
-
-        case 0x09:
-            CALOUT(
-                K, " = %" PRIu32 ": 0x%" PRIX32 "(",
-                *((uint*) vtest),
-                *((uint*) vtest),
-                tokens[rd_tkx]
-
-            ); break;
-
-        case 0x0A:
-            CALOUT(
-                K, " = %" PRIu64 ": 0x%" PRIX64 "(",
-                *((ulong*) vtest),
-                *((ulong*) vtest),
-                tokens[rd_tkx]
-
-            ); break;
-
-//   ---     ---     ---     ---     ---
-
-        default:
-
-            CALOUT(
-                K, " = %f : 0x%" PRIX32 "(",
-                *((float*) vtest),
-                *((uint*) vtest),
-                tokens[rd_tkx]
-
-            ); break;
 
     }; for(uint x=ex_f; x<rd_tki; x++) {
         CALOUT(K, ": %s ", tokens[x]);
@@ -1552,14 +1471,15 @@ void NTNAMES(void)                          {
 
     SYMBOL base_dtypes[]={                  // note how each type has it's own lazy call ;>
 
-        SYMNEW("TYPE", "void",   REGVOI),
-        SYMNEW("TYPE", "stark",  REGTRK),
-        SYMNEW("TYPE", "nihil",  REGNHL),
+        SYMNEW("TYPE", "void",   REGVOI),   // funptr or rawptr
 
-        SYMNEW("TYPE", "char",   REGCHR),
-        SYMNEW("TYPE", "short",  REGSHR),
-        SYMNEW("TYPE", "int",    REGINT),
-        SYMNEW("TYPE", "long",   REGLNG),
+        SYMNEW("TYPE", "stark",  REGTRK),   // funptr
+        SYMNEW("TYPE", "nihil",  REGNHL),   // funptr
+
+        SYMNEW("TYPE", "char",   REGCHR),   // 1
+        SYMNEW("TYPE", "wide",   REGWID),   // 2
+        SYMNEW("TYPE", "long",   REGLNG),   // 4
+        SYMNEW("TYPE", "quat",   REGQAT),   // 8
 
         SYMNEW("TYPE", "float",  REGFLT)
 
@@ -1949,7 +1869,8 @@ int main(void)                              {
     RPSTR(&s,
 
 "reg vars {\n\
- int4 x 1,(*>>:*=10);\n\
+ long2 x 1,(*>>:*=10);\n\
+ long2 y 2,(=0xFFFF);\n\
 }\n",
 0);
 
@@ -1959,6 +1880,18 @@ int main(void)                              {
 
     RDNXT();
     CALOUT(E, "\e[0m");
+
+    /* post parse fetch-test
+
+    uint* pe_x = (uint*) (mammi->lvalues +  0);
+    uint* pe_y = (uint*) (mammi->lvalues + 16);
+
+    for(uint i=0;i<4;i++) {
+        CALOUT(K, "%u: x%u \t y%u\n", i, pe_x[i], pe_y[i]);
+
+    };
+
+    */
 
     DLMEM(memlng);
     DLMEM(s);
