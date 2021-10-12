@@ -21,7 +21,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <inttypes.h>
 #include <math.h>
 
 //   ---     ---     ---     ---     ---
@@ -42,7 +41,8 @@ void REGMA(void)                            {
 
 void CALCUS_COLLAPSE(uchar** lhand_ptr,
                      uchar** value_ptr,
-                     uint*   flags_ptr)     {
+                     uint*   flags_ptr,
+                     uint    size     )     {
 
     uchar* lhand = *lhand_ptr;
     uchar* value = *value_ptr;
@@ -190,7 +190,55 @@ void TRNVAL(uchar* raw_value,
 
 //   ---     ---     ---     ---     ---
 
-    //elif(....) reserved for fetching value from names
+    else {
+
+        void* nulmy     = NULL;             // dummy for getter/valid check
+        uchar szdata[3] = {0,0,0};          // stor for typedata
+
+                                            // fetch
+        STR_HASHGET                         (LNAMES_HASH, raw_value, nulmy, 0   );
+
+        if(nulmy!=NULL) {                   // get type and decode typedata
+            uchar* type =                   ((ADDR*) nulmy)->id.type;           \
+            VALSIZ                          (type, szdata                       );
+
+//   ---     ---     ---     ---     ---
+
+            if(szdata[2]) {                 // indexing required!
+                if(!(rd_tkx<rd_tki)) {
+                    NO_IDEX_OP:
+                    CALOUT(E, "Symbol %s requires indexing operation\n", raw_value);
+
+                    return;
+
+                }
+
+                elif(tokens[rd_tkx+1][0]==0x40) {
+                    mammi->state |= MAMMIT_SF_PFET;
+                    mammi->vaddr = (uintptr_t) &(((ADDR*) nulmy)->box);
+                    mammi->vtype = szdata[0] | (szdata[1]<<8) | (szdata[2]<<16);
+
+                } else {
+                    goto NO_IDEX_OP;
+
+                };
+
+//   ---     ---     ---     ---     ---
+
+            } else {                        // read as it is
+                uint*  var  = ADDRFET       (uint, nulmy                        );
+
+                for(uint i=0;i<szdata[0];i++) {
+                    if(i>size) { break; } value[i] = var[i];
+
+                };
+            }
+
+        } else {
+            CALOUT(E, "Can't fetch key %s\n", raw_value);
+
+        };
+    };
 
 //   ---     ---     ---     ---     ---
 
@@ -350,6 +398,19 @@ void MAEXPS(uchar** raw_value,
 
             flags |= OP_EQUL;
             MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
+        case 0x40:
+
+            if(!(mammi->state&MAMMIT_SF_PFET)) {
+                CALOUT(E, "Using '@' operator without fetch-from\n");
+                return;
+
+            };
+
+            MAMMIT_LVLB_NXT;
+            flags |= OP_AT;
 
             goto POP_OPSTOP;
 
@@ -525,7 +586,7 @@ void REGTP(void)                            {
 
         while(mammi->lvlb) {
             MAMMIT_LVLB_PRV;
-            CALCUS_COLLAPSE(&lhand, &value, &flags);
+            CALCUS_COLLAPSE(&lhand, &value, &flags, size);
 
         }; parsed++;
 
@@ -716,7 +777,7 @@ void REGTP(void)                            {
     }; MAEXPS                               (&raw_value, &lhand, &value, &flags, size);
 
                                             // collapse arithmetic-wise
-    SOLVE: CALCUS_COLLAPSE                  (&lhand, &value, &flags                  );
+    SOLVE: CALCUS_COLLAPSE                  (&lhand, &value, &flags, size            );
     goto EVAL_EXP;
 
 //   ---     ---     ---     ---     ---
@@ -729,7 +790,7 @@ void REGTP(void)                            {
 
 //   ---     ---     ---     ---     ---
 
-    uchar* vtest = mammi->lvalues+mammi->lvaltop+sizeof(ID);
+    uchar* vtest = (((ADDR*) mammi->lvalues)+mammi->lvaltop)->box;
     VALNEW(name, (uchar*) memlng->buff+0, size*elems);
 
     switch(rd_cast) {
@@ -1064,7 +1125,6 @@ void RDNXT(void)                            {
         case 0x3C:
         case 0x3D:
         case 0x3E:
-        case 0x40:
             if(mammi->state&MAMMIT_SF_PSEC) {
                 goto FORCE_INSERT;
 
@@ -1074,20 +1134,17 @@ void RDNXT(void)                            {
 
         case 0x22:
         case 0x23:
-
         case 0x25:
         case 0x27:
-
         case 0x2B:
         case 0x2D:
         case 0x2F:
         case 0x3F:
-
+        case 0x40:
         case 0x5B:
         case 0x5C:
         case 0x5D:
         case 0x5E:
-
         case 0x7C:
         case 0x7E:
             op[opi]=rd_cur; opi++;
@@ -1181,6 +1238,8 @@ int main(void)                              {
 
 "reg vars {\n\
  ulong2 x 1,(*>>:*=10);\n\
+ ulong y 3;\n\
+ ulong x0 x@y;\n\
 }\n",
 0);
 
@@ -1188,38 +1247,7 @@ int main(void)                              {
 
     CALOUT(E, "\e[38;2;128;255;128m\n$PEIN:\n%s\n\e[0m\e[38;2;255;128;128m$OUT:", rd_buff);
 
-    RDNXT();
-    CALOUT(E, "\e[0m");
-
-    void* nulmy=NULL;
-    STR_HASHGET(LNAMES_HASH, "x", nulmy, 0);
-
-    if(nulmy!=NULL) {
-        uint* x = ADDRFET(uint, nulmy);
-
-        uchar* type=((ADDR*) nulmy)->id.type;
-        CALOUT(K, "\
-BASE: %u\n\
-ARSZ: %u\n\
-INLV: %u\n\
-FLGS: %u\n\n",
-
-type[0],
-type[1],
-type[2],
-type[3]
-
-        );
-
-        for(uint i=0;i<4;i++) {
-            CALOUT(K, "%u: %u\n", i, x[i]);
-
-        };
-
-    } else {
-        CALOUT(E, "Can't fetch key!\n");
-
-    };
+    RDNXT(); CALOUT(E, "\e[0m");
 
     DLMEM(memlng);
     DLMEM(s);

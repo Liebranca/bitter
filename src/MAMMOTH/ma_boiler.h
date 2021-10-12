@@ -37,6 +37,9 @@ void   VALNEW  (uchar* name    ,
                 uchar* val     ,
                 uint   size    );           // used for populating lnames
 
+void VALSIZ    (uchar* type    ,
+                uchar*  to     );           // get size of base type
+
 //   ---     ---     ---     ---     ---
 // state flags...
 
@@ -45,6 +48,7 @@ void   VALNEW  (uchar* name    ,
 #define MAMMIT_SF_PESC 0x00000001
 #define MAMMIT_SF_PLIT 0x00000002
 #define MAMMIT_SF_PSEC 0x00000004
+#define MAMMIT_SF_PFET 0x00000008
 
 #define MAMMIT_SF_CNTX 0x0000FF00
 
@@ -209,6 +213,25 @@ void   VALNEW  (uchar* name    ,
                                             \
     case OP_TILDE:                          \
         OP_FORCEUNA(~); OPSWITCH_MINUSX;    \
+                                            \
+                                            \
+/*   ---     ---     ---     ---     --- */ \
+                                            \
+    case OP_AT: {                           \
+        uchar* addr = (uchar*) mammi->vaddr;\
+        addr       += ((ulong)(*v))         \
+                      * mammi->vtype&0xFF;  \
+                                            \
+        for(uint i=0;i<mammi->vtype&0xFF;i++) {    \
+            if(i>size) { break; }           \
+            (*r)+=addr[i];                  \
+                                            \
+        }; flags&=~OP_AT;                   \
+        mammi->state&=~MAMMIT_SF_PFET;\
+        OPSWITCH_MINUSX;                    \
+    };                                      \
+                                            \
+/*   ---     ---     ---     ---     --- */ \
                                             \
     default:                                \
         (*r)+=(*v); break;                  \

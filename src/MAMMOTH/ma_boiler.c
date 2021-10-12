@@ -17,6 +17,7 @@
 
 #include "ma_boiler.h"
 #include <string.h>
+#include <math.h>
 
 //   ---     ---     ---     ---     ---
 
@@ -193,10 +194,36 @@ void VALNEW(uchar* name,
     addr->id        = IDNEW(type, name);
 
     mammi->lvaltop += size+sizeof(ID);
-
     for(uint x=0; x<size; x++) {            // copy bytes over
         addr->box[x]=val[x];
                                             // insert in hash for later fetch by key
     }; HASHSET                              (LNAMES_HASH, byref(addr->id));                 };
+
+//   ---     ---     ---     ---     ---
+
+void VALSIZ(uchar* type, uchar* to) {
+
+    uchar base    = type[0];
+    uchar arrsize = type[1];
+    uchar indlvl  = type[2];
+    uchar flags   = type[3];
+
+    to[0]         = 4;
+    to[1]         = (uint) (pow(2, arrsize)+0.5);
+    to[2]         = (indlvl | arrsize) != 0;
+
+//   ---     ---     ---     ---     ---
+
+    if(base < 0x03) {                       // funptr
+        to[0]=sizeof(STARK); return;
+
+    } elif( 0x03 >= base \
+      &&    0x07 <= base ) {                // num type
+        to[0]=2*(base-0x03);
+        if(!to[0]) { to[0]=1; }
+
+        return;
+
+    }; to[0]=sizeof(float);                                                                 };
 
 //   ---     ---     ---     ---     ---

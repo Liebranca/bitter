@@ -2,6 +2,7 @@
 #define __MA_BOXES_H__
 
 #include "KVRNEL/TYPES/zjc_hash.h"
+#include <inttypes.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -67,14 +68,17 @@ typedef struct MAMM_INTERPRETER {           // smach for pe-text input
 
     };
 
-    uchar  lvla_stack[256      ];           // markers for recalling previous context
-    uint   lvlb_stack[256      ];           // ^idem, for prev evalstate of expression
+    uchar     lvla_stack[256   ];           // markers for recalling previous context
+    uint      lvlb_stack[256   ];           // ^idem, for prev evalstate of expression
 
-    uint   lvaltop;                         // next offset @lvalues that's free
-    uchar  lvalues   [NAMESZ];              // yer vars arrrr
+    uintptr_t vaddr;                        // next fetch at
+    uint      vtype;                        // next fetch data
 
-    SYMBOL slots     [NAMESZ];              // array of built-ins
-    STK    slstack;                         // stack of (free)indices into built-ins array
+    uint      lvaltop;                      // next offset @lvalues that's free
+    uchar     lvalues   [NAMESZ];           // yer vars arrrr
+
+    SYMBOL    slots     [NAMESZ];           // array of built-ins
+    STK       slstack;                      // stack of (free)indices into built-ins array
 
 } MAMMIT; extern MAMMIT* mammi;
 
