@@ -121,12 +121,12 @@ void VALSIZ    (uchar* type    ,
 //   ---     ---     ---     ---     ---
 
 #define OP_W_EQUR                           \
-    OP_GT    | OP_LT                        \
+  ( OP_GT    | OP_LT                        \
   | OP_BANG  | OP_MODUS                     \
   | OP_AMPER | OP_XORUS                     \
   | OP_MINUS | OP_MUL                       \
   | OP_DIV   | OP_PIPE                      \
-  | OP_EQUL
+  | OP_EQUL  )
 
 //   ---     ---     ---     ---     ---
 

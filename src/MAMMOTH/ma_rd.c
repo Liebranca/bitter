@@ -372,7 +372,6 @@ void MAEXPS(uchar** raw_value,
             flags  = mammi->lvlb_stack[mammi->lvlb-1]&OP_MINUS;
             mammi->lvlb_stack[mammi->lvlb-1] &=~OP_MINUS;
             flags |= OP_BANG;
-            MAMMIT_LVLB_NXT;
 
             goto POP_OPSTOP;
 
@@ -380,7 +379,6 @@ void MAEXPS(uchar** raw_value,
             flags  = mammi->lvlb_stack[mammi->lvlb-1]&OP_MINUS;
             mammi->lvlb_stack[mammi->lvlb-1] &=~OP_MINUS;
             flags |= OP_TILDE;
-            MAMMIT_LVLB_NXT;
 
             goto POP_OPSTOP;
 
@@ -388,11 +386,24 @@ void MAEXPS(uchar** raw_value,
 
         case 0x3D:
 
-            if( flags&OP_W_EQUR \
-            &&  mammi->lvlb     ) {
-                mammi->lvlb_stack[mammi->lvlb-1] |= OP_EQUR;
+            if(mammi->lvlb) {
 
-                goto POP_OPSTOP;
+                if((*raw_value)[1]==0x3D) {
+                    ;
+
+                }
+
+                elif(mammi->lvlb_stack[mammi->lvlb-1]&OP_W_EQUR) {
+                    mammi->lvlb_stack[mammi->lvlb-1] |= OP_EQUR;
+
+                    goto POP_OPSTOP;
+                }
+
+                elif(flags&OP_W_EQUR) {
+                    flags |= OP_EQUR;
+
+                    goto POP_OPSTOP;
+                };
 
             };
 
@@ -580,7 +591,7 @@ void REGTP(void)                            {
     EVAL_EXP: rd_tkx++;                     // read next token in expression
 
     if( !(rd_tkx<rd_tki) \
-    ||   (parsed>=elems ) ) { goto RESULT; }// ... or jump to end if all tokens read
+    ||   (parsed>=elems) ) { goto RESULT; } // ... or jump to end if all tokens read
 
     uint   flags      = 0;                  // values defined above MAMMIT_OPSWITCH
     uchar* raw_value  = tokens[rd_tkx];     // current token
@@ -790,13 +801,15 @@ void REGTP(void)                            {
     }; MAEXPS                               (&raw_value, &lhand, &value, &flags, size);
 
                                             // collapse arithmetic-wise
-    SOLVE: CALCUS_COLLAPSE                  (&lhand, &value, &flags, size            );
+    SOLVE: CALOUT(E, "l%d\t 0x%" PRIX32 "\t v%d\t -> ", *lhand, flags, *value);
+ CALCUS_COLLAPSE                  (&lhand, &value, &flags, size            );
+CALOUT(E, "%d\n", *lhand);
     goto EVAL_EXP;
 
 //   ---     ---     ---     ---     ---
 
     RESULT: if(mammi->lvlb>0) {             // collapse expression if unresolved
-        MAMMIT_LVLB_PRV;                     // this doesn't account for unclosed () parens
+        MAMMIT_LVLB_PRV;                    // this doesn't account for unclosed () parens
         goto SOLVE;                         // so beware! PE$O will not care for that mistake
 
     };
@@ -1253,10 +1266,8 @@ int main(void)                              {
     RPSTR(&s,
 
 "reg vars {\n\
- ulong2 x  1,(*>>:*=10);\n\
- ulong  y  2;\n\
- ulong  x0 x@y+1:+0x0A;\n\
- ulong  x1 x0+0x10;\n\
+  long x !1 == 1-1;\n\
+  long y !:1 == 1-1;\n\
 }\n",
 0);
 
