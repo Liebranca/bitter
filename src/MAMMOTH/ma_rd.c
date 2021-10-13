@@ -215,8 +215,8 @@ void TRNVAL(uchar* raw_value,
 
                 elif(tokens[rd_tkx+1][0]==0x40) {
                     mammi->state |= MAMMIT_SF_PFET;
-                    mammi->vaddr = (uintptr_t) &(((ADDR*) nulmy)->box);
-                    mammi->vtype = szdata[0] | (szdata[1]<<8) | (szdata[2]<<16);
+                    mammi->vaddr  = (uintptr_t) &(((ADDR*) nulmy)->box);
+                    mammi->vtype  = szdata[0] | (szdata[1]<<8) | (szdata[2]<<16);
 
                 } else {
                     goto NO_IDEX_OP;
@@ -409,9 +409,22 @@ void MAEXPS(uchar** raw_value,
 
             };
 
-            MAMMIT_LVLB_NXT;
             flags |= OP_AT;
+            MAMMIT_LVLB_NXT;
 
+            goto POP_OPSTOP;
+
+        case 0x3A:
+
+            if(mammi->state&MAMMIT_SF_PFET) {
+                MAMMIT_LVLB_PRV;
+                CALCUS_COLLAPSE(&lhand, &value, &flags, size);
+                MAMMIT_LVLB_PRV;
+                CALCUS_COLLAPSE(&lhand, &value, &flags, size);
+
+                goto POP_OPSTOP;
+
+            }; MAMMIT_LVLB_NXT;
             goto POP_OPSTOP;
 
 //   ---     ---     ---     ---     ---
@@ -1115,7 +1128,10 @@ void RDNXT(void)                            {
 //   ---     ---     ---     ---     ---    OPERATORS L
 
         case 0x3A:
-            goto APTOK;
+            if(mammi->state&MAMMIT_SF_PSEC) {
+                goto APTOK;
+
+            }; goto OP_NONSEC;
 
         case 0x21:                          // @(sec) operators
         case 0x24:                          // used for memlng hackery
@@ -1146,7 +1162,7 @@ void RDNXT(void)                            {
         case 0x5D:
         case 0x5E:
         case 0x7C:
-        case 0x7E:
+        case 0x7E: OP_NONSEC:
             op[opi]=rd_cur; opi++;
             goto APTOK;
 
@@ -1237,9 +1253,10 @@ int main(void)                              {
     RPSTR(&s,
 
 "reg vars {\n\
- ulong2 x 1,(*>>:*=10);\n\
- ulong y 3;\n\
- ulong x0 x@y;\n\
+ ulong2 x  1,(*>>:*=10);\n\
+ ulong  y  2;\n\
+ ulong  x0 x@y+1:+0x0A;\n\
+ ulong  x1 x0+0x10;\n\
 }\n",
 0);
 

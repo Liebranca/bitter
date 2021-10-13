@@ -222,8 +222,9 @@ void VALSIZ    (uchar* type    ,
         addr       += ((ulong)(*v))         \
                       * mammi->vtype&0xFF;  \
                                             \
-        for(uint i=0;i<mammi->vtype&0xFF;i++) {    \
-            if(i>size) { break; }           \
+        for(uint i=0;                       \
+            i<mammi->vtype&0xFF;i++) {      \
+            if(i>=size) { break; }          \
             (*r)+=addr[i];                  \
                                             \
         }; flags&=~OP_AT;                   \
