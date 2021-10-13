@@ -28,130 +28,117 @@
 void REGMA(void)                            {
     if(!(mammi->state&MAMMIT_SF_CREG)) {    // if unset, do and ret
         mammi->state |= MAMMIT_SF_CREG;     // set state
-
         rd_tkx++; uchar* name = tokens[rd_tkx];
         CALOUT(K, "reg %s\n", name);
 
         return;
 
-    }; mammi->state &=~MAMMIT_SF_CREG;      // effectively, an implicit else
+    }; CALOUT(K, "UT REG\n");
+mammi->state &=~MAMMIT_SF_CREG;      // effectively, an implicit else
                                                                                             };
 
 //   ---     ---     ---     ---     ---
 
-void CALCUS_COLLAPSE(uchar** lhand_ptr,
-                     uchar** value_ptr,
-                     uint*   flags_ptr,
-                     uint    size     )     {
+void REGPROC(void)                          {
+    ;
 
-    uchar* lhand = *lhand_ptr;
-    uchar* value = *value_ptr;
-    uint   flags = *flags_ptr;
+};
+
+//   ---     ---     ---     ---     ---
+
+void CALCUS_COLLAPSE(void)                  {
 
     switch(rd_cast) {
 
         case 0x03: {
-            schar* r = (schar*) lhand;
-            schar* v = (schar*) value;
+            schar* r = (schar*) rd_lhand;
+            schar* v = (schar*) rd_value;
             CALCUS_OPSWITCH;
 
         } case 0x07: {
-            uchar* r = (uchar*) lhand;
-            uchar* v = (uchar*) value;
+            uchar* r = (uchar*) rd_lhand;
+            uchar* v = (uchar*) rd_value;
             CALCUS_OPSWITCH;
 
 //   ---     ---     ---     ---     ---
 
         } case 0x04: {
-            sshort* r = (sshort*) lhand;
-            sshort* v = (sshort*) value;
+            sshort* r = (sshort*) rd_lhand;
+            sshort* v = (sshort*) rd_value;
             CALCUS_OPSWITCH;
 
         } case 0x08: {
-            ushort* r = (ushort*) lhand;
-            ushort* v = (ushort*) value;
+            ushort* r = (ushort*) rd_lhand;
+            ushort* v = (ushort*) rd_value;
             CALCUS_OPSWITCH;
 
 //   ---     ---     ---     ---     ---
 
         } case 0x05: {
-            sint* r = (sint*) lhand;
-            sint* v = (sint*) value;
+            sint* r = (sint*) rd_lhand;
+            sint* v = (sint*) rd_value;
 
             CALCUS_OPSWITCH;
 
         } case 0x09: {
-            uint* r = (uint*) lhand;
-            uint* v = (uint*) value;
+            uint* r = (uint*) rd_lhand;
+            uint* v = (uint*) rd_value;
             CALCUS_OPSWITCH;
 
 //   ---     ---     ---     ---     ---
 
         } case 0x06: {
-            slong* r = (slong*) lhand;
-            slong* v = (slong*) value;
+            slong* r = (slong*) rd_lhand;
+            slong* v = (slong*) rd_value;
             CALCUS_OPSWITCH;
 
         } case 0x0A: {
-            ulong* r = (ulong*) lhand;
-            ulong* v = (ulong*) value;
+            ulong* r = (ulong*) rd_lhand;
+            ulong* v = (ulong*) rd_value;
             CALCUS_OPSWITCH;
 
 //   ---     ---     ---     ---     ---
 
         } default: {
-            float* r = (float*) lhand;
-            float* v = (float*) value;
+            float* r = (float*) rd_lhand;
+            float* v = (float*) rd_value;
             CALCUS_OPSWITCH;
 
         };
-    };
+    };                                                                                      };
 
 //   ---     ---     ---     ---     ---
 
-    *flags_ptr=flags;
-    *lhand_ptr=lhand;
-    *value_ptr=value;                                                                       };
-
-//   ---     ---     ---     ---     ---
-
-void TRNVAL(uchar* raw_value,
-            uchar* value    ,
-            uint*  flags_ptr,
-
-            uint   len      ,
-            uint   size     )               {
+void TRNVAL(uint len)                       {
 
     int  evil  = 0;
-
-    uint flags = *flags_ptr;
     uint vlen  = len-1;
 
                                             // set OP_RADIX
-    flags |=                                (strstr(typedata.base, "float") != NULL) << 1;
+    rd_flags |=                             (strstr(typedata.base, "float") != NULL) << 1;
 
 //   ---     ---     ---     ---     ---
 
 
-    if( (0x30 <= raw_value[0])
-    &&  (0x39 >= raw_value[0]) ) {
+    if( (0x30 <= rd_rawv[0])
+    &&  (0x39 >= rd_rawv[0]) ) {
 
         if(len>1) {                         // not a single digit
 
-            if(strstr(raw_value, ".")
-            || flags&OP_RADIX       ) {     // is float
+            if(strstr(rd_rawv, ".")
+            || rd_flags&OP_RADIX  ) {       // is float
                 goto RD_ASFLTP;
 
             }
 
-            elif(raw_value[0]==0x30) {      // starts with a zero and is not 0.****
+            elif(rd_rawv[0]==0x30) {        // starts with a zero and is not 0.****
 
-                if  (raw_value[1]==0x78) {  // is hexlit
-                    TRHEXVAL                (raw_value+vlen, value, size        );
+                if  (rd_rawv[1]==0x78) {    // is hexlit
+                    TRHEXVAL                (rd_rawv+vlen, rd_value, rd_size     );
                 }
 
-                elif(raw_value[1]==0x62) {  // is bitlit
-                    TRBITVAL                (raw_value+vlen, value, size        );
+                elif(rd_rawv[1]==0x62) {    // is bitlit
+                    TRBITVAL                (rd_rawv+vlen, rd_value, rd_size     );
 
                 };
             }
@@ -159,7 +146,7 @@ void TRNVAL(uchar* raw_value,
 //   ---     ---     ---     ---     ---
 
             else {                          // string -> decimal
-                TRDECVAL                    (raw_value, value, size             );
+                TRDECVAL                    (rd_rawv, rd_value, rd_size          );
 
             }
         }
@@ -167,25 +154,25 @@ void TRNVAL(uchar* raw_value,
 //   ---     ---     ---     ---     ---
 
         elif(len==1) {                      // boring corner case: single decimal digit
-            if(flags&OP_RADIX) {
+            if(rd_flags&OP_RADIX) {
                 goto RD_ASFLTP;
 
-            }; value[0]=raw_value[0]-0x30;
+            }; rd_value[0]=rd_rawv[0]-0x30;
 
         };
     }
 
 //   ---     ---     ---     ---     ---
 
-    elif(raw_value[0]==0x2E) {              // cool corner case: floats
+    elif(rd_rawv[0]==0x2E) {                // cool corner case: floats
 
                                             // catch incorrect data size
-        RD_ASFLTP: MAMMCTCH                 (NOOVERSZ(size, sizeof(float)), evil,
-                                             MAMMIT_EV_VSIZ, typedata.base      );
+        RD_ASFLTP: MAMMCTCH                 (NOOVERSZ(rd_size, sizeof(float)     ),
+                                             evil, MAMMIT_EV_VSIZ, typedata.base );
 
-        flags|=OP_RADIX;
+        rd_flags|=OP_RADIX;
 
-        TRFLTVAL                            (raw_value, value, size             );
+        TRFLTVAL                            (rd_rawv, rd_value, rd_size          );
     }
 
 //   ---     ---     ---     ---     ---
@@ -196,18 +183,18 @@ void TRNVAL(uchar* raw_value,
         uchar szdata[3] = {0,0,0};          // stor for typedata
 
                                             // fetch
-        STR_HASHGET                         (LNAMES_HASH, raw_value, nulmy, 0   );
+        STR_HASHGET                         (LNAMES_HASH, rd_rawv, nulmy, 0      );
 
         if(nulmy!=NULL) {                   // get type and decode typedata
-            uchar* type =                   ((ADDR*) nulmy)->id.type;           \
-            VALSIZ                          (type, szdata                       );
+            uchar* type =                   ((ADDR*) nulmy)->id.type;            \
+            VALSIZ                          (type, szdata                        );
 
 //   ---     ---     ---     ---     ---
 
             if(szdata[2]) {                 // indexing required!
                 if(!(rd_tkx<rd_tki)) {
                     NO_IDEX_OP:
-                    CALOUT(E, "Symbol %s requires indexing operation\n", raw_value);
+                    CALOUT(E, "Symbol %s requires indexing operation\n", rd_rawv);
 
                     return;
 
@@ -216,7 +203,7 @@ void TRNVAL(uchar* raw_value,
                 elif(tokens[rd_tkx+1][0]==0x40) {
                     mammi->state |= MAMMIT_SF_PFET;
                     mammi->vaddr  = (uintptr_t) &(((ADDR*) nulmy)->box);
-                    mammi->vtype  = szdata[0] | (szdata[1]<<8) | (szdata[2]<<16);
+                    mammi->vtype  = szdata[0] | (szdata[1]<<8) | (szdata[2]<<16 );
 
                 } else {
                     goto NO_IDEX_OP;
@@ -229,13 +216,13 @@ void TRNVAL(uchar* raw_value,
                 uint*  var  = ADDRFET       (uint, nulmy                        );
 
                 for(uint i=0;i<szdata[0];i++) {
-                    if(i>size) { break; } value[i] = var[i];
+                    if(i>rd_size) { break; } rd_value[i] = var[i];
 
                 };
             }
 
         } else {
-            CALOUT(E, "Can't fetch key %s\n", raw_value);
+            CALOUT(E, "Can't fetch key %s\n", rd_rawv);
 
         };
     };
@@ -244,10 +231,10 @@ void TRNVAL(uchar* raw_value,
 
     BOT:
 
-    if(flags&OP_MINUS) {                    // if negative, do the bit flipping
+    if(rd_flags&OP_MINUS) {                 // if negative, do the bit flipping
 
-        if(flags&OP_RADIX) {                // floats
-            value[3] |= 0x80;
+        if(rd_flags&OP_RADIX) {             // floats
+            rd_value[3] |= 0x80;
 
         }
 
@@ -256,16 +243,16 @@ void TRNVAL(uchar* raw_value,
         else {                              // everything else
 
             for(uint x=0, carry=0;
-                x<size; x++      ) {        // take two's
-                value[x]=(~value[x]);       // flip bits
+                x<rd_size; x++      ) {     // take two's
+                rd_value[x]=(~rd_value[x]); // flip bits
                 if(!x || carry) {
-                    if(value[x]==0xFF) {
-                        value[x] += 1;      // overflows. add one and set carry
+                    if(rd_value[x]==0xFF) {
+                        rd_value[x] += 1;   // overflows. add one and set carry
                         carry     = 1;
                     }
 
                     else {
-                        value[x] += 1;      // won't overflow, so add and no carry
+                        rd_value[x] += 1;   // won't overflow, so add and no carry
                         carry     = 0;
 
                     };
@@ -273,76 +260,67 @@ void TRNVAL(uchar* raw_value,
             };
         };
 
-    }; *flags_ptr=flags;                                                                    };
+    };                                                                                      };
 
 //   ---     ---     ---     ---     ---
 
-void MAEXPS(uchar** raw_value,
-            uchar** lhand_ptr,
-            uchar** value_ptr,
-
-            uint*   flags_ptr,
-            uint    size     )              {
-
-    uchar* lhand = *lhand_ptr;
-    uchar* value = *value_ptr;
-    uint   flags = *flags_ptr;
+void MAEXPS(void)                           {
 
     TOP:                                    // if operator chars in token, eval and pop them
-    switch((*raw_value)[0]) {
+    switch(rd_rawv[0]) {
 
         default: break;
 
 //   ---     ---     ---     ---     ---
 
         case 0x26:
-            if(flags&OP_AMPER) {
-                flags &=~OP_AMPER;
-                flags |= OP_DAMPR;
+            if(rd_flags&OP_AMPER) {
+                rd_flags &=~OP_AMPER;
+                rd_flags |= OP_DAMPR;
 
                 MAMMIT_LVLB_NXT;
 
                 goto POP_OPSTOP;
 
-            };  flags |= OP_AMPER;
+            };  rd_flags |= OP_AMPER;
 
             goto POP_OPSTOP;
 
         case 0x7c:
-            if(flags&OP_PIPE) {
-                flags &=~OP_PIPE;
-                flags |= OP_DPIPE;
+            if(rd_flags&OP_PIPE) {
+                rd_flags &=~OP_PIPE;
+                rd_flags |= OP_DPIPE;
 
                 MAMMIT_LVLB_NXT;
 
                 goto POP_OPSTOP;
 
-            };  flags |= OP_PIPE;
+            };  rd_flags |= OP_PIPE;
 
             goto POP_OPSTOP;
 
 //   ---     ---     ---     ---     ---
 
         case 0x24:
-            flags |= OP_MONEY;
+            rd_flags |= OP_MONEY;
 
             goto POP_OPSTOP;
 
         case 0x25:
-            flags |= OP_MODUS;
+            rd_flags |= OP_MODUS;
 
             goto POP_OPSTOP;
 
         case 0x5e:
-            flags |= OP_XORUS;
+            rd_flags |= OP_XORUS;
 
             goto POP_OPSTOP;
 
 //   ---     ---     ---     ---     ---
 
         case 0x2B:
-            flags &=~OP_MUL;
-            flags &=~OP_DIV;
+            rd_flags &=~OP_MUL;
+            rd_flags &=~OP_DIV;
 
         case 0x28: MAMMIT_LVLB_NXT;
             goto POP_OPSTOP;
@@ -350,35 +328,35 @@ void MAEXPS(uchar** raw_value,
 //   ---     ---     ---     ---     ---
 
         case 0x2D:
-            flags |= OP_MINUS;
+            rd_flags |= OP_MINUS;
 
             goto POP_OPSTOP;
 
         case 0x2A:
-            flags |= OP_MUL;
-            flags &=~OP_DIV;
+            rd_flags |= OP_MUL;
+            rd_flags &=~OP_DIV;
 
             goto POP_OPSTOP;
 
         case 0x2F:
-            flags &=~OP_MUL;
-            flags |= OP_DIV;
+            rd_flags &=~OP_MUL;
+            rd_flags |= OP_DIV;
 
             goto POP_OPSTOP;
 
 //   ---     ---     ---     ---     ---
 
         case 0x21: MAMMIT_LVLB_NXT;
-            flags  = mammi->lvlb_stack[mammi->lvlb-1]&OP_MINUS;
+            rd_flags  = mammi->lvlb_stack[mammi->lvlb-1]&OP_MINUS;
             mammi->lvlb_stack[mammi->lvlb-1] &=~OP_MINUS;
-            flags |= OP_BANG;
+            rd_flags |= OP_BANG;
 
             goto POP_OPSTOP;
 
         case 0x7e: MAMMIT_LVLB_NXT;
-            flags  = mammi->lvlb_stack[mammi->lvlb-1]&OP_MINUS;
+            rd_flags  = mammi->lvlb_stack[mammi->lvlb-1]&OP_MINUS;
             mammi->lvlb_stack[mammi->lvlb-1] &=~OP_MINUS;
-            flags |= OP_TILDE;
+            rd_flags |= OP_TILDE;
 
             goto POP_OPSTOP;
 
@@ -388,7 +366,7 @@ void MAEXPS(uchar** raw_value,
 
             if(mammi->lvlb) {
 
-                if((*raw_value)[1]==0x3D) {
+                if(rd_rawv[1]==0x3D) {
                     ;
 
                 }
@@ -399,15 +377,15 @@ void MAEXPS(uchar** raw_value,
                     goto POP_OPSTOP;
                 }
 
-                elif(flags&OP_W_EQUR) {
-                    flags |= OP_EQUR;
+                elif(rd_flags&OP_W_EQUR) {
+                    rd_flags |= OP_EQUR;
 
                     goto POP_OPSTOP;
                 };
 
             };
 
-            flags |= OP_EQUL;
+            rd_flags |= OP_EQUL;
             MAMMIT_LVLB_NXT;
 
             goto POP_OPSTOP;
@@ -420,7 +398,7 @@ void MAEXPS(uchar** raw_value,
 
             };
 
-            flags |= OP_AT;
+            rd_flags |= OP_AT;
             MAMMIT_LVLB_NXT;
 
             goto POP_OPSTOP;
@@ -429,9 +407,9 @@ void MAEXPS(uchar** raw_value,
 
             if(mammi->state&MAMMIT_SF_PFET) {
                 MAMMIT_LVLB_PRV;
-                CALCUS_COLLAPSE(&lhand, &value, &flags, size);
+                CALCUS_COLLAPSE();
                 MAMMIT_LVLB_PRV;
-                CALCUS_COLLAPSE(&lhand, &value, &flags, size);
+                CALCUS_COLLAPSE();
 
                 goto POP_OPSTOP;
 
@@ -451,7 +429,7 @@ void MAEXPS(uchar** raw_value,
                 };
             };
 
-            flags |= OP_LT;
+            rd_flags |= OP_LT;
             MAMMIT_LVLB_NXT;
 
             goto POP_OPSTOP;
@@ -467,23 +445,23 @@ void MAEXPS(uchar** raw_value,
                 };
             };
 
-            flags |= OP_GT;
+            rd_flags |= OP_GT;
             MAMMIT_LVLB_NXT;
 
 //   ---     ---     ---     ---     ---
 
         POP_OPSTOP:
-            (*raw_value)++; goto TOP;
+            rd_rawv++; goto TOP;
 
     };
 
 //   ---     ---     ---     ---     ---
 
-    uint len = strlen(*raw_value);
+    uint len = strlen(rd_rawv);
     if(!len) { goto END; }
 
     POP_TERMINATORS:                        // same as oppies, but at end of token
-    switch((*raw_value)[len-1]) {
+    switch(rd_rawv[len-1]) {
 
         default: break;
 
@@ -495,7 +473,7 @@ void MAEXPS(uchar** raw_value,
             }; mammi->state &=~MAMMIT_SF_PSEC;
 
         POP_TESTOP:
-            (*raw_value)[len-1]=0x00;
+            rd_rawv[len-1]=0x00;
             len--; if(!len) { goto END; }
             goto POP_TERMINATORS;
 
@@ -503,13 +481,174 @@ void MAEXPS(uchar** raw_value,
 
 //   ---     ---     ---     ---     ---
 
-                                            // translate string into value
-    TRNVAL                                  (*raw_value, value, &flags, len, size);
+    TRNVAL(len);                            // translate string into value
+    END: ;                                                                                  };
 
-    END:
-    *flags_ptr=flags;
-    *lhand_ptr=lhand;
-    *value_ptr=value;                                                                       };
+//   ---     ---     ---     ---     ---
+
+void SECEXPS(uchar** result)                {
+
+    rd_oldval = rd_value+rd_size;
+
+    for(uint x=0; x<rd_size; x++) {
+        rd_oldval[x]=rd_value[x];
+
+    }; mammi->state |= MAMMIT_SF_PSEC;
+
+    MAEXPS();                               // expand token (parse operators, fetch values)
+
+//   ---     ---     ---     ---     ---
+
+    /*
+    @(sec) syntax:
+
+        $ lower bound                           x
+        * ptr                                   x
+        & upper bound
+
+        ptr<N decrease ptr by N                 x
+        ptr>N increase ptr by N                 x
+
+        *>> move ptr to upper bound             x
+        *<< move ptr to lower bound             x
+
+        ptr#v exchange values betwen ptr && v
+        ptr=v set *ptr to v
+        =v    flood fill $ to Ç with v          x
+        =     blank out $ to Ç                  x
+        :     separate expressions              x
+
+        */
+
+//   ---     ---     ---     ---     ---
+
+    uint  sflags_i = 0;
+    uint* sflags   = mammi->lvlb_stack+0;
+    ulong sec_val  = (*((ulong*) rd_value)) & szmask_a;
+
+    for(uint x=0; x<rd_size; x++) {
+        rd_value[x]=rd_oldval[x];
+
+    };
+
+//   ---     ---     ---     ---     ---
+
+    SECTOP: switch(sflags[sflags_i]) {
+
+        case OP_GT | OP_MONEY: sflags[sflags_i] &=~ (OP_GT | OP_MONEY);
+            if(!sec_val) {
+                sec_beg+=rd_size;
+
+            } else {
+                sec_beg+=sec_val*rd_size;
+
+            }; break;
+
+        case OP_LT | OP_MONEY: sflags[sflags_i] &=~ (OP_LT | OP_MONEY);
+            if(!sec_val) {
+                sec_beg-=rd_size;
+
+            } else {
+                sec_beg-=sec_val*rd_size;
+
+            }; if(sec_beg>=sec_end) {
+                sec_beg=sec_end-rd_size;
+
+            }; break;
+
+//   ---     ---     ---     ---     ---
+
+        case OP_GT | OP_AMPER: sflags[sflags_i] &=~ (OP_GT | OP_AMPER);
+            if(!sec_val) {
+                sec_end+=rd_size;
+
+            } else {
+                sec_end+=sec_val*rd_size;
+
+            }; if(sec_end>rd_elems*rd_size) {
+                sec_end=rd_elems*rd_size;
+
+            }; break;
+
+        case OP_LT | OP_AMPER: sflags[sflags_i] &=~ (OP_LT | OP_AMPER);
+            if(!sec_val) {
+                sec_end-=rd_size;
+
+            } else {
+                sec_end-=sec_val*rd_size;
+
+            }; if(sec_beg>=sec_end) {
+                sec_end=sec_beg+rd_size;
+
+            }; break;
+
+//   ---     ---     ---     ---     ---
+
+        case OP_GT | OP_MUL: sflags[sflags_i] &=~ (OP_GT | OP_MUL);
+            if(!sec_val) { lngptr+=rd_size; break; }
+            lngptr += sec_val*rd_size; break;
+
+        case OP_LT | OP_MUL: sflags[sflags_i] &=~ (OP_LT | OP_MUL);
+            if(!sec_val) { lngptr-=rd_size; break; }
+            lngptr -= sec_val*rd_size; break;
+
+//   ---     ---     ---     ---     ---
+
+        case OP_LSHFT | OP_MUL: sflags[sflags_i] &=~ (OP_LSHFT | OP_MUL);
+            lngptr = 0; break;
+
+        case OP_RSHFT | OP_MUL: sflags[sflags_i] &=~ (OP_RSHFT | OP_MUL);
+            lngptr = sec_end-rd_size; break;
+
+//   ---     ---     ---     ---     ---
+
+        case OP_EQUL | OP_MUL: { sflags[sflags_i] &=~ (OP_EQUL | OP_MUL);
+
+            uchar* addr=((uchar*) memlng->buff)+lngptr;
+
+            if(!sec_val) {
+                CLMEM2(addr, rd_size);
+
+            } else {
+                for(uint x=0; x<rd_size; x++) {
+                    addr[x]=sec_val>>(x*8);
+
+                };
+            };
+
+            break;
+        }
+
+//   ---     ---     ---     ---     ---
+
+        case OP_EQUL: { sflags[sflags_i] &=~ OP_EQUL;
+            uchar* addr=((uchar*) memlng->buff)+sec_beg;
+
+            if(!sec_val) {
+                CLMEM2(addr, sec_end-sec_beg);
+
+            } else {
+                for(uint x=sec_beg; x<sec_end; x+=rd_size, addr+=rd_size) {
+                    for(uint y=0; y<rd_size; y++) {
+                        addr[y]=sec_val>>(y*8);
+
+                    };
+                };
+            };
+
+            break;
+        }
+
+//   ---     ---     ---     ---     ---
+
+    }; sflags_i++; if(sflags_i<=mammi->lvlb) { goto SECTOP; }
+
+    rd_lhand    = ((uchar*) memlng->buff)+lngptr;
+
+    *result     = rd_lhand;
+    rd_value    = rd_lhand+rd_size;
+
+    mammi->lvlb = 0;                                                                        };
 
 //   ---     ---     ---     ---     ---
 
@@ -520,15 +659,15 @@ void REGTP(void)                            {
 
     uchar* name       = tokens[rd_tkx];     // fetch, stay put
 
-    uint   size       = 4;                  // ensure elem count is always a power of 2
-    uint   elems      =                     (uint) (pow(2, typedata.arrsize)+0.5      );
+    rd_size           = 4;                  // ensure elem count is always a power of 2
+    rd_elems          =                     (uint) (pow(2, typedata.arrsize)+0.5      );
 
     uint   parsed     = 0;                  // how many *expressions* have been read
 
 //   ---     ---     ---     ---     ---
 
-    ulong szmask_a    = 0x0000000000000000;
-    ulong szmask_b    = 0x0000000000000000;
+    szmask_a          = 0x0000000000000000;
+    szmask_b          = 0x0000000000000000;
 
     switch(rd_cast) {                       // for 'dynamic' type-casting
                                             // we set size to sizeof x C type!
@@ -536,274 +675,113 @@ void REGTP(void)                            {
                                             // look at KVRNEL/zjc_CommonTypes.h
 
         case 0x00: szmask_a = 0xFFFFFFFFFFFFFFFF;
-            size=sizeof(void* ); break;
+            rd_size=sizeof(void* ); break;
 
         case 0x01:
         case 0x02: szmask_a = 0xFFFFFFFFFFFFFFFF;
                    szmask_b = 0xFFFFFFFFFFFFFFFF;
 
-            size=sizeof(STARK ); break;
+            rd_size=sizeof(STARK ); break;
 
 //   ---     ---     ---     ---     ---
 
         case 0x03:
         case 0x07: szmask_a = 0x00000000000000FF;
-            size=sizeof(uchar ); break;
+            rd_size=sizeof(uchar ); break;
 
         case 0x04:
         case 0x08: szmask_a = 0x000000000000FFFF;
-            size=sizeof(ushort); break;
+            rd_size=sizeof(ushort); break;
 
         case 0x05:
         case 0x09: szmask_a = 0x00000000FFFFFFFF;
-            size=sizeof(uint  ); break;
+            rd_size=sizeof(uint  ); break;
 
         case 0x06:
         case 0x0A: szmask_a = 0xFFFFFFFFFFFFFFFF;
-            size=sizeof(ulong ); break;
+            rd_size=sizeof(ulong ); break;
 
 //   ---     ---     ---     ---     ---
 
         default  : szmask_a = 0x00000000FFFFFFFF;
-            size=sizeof(float ); break;
+            rd_size=sizeof(float ); break;
 
     };
 
 //   ---     ---     ---     ---     ---
 
                                             // redeclaration block
-    int    evil       = 0; MAMMCTCH         (NOREDCL(name), evil, MAMMIT_EV_DECL, name);
-    CALOUT                                  (K, "DECL: %s %s[%u]", type, name, elems  );
+    int    evil       = 0; MAMMCTCH         (NOREDCL(name), evil, MAMMIT_EV_DECL, name );
+    CALOUT                                  (K, "DECL: %s %s[%u]", type, name, rd_elems);
 
     uint ex_f         = rd_tkx+1;           // idex to first token in expression
     uchar* result     = (uchar*) memlng->buff+0;
-    uchar* lhand      = result;
+    rd_lhand          = result;
 
     lngptr            = 0;
 
-    uint  sec_beg     = lngptr;
-    uint  sec_end     = elems*size;
+    sec_beg           = lngptr;
+    sec_end           = rd_elems*rd_size;
 
-    CLMEM2(lhand, size);
+    CLMEM2(rd_lhand, rd_size);
 
 //   ---     ---     ---     ---     ---
 
     EVAL_EXP: rd_tkx++;                     // read next token in expression
 
-    if( !(rd_tkx<rd_tki) \
-    ||   (parsed>=elems) ) { goto RESULT; } // ... or jump to end if all tokens read
+    if( !(rd_tkx<rd_tki   ) \
+    ||   (parsed>=rd_elems) ) {             // ... or jump to end if all tokens read
+        goto RESULT;
 
-    uint   flags      = 0;                  // values defined above MAMMIT_OPSWITCH
-    uchar* raw_value  = tokens[rd_tkx];     // current token
+    }; rd_flags     = 0;                    // values defined above MAMMIT_OPSWITCH
+       rd_rawv      = tokens[rd_tkx];       // current token
 
     if(mammi->state&MAMMIT_SF_PSEC) {
         goto SECEVAL;
 
     };
 
-    uchar* value      = lhand+size;
-    CLMEM2(value, size);
+    rd_value        = rd_lhand+rd_size;
+    CLMEM2(rd_value, rd_size);
 
 //   ---     ---     ---     ---     ---
 
-    if(raw_value[0]==0x2C) {
+    if(rd_rawv[0]==0x2C) {
 
         while(mammi->lvlb) {
             MAMMIT_LVLB_PRV;
-            CALCUS_COLLAPSE(&lhand, &value, &flags, size);
+            CALCUS_COLLAPSE();
 
         }; parsed++;
 
-        result += size;
-        lhand   = result;
-        value   = lhand+size;
-        CLMEM2(value, size);
+        result  += rd_size;
+        rd_lhand = result;
+        rd_value = rd_lhand+rd_size;
+        CLMEM2(rd_value, rd_size);
 
-        lngptr += size;
-
-//   ---     ---     ---     ---     ---
-
-        raw_value++;
-        if(raw_value[0]==0x28) {
-
-            sec_beg          = lngptr;
-            sec_end          = elems*size;
-            raw_value++;
-
-            SECEVAL:
-
-            uchar* old_value = value+size;
-
-            for(uint x=0; x<size; x++) {
-                old_value[x]=value[x];
-
-            }; mammi->state |= MAMMIT_SF_PSEC;
-
-                                            // expand token (parse operators, fetch values)
-            MAEXPS                          (&raw_value, &lhand, &value, &flags, size);
+        lngptr  += rd_size;
 
 //   ---     ---     ---     ---     ---
 
-            /*
-            @(sec) syntax:
+        rd_rawv++;
+        if(rd_rawv[0]==0x28) {
+            sec_beg = lngptr;
+            sec_end = rd_elems*rd_size;
 
-                $ lower bound                           x
-                * ptr                                   x
-                & upper bound
-
-                ptr<N decrease ptr by N                 x
-                ptr>N increase ptr by N                 x
-
-                *>> move ptr to upper bound             x
-                *<< move ptr to lower bound             x
-
-                ptr#v exchange values betwen ptr && v
-                ptr=v set *ptr to v
-                =v    flood fill $ to Ç with v          x
-                =     blank out $ to Ç                  x
-                :     separate expressions              x
-
-                */
-
-//   ---     ---     ---     ---     ---
-
-            uint  sflags_i = 0;
-            uint* sflags   = mammi->lvlb_stack+0;
-            ulong sec_val  = (*((ulong*) value)) & szmask_a;
-
-            for(uint x=0; x<size; x++) {
-                value[x]=old_value[x];
-
-            };
-
-//   ---     ---     ---     ---     ---
-
-            SECTOP: switch(sflags[sflags_i]) {
-
-                case OP_GT | OP_MONEY: sflags[sflags_i] &=~ (OP_GT | OP_MONEY);
-                    if(!sec_val) {
-                        sec_beg+=size;
-
-                    } else {
-                        sec_beg+=sec_val*size;
-
-                    }; break;
-
-                case OP_LT | OP_MONEY: sflags[sflags_i] &=~ (OP_LT | OP_MONEY);
-                    if(!sec_val) {
-                        sec_beg-=size;
-
-                    } else {
-                        sec_beg-=sec_val*size;
-
-                    }; if(sec_beg>=sec_end) {
-                        sec_beg=sec_end-size;
-
-                    }; break;
-
-//   ---     ---     ---     ---     ---
-
-                case OP_GT | OP_AMPER: sflags[sflags_i] &=~ (OP_GT | OP_AMPER);
-                    if(!sec_val) {
-                        sec_end+=size;
-
-                    } else {
-                        sec_end+=sec_val*size;
-
-                    }; if(sec_end>elems*size) {
-                        sec_end=elems*size;
-
-                    }; break;
-
-                case OP_LT | OP_AMPER: sflags[sflags_i] &=~ (OP_LT | OP_AMPER);
-                    if(!sec_val) {
-                        sec_end-=size;
-
-                    } else {
-                        sec_end-=sec_val*size;
-
-                    }; if(sec_beg>=sec_end) {
-                        sec_end=sec_beg+size;
-
-                    }; break;
-
-//   ---     ---     ---     ---     ---
-
-                case OP_GT | OP_MUL: sflags[sflags_i] &=~ (OP_GT | OP_MUL);
-                    if(!sec_val) { lngptr+=size; break; }
-                    lngptr += sec_val*size; break;
-
-                case OP_LT | OP_MUL: sflags[sflags_i] &=~ (OP_LT | OP_MUL);
-                    if(!sec_val) { lngptr-=size; break; }
-                    lngptr -= sec_val*size; break;
-
-//   ---     ---     ---     ---     ---
-
-                case OP_LSHFT | OP_MUL: sflags[sflags_i] &=~ (OP_LSHFT | OP_MUL);
-                    lngptr = 0; break;
-
-                case OP_RSHFT | OP_MUL: sflags[sflags_i] &=~ (OP_RSHFT | OP_MUL);
-                    lngptr = sec_end-size; break;
-
-//   ---     ---     ---     ---     ---
-
-                case OP_EQUL | OP_MUL: { sflags[sflags_i] &=~ (OP_EQUL | OP_MUL);
-
-                    uchar* addr=((uchar*) memlng->buff)+lngptr;
-
-                    if(!sec_val) {
-                        CLMEM2(addr, size);
-
-                    } else {
-                        for(uint x=0; x<size; x++) {
-                            addr[x]=sec_val>>(x*8);
-
-                        };
-                    };
-
-                    break;
-                }
-
-//   ---     ---     ---     ---     ---
-
-                case OP_EQUL: { sflags[sflags_i] &=~ OP_EQUL;
-                    uchar* addr=((uchar*) memlng->buff)+sec_beg;
-
-                    if(!sec_val) {
-                        CLMEM2(addr, sec_end-sec_beg);
-
-                    } else {
-                        for(uint x=sec_beg; x<sec_end; x+=size, addr+=size) {
-                            for(uint y=0; y<size; y++) {
-                                addr[y]=sec_val>>(y*8);
-
-                            };
-                        };
-                    };
-
-                    break;
-                }
-
-//   ---     ---     ---     ---     ---
-
-            }; sflags_i++; if(sflags_i<=mammi->lvlb) { goto SECTOP; }
-
-            lhand       = ((uchar*) memlng->buff)+lngptr;
-
-            result      = lhand;
-            value       = lhand+size;
-
-            mammi->lvlb = 0;
+            rd_rawv++;
+            SECEVAL: SECEXPS(&result);
 
         }; goto EVAL_EXP;
+    }; MAEXPS();                            // no @(sec) so just expand...
 
-                                            // no @(sec) so just expand...
-    }; MAEXPS                               (&raw_value, &lhand, &value, &flags, size);
+//   ---     ---     ---     ---     ---
 
                                             // collapse arithmetic-wise
-    SOLVE: CALOUT(E, "l%d\t 0x%" PRIX32 "\t v%d\t -> ", *lhand, flags, *value);
- CALCUS_COLLAPSE                  (&lhand, &value, &flags, size            );
-CALOUT(E, "%d\n", *lhand);
+    SOLVE:
+        CALOUT(E, "l%d\t 0x%" PRIX32 "\t v%d\t -> ", *rd_lhand, rd_flags, *rd_value);
+        CALCUS_COLLAPSE();
+        CALOUT(E, "%d\n", *rd_lhand);
+
     goto EVAL_EXP;
 
 //   ---     ---     ---     ---     ---
@@ -817,7 +795,7 @@ CALOUT(E, "%d\n", *lhand);
 //   ---     ---     ---     ---     ---
 
     uchar* vtest = (((ADDR*) mammi->lvalues)+mammi->lvaltop)->box;
-    VALNEW(name, (uchar*) memlng->buff+0, size*elems);
+    VALNEW(name, (uchar*) memlng->buff+0, rd_size*rd_elems);
 
     switch(rd_cast) {
 
@@ -904,7 +882,7 @@ void NTNAMES(void)                          {
         SYMNEW("CNTX", "defn", NULL ),
         SYMNEW("CNTX", "decl", NULL ),
         SYMNEW("CNTX", "clan", NULL ),
-        SYMNEW("CNTX", "func", NULL )
+        SYMNEW("CNTX", "proc", NULL )
 
     };
 
@@ -1011,11 +989,13 @@ void CHKTKNS(void)                          {
                 }; key[x]=0x00;             // put the nullterm there...
             }
 
+//   ---     ---     ---     ---     ---
+
             else { uint x;
                 for(x=0; x<len; x++) {       // now copy
                     key[x]=tokens[rd_tkx][x];// key == base typename
 
-                }; key[x]=0x00;
+                }; key[x]=0x00;             // put the nullterm there...
 
             };
 
@@ -1257,6 +1237,11 @@ void RDNXT(void)                            {
 
 //   ---     ---     ---     ---     ---
 
+// TODO:
+//  0xFF FF FF FF
+//  wed vars;
+//  x@(*=0)
+
 int main(void)                              {
 
     NTNAMES();
@@ -1266,8 +1251,7 @@ int main(void)                              {
     RPSTR(&s,
 
 "reg vars {\n\
-  long x !1 == 1-1;\n\
-  long y !:1 == 1-1;\n\
+  char2 x ,($<:=255);\n\
 }\n",
 0);
 
@@ -1276,7 +1260,6 @@ int main(void)                              {
     CALOUT(E, "\e[38;2;128;255;128m\n$PEIN:\n%s\n\e[0m\e[38;2;255;128;128m$OUT:", rd_buff);
 
     RDNXT(); CALOUT(E, "\e[0m");
-
     DLMEM(memlng);
     DLMEM(s);
     DLNAMES();

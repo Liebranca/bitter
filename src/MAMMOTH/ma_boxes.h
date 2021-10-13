@@ -21,6 +21,11 @@ extern "C" {
 
 #endif
 
+#ifndef FRAMESZ
+    #define FRAMESZ 256
+
+#endif
+
 #ifndef NAMESZ
     #define NAMESZ 1024
 
@@ -68,16 +73,17 @@ typedef struct MAMM_INTERPRETER {           // smach for pe-text input
 
     };
 
-    uchar     lvla_stack[256   ];           // markers for recalling previous context
-    uint      lvlb_stack[256   ];           // ^idem, for prev evalstate of expression
+    uchar     lvla_stack[FRAMESZ];          // markers for recalling previous context
+    uint      lvlb_stack[FRAMESZ];          // ^idem, for prev evalstate of expression
+    NIHIL     cntxcallbk[FRAMESZ];          // callbacks for context state swaps
 
     uintptr_t vaddr;                        // next fetch at
     uint      vtype;                        // next fetch data
 
     uint      lvaltop;                      // next offset @lvalues that's free
-    uchar     lvalues   [NAMESZ];           // yer vars arrrr
-
-    SYMBOL    slots     [NAMESZ];           // array of built-ins
+    uchar     lvalues   [NAMESZ ];          // yer vars arrrr
+                                
+    SYMBOL    slots     [NAMESZ ];          // array of built-ins
     STK       slstack;                      // stack of (free)indices into built-ins array
 
 } MAMMIT; extern MAMMIT* mammi;
@@ -112,6 +118,25 @@ extern uint   rd_line;
 
 extern ushort rd_wid;
 extern uint   rd_pos;
+
+//   ---     ---     ---     ---     ---
+
+extern uint   rd_flags;
+extern uint   rd_size;
+extern uint   rd_elems;
+
+extern uchar* rd_rawv;
+extern uchar* rd_lhand;
+extern uchar* rd_value;
+extern uchar* rd_oldval;
+
+extern ulong  szmask_a;
+extern ulong  szmask_b;
+
+extern uint   sec_beg;
+extern uint   sec_end;
+
+//   ---     ---     ---     ---     ---
 
 extern HASH*  GNAMES_HASH;
 extern HASH*  LNAMES_HASH;

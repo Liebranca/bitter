@@ -131,9 +131,9 @@ void VALSIZ    (uchar* type    ,
 //   ---     ---     ---     ---     ---
 
 #define OPSWITCH_MINUSX                     \
-    if(flags&OP_MINUS) {                    \
+    if(rd_flags&OP_MINUS) {                 \
         (*r)=-(*r);                         \
-        flags&=~OP_MINUS;                   \
+        rd_flags&=~OP_MINUS;                \
     }; break
 
 #define OP_FORCEBIN(op)                     \
@@ -146,7 +146,7 @@ void VALSIZ    (uchar* type    ,
 
 #define CALCUS_OPSWITCH {                   \
                                             \
-    switch(flags&0xFFFFFFFC) {              \
+    switch(rd_flags&0xFFFFFFFC) {           \
                                             \
     case OP_MUL:                            \
         (*r)*=(*v); OPSWITCH_MINUSX;        \
@@ -224,11 +224,11 @@ void VALSIZ    (uchar* type    ,
                                             \
         for(uint i=0;                       \
             i<mammi->vtype&0xFF;i++) {      \
-            if(i>=size) { break; }          \
+            if(i>=rd_size) { break; }       \
             (*r)+=addr[i];                  \
                                             \
-        }; flags&=~OP_AT;                   \
-        mammi->state&=~MAMMIT_SF_PFET;\
+        }; rd_flags&=~OP_AT;                \
+        mammi->state&=~MAMMIT_SF_PFET;      \
         OPSWITCH_MINUSX;                    \
     };                                      \
                                             \
@@ -243,23 +243,23 @@ void VALSIZ    (uchar* type    ,
 
 #define PRCAST_CHR                         \
     CALOUT(K, " = 0x");                    \
-    for(uint x=0; x<elems; x++) {          \
+    for(uint x=0; x<rd_elems; x++) {       \
         CALOUT(                            \
             K, "%02X ",                    \
             *((uchar*) vtest)              \
                                            \
-        ); vtest+=size; };                 \
+        ); vtest+=rd_size; };              \
                                            \
     CALOUT(K, "(")
 
 #define PRCAST_WID                         \
     CALOUT(K, " = 0x");                    \
-    for(uint x=0; x<elems; x++) {          \
+    for(uint x=0; x<rd_elems; x++) {       \
         CALOUT(                            \
             K, "%04X ",                    \
             *((ushort*) vtest)             \
                                            \
-        ); vtest+=size; };                 \
+        ); vtest+=rd_size; };              \
                                            \
     CALOUT(K, "(")
 
@@ -267,23 +267,23 @@ void VALSIZ    (uchar* type    ,
 
 #define PRCAST_LNG                         \
     CALOUT(K, " = 0x");                    \
-    for(uint x=0; x<elems; x++) {          \
+    for(uint x=0; x<rd_elems; x++) {       \
         CALOUT(                            \
             K, "%08X ",                    \
             *((uint*) vtest)               \
                                            \
-        ); vtest+=size; };                 \
+        ); vtest+=rd_size; };              \
                                            \
     CALOUT(K, "(")
 
 #define PRCAST_QAT                         \
     CALOUT(K, " = 0x");                    \
-    for(uint x=0; x<elems; x++) {          \
+    for(uint x=0; x<rd_elems; x++) {       \
         CALOUT(                            \
             K, "%16X ",                    \
             *((ulong*) vtest)              \
                                            \
-        ); vtest+=size; };                 \
+        ); vtest+=rd_size; };              \
                                            \
     CALOUT(K, "(")
 
@@ -291,12 +291,12 @@ void VALSIZ    (uchar* type    ,
 
 #define PRCAST_FLT                         \
     CALOUT(K, " = 0x");                    \
-    for(uint x=0; x<elems; x++) {          \
+    for(uint x=0; x<rd_elems; x++) {       \
         CALOUT(                            \
             K, "%08X ",                    \
             *((float*) vtest)              \
                                            \
-        ); vtest+=size; };                 \
+        ); vtest+=rd_size; };              \
                                            \
     CALOUT(K, "(")
 
@@ -312,13 +312,13 @@ void VALSIZ    (uchar* type    ,
 //   ---     ---     ---     ---     ---
 
 #define MAMMIT_LVLB_NXT {                                                                   \
-    mammi->lvlb_stack[mammi->lvlb]=flags;                                                   \
-    mammi->lvlb++; flags=0;                                                                 \
-    lhand+=size; value+=size; lngptr+=size;                                                 }
+    mammi->lvlb_stack[mammi->lvlb]=rd_flags;                                                \
+    mammi->lvlb++; rd_flags=0;                                                              \
+    rd_lhand+=rd_size; rd_value+=rd_size; lngptr+=rd_size;                                  }
 
 #define MAMMIT_LVLB_PRV {                                                                   \
-    mammi->lvlb--; flags=mammi->lvlb_stack[mammi->lvlb];                                    \
-    lhand-=size; value-=size; lngptr-=size;                                                 }
+    mammi->lvlb--; rd_flags=mammi->lvlb_stack[mammi->lvlb];                                 \
+    rd_lhand-=rd_size; rd_value-=rd_size; lngptr-=rd_size;                                  }
 
 //   ---     ---     ---     ---     ---
 
