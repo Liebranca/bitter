@@ -184,15 +184,15 @@ void VALNEW(uchar* name,
     MAMMIT_REG_ADD;
 
     uchar base_type = rd_cast;
-    if( 0x07 < base_type
-    &&  0x0B > base_type) {
+    if( 0x07 <= base_type
+    &&  0x0A >= base_type) {
         base_type-=0x04;
 
     };
 
     uchar type[4]   = { base_type, typedata.arrsize, typedata.indlvl, typedata.flags };
 
-    ADDR* addr      = (ADDR*) mammi->lvalues+mammi->lvaltop;
+    ADDR* addr      = (ADDR*) (mammi->lvalues+mammi->lvaltop);
     addr->id        = IDNEW(type, name);
 
     mammi->lvaltop += size+sizeof(ID);
@@ -219,8 +219,8 @@ void VALSIZ(uchar* type, uchar* to) {
     if(base < 0x03) {                       // funptr
         to[0]=sizeof(STARK); return;
 
-    } elif( 0x03 >= base \
-      &&    0x07 <= base ) {                // num type
+    } elif( 0x03 <= base \
+      &&    0x06 >= base ) {                // num type
         to[0]=2*(base-0x03);
         if(!to[0]) { to[0]=1; }
 

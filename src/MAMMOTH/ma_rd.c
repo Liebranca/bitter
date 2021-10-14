@@ -1228,8 +1228,7 @@ int main(void)                              {
     RPSTR(&s,
 
 "reg vars 2 {\n\
-  char2 x ,($<:=255);\n\
-  char  y x@0;\n\
+  uchar2 x ,($<:=255);\n\
 }\n",
 0);
 
@@ -1238,17 +1237,30 @@ int main(void)                              {
     CALOUT(E, "\e[38;2;128;255;128m\n$PEIN:\n%s\n\e[0m\e[38;2;255;128;128m$OUT:", rd_buff);
     RDNXT(); CALOUT(E, "\e[0m");
 
-    ADDR* addr      = (ADDR*) mammi->lvalues+pe_reg->jmpt[0];
+    CALOUT(E, "\n0x%" PRIXPTR " %s\n\n",      pe_reg, pe_reg->id.full        );
+    CALOUT(E, "0x%"   PRIXPTR " ALIAS\t%u\n", &(pe_reg->alias), pe_reg->alias);
+    CALOUT(E, "0x%"   PRIXPTR " START\t%u\n", &(pe_reg->start), pe_reg->start);
+    CALOUT(E, "0x%"   PRIXPTR " ELEMS\t%u\n", &(pe_reg->elems), pe_reg->elems);
+    CALOUT(E, "0x%"   PRIXPTR " SIZE\t%u\n",  &(pe_reg->size ), pe_reg->size );
+
+    for(uint x=0; x<4; x++) {
+        CALOUT(E, "0x%" PRIXPTR " JMP%u\t%u\n", pe_reg->jmpt+x, x, pe_reg->jmpt[x]);
+
+    };
+
+    ADDR* addr      = (ADDR*) (mammi->lvalues+pe_reg->jmpt[0]);
     uchar szdata[3] = {0,0,0};
 
     if(addr!=NULL) {
         VALSIZ(addr->id.type, szdata);
-        CALOUT(E, "0x%02X", addr->box[0]);
-        for(uint x=1; x<szdata[0]; x++) {
-            CALOUT(E, " %02X", addr->box[x]);
+        CALOUT(E, "\n0x%" PRIXPTR " REGVAR\n0x%" PRIXPTR " %s\t\t0x", addr, addr->box+0, addr->id.key);
+        for(uint x=0; x<(szdata[1]*szdata[0]); x++) {
+            CALOUT(E, "%02X ", addr->box[x]);
 
-        }; CALOUT(E, "\n");
+        };
     };
+
+    CALOUT(E, "\n\nLNAMES at {%u/%u} capacity | %u bytes remaining\n", mammi->lvaltop, NAMESZ, NAMESZ - mammi->lvaltop);
 
     DLMEM(memlng);
     DLMEM(s);

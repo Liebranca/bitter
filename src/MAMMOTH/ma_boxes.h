@@ -62,14 +62,16 @@ typedef struct MAMM_SYNTX_SYMBOL {          // used for string to funcall mambo
 
 typedef struct MAMM_MEMREG {                // defines memory subdivisions
 
-    ID   id;                                // identifier
+    ID     id;                              // identifier
 
-    uint start;                             // idex of first block into lvalues
-    uint elems;                             // number of entries
+    uint   alias;                           // prefix for varnames
 
-    uint size;                              // space taken up by reg, in bytes
+    uint   start;                           // idex of first block into lvalues
+    uint   elems;                           // number of entries
 
-    uint jmpt[];                            // indices into lvalues; start+jmpt[x] = var
+    uint   size;                            // space taken up by reg, in bytes
+
+    uint   jmpt[];                          // indices into lvalues; start+jmpt[x] = var
 
 } REG; extern REG* pe_reg;
 

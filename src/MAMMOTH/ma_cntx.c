@@ -93,7 +93,7 @@ void REGMA(void)                            {
 
                                             // set start idex of this block and inc to next
         pe_reg->start      =                mammi->lvaltop;
-        mammi->lvaltop    +=                sizeof(REG)+(max_elems*sizeof(uint)      );
+        mammi->lvaltop    +=                sizeof(REG)+((max_elems+1)*sizeof(uint)  );
 
 //   ---     ---     ---     ---     ---
 
