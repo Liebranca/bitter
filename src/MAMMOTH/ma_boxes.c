@@ -87,3 +87,7 @@ uint   sec_beg       = 0;                   // start "$" idex of sec operation
 uint   sec_end       = 0;                   // end   "&" idex of sec operation
 
 //   ---     ---     ---     ---     ---
+
+REG* pe_reg          = NULL;                // container for current memreg
+
+//   ---     ---     ---     ---     ---

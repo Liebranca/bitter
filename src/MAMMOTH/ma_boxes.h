@@ -58,6 +58,23 @@ typedef struct MAMM_SYNTX_SYMBOL {          // used for string to funcall mambo
 
 } SYMBOL;
 
+//   ---     ---     ---     ---     ---
+
+typedef struct MAMM_MEMREG {                // defines memory subdivisions
+
+    ID   id;                                // identifier
+
+    uint start;                             // idex of first block into lvalues
+    uint elems;                             // number of entries
+
+    uint size;                              // space taken up by reg, in bytes
+
+    uint jmpt[];                            // indices into lvalues; start+jmpt[x] = var
+
+} REG; extern REG* pe_reg;
+
+//   ---     ---     ---     ---     ---
+
 typedef struct MAMM_INTERPRETER {           // smach for pe-text input
 
     MEM m;                                  // mem header
@@ -75,7 +92,6 @@ typedef struct MAMM_INTERPRETER {           // smach for pe-text input
 
     uchar     lvla_stack[FRAMESZ];          // markers for recalling previous context
     uint      lvlb_stack[FRAMESZ];          // ^idem, for prev evalstate of expression
-    NIHIL     cntxcallbk[FRAMESZ];          // callbacks for context state swaps
 
     uintptr_t vaddr;                        // next fetch at
     uint      vtype;                        // next fetch data

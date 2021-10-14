@@ -181,6 +181,8 @@ void VALNEW(uchar* name,
             uchar* val ,
             uint   size)                    {
 
+    MAMMIT_REG_ADD;
+
     uchar base_type = rd_cast;
     if( 0x07 < base_type
     &&  0x0B > base_type) {

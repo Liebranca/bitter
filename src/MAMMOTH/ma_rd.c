@@ -16,33 +16,13 @@
 /*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
 
 #include "KVRNEL/MEM/kvr_str.h"
-#include "ma_boiler.h"
+
+#include "ma_cntx.h"
 #include "ma_trans.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-
-//   ---     ---     ---     ---     ---
-
-void REGMA(void)                            {
-    if(!(mammi->state&MAMMIT_SF_CREG)) {    // if unset, do and ret
-        mammi->state |= MAMMIT_SF_CREG;     // set state
-        rd_tkx++; uchar* name = tokens[rd_tkx];
-        CALOUT(K, "reg %s\n", name);
-
-        return;
-
-    }; CALOUT(K, "UT REG\n");
-mammi->state &=~MAMMIT_SF_CREG;      // effectively, an implicit else
-                                                                                            };
-
-//   ---     ---     ---     ---     ---
-
-void REGPROC(void)                          {
-    ;
-
-};
 
 //   ---     ---     ---     ---     ---
 
@@ -778,9 +758,9 @@ void REGTP(void)                            {
 
                                             // collapse arithmetic-wise
     SOLVE:
-        CALOUT(E, "l%d\t 0x%" PRIX32 "\t v%d\t -> ", *rd_lhand, rd_flags, *rd_value);
+        //CALOUT(E, "l%d\t 0x%" PRIX32 "\t v%d\t -> ", *rd_lhand, rd_flags, *rd_value);
         CALCUS_COLLAPSE();
-        CALOUT(E, "%d\n", *rd_lhand);
+        //CALOUT(E, "%d\n", *rd_lhand);
 
     goto EVAL_EXP;
 
@@ -914,7 +894,7 @@ void CHKTKNS(void)                          {
 
         SEQN   = "CNON";
         SEQ[0] = "CNTX\x01";
-        SEQI   = 1;
+        SEQI   = 3;
 
     }
 
@@ -923,10 +903,8 @@ void CHKTKNS(void)                          {
     elif(mammi->state&MAMMIT_SF_CREG) {     // context == reg
 
         SEQN   = "CREG";
-        SEQ[0] = "TYPE\x02";
-        SEQ[1] = "<OP>\x01";
-        SEQ[2] = "EXPR\xFF";
-        SEQI   = 1;
+        SEQ[0] = "TYPE\x01";
+        SEQI   = 2;
 
     };
 
@@ -943,7 +921,7 @@ void CHKTKNS(void)                          {
     for(rd_tkx=0; rd_tkx<rd_tki; rd_tkx++) {
 
         uchar seq_k[5];                     // symbol-type key used as filter into table
-        uchar seq_i;                        // number of inputs taken by symbol
+        uchar seq_i;                        // *minimum* number of inputs taken by symbol
 
         for(uint y=0; y<4; y++) {           // unpack SEQ into k and i 
             seq_k[y]=SEQ[rd_tkx][y];
@@ -996,7 +974,6 @@ void CHKTKNS(void)                          {
                     key[x]=tokens[rd_tkx][x];// key == base typename
 
                 }; key[x]=0x00;             // put the nullterm there...
-
             };
 
 //   ---     ---     ---     ---     ---
@@ -1239,8 +1216,8 @@ void RDNXT(void)                            {
 
 // TODO:
 //  0xFF FF FF FF
-//  wed vars;
-//  x@(*=0)
+//  wed 0 regname;
+//  (implicit: regname->)x@(*=0)
 
 int main(void)                              {
 
@@ -1250,16 +1227,29 @@ int main(void)                              {
 
     RPSTR(&s,
 
-"reg vars {\n\
+"reg vars 2 {\n\
   char2 x ,($<:=255);\n\
+  char  y x@0;\n\
 }\n",
 0);
 
     rd_buff = MEMBUFF(s, uchar, 0);
 
     CALOUT(E, "\e[38;2;128;255;128m\n$PEIN:\n%s\n\e[0m\e[38;2;255;128;128m$OUT:", rd_buff);
-
     RDNXT(); CALOUT(E, "\e[0m");
+
+    ADDR* addr      = (ADDR*) mammi->lvalues+pe_reg->jmpt[0];
+    uchar szdata[3] = {0,0,0};
+
+    if(addr!=NULL) {
+        VALSIZ(addr->id.type, szdata);
+        CALOUT(E, "0x%02X", addr->box[0]);
+        for(uint x=1; x<szdata[0]; x++) {
+            CALOUT(E, " %02X", addr->box[x]);
+
+        }; CALOUT(E, "\n");
+    };
+
     DLMEM(memlng);
     DLMEM(s);
     DLNAMES();

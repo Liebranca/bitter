@@ -57,7 +57,7 @@ void VALSIZ    (uchar* type    ,
 #define MAMMIT_SF_CDEF 0x00000400
 
 #define MAMMIT_SF_CCLA 0x00000800
-#define MAMMIT_SF_CFUN 0x00001000
+#define MAMMIT_SF_CPRC 0x00001000
 
 //   ---     ---     ---     ---     ---
 // debug/errcatch stuff
@@ -306,10 +306,10 @@ void VALSIZ    (uchar* type    ,
 
 #define ADDRFET(T, addr) (T*) (((ADDR*) addr)->box+0)
 
-#define MAMMIT_LVLA_NXT { mammi->lvla_stack[mammi->lvla]=mammi->cntx; mammi->lvla++;    }
-#define MAMMIT_LVLA_PRV { mammi->lvla--; mammi->cntx=mammi->lvla_stack[mammi->lvla];    }
-
-//   ---     ---     ---     ---     ---
+#define MAMMIT_REG_ADD {                                                                    \
+    pe_reg->jmpt[pe_reg->elems] = mammi->lvaltop;                                           \
+    pe_reg->size += size;                                                                   \
+    pe_reg->elems++;                                                                        }
 
 #define MAMMIT_LVLB_NXT {                                                                   \
     mammi->lvlb_stack[mammi->lvlb]=rd_flags;                                                \
