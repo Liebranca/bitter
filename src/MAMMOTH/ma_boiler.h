@@ -306,9 +306,18 @@ void VALSIZ    (uchar* type    ,
 
 #define ADDRFET(T, addr) (T*) (((ADDR*) addr)->box+0)
 
+#define CURLVAL (mammi->lvalues+mammi->lvaltop)
+
+#define INCLVAL(x) {                                                                        \
+    if( ((x)/UNITSZ) < 1) { mammi->lvaltop++;             }                                 \
+    else                  { mammi->lvaltop += (x)/UNITSZ; };                                }
+
+//   ---     ---     ---     ---     ---
+
 #define MAMMIT_REG_ADD {                                                                    \
     pe_reg->jmpt[pe_reg->elems] = mammi->lvaltop;                                           \
-    pe_reg->size += size;                                                                   \
+    if( ((size)/UNITSZ) < 1) { pe_reg->size++;                }                             \
+    else                     { pe_reg->size += (size)/UNITSZ; };                            \
     pe_reg->elems++;                                                                        }
 
 #define MAMMIT_LVLB_NXT {                                                                   \

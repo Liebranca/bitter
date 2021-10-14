@@ -27,9 +27,16 @@ extern "C" {
 #endif
 
 #ifndef NAMESZ
-    #define NAMESZ 1024
+    #define NAMESZ 2048
 
 #endif
+
+#ifndef MEMUNIT
+    #define MEMUNIT ulong
+
+#endif
+
+#define UNITSZ sizeof(MEMUNIT)
 
 //   ---     ---     ---     ---     ---
 
@@ -64,12 +71,11 @@ typedef struct MAMM_MEMREG {                // defines memory subdivisions
 
     ID     id;                              // identifier
 
-    uint   alias;                           // prefix for varnames
-
     uint   start;                           // idex of first block into lvalues
     uint   elems;                           // number of entries
+    uint   bound;                           // max entries
 
-    uint   size;                            // space taken up by reg, in bytes
+    uint   size;                            // space taken up by reg, in memunits
 
     uint   jmpt[];                          // indices into lvalues; start+jmpt[x] = var
 
@@ -96,10 +102,10 @@ typedef struct MAMM_INTERPRETER {           // smach for pe-text input
     uint      lvlb_stack[FRAMESZ];          // ^idem, for prev evalstate of expression
 
     uintptr_t vaddr;                        // next fetch at
-    uint      vtype;                        // next fetch data
+    uint      vtype;                        // next fetch typedata
 
     uint      lvaltop;                      // next offset @lvalues that's free
-    uchar     lvalues   [NAMESZ ];          // yer vars arrrr
+    MEMUNIT   lvalues   [NAMESZ ];          // yer vars arrrr
                                 
     SYMBOL    slots     [NAMESZ ];          // array of built-ins
     STK       slstack;                      // stack of (free)indices into built-ins array

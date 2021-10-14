@@ -58,7 +58,7 @@ void REGMA(void)                            {
         mammi->state |= MAMMIT_SF_CREG;     // set state
 
                                             // claim place in stack
-        pe_reg                     =        (REG*) mammi->lvalues+mammi->lvaltop;
+        pe_reg                     =        (REG*) CURLVAL;
 
                                             // fetch tokens
         rd_tkx++; uchar* name      =        tokens[rd_tkx];
@@ -72,33 +72,31 @@ void REGMA(void)                            {
             chsize[x]=rwsize[x];
 
                                             // translate str into uint
-        }; TRDECVAL                         (rwsize, chsize, sizeof(uint)            );
+        }; TRDECVAL                         (rwsize, chsize, sizeof(uint)                );
 
 //   ---     ---     ---     ---     ---
 
                                             // guesswork for size of jump table
-        uint max_elems     =                *((uint*) chsize);
-        if(max_elems>24) {
-            CALOUT(E, "REG: size of 2^%u exceeds 16,777,216 (16KB)\n", max_elems);
-            return;
+        pe_reg->bound      =                *((uint*) chsize                             );
 
-                                            // force regsize to a power of two
-        }; max_elems       =                (uint) (pow(2, (uint) max_elems)+0.5     );
+        while((pe_reg->bound*sizeof(uint))%UNITSZ) {
+            pe_reg->bound++;
 
+        };
 
-        pe_reg->id         = IDNEW          ("REG*", name                            );
+        pe_reg->id         = IDNEW          ("REG*", name                                );
 
         pe_reg->size       = 0;             // cleanup, just in case
         pe_reg->elems      = 0;
 
                                             // set start idex of this block and inc to next
         pe_reg->start      =                mammi->lvaltop;
-        mammi->lvaltop    +=                sizeof(REG)+((max_elems+1)*sizeof(uint)  );
+        INCLVAL                             (sizeof(REG)+((pe_reg->bound+1)*sizeof(uint)));
 
 //   ---     ---     ---     ---     ---
 
                                             // ut something to console
-        CALOUT                              (K, "reg %s[%u]\n", name, max_elems      );
+        CALOUT                              (K, "reg %s[%u]\n", name, pe_reg->bound      );
 
         return;
 

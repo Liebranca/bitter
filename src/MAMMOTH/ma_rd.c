@@ -774,7 +774,7 @@ void REGTP(void)                            {
 
 //   ---     ---     ---     ---     ---
 
-    uchar* vtest = (((ADDR*) mammi->lvalues)+mammi->lvaltop)->box;
+    uchar* vtest = ((ADDR*) CURLVAL)->box;
     VALNEW(name, (uchar*) memlng->buff+0, rd_size*rd_elems);
 
     switch(rd_cast) {
@@ -1237,13 +1237,13 @@ int main(void)                              {
     CALOUT(E, "\e[38;2;128;255;128m\n$PEIN:\n%s\n\e[0m\e[38;2;255;128;128m$OUT:", rd_buff);
     RDNXT(); CALOUT(E, "\e[0m");
 
-    CALOUT(E, "\n0x%" PRIXPTR " %s\n\n",      pe_reg, pe_reg->id.full        );
-    CALOUT(E, "0x%"   PRIXPTR " ALIAS\t%u\n", &(pe_reg->alias), pe_reg->alias);
-    CALOUT(E, "0x%"   PRIXPTR " START\t%u\n", &(pe_reg->start), pe_reg->start);
-    CALOUT(E, "0x%"   PRIXPTR " ELEMS\t%u\n", &(pe_reg->elems), pe_reg->elems);
-    CALOUT(E, "0x%"   PRIXPTR " SIZE\t%u\n",  &(pe_reg->size ), pe_reg->size );
+    CALOUT(E, "\n0x%" PRIXPTR " %s\n\n",         pe_reg, pe_reg->id.full        );
+    CALOUT(E, "0x%"   PRIXPTR " START\t%u\n",    &(pe_reg->start), pe_reg->start);
+    CALOUT(E, "0x%"   PRIXPTR " ELEMS\t%u\n",    &(pe_reg->elems), pe_reg->elems);
+    CALOUT(E, "0x%"   PRIXPTR " BOUND\t%u\n",    &(pe_reg->bound), pe_reg->bound);
+    CALOUT(E, "0x%"   PRIXPTR " SIZE\t%u QBs\n", &(pe_reg->size ), pe_reg->size );
 
-    for(uint x=0; x<4; x++) {
+    for(uint x=0; x<pe_reg->bound; x++) {
         CALOUT(E, "0x%" PRIXPTR " JMP%u\t%u\n", pe_reg->jmpt+x, x, pe_reg->jmpt[x]);
 
     };
@@ -1260,7 +1260,7 @@ int main(void)                              {
         };
     };
 
-    CALOUT(E, "\n\nLNAMES at {%u/%u} capacity | %u bytes remaining\n", mammi->lvaltop, NAMESZ, NAMESZ - mammi->lvaltop);
+    CALOUT(E, "\n\nLNAMES at {%u/%u} capacity | %u QBs remaining\n", mammi->lvaltop, NAMESZ, NAMESZ - mammi->lvaltop);
 
     DLMEM(memlng);
     DLMEM(s);

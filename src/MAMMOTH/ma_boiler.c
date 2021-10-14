@@ -192,10 +192,10 @@ void VALNEW(uchar* name,
 
     uchar type[4]   = { base_type, typedata.arrsize, typedata.indlvl, typedata.flags };
 
-    ADDR* addr      = (ADDR*) (mammi->lvalues+mammi->lvaltop);
+    ADDR* addr      = (ADDR*) CURLVAL;
     addr->id        = IDNEW(type, name);
 
-    mammi->lvaltop += size+sizeof(ID);
+    INCLVAL(size+sizeof(ID));
     for(uint x=0; x<size; x++) {            // copy bytes over
         addr->box[x]=val[x];
                                             // insert in hash for later fetch by key
