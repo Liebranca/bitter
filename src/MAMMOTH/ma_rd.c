@@ -114,11 +114,11 @@ void TRNVAL(uint len)                       {
             elif(rd_rawv[0]==0x30) {        // starts with a zero and is not 0.****
 
                 if  (rd_rawv[1]==0x78) {    // is hexlit
-                    TRHEXVAL                (rd_rawv+vlen, rd_value, rd_size     );
+                    TRHEXVAL                (rd_rawv+vlen, rd_value              );
                 }
 
                 elif(rd_rawv[1]==0x62) {    // is bitlit
-                    TRBITVAL                (rd_rawv+vlen, rd_value, rd_size     );
+                    TRBITVAL                (rd_rawv+vlen, rd_value              );
 
                 };
             }
@@ -126,7 +126,7 @@ void TRNVAL(uint len)                       {
 //   ---     ---     ---     ---     ---
 
             else {                          // string -> decimal
-                TRDECVAL                    (rd_rawv, rd_value, rd_size          );
+                TRDECVAL                    (rd_rawv, rd_value                   );
 
             }
         }
@@ -152,7 +152,7 @@ void TRNVAL(uint len)                       {
 
         rd_flags|=OP_RADIX;
 
-        TRFLTVAL                            (rd_rawv, rd_value, rd_size          );
+        TRFLTVAL                            (rd_rawv, rd_value                   );
     }
 
 //   ---     ---     ---     ---     ---
@@ -226,7 +226,7 @@ void TRNVAL(uint len)                       {
                 x<rd_step; x++      ) {     // take two's
                 rd_value[x]=(~rd_value[x]); // flip bits
                 if(!x || carry) {
-                    if(rd_value[x]==0xFFFFFFFFFFFFFFFF) {
+                    if(rd_value[x]==0xFFFFFFFFFFFFFFFFLL) {
                         rd_value[x] += 1;   // overflows. add one and set carry
                         carry        = 1;
                     }
@@ -608,8 +608,11 @@ void SECEXPS(MEMUNIT** result)              {
                 CLMEM2(addr, (sec_end-sec_beg)*rd_size);
 
             } else {
-                for(uint x=sec_beg; x<sec_end; x+=rd_step, addr+=rd_step) {
-                    *addr=sec_val;
+                for(uint x=sec_beg; x<sec_end; x++) {
+                    for(uint y=0; y<UNITSZ; y+=rd_size) {
+                        *addr|=(sec_val)<<(y*(8*rd_size));
+
+                    }; addr++;
 
                 };
             };
@@ -624,7 +627,7 @@ void SECEXPS(MEMUNIT** result)              {
     rd_lhand    = ((MEMUNIT*) memlng->buff)+(lngptr);
 
     *result     = rd_lhand;
-    rd_value    = rd_lhand+rd_size;
+    rd_value    = rd_lhand+rd_step;
 
     mammi->lvlb = 0;                                                                        };
 
@@ -746,24 +749,22 @@ void REGTP(void)                            {
 
         }; parsed++;
 
-        rd_cbyte     += rd_size;
+        rd_cbyte += rd_size;
 
-        if(rd_cbyte==UNITSZ) {
+        result   += rd_step;
+        rd_lhand  = result;
+        rd_value  = rd_lhand+rd_step;
 
-            result   += rd_step;
-            rd_lhand  = result;
-            rd_value  = rd_lhand+rd_step;
+        CLMEM2(rd_value, rd_size);
 
-            CLMEM2(rd_value, rd_size);
-
-        };  lngptr   += rd_size;
+        lngptr   += rd_size;
 
 //   ---     ---     ---     ---     ---
 
         rd_rawv++;
         if(rd_rawv[0]==0x28) {
             sec_beg = lngptr;
-            sec_end = rd_elems*rd_step;
+            sec_end = (rd_elems*rd_size)/UNITSZ;
 
             rd_rawv++;
             SECEVAL: SECEXPS(&result);
@@ -795,8 +796,8 @@ void REGTP(void)                            {
     VALNEW(name, ((MEMUNIT*) memlng->buff)+0, rd_step);
 
     CALOUT(K, " = 0x");
-    for(uint x=0; x<rd_elems; x++) {
-        CALOUT(K, "%02X ", vtest);
+    for(uint x=0; x<rd_step; x++) {
+        CALOUT(K, "%" PRIX64 " ", *vtest);
         vtest++;
 
     }; CALOUT(K, "(");
@@ -1229,7 +1230,7 @@ int main(void)                              {
     RPSTR(&s,
 
 "reg vars 2 {\n\
-  uchar2 x ,($<:=255);\n\
+  uchar2 x ,($<:=0xFF);\n\
 }\n",
 0);
 
@@ -1255,8 +1256,25 @@ int main(void)                              {
     if(addr!=NULL) {
         VALSIZ(addr->id.type, szdata);
         CALOUT(E, "\n0x%" PRIXPTR " REGVAR\n0x%" PRIXPTR " %s\t\t0x", addr, addr->box+0, addr->id.key);
-        for(uint x=0; x<(szdata[1]*szdata[0]); x++) {
-            CALOUT(E, "%02X ", addr->box[x]);
+
+        rd_size           = szdata[0];
+        rd_elems          = szdata[1];      // force array elements to equal multiple of
+
+        while((rd_elems*rd_size)%UNITSZ) {  // unitsize; makes life way simpler
+            rd_elems++;
+
+        };
+
+        rd_cbyte          = 0;
+        rd_step           = rd_size/UNITSZ;
+
+        if(!rd_step) {
+            rd_step = 1;
+
+        };
+
+        for(uint x=0; x<rd_step; x++) {
+            CALOUT(E, "%" PRIX64 " ", addr->box[x]);
 
         };
     };

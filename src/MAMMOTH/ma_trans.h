@@ -11,20 +11,16 @@ extern "C" {
 //   ---     ---     ---     ---     ---
 
 void TRHEXVAL(uchar*   src ,
-              MEMUNIT* to  ,
-              uint     size);               // hexstr to num
+              MEMUNIT* to  );               // hexstr to num
 
 void TRBITVAL(uchar*   src ,
-              MEMUNIT* to  ,
-              uint     size);               // bitstr to num
+              MEMUNIT* to  );               // bitstr to num
 
 void TRDECVAL(uchar*   src ,
-              MEMUNIT* to  ,
-              uint     size);               // decstr to num
+              MEMUNIT* to  );               // decstr to num
 
 void TRFLTVAL(uchar*   src ,
-              MEMUNIT* to  ,
-              uint     size);               // fltstr to float
+              MEMUNIT* to  );               // fltstr to float
 
 //   ---     ---     ---     ---     ---
 

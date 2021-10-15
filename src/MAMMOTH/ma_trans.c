@@ -21,8 +21,7 @@
 //   ---     ---     ---     ---     ---
 
 void TRHEXVAL(uchar*   src ,
-              MEMUNIT* to  ,
-              uint     size)                {
+              MEMUNIT* to  )                {
 
     uchar cbyte = 0x00;                     // curent byte
     uchar chxd  = 0x00;                     // current hex digit
@@ -65,8 +64,7 @@ void TRHEXVAL(uchar*   src ,
 //   ---     ---     ---     ---     ---
 
 void TRBITVAL(uchar*   src ,
-              MEMUNIT* to  ,
-              uint     size)                {
+              MEMUNIT* to  )                {
 
     uchar cbit  = 0x00;                     // current bit
     uchar cbyte = 0x00;                     // curent byte
@@ -96,8 +94,7 @@ void TRBITVAL(uchar*   src ,
 //   ---     ---     ---     ---     ---
 
 void TRDECVAL(uchar*   src ,
-              MEMUNIT* to  ,
-              uint     size)                {
+              MEMUNIT* to  )                {
 
     MEMUNIT decval = 0x00;                  // value in decimal
     uchar c        = 0x00;                  // empty char
@@ -115,8 +112,7 @@ void TRDECVAL(uchar*   src ,
 //   ---     ---     ---     ---     ---
 
 void TRFLTVAL(uchar*   src ,
-              MEMUNIT* to  ,
-              uint     size)                {
+              MEMUNIT* to  )                {
 
     float  whole = 0.0f;                    // integer portion of number
     float  fract = 0.0f;                    // fraction portion of number

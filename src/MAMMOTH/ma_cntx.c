@@ -65,7 +65,7 @@ void REGMA(void)                            {
         rd_tkx++; uchar*  rwsize    =       tokens[rd_tkx];
                   MEMUNIT chsize    =       0;
 
-        TRDECVAL                            (rwsize, &chsize, UNITSZ                     );
+        TRDECVAL                            (rwsize, &chsize                             );
 
 //   ---     ---     ---     ---     ---
 
