@@ -9,21 +9,25 @@ extern "C" {
 
 //   ---     ---     ---     ---     ---
 
-int    NOREDCL (uchar* name    );           // check varname in use
-int    NOOVERSZ(uint sz, uint f);           // throw error if sz%f
+uint   GTUNITCNT(uint size, uint mag);      // calculate arrsize%unitsz
 
 //   ---     ---     ---     ---     ---
 
-void   REGTP   (void           );           // main decl hook
+int    NOREDCL  (uchar* name        );      // check varname in use
+int    NOOVERSZ (uint sz, uint f    );      // throw error if sz%f
 
-void   REGVOI  (void           );           // 'entry' decl hooks
-void   REGNHL  (void           );           // these just set some flags
-void   REGTRK  (void           );           // could maybe be replaces by a single fun
-void   REGCHR  (void           );           // however, i felt like being lazy
-void   REGWID  (void           );
-void   REGLNG  (void           );
-void   REGQAT  (void           );
-void   REGFLT  (void           );
+//   ---     ---     ---     ---     ---
+
+void   REGTP    (void               );      // main decl hook
+
+void   REGVOI   (void               );      // 'entry' decl hooks
+void   REGNHL   (void               );      // these just set some flags
+void   REGTRK   (void               );      // could maybe be replaces by a single fun
+void   REGCHR   (void               );      // however, i felt like being lazy
+void   REGWID   (void               );
+void   REGINT   (void               );
+void   REGLNG   (void               );
+void   REGFLT   (void               );
 
 //   ---     ---     ---     ---     ---
 

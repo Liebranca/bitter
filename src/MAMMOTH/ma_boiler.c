@@ -21,6 +21,15 @@
 
 //   ---     ---     ---     ---     ---
 
+uint GTUNITCNT(uint size, uint mag)         {
+
+    while(size > UNITSZ) {
+        mag++; size-=UNITSZ;
+
+    }; return (uint) ((pow(2, 2+mag) + 0.5)/size);                                          };
+
+//   ---     ---     ---     ---     ---
+
 int NOREDCL(uchar* name)                    {
 
     void* nulmy = NULL;                     // check if name exists in global scope
@@ -83,16 +92,16 @@ void REGWID(void)                           {
             +                               ( 0x04 * ((typedata.flags&0x04)!=0) );
     REGTP                                   (                                   );          };
 
-//   ---     ---     ---     ---     ---    long, same^
+//   ---     ---     ---     ---     ---    int, same^
 
-void REGLNG(void)                           {
+void REGINT(void)                           {
     rd_cast =                                 0x05                              \
             +                               ( 0x04 * ((typedata.flags&0x04)!=0) );
     REGTP                                   (                                   );          };
 
-//   ---     ---     ---     ---     ---    quat, same^
+//   ---     ---     ---     ---     ---    long, same^
 
-void REGQAT(void)                           {
+void REGLNG(void)                           {
     rd_cast =                                 0x06                              \
             +                               ( 0x04 * ((typedata.flags&0x04)!=0) );
     REGTP                                   (                                   );          };

@@ -23,11 +23,11 @@
 void TRHEXVAL(uchar*   src ,
               MEMUNIT* to  )                {
 
-    uchar cbyte = 0x00;                     // curent byte
-    uchar chxd  = 0x00;                     // current hex digit
-    uchar hxval = 0x00;                     // value of char, in hex
+    uchar   cbyte = 0x00;                   // curent byte
+    uchar   chxd  = 0x00;                   // current hex digit
+    MEMUNIT hxval = 0x00LL;                 // value of char, in hex
 
-    uchar c     = 0x00;                     // empty char
+    uchar c       = 0x00;                   // empty char
 
 //   ---     ---     ---     ---     ---
 
@@ -52,14 +52,16 @@ void TRHEXVAL(uchar*   src ,
 //   ---     ---     ---     ---     ---
 
         if(!chxd) {                         // is first digit
-            to[cbyte/UNITSZ] += (hxval)<<(rd_cbyte*8);
+            *to += (hxval)<<(cbyte*8);
             chxd++;
 
         } else {                            // is second digit
-            to[cbyte/UNITSZ] += (hxval*16)<<(rd_cbyte*8);
+            *to += (hxval*16)<<(cbyte*8);
             chxd--; cbyte++;
 
-    }} while(*src-- != 0x78);                                                               };
+        }; if(cbyte==UNITSZ) { cbyte=0; to++; }
+
+    } while(*src-- != 0x78);                                                                };
 
 //   ---     ---     ---     ---     ---
 

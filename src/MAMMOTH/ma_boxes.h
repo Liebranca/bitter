@@ -150,6 +150,7 @@ extern uint     rd_size;
 extern uint     rd_elems;
 extern uint     rd_cbyte;
 extern uint     rd_step;
+extern uint     rd_units;
 
 extern uchar*   rd_rawv;
 extern MEMUNIT* rd_lhand;

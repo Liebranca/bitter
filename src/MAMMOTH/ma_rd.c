@@ -540,7 +540,7 @@ void SECEXPS(MEMUNIT** result)              {
 
         case OP_GT | OP_AMPER: sflags[sflags_i] &=~ (OP_GT | OP_AMPER);
             if(!sec_val) {
-                sec_end+=rd_size;
+                sec_end+=rd_step;
 
             } else {
                 sec_end+=sec_val*rd_step;
@@ -610,7 +610,7 @@ void SECEXPS(MEMUNIT** result)              {
             } else {
                 for(uint x=sec_beg; x<sec_end; x++) {
                     for(uint y=0; y<UNITSZ; y+=rd_size) {
-                        *addr|=(sec_val)<<(y*(8*rd_size));
+                        *addr|=(sec_val)<<(y*8);
 
                     }; addr++;
 
@@ -645,63 +645,60 @@ void REGTP(void)                            {
 
 //   ---     ---     ---     ---     ---
 
-    szmask_a          = 0x0000000000000000;
-    szmask_b          = 0x0000000000000000;
+    szmask_a          = 0x0000000000000000LL;
+    szmask_b          = 0x0000000000000000LL;
 
     switch(rd_cast) {                       // for 'dynamic' type-casting
                                             // we set size to sizeof x C type!
                                             // wait, you dunno whats a ulong??
                                             // look at KVRNEL/zjc_CommonTypes.h
 
-        case 0x00: szmask_a = 0xFFFFFFFFFFFFFFFF;
+        case 0x00: szmask_a = 0xFFFFFFFFFFFFFFFFLL;
             rd_size=sizeof(void* ); break;
 
         case 0x01:
-        case 0x02: szmask_a = 0xFFFFFFFFFFFFFFFF;
-                   szmask_b = 0xFFFFFFFFFFFFFFFF;
+        case 0x02: szmask_a = 0xFFFFFFFFFFFFFFFFLL;
+                   szmask_b = 0xFFFFFFFFFFFFFFFFLL;
 
             rd_size=sizeof(STARK ); break;
 
 //   ---     ---     ---     ---     ---
 
         case 0x03:
-        case 0x07: szmask_a = 0x00000000000000FF;
+        case 0x07: szmask_a = 0x00000000000000FFLL;
             rd_size=sizeof(uchar ); break;
 
         case 0x04:
-        case 0x08: szmask_a = 0x000000000000FFFF;
+        case 0x08: szmask_a = 0x000000000000FFFFLL;
             rd_size=sizeof(ushort); break;
 
         case 0x05:
-        case 0x09: szmask_a = 0x00000000FFFFFFFF;
+        case 0x09: szmask_a = 0x00000000FFFFFFFFLL;
             rd_size=sizeof(uint  ); break;
 
         case 0x06:
-        case 0x0A: szmask_a = 0xFFFFFFFFFFFFFFFF;
+        case 0x0A: szmask_a = 0xFFFFFFFFFFFFFFFFLL;
             rd_size=sizeof(ulong ); break;
 
 //   ---     ---     ---     ---     ---
 
-        default  : szmask_a = 0x00000000FFFFFFFF;
+        default  : szmask_a = 0x00000000FFFFFFFFLL;
             rd_size=sizeof(float ); break;
 
     };
 
 //   ---     ---     ---     ---     ---
 
-    rd_elems          = typedata.arrsize;   // force array elements to equal multiple of
-    while((rd_elems*rd_size)%UNITSZ) {      // unitsize; makes life way simpler
-        rd_elems++;
-
-    };
+                                            // make it a pow2%UNITSZ
+    rd_elems          = GTUNITCNT           (rd_size, typedata.arrsize                 );
 
     rd_cbyte          = 0;
     rd_step           = rd_size/UNITSZ;
 
     if(!rd_step) {
-        rd_step = 1;
+        rd_step       = 1;
 
-    };
+    }; rd_units       = (rd_elems*rd_size)/UNITSZ;
 
 //   ---     ---     ---     ---     ---
 
@@ -716,9 +713,9 @@ void REGTP(void)                            {
     lngptr            = 0;
 
     sec_beg           = lngptr;
-    sec_end           = rd_elems*rd_step;
+    sec_end           = (rd_elems*rd_size)/UNITSZ;
 
-    CLMEM2(rd_lhand, rd_size);
+    CLMEM2(rd_lhand, rd_elems*rd_size);
 
 //   ---     ---     ---     ---     ---
 
@@ -749,15 +746,21 @@ void REGTP(void)                            {
 
         }; parsed++;
 
-        rd_cbyte += rd_size;
+        if(ex_f<rd_tkx) {
+            rd_cbyte     += rd_size;
 
-        result   += rd_step;
-        rd_lhand  = result;
-        rd_value  = rd_lhand+rd_step;
+            if(!(rd_cbyte%UNITSZ)) {
+                result   += rd_step;
+                rd_lhand  = result;
+                rd_value  = rd_lhand+rd_step;
 
-        CLMEM2(rd_value, rd_size);
+                CLMEM2(rd_value, rd_size);
 
-        lngptr   += rd_size;
+                lngptr    += rd_step;
+                rd_cbyte   = 0;
+
+            };
+        };
 
 //   ---     ---     ---     ---     ---
 
@@ -793,11 +796,11 @@ void REGTP(void)                            {
 //   ---     ---     ---     ---     ---
 
     MEMUNIT* vtest = ((ADDR*) CURLVAL)->box;
-    VALNEW(name, ((MEMUNIT*) memlng->buff)+0, rd_step);
+    VALNEW(name, ((MEMUNIT*) memlng->buff)+0, rd_units);
 
     CALOUT(K, " = 0x");
-    for(uint x=0; x<rd_step; x++) {
-        CALOUT(K, "%" PRIX64 " ", *vtest);
+    for(uint x=0; x<rd_units; x++) {
+        CALOUT(K, "%016" PRIX64 " ", *vtest);
         vtest++;
 
     }; CALOUT(K, "(");
@@ -835,10 +838,10 @@ void NTNAMES(void)                          {
         SYMNEW("TYPE", "stark",  REGTRK),   // funptr
         SYMNEW("TYPE", "nihil",  REGNHL),   // funptr
 
-        SYMNEW("TYPE", "char",   REGCHR),   // 1
-        SYMNEW("TYPE", "wide",   REGWID),   // 2
-        SYMNEW("TYPE", "long",   REGLNG),   // 4
-        SYMNEW("TYPE", "quat",   REGQAT),   // 8
+        SYMNEW("TYPE", "char",   REGCHR),   // unit/unit
+        SYMNEW("TYPE", "wide",   REGWID),   // unit/4
+        SYMNEW("TYPE", "int",    REGINT),   // unit/2
+        SYMNEW("TYPE", "long",   REGLNG),   // unit
 
         SYMNEW("TYPE", "float",  REGFLT)
 
@@ -897,7 +900,7 @@ void CHKTKNS(void)                          {
 
         SEQN   = "CNON";
         SEQ[0] = "CNTX\x01";
-        SEQI   = 3;
+        SEQI   = 2;
 
     }
 
@@ -1230,14 +1233,18 @@ int main(void)                              {
     RPSTR(&s,
 
 "reg vars 2 {\n\
-  uchar2 x ,($<:=0xFF);\n\
+  wide2 y ,(=0xDE74);\n\
 }\n",
+
 0);
 
     rd_buff = MEMBUFF(s, uchar, 0);
 
     CALOUT(E, "\e[38;2;128;255;128m\n$PEIN:\n%s\n\e[0m\e[38;2;255;128;128m$OUT:", rd_buff);
     RDNXT(); CALOUT(E, "\e[0m");
+
+/*  move contiguosness test to it's own func!
+
 
     CALOUT(E, "\n0x%" PRIXPTR " %s\n\n",         pe_reg, pe_reg->id.full        );
     CALOUT(E, "0x%"   PRIXPTR " START\t%u\n",    &(pe_reg->start), pe_reg->start);
@@ -1280,6 +1287,8 @@ int main(void)                              {
     };
 
     CALOUT(E, "\n\nLNAMES at {%u/%u} capacity | %u QBs remaining\n", mammi->lvaltop, NAMESZ, NAMESZ - mammi->lvaltop);
+
+*/
 
     DLMEM(memlng);
     DLMEM(s);

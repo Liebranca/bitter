@@ -75,7 +75,8 @@ uint     rd_flags    = 0;                   // tracks opstate at current level
 uint     rd_size     = 0;                   // bytesize of current fetch/assign op
 uint     rd_elems    = 0;                   // element count of array
 uint     rd_cbyte    = 0;                   // used for rd_size < unitsz
-uint     rd_step     = 0;                   // rd_size/unitsz
+uint     rd_step     = 0;                   // rd_size/unitsz; units per elem
+uint     rd_units    = 0;                   // rd_elems/unitsz; total units used
 
 uchar*   rd_rawv     = NULL;                // raw value from buff, before processing
 MEMUNIT* rd_lhand    = NULL;                // current point in stack

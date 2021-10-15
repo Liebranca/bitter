@@ -63,27 +63,27 @@ void REGMA(void)                            {
                                             // fetch tokens
         rd_tkx++; uchar*  name      =       tokens[rd_tkx];
         rd_tkx++; uchar*  rwsize    =       tokens[rd_tkx];
-                  MEMUNIT chsize    =       0;
+                  MEMUNIT chsize    =       1;
 
-        TRDECVAL                            (rwsize, &chsize                             );
-
-//   ---     ---     ---     ---     ---
-
-        pe_reg->bound      = (uint) chsize;
-
-        while((pe_reg->bound*sizeof(uint))%UNITSZ) {
-            pe_reg->bound++;
+        if(rwsize[0]) {                     // if no mag specified, assume 1
+            TRDECVAL                        (rwsize, &chsize                             );
 
         };
 
+//   ---     ---     ---     ---     ---
+
         pe_reg->id         = IDNEW          ("REG*", name                                );
+        pe_reg->bound      = GTUNITCNT      (sizeof(pe_reg->bound), chsize               );
 
         pe_reg->size       = 0;             // cleanup, just in case
         pe_reg->elems      = 0;
 
-                                            // set start idex of this block and inc to next
+                                            // set start idex
         pe_reg->start      =                mammi->lvaltop;
-        INCLVAL                             (sizeof(REG)+((pe_reg->bound+1)*sizeof(uint)));
+
+                                            // calculate increase
+        INCLVAL                             ( (sizeof(REG)                            )  \
+                                            + ((pe_reg->bound+1)*sizeof(pe_reg->bound))  );
 
 //   ---     ---     ---     ---     ---
 
