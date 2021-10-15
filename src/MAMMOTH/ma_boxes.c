@@ -66,28 +66,30 @@ uint     rd_cast     = 0;                   // for "dynamic" type-casting;
 
 //   ---     ---     ---     ---     ---
 
-uint   gblevil       =  0x00000000;         // global evilstate
-uint   rd_line       =  1;                  // current line
+uint     gblevil     =  0x00000000;         // global evilstate
+uint     rd_line     =  1;                  // current line
 
 //   ---     ---     ---     ---     ---
 
-uint   rd_flags      = 0;                   // tracks opstate at current level
-uint   rd_size       = 0;                   // bytesize of current fetch/assign op
-uint   rd_elems      = 0;                   // element count of array
+uint     rd_flags    = 0;                   // tracks opstate at current level
+uint     rd_size     = 0;                   // bytesize of current fetch/assign op
+uint     rd_elems    = 0;                   // element count of array
+uint     rd_cbyte    = 0;                   // used for rd_size < unitsz
+uint     rd_step     = 0;                   // rd_size/unitsz
 
-uchar* rd_rawv       = NULL;                // raw value from buff, before processing
-uchar* rd_lhand      = NULL;                // current point in stack
-uchar* rd_value      = NULL;                // next point in stack
-uchar* rd_oldval     = NULL;                // next from next, used to remember things
+uchar*   rd_rawv     = NULL;                // raw value from buff, before processing
+MEMUNIT* rd_lhand    = NULL;                // current point in stack
+MEMUNIT* rd_value    = NULL;                // next point in stack
+MEMUNIT* rd_oldval   = NULL;                // next from next, used to remember things
 
-ulong  szmask_a      = 0x0000000000000000;  // lower 64-bit of rd mask. used for casting
-ulong  szmask_b      = 0x0000000000000000;  // ^upper, idem
-
-uint   sec_beg       = 0;                   // start "$" idex of sec operation
-uint   sec_end       = 0;                   // end   "&" idex of sec operation
+ulong    szmask_a    = 0x0000000000000000;  // lower 64-bit of rd mask. used for casting
+ulong    szmask_b    = 0x0000000000000000;  // ^upper, idem
+                    
+uint     sec_beg     = 0;                   // start "$" idex of sec operation
+uint     sec_end     = 0;                   // end   "&" idex of sec operation
 
 //   ---     ---     ---     ---     ---
 
-REG* pe_reg          = NULL;                // container for current memreg
+REG*     pe_reg      = NULL;                // container for current memreg
 
 //   ---     ---     ---     ---     ---

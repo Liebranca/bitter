@@ -214,7 +214,7 @@ void TRNVAL(uint len)                       {
     if(rd_flags&OP_MINUS) {                 // if negative, do the bit flipping
 
         if(rd_flags&OP_RADIX) {             // floats
-            rd_value[3] |= 0x80;
+            *rd_value |= 0x80000000LL << (rd_cbyte*8);
 
         }
 
@@ -223,17 +223,17 @@ void TRNVAL(uint len)                       {
         else {                              // everything else
 
             for(uint x=0, carry=0;
-                x<rd_size; x++      ) {     // take two's
+                x<rd_step; x++      ) {     // take two's
                 rd_value[x]=(~rd_value[x]); // flip bits
                 if(!x || carry) {
-                    if(rd_value[x]==0xFF) {
+                    if(rd_value[x]==0xFFFFFFFFFFFFFFFF) {
                         rd_value[x] += 1;   // overflows. add one and set carry
-                        carry     = 1;
+                        carry        = 1;
                     }
 
                     else {
                         rd_value[x] += 1;   // won't overflow, so add and no carry
-                        carry     = 0;
+                        carry        = 0;
 
                     };
                 };
@@ -466,11 +466,11 @@ void MAEXPS(void)                           {
 
 //   ---     ---     ---     ---     ---
 
-void SECEXPS(uchar** result)                {
+void SECEXPS(MEMUNIT** result)              {
 
-    rd_oldval = rd_value+rd_size;
+    rd_oldval = rd_value+rd_step;
 
-    for(uint x=0; x<rd_size; x++) {
+    for(uint x=0; x<rd_step; x++) {
         rd_oldval[x]=rd_value[x];
 
     }; mammi->state |= MAMMIT_SF_PSEC;
@@ -502,11 +502,11 @@ void SECEXPS(uchar** result)                {
 
 //   ---     ---     ---     ---     ---
 
-    uint  sflags_i = 0;
-    uint* sflags   = mammi->lvlb_stack+0;
-    ulong sec_val  = (*((ulong*) rd_value)) & szmask_a;
+    uint    sflags_i = 0;
+    uint*   sflags   = mammi->lvlb_stack+0;
+    MEMUNIT sec_val  = ((*rd_value)>>(rd_cbyte*8))&szmask_a;
 
-    for(uint x=0; x<rd_size; x++) {
+    for(uint x=0; x<rd_step; x++) {
         rd_value[x]=rd_oldval[x];
 
     };
@@ -517,22 +517,22 @@ void SECEXPS(uchar** result)                {
 
         case OP_GT | OP_MONEY: sflags[sflags_i] &=~ (OP_GT | OP_MONEY);
             if(!sec_val) {
-                sec_beg+=rd_size;
+                sec_beg+=rd_step;
 
             } else {
-                sec_beg+=sec_val*rd_size;
+                sec_beg+=sec_val*rd_step;
 
             }; break;
 
         case OP_LT | OP_MONEY: sflags[sflags_i] &=~ (OP_LT | OP_MONEY);
             if(!sec_val) {
-                sec_beg-=rd_size;
+                sec_beg-=rd_step;
 
             } else {
-                sec_beg-=sec_val*rd_size;
+                sec_beg-=sec_val*rd_step;
 
             }; if(sec_beg>=sec_end) {
-                sec_beg=sec_end-rd_size;
+                sec_beg=sec_end-rd_step;
 
             }; break;
 
@@ -543,34 +543,34 @@ void SECEXPS(uchar** result)                {
                 sec_end+=rd_size;
 
             } else {
-                sec_end+=sec_val*rd_size;
+                sec_end+=sec_val*rd_step;
 
-            }; if(sec_end>rd_elems*rd_size) {
-                sec_end=rd_elems*rd_size;
+            }; if(sec_end>rd_elems*rd_step) {
+                sec_end=rd_elems*rd_step;
 
             }; break;
 
         case OP_LT | OP_AMPER: sflags[sflags_i] &=~ (OP_LT | OP_AMPER);
             if(!sec_val) {
-                sec_end-=rd_size;
+                sec_end-=rd_step;
 
             } else {
-                sec_end-=sec_val*rd_size;
+                sec_end-=sec_val*rd_step;
 
             }; if(sec_beg>=sec_end) {
-                sec_end=sec_beg+rd_size;
+                sec_end=sec_beg+rd_step;
 
             }; break;
 
 //   ---     ---     ---     ---     ---
 
         case OP_GT | OP_MUL: sflags[sflags_i] &=~ (OP_GT | OP_MUL);
-            if(!sec_val) { lngptr+=rd_size; break; }
-            lngptr += sec_val*rd_size; break;
+            if(!sec_val) { lngptr+=rd_step; break; }
+            lngptr += sec_val*rd_step; break;
 
         case OP_LT | OP_MUL: sflags[sflags_i] &=~ (OP_LT | OP_MUL);
-            if(!sec_val) { lngptr-=rd_size; break; }
-            lngptr -= sec_val*rd_size; break;
+            if(!sec_val) { lngptr-=rd_step; break; }
+            lngptr -= sec_val*rd_step; break;
 
 //   ---     ---     ---     ---     ---
 
@@ -578,20 +578,20 @@ void SECEXPS(uchar** result)                {
             lngptr = 0; break;
 
         case OP_RSHFT | OP_MUL: sflags[sflags_i] &=~ (OP_RSHFT | OP_MUL);
-            lngptr = sec_end-rd_size; break;
+            lngptr = sec_end-rd_step; break;
 
 //   ---     ---     ---     ---     ---
 
         case OP_EQUL | OP_MUL: { sflags[sflags_i] &=~ (OP_EQUL | OP_MUL);
 
-            uchar* addr=((uchar*) memlng->buff)+lngptr;
+            MEMUNIT* addr=((MEMUNIT*) memlng->buff)+lngptr;
 
             if(!sec_val) {
                 CLMEM2(addr, rd_size);
 
             } else {
-                for(uint x=0; x<rd_size; x++) {
-                    addr[x]=sec_val>>(x*8);
+                for(uint x=0; x<rd_step; x++) {
+                    addr[x]=sec_val;
 
                 };
             };
@@ -602,17 +602,15 @@ void SECEXPS(uchar** result)                {
 //   ---     ---     ---     ---     ---
 
         case OP_EQUL: { sflags[sflags_i] &=~ OP_EQUL;
-            uchar* addr=((uchar*) memlng->buff)+sec_beg;
+            MEMUNIT* addr=((MEMUNIT*) memlng->buff)+sec_beg;
 
             if(!sec_val) {
-                CLMEM2(addr, sec_end-sec_beg);
+                CLMEM2(addr, (sec_end-sec_beg)*rd_size);
 
             } else {
-                for(uint x=sec_beg; x<sec_end; x+=rd_size, addr+=rd_size) {
-                    for(uint y=0; y<rd_size; y++) {
-                        addr[y]=sec_val>>(y*8);
+                for(uint x=sec_beg; x<sec_end; x+=rd_step, addr+=rd_step) {
+                    *addr=sec_val;
 
-                    };
                 };
             };
 
@@ -623,7 +621,7 @@ void SECEXPS(uchar** result)                {
 
     }; sflags_i++; if(sflags_i<=mammi->lvlb) { goto SECTOP; }
 
-    rd_lhand    = ((uchar*) memlng->buff)+lngptr;
+    rd_lhand    = ((MEMUNIT*) memlng->buff)+(lngptr);
 
     *result     = rd_lhand;
     rd_value    = rd_lhand+rd_size;
@@ -640,8 +638,6 @@ void REGTP(void)                            {
     uchar* name       = tokens[rd_tkx];     // fetch, stay put
 
     rd_size           = 4;                  // ensure elem count is always a power of 2
-    rd_elems          =                     (uint) (pow(2, typedata.arrsize)+0.5      );
-
     uint   parsed     = 0;                  // how many *expressions* have been read
 
 //   ---     ---     ---     ---     ---
@@ -690,18 +686,34 @@ void REGTP(void)                            {
 
 //   ---     ---     ---     ---     ---
 
+    rd_elems          = typedata.arrsize;   // force array elements to equal multiple of
+    while((rd_elems*rd_size)%UNITSZ) {      // unitsize; makes life way simpler
+        rd_elems++;
+
+    };
+
+    rd_cbyte          = 0;
+    rd_step           = rd_size/UNITSZ;
+
+    if(!rd_step) {
+        rd_step = 1;
+
+    };
+
+//   ---     ---     ---     ---     ---
+
                                             // redeclaration block
     int    evil       = 0; MAMMCTCH         (NOREDCL(name), evil, MAMMIT_EV_DECL, name );
     CALOUT                                  (K, "DECL: %s %s[%u]", type, name, rd_elems);
 
     uint ex_f         = rd_tkx+1;           // idex to first token in expression
-    uchar* result     = (uchar*) memlng->buff+0;
+    MEMUNIT* result   = ((MEMUNIT*) memlng->buff)+0;
     rd_lhand          = result;
 
     lngptr            = 0;
 
     sec_beg           = lngptr;
-    sec_end           = rd_elems*rd_size;
+    sec_end           = rd_elems*rd_step;
 
     CLMEM2(rd_lhand, rd_size);
 
@@ -721,7 +733,7 @@ void REGTP(void)                            {
 
     };
 
-    rd_value        = rd_lhand+rd_size;
+    rd_value        = rd_lhand+rd_step;
     CLMEM2(rd_value, rd_size);
 
 //   ---     ---     ---     ---     ---
@@ -734,19 +746,24 @@ void REGTP(void)                            {
 
         }; parsed++;
 
-        result  += rd_size;
-        rd_lhand = result;
-        rd_value = rd_lhand+rd_size;
-        CLMEM2(rd_value, rd_size);
+        rd_cbyte     += rd_size;
 
-        lngptr  += rd_size;
+        if(rd_cbyte==UNITSZ) {
+
+            result   += rd_step;
+            rd_lhand  = result;
+            rd_value  = rd_lhand+rd_step;
+
+            CLMEM2(rd_value, rd_size);
+
+        };  lngptr   += rd_size;
 
 //   ---     ---     ---     ---     ---
 
         rd_rawv++;
         if(rd_rawv[0]==0x28) {
             sec_beg = lngptr;
-            sec_end = rd_elems*rd_size;
+            sec_end = rd_elems*rd_step;
 
             rd_rawv++;
             SECEVAL: SECEXPS(&result);
@@ -774,34 +791,19 @@ void REGTP(void)                            {
 
 //   ---     ---     ---     ---     ---
 
-    uchar* vtest = ((ADDR*) CURLVAL)->box;
-    VALNEW(name, (uchar*) memlng->buff+0, rd_size*rd_elems);
+    MEMUNIT* vtest = ((ADDR*) CURLVAL)->box;
+    VALNEW(name, ((MEMUNIT*) memlng->buff)+0, rd_step);
 
-    switch(rd_cast) {
+    CALOUT(K, " = 0x");
+    for(uint x=0; x<rd_elems; x++) {
+        CALOUT(K, "%02X ", vtest);
+        vtest++;
 
-        case 0x00: break;                   // we'll see how to handle these later
-        case 0x01: break;
-        case 0x02: break;
-
-//   ---     ---     ---     ---     ---
-
-        case 0x09:
-        case 0x05: PRCAST(LNG); break;
-
-        case 0x03:
-        case 0x07: PRCAST(CHR); break;
-
-        case 0x04:
-        case 0x08: PRCAST(WID); break;
-
-        case 0x06:
-        case 0x0A: PRCAST(QAT); break;
-
-        default  : PRCAST(FLT); break;
+    }; CALOUT(K, "(");
 
 //   ---     ---     ---     ---     ---
 
-    }; for(uint x=ex_f; x<rd_tki; x++) {
+    for(uint x=ex_f; x<rd_tki; x++) {
         CALOUT(K, ": %s ", tokens[x]);
 
     }; CALOUT(K, ")\n");                                                                    };
@@ -1215,9 +1217,8 @@ void RDNXT(void)                            {
 //   ---     ---     ---     ---     ---
 
 // TODO:
-//  0xFF FF FF FF
-//  wed 0 regname;
-//  (implicit: regname->)x@(*=0)
+//  wed
+//  sec in @ indexing
 
 int main(void)                              {
 

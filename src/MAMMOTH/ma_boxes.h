@@ -116,57 +116,59 @@ typedef struct MAMM_INTERPRETER {           // smach for pe-text input
 
 typedef struct MAMM_ADDR {                  // helper struct for var fetch/insert
 
-    ID    id;                               // typedata (0x00-03) name (0x04-17)
-    uchar box[];                            // stored data
+    ID      id;                             // typedata (0x00-03) name (0x04-17)
+    MEMUNIT box[];                          // stored data
 
 } ADDR;
 
 //   ---     ---     ---     ---     ---
 
-extern uint   gblevil;
+extern uint     gblevil;
 
-extern uchar  tokens[MAMMIT_TK_COUNT][MAMMIT_TK_WIDTH];
+extern uchar    tokens[MAMMIT_TK_COUNT][MAMMIT_TK_WIDTH];
 
-extern uchar* rd_tk;
-extern uint   rd_tki;
-extern uint   rd_tkp;
-extern uint   rd_tkx;
+extern uchar*   rd_tk;
+extern uint     rd_tki;
+extern uint     rd_tkp;
+extern uint     rd_tkx;
 
-extern uchar* rd_buff;
+extern uchar*   rd_buff;
 
-extern uchar  rd_cur;
-extern uchar  rd_prv;
-extern uchar  rd_nxt;
-extern uint   rd_cast;
-extern uint   rd_line;
+extern uchar    rd_cur;
+extern uchar    rd_prv;
+extern uchar    rd_nxt;
+extern uint     rd_cast;
+extern uint     rd_line;
 
-extern ushort rd_wid;
-extern uint   rd_pos;
-
-//   ---     ---     ---     ---     ---
-
-extern uint   rd_flags;
-extern uint   rd_size;
-extern uint   rd_elems;
-
-extern uchar* rd_rawv;
-extern uchar* rd_lhand;
-extern uchar* rd_value;
-extern uchar* rd_oldval;
-
-extern ulong  szmask_a;
-extern ulong  szmask_b;
-
-extern uint   sec_beg;
-extern uint   sec_end;
+extern ushort   rd_wid;
+extern uint     rd_pos;
 
 //   ---     ---     ---     ---     ---
 
-extern HASH*  GNAMES_HASH;
-extern HASH*  LNAMES_HASH;
+extern uint     rd_flags;
+extern uint     rd_size;
+extern uint     rd_elems;
+extern uint     rd_cbyte;
+extern uint     rd_step;
 
-extern MEM*   memlng;
-extern uint   lngptr;
+extern uchar*   rd_rawv;
+extern MEMUNIT* rd_lhand;
+extern MEMUNIT* rd_value;
+extern MEMUNIT* rd_oldval;
+
+extern ulong    szmask_a;
+extern ulong    szmask_b;
+
+extern uint     sec_beg;
+extern uint     sec_end;
+
+//   ---     ---     ---     ---     ---
+
+extern HASH*    GNAMES_HASH;
+extern HASH*    LNAMES_HASH;
+
+extern MEM*     memlng;
+extern uint     lngptr;
 
 //   ---     ---     ---     ---     ---
 

@@ -2,6 +2,7 @@
 #define __MA_TRANS_H__
 
 #include "KVRNEL/zjc_CommonTypes.h"
+#include "ma_boxes.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -9,21 +10,21 @@ extern "C" {
 
 //   ---     ---     ---     ---     ---
 
-void TRHEXVAL(uchar* src ,
-              uchar* to  ,
-              uint   size);                 // hexstr to num
+void TRHEXVAL(uchar*   src ,
+              MEMUNIT* to  ,
+              uint     size);               // hexstr to num
 
-void TRBITVAL(uchar* src ,
-              uchar* to  ,
-              uint   size);                 // bitstr to num
+void TRBITVAL(uchar*   src ,
+              MEMUNIT* to  ,
+              uint     size);               // bitstr to num
 
-void TRDECVAL(uchar* src ,
-              uchar* to  ,
-              uint   size);                 // decstr to num
+void TRDECVAL(uchar*   src ,
+              MEMUNIT* to  ,
+              uint     size);               // decstr to num
 
-void TRFLTVAL(uchar* src ,
-              uchar* to  ,
-              uint   size);                 // fltstr to float
+void TRFLTVAL(uchar*   src ,
+              MEMUNIT* to  ,
+              uint     size);               // fltstr to float
 
 //   ---     ---     ---     ---     ---
 

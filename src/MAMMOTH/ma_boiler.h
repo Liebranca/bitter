@@ -33,9 +33,9 @@ SYMBOL SYMNEW  (uchar* fam     ,
                 uchar* key     ,
                 NIHIL  fun     );           // used for populating gnames
 
-void   VALNEW  (uchar* name    ,
-                uchar* val     ,
-                uint   size    );           // used for populating lnames
+void   VALNEW  (uchar*   name  ,
+                MEMUNIT* val   ,
+                uint     size  );           // used for populating lnames
 
 void VALSIZ    (uchar* type    ,
                 uchar*  to     );           // get size of base type
@@ -241,69 +241,6 @@ void VALSIZ    (uchar* type    ,
 
 //   ---     ---     ---     ---     ---
 
-#define PRCAST_CHR                         \
-    CALOUT(K, " = 0x");                    \
-    for(uint x=0; x<rd_elems; x++) {       \
-        CALOUT(                            \
-            K, "%02X ",                    \
-            *((uchar*) vtest)              \
-                                           \
-        ); vtest+=rd_size; };              \
-                                           \
-    CALOUT(K, "(")
-
-#define PRCAST_WID                         \
-    CALOUT(K, " = 0x");                    \
-    for(uint x=0; x<rd_elems; x++) {       \
-        CALOUT(                            \
-            K, "%04X ",                    \
-            *((ushort*) vtest)             \
-                                           \
-        ); vtest+=rd_size; };              \
-                                           \
-    CALOUT(K, "(")
-
-//   ---     ---     ---     ---     ---
-
-#define PRCAST_LNG                         \
-    CALOUT(K, " = 0x");                    \
-    for(uint x=0; x<rd_elems; x++) {       \
-        CALOUT(                            \
-            K, "%08X ",                    \
-            *((uint*) vtest)               \
-                                           \
-        ); vtest+=rd_size; };              \
-                                           \
-    CALOUT(K, "(")
-
-#define PRCAST_QAT                         \
-    CALOUT(K, " = 0x");                    \
-    for(uint x=0; x<rd_elems; x++) {       \
-        CALOUT(                            \
-            K, "%16X ",                    \
-            *((ulong*) vtest)              \
-                                           \
-        ); vtest+=rd_size; };              \
-                                           \
-    CALOUT(K, "(")
-
-//   ---     ---     ---     ---     ---
-
-#define PRCAST_FLT                         \
-    CALOUT(K, " = 0x");                    \
-    for(uint x=0; x<rd_elems; x++) {       \
-        CALOUT(                            \
-            K, "%08X ",                    \
-            *((float*) vtest)              \
-                                           \
-        ); vtest+=rd_size; };              \
-                                           \
-    CALOUT(K, "(")
-
-#define PRCAST(T) PRCAST##_##T
-
-//   ---     ---     ---     ---     ---
-
 #define ADDRFET(T, addr) (T*) (((ADDR*) addr)->box+0)
 
 #define CURLVAL (mammi->lvalues+mammi->lvaltop)
@@ -323,11 +260,11 @@ void VALSIZ    (uchar* type    ,
 #define MAMMIT_LVLB_NXT {                                                                   \
     mammi->lvlb_stack[mammi->lvlb]=rd_flags;                                                \
     mammi->lvlb++; rd_flags=0;                                                              \
-    rd_lhand+=rd_size; rd_value+=rd_size; lngptr+=rd_size;                                  }
+    rd_lhand+=rd_step; rd_value+=rd_step; lngptr+=rd_step;                                  }
 
 #define MAMMIT_LVLB_PRV {                                                                   \
     mammi->lvlb--; rd_flags=mammi->lvlb_stack[mammi->lvlb];                                 \
-    rd_lhand-=rd_size; rd_value-=rd_size; lngptr-=rd_size;                                  }
+    rd_lhand-=rd_step; rd_value-=rd_step; lngptr-=rd_step;                                  }
 
 //   ---     ---     ---     ---     ---
 

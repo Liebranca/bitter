@@ -58,26 +58,18 @@ void REGMA(void)                            {
         mammi->state |= MAMMIT_SF_CREG;     // set state
 
                                             // claim place in stack
-        pe_reg                     =        (REG*) CURLVAL;
+        pe_reg                      =       (REG*) CURLVAL;
 
                                             // fetch tokens
-        rd_tkx++; uchar* name      =        tokens[rd_tkx];
-        rd_tkx++; uchar* rwsize    =        tokens[rd_tkx];
-                  uchar  chsize[8] =        {0};
+        rd_tkx++; uchar*  name      =       tokens[rd_tkx];
+        rd_tkx++; uchar*  rwsize    =       tokens[rd_tkx];
+                  MEMUNIT chsize    =       0;
+
+        TRDECVAL                            (rwsize, &chsize, UNITSZ                     );
 
 //   ---     ---     ---     ---     ---
 
-        // copy size str
-        for(uint x=0; x<strlen(rwsize); x++) {
-            chsize[x]=rwsize[x];
-
-                                            // translate str into uint
-        }; TRDECVAL                         (rwsize, chsize, sizeof(uint)                );
-
-//   ---     ---     ---     ---     ---
-
-                                            // guesswork for size of jump table
-        pe_reg->bound      =                *((uint*) chsize                             );
+        pe_reg->bound      = (uint) chsize;
 
         while((pe_reg->bound*sizeof(uint))%UNITSZ) {
             pe_reg->bound++;

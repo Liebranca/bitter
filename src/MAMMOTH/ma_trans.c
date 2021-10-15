@@ -20,9 +20,9 @@
 
 //   ---     ---     ---     ---     ---
 
-void TRHEXVAL(uchar* src ,
-              uchar* to  ,
-              uint   size)                  {
+void TRHEXVAL(uchar*   src ,
+              MEMUNIT* to  ,
+              uint     size)                {
 
     uchar cbyte = 0x00;                     // curent byte
     uchar chxd  = 0x00;                     // current hex digit
@@ -53,20 +53,20 @@ void TRHEXVAL(uchar* src ,
 //   ---     ---     ---     ---     ---
 
         if(!chxd) {                         // is first digit
-            to[cbyte]  = hxval;
+            to[cbyte/UNITSZ] += (hxval)<<(rd_cbyte*8);
             chxd++;
 
         } else {                            // is second digit
-            to[cbyte] += hxval*16;
+            to[cbyte/UNITSZ] += (hxval*16)<<(rd_cbyte*8);
             chxd--; cbyte++;
 
     }} while(*src-- != 0x78);                                                               };
 
 //   ---     ---     ---     ---     ---
 
-void TRBITVAL(uchar* src ,
-              uchar* to  ,
-              uint   size)                  {
+void TRBITVAL(uchar*   src ,
+              MEMUNIT* to  ,
+              uint     size)                {
 
     uchar cbit  = 0x00;                     // current bit
     uchar cbyte = 0x00;                     // curent byte
@@ -80,7 +80,8 @@ void TRBITVAL(uchar* src ,
         && c != 0x30) {                     // nuuuuuuuuuuull!
             break;
 
-        }; to[cbyte] |= (c==0x31) << cbit;  // easy money
+                                            // easy money
+        }; to[cbyte/UNITSZ] |=              ((c==0x31) << cbit)<<(rd_cbyte*8);
 
 //   ---     ---     ---     ---     ---
 
@@ -94,12 +95,12 @@ void TRBITVAL(uchar* src ,
 
 //   ---     ---     ---     ---     ---
 
-void TRDECVAL(uchar* src ,
-              uchar* to  ,
-              uint   size)                  {
+void TRDECVAL(uchar*   src ,
+              MEMUNIT* to  ,
+              uint     size)                {
 
-    ulong decval = 0x0000000000000000;      // value in decimal
-    uchar c      = 0x00;                    // empty char
+    MEMUNIT decval = 0x00;                  // value in decimal
+    uchar c        = 0x00;                  // empty char
 
 //   ---     ---     ---     ---     ---
 
@@ -109,20 +110,13 @@ void TRDECVAL(uchar* src ,
         decval *= 10;                       // left shift
         decval += c - 0x30;
 
-    } while(*src++);
+    } while(*src++); (*to)+=(decval)<<(rd_cbyte*8);                                         };
 
 //   ---     ---     ---     ---     ---
 
-    for(uint x=0; x<size; x++) {            // copy bytes over
-        to[x]=(decval&(0xFF<<(x*8))) >> (x*8);
-
-    };                                                                                      };
-
-//   ---     ---     ---     ---     ---
-
-void TRFLTVAL(uchar* src ,
-              uchar* to  ,
-              uint   size)                  {
+void TRFLTVAL(uchar*   src ,
+              MEMUNIT* to  ,
+              uint     size)                {
 
     float  whole = 0.0f;                    // integer portion of number
     float  fract = 0.0f;                    // fraction portion of number
@@ -162,12 +156,9 @@ void TRFLTVAL(uchar* src ,
 
     } while(*src++); whole+=fract;
 
-//   ---     ---     ---     ---     ---
+    MEMUNIT uval = *((MEMUNIT*) &whole);
+    *to+=uval<<(rd_cbyte*8);
 
-    uint uval = *((uint*) &whole);          // read these bytes as an int
-    for(uint x=0; x<size; x++) {            // copy them over
-        to[x]=(uval&(0xFF<<(x*8))) >> (x*8);
-
-    };                                                                                      };
+};
 
 //   ---     ---     ---     ---     ---

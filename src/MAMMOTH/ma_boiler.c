@@ -177,9 +177,9 @@ SYMBOL SYMNEW(uchar* fam,
 
 //   ---     ---     ---     ---     ---
 
-void VALNEW(uchar* name,
-            uchar* val ,
-            uint   size)                    {
+void VALNEW(uchar*   name,
+            MEMUNIT* val ,
+            uint     size)                  {
 
     MAMMIT_REG_ADD;
 
@@ -195,8 +195,10 @@ void VALNEW(uchar* name,
     ADDR* addr      = (ADDR*) CURLVAL;
     addr->id        = IDNEW(type, name);
 
-    INCLVAL(size+sizeof(ID));
-    for(uint x=0; x<size; x++) {            // copy bytes over
+    mammi->lvaltop += size;
+    INCLVAL(sizeof(ID));
+
+    for(uint x=0; x<size; x++) {            // copy qbs over
         addr->box[x]=val[x];
                                             // insert in hash for later fetch by key
     }; HASHSET                              (LNAMES_HASH, byref(addr->id));                 };
