@@ -85,9 +85,10 @@ MEMUNIT* rd_oldval   = NULL;                // next from next, used to remember 
 
 ulong    szmask_a    = 0x0000000000000000;  // lower 64-bit of rd mask. used for casting
 ulong    szmask_b    = 0x0000000000000000;  // ^upper, idem
-                    
-uint     sec_beg     = 0;                   // start "$" idex of sec operation
-uint     sec_end     = 0;                   // end   "&" idex of sec operation
+
+BLK      sec_beg     = {0};                 // beg "$" block of sec operation
+BLK      sec_cur     = {0};                 // cur "*" block of sec operation
+BLK      sec_end     = {0};                 // end "&" block of sec operation
 
 //   ---     ---     ---     ---     ---
 

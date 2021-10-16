@@ -509,122 +509,80 @@ void SECEXPS(MEMUNIT** result)              {
     for(uint x=0; x<rd_step; x++) {
         rd_value[x]=rd_oldval[x];
 
-    };
+    }; MEMUNIT bstep = (!sec_val) ? 1 : sec_val;
 
 //   ---     ---     ---     ---     ---
 
-    SECTOP: switch(sflags[sflags_i]) {
+    SECTOP:
 
+        switch(sflags[sflags_i]) {
         case OP_GT | OP_MONEY: sflags[sflags_i] &=~ (OP_GT | OP_MONEY);
-            if(!sec_val) {
-                sec_beg+=rd_step;
-
-            } else {
-                sec_beg+=sec_val*rd_step;
-
-            }; break;
+            MOVBLK(&sec_beg, 1); break;
 
         case OP_LT | OP_MONEY: sflags[sflags_i] &=~ (OP_LT | OP_MONEY);
-            if(!sec_val) {
-                sec_beg-=rd_step;
-
-            } else {
-                sec_beg-=sec_val*rd_step;
-
-            }; if(sec_beg>=sec_end) {
-                sec_beg=sec_end-rd_step;
-
-            }; break;
+            MOVBLK(&sec_beg,-1); break;
 
 //   ---     ---     ---     ---     ---
 
         case OP_GT | OP_AMPER: sflags[sflags_i] &=~ (OP_GT | OP_AMPER);
-            if(!sec_val) {
-                sec_end+=rd_step;
-
-            } else {
-                sec_end+=sec_val*rd_step;
-
-            }; if(sec_end>rd_elems*rd_step) {
-                sec_end=rd_elems*rd_step;
-
-            }; break;
+            MOVBLK(&sec_end, 1); break;
 
         case OP_LT | OP_AMPER: sflags[sflags_i] &=~ (OP_LT | OP_AMPER);
-            if(!sec_val) {
-                sec_end-=rd_step;
-
-            } else {
-                sec_end-=sec_val*rd_step;
-
-            }; if(sec_beg>=sec_end) {
-                sec_end=sec_beg+rd_step;
-
-            }; break;
+            MOVBLK(&sec_end,-1); break;
 
 //   ---     ---     ---     ---     ---
 
         case OP_GT | OP_MUL: sflags[sflags_i] &=~ (OP_GT | OP_MUL);
-            if(!sec_val) { lngptr+=rd_step; break; }
-            lngptr += sec_val*rd_step; break;
+            MOVBLK(&sec_cur, 1); break;
 
         case OP_LT | OP_MUL: sflags[sflags_i] &=~ (OP_LT | OP_MUL);
-            if(!sec_val) { lngptr-=rd_step; break; }
-            lngptr -= sec_val*rd_step; break;
+            MOVBLK(&sec_cur,-1); break;
 
 //   ---     ---     ---     ---     ---
 
         case OP_LSHFT | OP_MUL: sflags[sflags_i] &=~ (OP_LSHFT | OP_MUL);
-            lngptr = 0; break;
+            sec_cur.base  = sec_beg.base;
+            sec_cur.cbyte = sec_beg.cbyte; break;
 
         case OP_RSHFT | OP_MUL: sflags[sflags_i] &=~ (OP_RSHFT | OP_MUL);
-            lngptr = sec_end-rd_step; break;
+            sec_cur.base  = sec_end.base;
+            sec_cur.cbyte = sec_end.cbyte; break;
 
 //   ---     ---     ---     ---     ---
 
         case OP_EQUL | OP_MUL: { sflags[sflags_i] &=~ (OP_EQUL | OP_MUL);
-
-            MEMUNIT* addr=((MEMUNIT*) memlng->buff)+lngptr;
-
-            if(!sec_val) {
-                CLMEM2(addr, rd_size);
-
-            } else {
-                for(uint x=0; x<rd_step; x++) {
-                    addr[x]=sec_val;
-
-                };
-            };
-
-            break;
+            MEMUNIT* addr = ((MEMUNIT*) memlng->buff)+sec_cur.base;
+            *addr        &=~(szmask_a<<(sec_cur.cbyte*8));
+            *addr        |= (sec_val)<<(sec_cur.cbyte*8); break;
         }
 
 //   ---     ---     ---     ---     ---
 
         case OP_EQUL: { sflags[sflags_i] &=~ OP_EQUL;
-            MEMUNIT* addr=((MEMUNIT*) memlng->buff)+sec_beg;
+            MEMUNIT* addr  = ((MEMUNIT*) memlng->buff)+0;
+            uint old_base  = sec_beg.base;
+            sint old_cbyte = sec_beg.cbyte;
 
-            if(!sec_val) {
-                CLMEM2(addr, (sec_end-sec_beg)*rd_size);
+            while(sec_beg.base!=sec_end.base) {
+                addr[sec_beg.base] &=~(szmask_a<<(sec_beg.cbyte*8));
+                addr[sec_beg.base] |= (sec_val)<<(sec_beg.cbyte*8);
+                MOVBLK(&sec_beg, 1);
 
-            } else {
-                for(uint x=sec_beg; x<sec_end; x++) {
-                    for(uint y=0; y<UNITSZ; y+=rd_size) {
-                        *addr|=(sec_val)<<(y*8);
-
-                    }; addr++;
-
-                };
             };
+
+            sec_beg.base  = old_base;
+            sec_beg.cbyte = old_cbyte;
 
             break;
         }
+
+        default: break;
 
 //   ---     ---     ---     ---     ---
 
     }; sflags_i++; if(sflags_i<=mammi->lvlb) { goto SECTOP; }
 
-    rd_lhand    = ((MEMUNIT*) memlng->buff)+(lngptr);
+    rd_lhand    = ((MEMUNIT*) memlng->buff)+(sec_cur.base);
 
     *result     = rd_lhand;
     rd_value    = rd_lhand+rd_step;
@@ -712,8 +670,14 @@ void REGTP(void)                            {
 
     lngptr            = 0;
 
-    sec_beg           = lngptr;
-    sec_end           = (rd_elems*rd_size)/UNITSZ;
+    sec_beg.base     = lngptr;
+    sec_beg.cbyte    = 0;
+
+    sec_cur.base     = lngptr;
+    sec_cur.cbyte    = 0;
+
+    sec_end.base     = (rd_elems*rd_size)/UNITSZ;
+    sec_end.cbyte    = UNITSZ;
 
     CLMEM2(rd_lhand, rd_elems*rd_size);
 
@@ -756,8 +720,8 @@ void REGTP(void)                            {
 
                 CLMEM2(rd_value, rd_size);
 
-                lngptr    += rd_step;
-                rd_cbyte   = 0;
+                lngptr   += rd_step;
+                rd_cbyte  = 0;
 
             };
         };
@@ -766,8 +730,14 @@ void REGTP(void)                            {
 
         rd_rawv++;
         if(rd_rawv[0]==0x28) {
-            sec_beg = lngptr;
-            sec_end = (rd_elems*rd_size)/UNITSZ;
+            sec_beg.base     = lngptr;
+            sec_beg.cbyte    = rd_cbyte;
+
+            sec_cur.base     = lngptr;
+            sec_cur.cbyte    = rd_cbyte;
+
+            sec_end.base     = (rd_elems*rd_size)/UNITSZ;
+            sec_end.cbyte    = UNITSZ;
 
             rd_rawv++;
             SECEVAL: SECEXPS(&result);
@@ -1249,8 +1219,8 @@ int main(void)                              {
 
     RPSTR(&s,
 
-"reg vars 2 {\n\
-  wide2 y ,(=0xDE74);\n\
+"reg vars {\n\
+  char2 x ,($>:=0xFF);\n\
 }\n",
 
 0);
@@ -1260,7 +1230,7 @@ int main(void)                              {
     CALOUT(E, "\e[38;2;128;255;128m\n$PEIN:\n%s\n\e[0m\e[38;2;255;128;128m$OUT:", rd_buff);
     RDNXT(); CALOUT(E, "\e[0m");
 
-    CHKMEMLAY();
+    /*CHKMEMLAY();*/
 
     DLMEM(memlng);
     DLMEM(s);

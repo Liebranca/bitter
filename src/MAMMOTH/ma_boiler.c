@@ -28,6 +28,25 @@ uint GTUNITCNT(uint size, uint mag)         {
 
     }; return (uint) ((pow(2, 2+mag) + 0.5)/size);                                          };
 
+void MOVBLK(BLK* b, int dirn)               {
+
+    b->cbyte      += ((int) (rd_size))*dirn;
+
+    if(dirn<0) {
+        if(b->cbyte < 0) {
+            b->base--;
+            b->cbyte+=UNITSZ;
+
+        };
+
+    } else {
+        if ( ( b->cbyte > UNITSZ )  \
+        || ( !(b->cbyte%UNITSZ))  ) {
+            b->base++;
+            b->cbyte-=UNITSZ;
+        };
+    };                                                                                      };
+
 //   ---     ---     ---     ---     ---
 
 int NOREDCL(uchar* name)                    {

@@ -38,7 +38,7 @@ extern "C" {
 
 #define UNITSZ sizeof(MEMUNIT)
 
-#define FREE_BLOCK  0xF9EEB10CF9EEB10CLL
+#define FREE_BLOCK  0xFFFFFFFFF9EEB10CLL
 #define FRBLK       (NAMESZ-8)
 
 //   ---     ---     ---     ---     ---
@@ -126,6 +126,15 @@ typedef struct MAMM_ADDR {                  // helper struct for var fetch/inser
 
 //   ---     ---     ---     ---     ---
 
+typedef struct MAMM_BLOCK_ACC {             // byte access helper
+
+    uint base;                              // base unit index
+    sint cbyte;                             // byte offset into base
+
+} BLK;
+
+//   ---     ---     ---     ---     ---
+
 extern uint     gblevil;
 
 extern uchar    tokens[MAMMIT_TK_COUNT][MAMMIT_TK_WIDTH];
@@ -163,8 +172,9 @@ extern MEMUNIT* rd_oldval;
 extern ulong    szmask_a;
 extern ulong    szmask_b;
 
-extern uint     sec_beg;
-extern uint     sec_end;
+extern BLK      sec_beg;
+extern BLK      sec_cur;
+extern BLK      sec_end;
 
 //   ---     ---     ---     ---     ---
 

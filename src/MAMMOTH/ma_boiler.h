@@ -12,6 +12,8 @@ extern "C" {
 uint   GTUNITCNT(uint size, uint mag);      // calculate arrsize%unitsz
 void   CHKMEMLAY(void               );      // contiguousness test
 
+void   MOVBLK   (BLK* b, int dirn   );      // block byte && memunit shifts
+
 //   ---     ---     ---     ---     ---
 
 int    NOREDCL  (uchar* name        );      // check varname in use
