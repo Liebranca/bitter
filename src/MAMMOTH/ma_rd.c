@@ -16,6 +16,7 @@
 /*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
 
 #include "KVRNEL/MEM/kvr_str.h"
+#include "KVRNEL/MEM/kvr_bin.h"
 
 #include "ma_cntx.h"
 #include "ma_trans.h"
@@ -848,14 +849,14 @@ void NTNAMES(void)                          {
 
     SYMBOL contexts[]={                     // names of valid block-types
 
-        SYMNEW("CNTX", "reg",  REGMA),
-        SYMNEW("CNTX", "hed",  NULL ),
-        SYMNEW("CNTX", "src",  NULL ),
+        SYMNEW("CNTX", "reg",  REGMA ),
+        SYMNEW("CNTX", "hed",  NULL  ),
+        SYMNEW("CNTX", "src",  NULL  ),
 
-        SYMNEW("CNTX", "defn", NULL ),
-        SYMNEW("CNTX", "decl", NULL ),
-        SYMNEW("CNTX", "clan", NULL ),
-        SYMNEW("CNTX", "proc", NULL )
+        SYMNEW("CNTX", "defn", NULL  ),
+        SYMNEW("CNTX", "decl", NULL  ),
+        SYMNEW("CNTX", "clan", NULL  ),
+        SYMNEW("CNTX", "proc", PROCMA)
 
     };
 
@@ -1211,26 +1212,51 @@ void RDNXT(void)                            {
 //  wed
 //  sec in @ indexing
 
-int main(void)                              {
+int main(int argc, char** argv)             {
+
+    int   prmemlay = 0;
+    int   from_bin = 0;
+    char* bin_path = "";
+    BIN*  bin      = NULL;
+
+    for(int x=1; x<argc; x++) {
+        char* arg=argv[x];
+        if(!strcmp(arg, "-ml")) {
+            prmemlay=1;
+
+        } elif(strstr(arg, "-f")!=NULL) {
+            from_bin=1; bin_path=arg+2;
+
+        };
+    };
 
     NTNAMES();
     MEM* s  = MKSTR("MAMM_RD", 1024, 1); CLMEM(s);
     LDLNG(ZJC_DAFPAGE); memlng = GTLNG(); CLMEM(memlng);
-
-    RPSTR(&s,
-
-"reg vars {\n\
-  char2 x ,($>:=0xFF);\n\
-}\n",
-
-0);
-
     rd_buff = MEMBUFF(s, uchar, 0);
+
+//   ---     ---     ---     ---     ---
+
+    if(from_bin) { int rb;
+        BINOPEN (bin, bin_path, KVR_FMODE_RB, KVR_FTYPE_DMP, rb);
+        PBINREAD(bin, rb, uchar, 1024, rd_buff                 );
+
+    };
+
+//   ---     ---     ---     ---     ---
 
     CALOUT(E, "\e[38;2;128;255;128m\n$PEIN:\n%s\n\e[0m\e[38;2;255;128;128m$OUT:", rd_buff);
     RDNXT(); CALOUT(E, "\e[0m");
 
-    /*CHKMEMLAY();*/
+    if(prmemlay) { CHKMEMLAY(); };
+
+    if(from_bin) {
+        BINCLOSE(bin);
+        DLMEM   (bin);
+
+    };
+
+//   ---     ---     ---     ---     ---
 
     DLMEM(memlng);
     DLMEM(s);

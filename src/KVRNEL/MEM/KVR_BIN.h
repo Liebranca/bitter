@@ -132,7 +132,12 @@ int   BIN2BIN (uint size       );           // write size bytes from src to dst
 
                                             /* catch if we don't read as many bytes        */
     #define BINREAD(bin, rb, type, count, buff) { rb = count;                                \
-        ERRCATCH(fread(buff, sizeof(type), count, bin->file), rb, 0x43, PTHBIN(bin));            \
+        ERRCATCH(fread(buff, sizeof(type), count, bin->file), rb, 0x43, PTHBIN(bin));        \
+        rb *= sizeof(type);                                                                 }
+
+                                            /* empty error handle because we dont care     */
+    #define PBINREAD(bin, rb, type, count, buff) { rb = count;                               \
+        fread(buff, sizeof(type), count, bin->file); if(rb!=count && !feof(bin->file)) { ; } \
         rb *= sizeof(type);                                                                 }
 
     #define BINREAD_ATR(bin, rb, type, count, buff, offset) { rb = count;                    \

@@ -30,7 +30,7 @@ kvrnel: $(CURDIR)/AVTO
 
 mamm: kvrnel
 	@cd $(CURDIR)/MAMMOTH; make;
-	@../bin/$(PLAT)/mamm
+#	@../bin/$(PLAT)/mamm
 
 sin: kvrnel
 	@cd $(CURDIR)/SIN; make

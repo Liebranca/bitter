@@ -105,7 +105,11 @@ mammi->state &=~MAMMIT_SF_CREG;      // effectively, an implicit else
 //   ---     ---     ---     ---     ---
 
 void PROCMA(void)                           {
-    ;
+    if(!(mammi->state&MAMMIT_SF_CPRC)) {
+        mammi->state|=MAMMIT_SF_CPRC;
+        return
+
+    }; mammi->state &=~MAMMIT_SF_CPRC;
 
 };
 
