@@ -222,7 +222,7 @@ void VALSIZ(uchar* type, uchar* to) {
     uchar flags   = type[3];
 
     to[0]         = 4;
-    to[1]         = (uint) (pow(2, arrsize)+0.5);
+    to[1]         = arrsize;
     to[2]         = (indlvl | arrsize) != 0;
 
 //   ---     ---     ---     ---     ---
@@ -232,11 +232,62 @@ void VALSIZ(uchar* type, uchar* to) {
 
     } elif( 0x03 <= base \
       &&    0x06 >= base ) {                // num type
-        to[0]=2*(base-0x03);
-        if(!to[0]) { to[0]=1; }
-
+        to[0]=(uchar) (pow(2, base-0x03)+0.5);
         return;
 
     }; to[0]=sizeof(float);                                                                 };
+
+//   ---     ---     ---     ---     ---
+
+void CHKMEMLAY(void)                        {
+
+
+    MEMUNIT* ptr = mammi->lvalues+0;
+
+    while(ptr) {
+
+        pe_reg = (REG*) ptr;                // print regdata
+        CALOUT(E, "\n0x%" PRIXPTR " %s\n\n",         pe_reg, pe_reg->id.full        );
+        CALOUT(E, "0x%"   PRIXPTR " START\t%u\n",    &(pe_reg->start), pe_reg->start);
+        CALOUT(E, "0x%"   PRIXPTR " ELEMS\t%u\n",    &(pe_reg->elems), pe_reg->elems);
+        CALOUT(E, "0x%"   PRIXPTR " BOUND\t%u\n",    &(pe_reg->bound), pe_reg->bound);
+        CALOUT(E, "0x%"   PRIXPTR " SIZE\t%u QBs\n", &(pe_reg->size ), pe_reg->size );
+
+        for(uint x=0; x<pe_reg->bound; x++) {
+            CALOUT(E, "0x%" PRIXPTR " JMP%u\t%u\n", pe_reg->jmpt+x, x, pe_reg->jmpt[x]);
+
+        };
+
+        for(uint x=0; x<pe_reg->bound; x++) {
+
+            ADDR* addr      = (ADDR*) (mammi->lvalues+pe_reg->jmpt[x]);
+            uchar szdata[3] = {0,0,0};
+
+            if(addr!=NULL) {
+                                            // unpack and print addr && name
+                VALSIZ                      (addr->id.type, szdata                          );
+                CALOUT                      (E, "\n0x%" PRIXPTR " ID %s\n0x%"               \
+                                                PRIXPTR " \t\t0x",                          \
+                                                                                            \
+                                            addr, addr->id.key, addr->box+0                 );
+
+                                            // sizing ints for the read
+                rd_elems    = GTUNITCNT     (szdata[0], szdata[1]                           );
+                rd_step     = rd_size/UNITSZ;
+
+                if(!rd_step) {
+                    rd_step = 1;
+
+                }; rd_units =               (rd_elems*rd_size)/UNITSZ;                      \
+
+                for(uint x=0; x<rd_units; x++) {
+                    CALOUT                  (E, "%016" PRIX64 " ", addr->box[x]             );
+
+                }; ptr+=rd_units;
+            };
+
+        }; if(strstr(((REG*) ptr)->id.full, "REG*")==NULL) { break; }
+    }; CALOUT(E, "\n\nLNAMES at {%u/%u} capacity | %u units remaining\n",                   \
+                 mammi->lvaltop, NAMESZ, NAMESZ - mammi->lvaltop        );                  };
 
 //   ---     ---     ---     ---     ---

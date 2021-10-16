@@ -87,6 +87,12 @@ void REGMA(void)                            {
 
 //   ---     ---     ---     ---     ---
 
+        for(uint x=0; x<pe_reg->bound; x++) {
+            pe_reg->jmpt[x]=FRBLK;
+        };
+
+//   ---     ---     ---     ---     ---
+
                                             // ut something to console
         CALOUT                              (K, "reg %s[%u]\n", name, pe_reg->bound      );
 

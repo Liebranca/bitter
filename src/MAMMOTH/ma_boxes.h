@@ -38,6 +38,9 @@ extern "C" {
 
 #define UNITSZ sizeof(MEMUNIT)
 
+#define FREE_BLOCK  0xF9EEB10CF9EEB10CLL
+#define FRBLK       (NAMESZ-8)
+
 //   ---     ---     ---     ---     ---
 
 typedef struct MAMM_TYPEVAL_DATA {          // to simplify reading wacky types

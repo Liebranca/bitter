@@ -825,8 +825,25 @@ void NTNAMES(void)                          {
         STACKPUSH(byref(mammi->slstack), x);
 
                                             // nit the hashes
-    }; GNAMES_HASH = MKHASH                 (7, "gnames_hash"                          );
-       LNAMES_HASH = MKHASH                 (5, "lnames_hash"                          );
+    }; GNAMES_HASH    = MKHASH              (7, "gnames_hash"                          );
+       LNAMES_HASH    = MKHASH              (5, "lnames_hash"                          );
+
+                                            // cool constant block for awesome prints
+    ADDR* frblk       =                     (ADDR*) (mammi->lvalues+FRBLK);
+
+    frblk->id.full[0] = 0x03;               // type/sizing flags
+    frblk->id.full[1] = 0x00;
+    frblk->id.full[2] = 0x00;
+    frblk->id.full[3] = 0x00;
+
+    frblk->id.full[4] = 0x46;               // manual strings like a champ
+    frblk->id.full[5] = 0x52;
+    frblk->id.full[6] = 0x42;
+    frblk->id.full[7] = 0x4C;
+    frblk->id.full[8] = 0x4B;
+    frblk->id.full[9] = 0x00;
+
+    frblk->box[0]     =  FREE_BLOCK;        // occult hexspeak; improves quality of dumps
 
 //   ---     ---     ---     ---     ---
 
@@ -1243,52 +1260,7 @@ int main(void)                              {
     CALOUT(E, "\e[38;2;128;255;128m\n$PEIN:\n%s\n\e[0m\e[38;2;255;128;128m$OUT:", rd_buff);
     RDNXT(); CALOUT(E, "\e[0m");
 
-/*  move contiguosness test to it's own func!
-
-
-    CALOUT(E, "\n0x%" PRIXPTR " %s\n\n",         pe_reg, pe_reg->id.full        );
-    CALOUT(E, "0x%"   PRIXPTR " START\t%u\n",    &(pe_reg->start), pe_reg->start);
-    CALOUT(E, "0x%"   PRIXPTR " ELEMS\t%u\n",    &(pe_reg->elems), pe_reg->elems);
-    CALOUT(E, "0x%"   PRIXPTR " BOUND\t%u\n",    &(pe_reg->bound), pe_reg->bound);
-    CALOUT(E, "0x%"   PRIXPTR " SIZE\t%u QBs\n", &(pe_reg->size ), pe_reg->size );
-
-    for(uint x=0; x<pe_reg->bound; x++) {
-        CALOUT(E, "0x%" PRIXPTR " JMP%u\t%u\n", pe_reg->jmpt+x, x, pe_reg->jmpt[x]);
-
-    };
-
-    ADDR* addr      = (ADDR*) (mammi->lvalues+pe_reg->jmpt[0]);
-    uchar szdata[3] = {0,0,0};
-
-    if(addr!=NULL) {
-        VALSIZ(addr->id.type, szdata);
-        CALOUT(E, "\n0x%" PRIXPTR " REGVAR\n0x%" PRIXPTR " %s\t\t0x", addr, addr->box+0, addr->id.key);
-
-        rd_size           = szdata[0];
-        rd_elems          = szdata[1];      // force array elements to equal multiple of
-
-        while((rd_elems*rd_size)%UNITSZ) {  // unitsize; makes life way simpler
-            rd_elems++;
-
-        };
-
-        rd_cbyte          = 0;
-        rd_step           = rd_size/UNITSZ;
-
-        if(!rd_step) {
-            rd_step = 1;
-
-        };
-
-        for(uint x=0; x<rd_step; x++) {
-            CALOUT(E, "%" PRIX64 " ", addr->box[x]);
-
-        };
-    };
-
-    CALOUT(E, "\n\nLNAMES at {%u/%u} capacity | %u QBs remaining\n", mammi->lvaltop, NAMESZ, NAMESZ - mammi->lvaltop);
-
-*/
+    CHKMEMLAY();
 
     DLMEM(memlng);
     DLMEM(s);

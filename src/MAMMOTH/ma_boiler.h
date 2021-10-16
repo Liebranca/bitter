@@ -10,6 +10,7 @@ extern "C" {
 //   ---     ---     ---     ---     ---
 
 uint   GTUNITCNT(uint size, uint mag);      // calculate arrsize%unitsz
+void   CHKMEMLAY(void               );      // contiguousness test
 
 //   ---     ---     ---     ---     ---
 
