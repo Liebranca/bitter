@@ -316,9 +316,18 @@ void RSTSEC(void)                           {
 
     rd_rawv++;                                                                              };
 
+void RSTPTRS(void)                          {
+
+    rd_result = ((MEMUNIT*) memlng->buff)+lngptr;
+    rd_lhand  = rd_result;
+    rd_value  = rd_lhand+rd_step;
+
+    CLMEM2(rd_value, rd_size);
+    CLMEM2(rd_lhand, rd_elems*rd_size);                                                     };
+
 //   ---     ---     ---     ---     ---
 
-void MAFETCH(MEMUNIT* r, MEMUNIT* v) {
+void MAFETCH(MEMUNIT* r, MEMUNIT* v)        {
 
     MEMUNIT* addr = (MEMUNIT*) mammi->vaddr;
 
@@ -347,10 +356,7 @@ void MAFETCH(MEMUNIT* r, MEMUNIT* v) {
 
 //   ---     ---     ---     ---     ---
 
-    CALOUT(E, "v@[%u:%u] | MASK 0x%016" PRIX64 " | 0x%016" PRIX64 "\n", FETMASK(units, cunit), cbyte,
-                                SIZMASK(size)<<(cbyte*8), (*addr)&(SIZMASK(size)<<(cbyte*8)));
-
-//   ---     ---     ---     ---     ---
+    (*r) = ((*addr) & (SIZMASK(size)<<(cbyte*8))) >> (cbyte*8);
 
     rd_flags&=~OP_AT;
     mammi->state&=~MAMMIT_SF_PFET; };
@@ -365,11 +371,11 @@ void CHKMEMLAY(void)                        {
     while(ptr) {
 
         pe_reg = (REG*) ptr;                // print regdata
-        CALOUT(E, "\n0x%" PRIXPTR " %s\n\n",         pe_reg, pe_reg->id.full        );
-        CALOUT(E, "0x%"   PRIXPTR " START\t%u\n",    &(pe_reg->start), pe_reg->start);
-        CALOUT(E, "0x%"   PRIXPTR " ELEMS\t%u\n",    &(pe_reg->elems), pe_reg->elems);
-        CALOUT(E, "0x%"   PRIXPTR " BOUND\t%u\n",    &(pe_reg->bound), pe_reg->bound);
-        CALOUT(E, "0x%"   PRIXPTR " SIZE\t%u QBs\n", &(pe_reg->size ), pe_reg->size );
+        CALOUT(E, "\n0x%" PRIXPTR " %s\n\n",           pe_reg, pe_reg->id.full        );
+        CALOUT(E, "0x%"   PRIXPTR " START\t%u\n",      &(pe_reg->start), pe_reg->start);
+        CALOUT(E, "0x%"   PRIXPTR " ELEMS\t%u\n",      &(pe_reg->elems), pe_reg->elems);
+        CALOUT(E, "0x%"   PRIXPTR " BOUND\t%u\n",      &(pe_reg->bound), pe_reg->bound);
+        CALOUT(E, "0x%"   PRIXPTR " SIZE\t%u units\n", &(pe_reg->size ), pe_reg->size );
 
         for(uint x=0; x<pe_reg->bound; x++) {
             CALOUT(E, "0x%" PRIXPTR " JMP%u\t%u\n", pe_reg->jmpt+x, x, pe_reg->jmpt[x]);

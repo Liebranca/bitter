@@ -16,6 +16,7 @@ void   MOVBLK   (BLK* b, int dirn   );      // block byte && memunit shifts
 void   BYTESTEP (void               );      // advance rd_result by rd_size
 void   TPADDR   (ADDR* addr         );      // decode addr typedata
 void   RSTSEC   (void               );      // prep for first seceval run
+void   RSTPTRS  (void               );      // reset result, lhand, value (not lngptr)
 
 void   MAFETCH (MEMUNIT* r          ,
                 MEMUNIT* v          );      // value fetcher

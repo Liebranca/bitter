@@ -1,11 +1,12 @@
 $$$$$$$$$$$$$$$$
 
 reg vars {
-    wide2 x ,($=0xB17E:$>:$=0xDE74);
+    uint2 x;
 
 };
 
 proc call {
-    x x@1;
+    x@1 = 0xFFFF00CC;
+    x@0 = 0xDEADBEEF;
 
 };

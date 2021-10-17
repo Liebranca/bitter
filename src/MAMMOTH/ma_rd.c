@@ -611,10 +611,7 @@ void RDEXP(void)                            {
     uint   parsed     = 0;                  // how many *expressions* have been read
     uint ex_f         = rd_tkx+1;           // idex to first token in expression
 
-    rd_result         = ((MEMUNIT*) memlng->buff)+0;
-    rd_lhand          = rd_result;
-
-    CLMEM2(rd_lhand, rd_elems*rd_size);
+    RSTPTRS();
 
 //   ---     ---     ---     ---     ---
 
@@ -753,13 +750,41 @@ void REGTP(void)                            {
 
 void RDPRC(ADDR* addr)                      {
 
-    lngptr = 0;
-
     TPADDR(addr);
-    RSTSEC(    );
-    RDEXP (    );
 
-    CALOUT(E, "0%016" PRIX64 "\n", *rd_result);                                             };
+    lngptr       = 0;
+    uint   cunit = 0;
+
+    uchar* name  = tokens[rd_tkx];
+    uchar* nxt   = tokens[rd_tkx+1];
+
+    uint   cbyte = 0;
+
+    if(nxt[0]==0x40) {
+        nxt++; rd_rawv=nxt;
+
+        RSTPTRS();
+        MAEXPS ();
+
+        MEMUNIT* addr = ((MEMUNIT*) memlng->buff)+sec_beg.base;
+
+        cbyte=(*rd_value)*rd_size;
+        rd_tkx++;
+
+    };
+
+//   ---     ---     ---     ---     ---
+
+    RSTSEC();
+    RDEXP ();
+
+    while(cbyte>(UNITSZ-rd_size)) {
+        cbyte-=UNITSZ; cunit++;
+
+    };
+
+    addr->box[FETMASK(rd_units, cunit)] &=~(szmask_a    << (cbyte*8));
+    addr->box[FETMASK(rd_units, cunit)] |= (*rd_result) << (cbyte*8);                       };
 
 //   ---     ---     ---     ---     ---
 

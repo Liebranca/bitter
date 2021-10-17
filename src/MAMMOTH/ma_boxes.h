@@ -38,7 +38,7 @@ extern "C" {
 
 #define UNITSZ sizeof(MEMUNIT)
 
-#define FREE_BLOCK  0xFFFFFFFFF9EEB10CLL
+#define FREE_BLOCK  0xF9EEBABEF9EEB10CLL
 #define FRBLK       (NAMESZ-8)
 
 //   ---     ---     ---     ---     ---
