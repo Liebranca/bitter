@@ -184,7 +184,7 @@ void TRNVAL(uint len)                       {
                 elif(tokens[rd_tkx+1][0]==0x40) {
                     mammi->state |= MAMMIT_SF_PFET;
                     mammi->vaddr  = (uintptr_t) &(((ADDR*) nulmy)->box);
-                    mammi->vtype  = szdata[0] | (szdata[1]<<8) | (szdata[2]<<16 );
+                    mammi->vtype  = szdata[0] | (szdata[1]<<8) | (szdata[2]<<16);
 
                 } else {
                     goto NO_IDEX_OP;
@@ -518,26 +518,26 @@ void SECEXPS(void)                          {
 
         switch(sflags[sflags_i]) {
         case OP_GT | OP_MONEY: sflags[sflags_i] &=~ (OP_GT | OP_MONEY);
-            MOVBLK(&sec_beg, 1); break;
+            MOVBLK(&sec_beg, bstep); break;
 
         case OP_LT | OP_MONEY: sflags[sflags_i] &=~ (OP_LT | OP_MONEY);
-            MOVBLK(&sec_beg,-1); break;
+            MOVBLK(&sec_beg,-bstep); break;
 
 //   ---     ---     ---     ---     ---
 
         case OP_GT | OP_AMPER: sflags[sflags_i] &=~ (OP_GT | OP_AMPER);
-            MOVBLK(&sec_end, 1); break;
+            MOVBLK(&sec_end, bstep); break;
 
         case OP_LT | OP_AMPER: sflags[sflags_i] &=~ (OP_LT | OP_AMPER);
-            MOVBLK(&sec_end,-1); break;
+            MOVBLK(&sec_end,-bstep); break;
 
 //   ---     ---     ---     ---     ---
 
         case OP_GT | OP_MUL: sflags[sflags_i] &=~ (OP_GT | OP_MUL);
-            MOVBLK(&sec_cur, 1); break;
+            MOVBLK(&sec_cur, bstep); break;
 
         case OP_LT | OP_MUL: sflags[sflags_i] &=~ (OP_LT | OP_MUL);
-            MOVBLK(&sec_cur,-1); break;
+            MOVBLK(&sec_cur,-bstep); break;
 
 //   ---     ---     ---     ---     ---
 
@@ -614,9 +614,7 @@ void RDEXP(void)                            {
     rd_result         = ((MEMUNIT*) memlng->buff)+0;
     rd_lhand          = rd_result;
 
-    lngptr            = 0;
-
-    RSTSEC(); CLMEM2(rd_lhand, rd_elems*rd_size);
+    CLMEM2(rd_lhand, rd_elems*rd_size);
 
 //   ---     ---     ---     ---     ---
 
@@ -683,6 +681,8 @@ void RDEXP(void)                            {
 
     };                                                                                      };
 
+//   ---     ---     ---     ---     ---
+
 void REGTP(void)                            {
 
     uchar* type       = typedata.base;      // fetch
@@ -694,47 +694,35 @@ void REGTP(void)                            {
 
 //   ---     ---     ---     ---     ---
 
-    szmask_a          = 0x0000000000000000LL;
-    szmask_b          = 0x0000000000000000LL;
-
     switch(rd_cast) {                       // for 'dynamic' type-casting
                                             // we set size to sizeof x C type!
                                             // wait, you dunno whats a ulong??
                                             // look at KVRNEL/zjc_CommonTypes.h
 
-        case 0x00: szmask_a = 0xFFFFFFFFFFFFFFFFLL;
-            rd_size=sizeof(void* ); break;
+        case 0x00: rd_size=sizeof(void* ); break;
 
         case 0x01:
-        case 0x02: szmask_a = 0xFFFFFFFFFFFFFFFFLL;
-                   szmask_b = 0xFFFFFFFFFFFFFFFFLL;
-
-            rd_size=sizeof(STARK ); break;
+        case 0x02: rd_size=sizeof(STARK ); break;
 
 //   ---     ---     ---     ---     ---
 
         case 0x03:
-        case 0x07: szmask_a = 0x00000000000000FFLL;
-            rd_size=sizeof(uchar ); break;
+        case 0x07: rd_size=sizeof(uchar ); break;
 
         case 0x04:
-        case 0x08: szmask_a = 0x000000000000FFFFLL;
-            rd_size=sizeof(ushort); break;
+        case 0x08: rd_size=sizeof(ushort); break;
 
         case 0x05:
-        case 0x09: szmask_a = 0x00000000FFFFFFFFLL;
-            rd_size=sizeof(uint  ); break;
+        case 0x09: rd_size=sizeof(uint  ); break;
 
         case 0x06:
-        case 0x0A: szmask_a = 0xFFFFFFFFFFFFFFFFLL;
-            rd_size=sizeof(ulong ); break;
+        case 0x0A: rd_size=sizeof(ulong ); break;
 
 //   ---     ---     ---     ---     ---
 
-        default  : szmask_a = 0x00000000FFFFFFFFLL;
-            rd_size=sizeof(float ); break;
+        default  : rd_size=sizeof(float ); break;
 
-    };
+    }; szmask_a       = SIZMASK(rd_size);
 
 //   ---     ---     ---     ---     ---
 
@@ -754,6 +742,9 @@ void REGTP(void)                            {
                                             // no redeclaration
     int    evil       = 0; MAMMCTCH         (NOREDCL(name), evil, MAMMIT_EV_DECL, name  );
 
+    lngptr            = 0;
+    RSTSEC();
+
                                             // solve expression and store result
     RDEXP                                   (                                           );
     VALNEW                                  (name, ((MEMUNIT*) memlng->buff)+0, rd_units);  };
@@ -761,9 +752,14 @@ void REGTP(void)                            {
 //   ---     ---     ---     ---     ---
 
 void RDPRC(ADDR* addr)                      {
-    TPADDR(addr); rd_cbyte=0; RDEXP();
-    CALOUT(E, "0x0x%08" PRIX32 " | 0x%016" PRIX64 "\n", rd_flags, *rd_result);
-                                                                                            };
+
+    lngptr = 0;
+
+    TPADDR(addr);
+    RSTSEC(    );
+    RDEXP (    );
+
+    CALOUT(E, "0%016" PRIX64 "\n", *rd_result);                                             };
 
 //   ---     ---     ---     ---     ---
 

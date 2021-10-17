@@ -30,20 +30,24 @@ uint GTUNITCNT(uint size, uint mag)         {
 
 void MOVBLK(BLK* b, int dirn)               {
 
-    b->cbyte      += ((int) (rd_size))*dirn;
+    int sign       = (dirn<0) ? -1 : 1;
+    for(uint x=0; x<(dirn*sign); x++) {
+        b->cbyte      += ((int) (rd_size))*sign;
 
-    if(dirn<0) {
-        if(b->cbyte < 0) {
-            b->base--;
-            b->cbyte+=UNITSZ;
+        if(dirn<0) {
+            if(b->cbyte < 0) {
+                b->base--;
+                b->cbyte+=UNITSZ;
 
-        };
+            };
 
-    } else {
-        if ( ( b->cbyte > UNITSZ )  \
-        || ( !(b->cbyte%UNITSZ))  ) {
-            b->base++;
-            b->cbyte-=UNITSZ;
+        } else {
+            if ( ( b->cbyte > UNITSZ )  \
+            || ( !(b->cbyte%UNITSZ))  ) {
+                b->base++;
+                b->cbyte-=UNITSZ;
+
+            };
         };
     };                                                                                      };
 
@@ -258,7 +262,7 @@ void VALSIZ(uchar* type, uchar* to) {
 
 //   ---     ---     ---     ---     ---
 
-void TPADDR(ADDR* addr) {
+void TPADDR(ADDR* addr)                     {
 
     uchar szdata[3] = {0,0,0};              // unpack
     VALSIZ                                  (addr->id.type, szdata);
@@ -274,19 +278,10 @@ void TPADDR(ADDR* addr) {
 
 //   ---     ---     ---     ---     ---
 
-    szmask_a        = 0x0000000000000000LL;
-    szmask_b        = 0x0000000000000000LL;
+    szmask_a        = SIZMASK(rd_size);
 
-    uint cbyte      = rd_size;
-    uint i          = 0;
-
-    while(cbyte) {
-        if(i<8) { szmask_a |= 0xFFLL<<((i*8)  ); }
-        else    { szmask_b |= 0xFFLL<<((i-8)*8); }
-
-        cbyte-=1; i++;
-
-    };                                                                                      };
+    uint cbyte      = 0;
+    uint i          = 0;                                                                    };
 
 //   ---     ---     ---     ---     ---
 
@@ -320,6 +315,45 @@ void RSTSEC(void)                           {
     sec_end.cbyte = UNITSZ;
 
     rd_rawv++;                                                                              };
+
+//   ---     ---     ---     ---     ---
+
+void MAFETCH(MEMUNIT* r, MEMUNIT* v) {
+
+    MEMUNIT* addr = (MEMUNIT*) mammi->vaddr;
+
+    uint size     =  mammi->vtype&0xFF;
+    uint mag      = (mammi->vtype&0xFF00)>>8;
+
+    uint elems    = GTUNITCNT(size, mag);
+
+    uint units    = (elems*size)/UNITSZ;
+    uint cbyte    = ((MEMUNIT)(*v))*size;
+    uint cunit    = 0;
+
+    uint step     = size/UNITSZ;
+
+    if(!step) {
+        step      = 1;
+
+    };
+
+//   ---     ---     ---     ---     ---
+
+    while(cbyte>(UNITSZ-size)) {
+        cbyte-=UNITSZ; cunit++;
+
+    }; addr+=FETMASK(units, cunit);
+
+//   ---     ---     ---     ---     ---
+
+    CALOUT(E, "v@[%u:%u] | MASK 0x%016" PRIX64 " | 0x%016" PRIX64 "\n", FETMASK(units, cunit), cbyte,
+                                SIZMASK(size)<<(cbyte*8), (*addr)&(SIZMASK(size)<<(cbyte*8)));
+
+//   ---     ---     ---     ---     ---
+
+    rd_flags&=~OP_AT;
+    mammi->state&=~MAMMIT_SF_PFET; };
 
 //   ---     ---     ---     ---     ---
 

@@ -17,6 +17,9 @@ void   BYTESTEP (void               );      // advance rd_result by rd_size
 void   TPADDR   (ADDR* addr         );      // decode addr typedata
 void   RSTSEC   (void               );      // prep for first seceval run
 
+void   MAFETCH (MEMUNIT* r          ,
+                MEMUNIT* v          );      // value fetcher
+
 //   ---     ---     ---     ---     ---
 
 int    NOREDCL  (uchar* name        );      // check varname in use
@@ -230,17 +233,7 @@ void VALSIZ    (uchar* type    ,
 /*   ---     ---     ---     ---     --- */ \
                                             \
     case OP_AT: {                           \
-        uchar* addr = (uchar*) mammi->vaddr;\
-        addr       += ((ulong)(*v))         \
-                      * mammi->vtype&0xFF;  \
-                                            \
-        for(uint i=0;                       \
-            i<mammi->vtype&0xFF;i++) {      \
-            if(i>=rd_size) { break; }       \
-            (*r)+=addr[i];                  \
-                                            \
-        }; rd_flags&=~OP_AT;                \
-        mammi->state&=~MAMMIT_SF_PFET;      \
+        MAFETCH((MEMUNIT*) r, (MEMUNIT*) v);\
         OPSWITCH_MINUSX;                    \
     };                                      \
                                             \
@@ -250,6 +243,11 @@ void VALSIZ    (uchar* type    ,
         (*r)+=(*v); break;                  \
                                             \
     }; (*v)=0; break;                       }
+
+//   ---     ---     ---     ---     ---
+
+#define FETMASK(elems, idex) (idex)&((elems)-1)
+#define SIZMASK(size) ((0x01LL<<(size*8))-1)
 
 //   ---     ---     ---     ---     ---
 
