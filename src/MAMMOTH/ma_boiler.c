@@ -258,6 +258,71 @@ void VALSIZ(uchar* type, uchar* to) {
 
 //   ---     ---     ---     ---     ---
 
+void TPADDR(ADDR* addr) {
+
+    uchar szdata[3] = {0,0,0};              // unpack
+    VALSIZ                                  (addr->id.type, szdata);
+
+                                            // sizing ints for the read
+    rd_elems        = GTUNITCNT             (szdata[0], szdata[1] );
+    rd_step         = rd_size/UNITSZ;
+
+    if(!rd_step) {
+        rd_step     = 1;
+
+    }; rd_units     =                       (rd_elems*rd_size)/UNITSZ;
+
+//   ---     ---     ---     ---     ---
+
+    szmask_a        = 0x0000000000000000LL;
+    szmask_b        = 0x0000000000000000LL;
+
+    uint cbyte      = rd_size;
+    uint i          = 0;
+
+    while(cbyte) {
+        if(i<8) { szmask_a |= 0xFFLL<<((i*8)  ); }
+        else    { szmask_b |= 0xFFLL<<((i-8)*8); }
+
+        cbyte-=1; i++;
+
+    };                                                                                      };
+
+//   ---     ---     ---     ---     ---
+
+void BYTESTEP(void)                         {
+
+    rd_cbyte      += rd_size;
+
+    if(!(rd_cbyte%UNITSZ)) {
+        rd_result += rd_step;
+        rd_lhand   = rd_result;
+        rd_value   = rd_lhand+rd_step;
+
+        CLMEM2(rd_value, rd_size);
+
+        lngptr    += rd_step;
+        rd_cbyte   = 0;
+
+    };                                                                                      };
+
+//   ---     ---     ---     ---     ---
+
+void RSTSEC(void)                           {
+
+    sec_beg.base  = lngptr;
+    sec_beg.cbyte = rd_cbyte;
+
+    sec_cur.base  = lngptr;
+    sec_cur.cbyte = rd_cbyte;
+
+    sec_end.base  = (rd_elems*rd_size)/UNITSZ;
+    sec_end.cbyte = UNITSZ;
+
+    rd_rawv++;                                                                              };
+
+//   ---     ---     ---     ---     ---
+
 void CHKMEMLAY(void)                        {
 
 
@@ -280,24 +345,14 @@ void CHKMEMLAY(void)                        {
         for(uint x=0; x<pe_reg->bound; x++) {
 
             ADDR* addr      = (ADDR*) (mammi->lvalues+pe_reg->jmpt[x]);
-            uchar szdata[3] = {0,0,0};
 
             if(addr!=NULL) {
                                             // unpack and print addr && name
-                VALSIZ                      (addr->id.type, szdata                          );
+                TPADDR                      (addr                                           );
                 CALOUT                      (E, "\n0x%" PRIXPTR " ID %s\n0x%"               \
                                                 PRIXPTR " \t\t0x",                          \
                                                                                             \
                                             addr, addr->id.key, addr->box+0                 );
-
-                                            // sizing ints for the read
-                rd_elems    = GTUNITCNT     (szdata[0], szdata[1]                           );
-                rd_step     = rd_size/UNITSZ;
-
-                if(!rd_step) {
-                    rd_step = 1;
-
-                }; rd_units =               (rd_elems*rd_size)/UNITSZ;                      \
 
                 for(uint x=0; x<rd_units; x++) {
                     CALOUT                  (E, "%016" PRIX64 " ", addr->box[x]             );

@@ -467,7 +467,7 @@ void MAEXPS(void)                           {
 
 //   ---     ---     ---     ---     ---
 
-void SECEXPS(MEMUNIT** result)              {
+void SECEXPS(void)                          {
 
     rd_oldval = rd_value+rd_step;
 
@@ -557,6 +557,20 @@ void SECEXPS(MEMUNIT** result)              {
             *addr        |= (sec_val)<<(sec_cur.cbyte*8); break;
         }
 
+        case OP_EQUL | OP_MONEY: { sflags[sflags_i] &=~ (OP_EQUL | OP_MONEY);
+            MEMUNIT* addr = ((MEMUNIT*) memlng->buff)+sec_beg.base;
+            *addr        &=~(szmask_a<<(sec_beg.cbyte*8));
+            *addr        |= (sec_val)<<(sec_beg.cbyte*8); break;
+        }
+
+        case OP_EQUL | OP_AMPER: { sflags[sflags_i] &=~ (OP_EQUL | OP_AMPER);
+            if(sec_end.cbyte<0) { break; }
+
+            MEMUNIT* addr = ((MEMUNIT*) memlng->buff)+sec_end.base;
+            *addr        &=~(szmask_a<<((sec_end.cbyte-rd_size)*8));
+            *addr        |= (sec_val)<<((sec_end.cbyte-rd_size)*8); break;
+        }
+
 //   ---     ---     ---     ---     ---
 
         case OP_EQUL: { sflags[sflags_i] &=~ OP_EQUL;
@@ -585,12 +599,89 @@ void SECEXPS(MEMUNIT** result)              {
 
     rd_lhand    = ((MEMUNIT*) memlng->buff)+(sec_cur.base);
 
-    *result     = rd_lhand;
+    rd_result   = rd_lhand;
     rd_value    = rd_lhand+rd_step;
 
     mammi->lvlb = 0;                                                                        };
 
 //   ---     ---     ---     ---     ---
+
+void RDEXP(void)                            {
+
+    uint   parsed     = 0;                  // how many *expressions* have been read
+    uint ex_f         = rd_tkx+1;           // idex to first token in expression
+
+    rd_result         = ((MEMUNIT*) memlng->buff)+0;
+    rd_lhand          = rd_result;
+
+    lngptr            = 0;
+
+    RSTSEC(); CLMEM2(rd_lhand, rd_elems*rd_size);
+
+//   ---     ---     ---     ---     ---
+
+    EVAL_EXP: rd_tkx++;                     // read next token in expression
+
+    if( !(rd_tkx<rd_tki   ) \
+    ||   (parsed>=rd_elems) ) {             // ... or jump to end if all tokens read
+        goto RESULT;
+
+    }; rd_flags     = 0;                    // values defined above MAMMIT_OPSWITCH
+       rd_rawv      = tokens[rd_tkx];       // current token
+
+    if(mammi->state&MAMMIT_SF_PSEC) {
+        goto SECEVAL;
+
+    };
+
+    rd_value        = rd_lhand+rd_step;
+    CLMEM2(rd_value, rd_size);
+
+//   ---     ---     ---     ---     ---
+
+    if( (mammi->state&MAMMIT_SF_CPRC \
+         &&  rd_rawv[0]==0x40        \
+         &&  rd_rawv[1]==0x28        )
+
+    ||  (mammi->state&MAMMIT_SF_CREG \
+         &&  rd_rawv[0]==0x2C        ) ) {
+
+        while(mammi->lvlb) {
+            MAMMIT_LVLB_PRV;
+            CALCUS_COLLAPSE();
+
+        }; parsed++;
+
+        if(ex_f<rd_tkx) {
+            BYTESTEP();
+        };
+
+//   ---     ---     ---     ---     ---
+
+        rd_rawv++;
+        if(rd_rawv[0]==0x28) {
+            RSTSEC(); SECEVAL: SECEXPS();
+
+        }; goto EVAL_EXP;
+    }; MAEXPS();                            // no @(sec) so just expand...
+
+//   ---     ---     ---     ---     ---
+
+                                            // collapse arithmetic-wise
+    SOLVE:
+        //CALOUT(E, "l%d\t 0x%" PRIX32 "\t v%d\t -> ", *rd_lhand, rd_flags, *rd_value);
+        CALCUS_COLLAPSE();
+        //CALOUT(E, "%d\n", *rd_lhand);
+
+    goto EVAL_EXP;
+
+//   ---     ---     ---     ---     ---
+
+    RESULT: if(mammi->lvlb>0) {             // collapse expression if unresolved
+        MAMMIT_LVLB_PRV;                    // this doesn't account for unclosed () parens
+        goto SOLVE;                         // so beware! PE$O will not care for that mistake
+
+    };                                                                                      };
 
 void REGTP(void)                            {
 
@@ -600,7 +691,6 @@ void REGTP(void)                            {
     uchar* name       = tokens[rd_tkx];     // fetch, stay put
 
     rd_size           = 4;                  // ensure elem count is always a power of 2
-    uint   parsed     = 0;                  // how many *expressions* have been read
 
 //   ---     ---     ---     ---     ---
 
@@ -649,7 +739,7 @@ void REGTP(void)                            {
 //   ---     ---     ---     ---     ---
 
                                             // make it a pow2%UNITSZ
-    rd_elems          = GTUNITCNT           (rd_size, typedata.arrsize                 );
+    rd_elems          = GTUNITCNT           (rd_size, typedata.arrsize                  );
 
     rd_cbyte          = 0;
     rd_step           = rd_size/UNITSZ;
@@ -661,127 +751,19 @@ void REGTP(void)                            {
 
 //   ---     ---     ---     ---     ---
 
-                                            // redeclaration block
-    int    evil       = 0; MAMMCTCH         (NOREDCL(name), evil, MAMMIT_EV_DECL, name );
-    CALOUT                                  (K, "DECL: %s %s[%u]", type, name, rd_elems);
+                                            // no redeclaration
+    int    evil       = 0; MAMMCTCH         (NOREDCL(name), evil, MAMMIT_EV_DECL, name  );
 
-    uint ex_f         = rd_tkx+1;           // idex to first token in expression
-    MEMUNIT* result   = ((MEMUNIT*) memlng->buff)+0;
-    rd_lhand          = result;
-
-    lngptr            = 0;
-
-    sec_beg.base     = lngptr;
-    sec_beg.cbyte    = 0;
-
-    sec_cur.base     = lngptr;
-    sec_cur.cbyte    = 0;
-
-    sec_end.base     = (rd_elems*rd_size)/UNITSZ;
-    sec_end.cbyte    = UNITSZ;
-
-    CLMEM2(rd_lhand, rd_elems*rd_size);
+                                            // solve expression and store result
+    RDEXP                                   (                                           );
+    VALNEW                                  (name, ((MEMUNIT*) memlng->buff)+0, rd_units);  };
 
 //   ---     ---     ---     ---     ---
 
-    EVAL_EXP: rd_tkx++;                     // read next token in expression
-
-    if( !(rd_tkx<rd_tki   ) \
-    ||   (parsed>=rd_elems) ) {             // ... or jump to end if all tokens read
-        goto RESULT;
-
-    }; rd_flags     = 0;                    // values defined above MAMMIT_OPSWITCH
-       rd_rawv      = tokens[rd_tkx];       // current token
-
-    if(mammi->state&MAMMIT_SF_PSEC) {
-        goto SECEVAL;
-
-    };
-
-    rd_value        = rd_lhand+rd_step;
-    CLMEM2(rd_value, rd_size);
-
-//   ---     ---     ---     ---     ---
-
-    if(rd_rawv[0]==0x2C) {
-
-        while(mammi->lvlb) {
-            MAMMIT_LVLB_PRV;
-            CALCUS_COLLAPSE();
-
-        }; parsed++;
-
-        if(ex_f<rd_tkx) {
-            rd_cbyte     += rd_size;
-
-            if(!(rd_cbyte%UNITSZ)) {
-                result   += rd_step;
-                rd_lhand  = result;
-                rd_value  = rd_lhand+rd_step;
-
-                CLMEM2(rd_value, rd_size);
-
-                lngptr   += rd_step;
-                rd_cbyte  = 0;
-
-            };
-        };
-
-//   ---     ---     ---     ---     ---
-
-        rd_rawv++;
-        if(rd_rawv[0]==0x28) {
-            sec_beg.base     = lngptr;
-            sec_beg.cbyte    = rd_cbyte;
-
-            sec_cur.base     = lngptr;
-            sec_cur.cbyte    = rd_cbyte;
-
-            sec_end.base     = (rd_elems*rd_size)/UNITSZ;
-            sec_end.cbyte    = UNITSZ;
-
-            rd_rawv++;
-            SECEVAL: SECEXPS(&result);
-
-        }; goto EVAL_EXP;
-    }; MAEXPS();                            // no @(sec) so just expand...
-
-//   ---     ---     ---     ---     ---
-
-                                            // collapse arithmetic-wise
-    SOLVE:
-        //CALOUT(E, "l%d\t 0x%" PRIX32 "\t v%d\t -> ", *rd_lhand, rd_flags, *rd_value);
-        CALCUS_COLLAPSE();
-        //CALOUT(E, "%d\n", *rd_lhand);
-
-    goto EVAL_EXP;
-
-//   ---     ---     ---     ---     ---
-
-    RESULT: if(mammi->lvlb>0) {             // collapse expression if unresolved
-        MAMMIT_LVLB_PRV;                    // this doesn't account for unclosed () parens
-        goto SOLVE;                         // so beware! PE$O will not care for that mistake
-
-    };
-
-//   ---     ---     ---     ---     ---
-
-    MEMUNIT* vtest = ((ADDR*) CURLVAL)->box;
-    VALNEW(name, ((MEMUNIT*) memlng->buff)+0, rd_units);
-
-    CALOUT(K, " = 0x");
-    for(uint x=0; x<rd_units; x++) {
-        CALOUT(K, "%016" PRIX64 " ", *vtest);
-        vtest++;
-
-    }; CALOUT(K, "(");
-
-//   ---     ---     ---     ---     ---
-
-    for(uint x=ex_f; x<rd_tki; x++) {
-        CALOUT(K, ": %s ", tokens[x]);
-
-    }; CALOUT(K, ")\n");                                                                    };
+void RDPRC(ADDR* addr)                      {
+    TPADDR(addr); rd_cbyte=0; RDEXP();
+    CALOUT(E, "0x0x%08" PRIX32 " | 0x%016" PRIX64 "\n", rd_flags, *rd_result);
+                                                                                            };
 
 //   ---     ---     ---     ---     ---
 
@@ -900,6 +882,14 @@ void CHKTKNS(void)                          {
         SEQ[0] = "TYPE\x01";
         SEQI   = 2;
 
+    }
+
+    elif(mammi->state&MAMMIT_SF_CPRC) {     // context == proc
+
+        SEQN   = "CPRC";
+        SEQ[0] = "LVAL\x01";
+        SEQI   = 1;
+
     };
 
 //   ---     ---     ---     ---     ---
@@ -972,10 +962,28 @@ void CHKTKNS(void)                          {
 
 //   ---     ---     ---     ---     ---
 
-                                            // fetch from table __by_key__ (slowest)
-            STR_HASHGET                     (GNAMES_HASH, key, nulmy, 0                );
 
-            valid = nulmy!=NULL;            // success on fetch means we might have to
+            if(!strcmp(seq_k, "LVAL")) {    // fetch from local table __by_key__ (slowest)
+                STR_HASHGET                 (LNAMES_HASH, key, nulmy, 0                );
+
+                if(nulmy!=NULL) {
+                    ADDR* addr=(ADDR*) nulmy;
+
+                    // symbol is funptr
+                    if( 0<=addr->id.type[0]
+                    &&  2>=addr->id.type[0] ) {
+                        ;
+
+                    } else {
+                        RDPRC(addr);
+
+                    };
+                }; nulmy=NULL;
+
+            } else {                        // ^same on global table
+                STR_HASHGET                 (GNAMES_HASH, key, nulmy, 0                );
+
+            }; valid = nulmy!=NULL;         // success on fetch means we might have to
             if(valid) {                     // modify mammit state based on symbols read
                 sym = (SYMBOL*) nulmy;      // no sneaky funcalls on invalid input, please
 
@@ -1019,6 +1027,22 @@ void RDNXT(void)                            {
 
 //   ---     ---     ---     ---     ---
 
+        if(mammi->state&MAMMIT_SF_PLCO) {
+            if(rd_cur==0x0A) {
+                mammi->state &=~MAMMIT_SF_PLCO;
+
+            } else { goto TOP; }
+        }
+
+        elif(mammi->state&MAMMIT_SF_PMCO) {
+            if(rd_wid==0x2A2F) {
+                mammi->state &=~MAMMIT_SF_PMCO;
+
+            } else { goto TOP; }
+        };
+
+//   ---     ---     ---     ---     ---
+
     switch(rd_wid) {                        // check for special wide chars
 
         case 0x0000: return;                // double nullterm should never happen
@@ -1029,6 +1053,12 @@ void RDNXT(void)                            {
 
         case 0x3B3E:
             mammi->state &=~MAMMIT_SF_PESC; rd_pos++; goto TOP;
+
+        case 0x2F2A:
+            mammi->state |= MAMMIT_SF_PMCO; rd_pos++; goto TOP;
+
+        case 0x2F2F:
+            mammi->state |= MAMMIT_SF_PLCO; rd_pos++; goto TOP;
 
     };
 

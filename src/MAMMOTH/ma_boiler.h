@@ -13,6 +13,9 @@ uint   GTUNITCNT(uint size, uint mag);      // calculate arrsize%unitsz
 void   CHKMEMLAY(void               );      // contiguousness test
 
 void   MOVBLK   (BLK* b, int dirn   );      // block byte && memunit shifts
+void   BYTESTEP (void               );      // advance rd_result by rd_size
+void   TPADDR   (ADDR* addr         );      // decode addr typedata
+void   RSTSEC   (void               );      // prep for first seceval run
 
 //   ---     ---     ---     ---     ---
 
@@ -56,6 +59,8 @@ void VALSIZ    (uchar* type    ,
 #define MAMMIT_SF_PLIT 0x00000002
 #define MAMMIT_SF_PSEC 0x00000004
 #define MAMMIT_SF_PFET 0x00000008
+#define MAMMIT_SF_PLCO 0x00000010
+#define MAMMIT_SF_PMCO 0x00000020
 
 #define MAMMIT_SF_CNTX 0x0000FF00
 

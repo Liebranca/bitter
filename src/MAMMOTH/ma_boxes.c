@@ -79,6 +79,8 @@ uint     rd_step     = 0;                   // rd_size/unitsz; units per elem
 uint     rd_units    = 0;                   // rd_elems/unitsz; total units used
 
 uchar*   rd_rawv     = NULL;                // raw value from buff, before processing
+
+MEMUNIT* rd_result   = NULL;                // result of expression
 MEMUNIT* rd_lhand    = NULL;                // current point in stack
 MEMUNIT* rd_value    = NULL;                // next point in stack
 MEMUNIT* rd_oldval   = NULL;                // next from next, used to remember things

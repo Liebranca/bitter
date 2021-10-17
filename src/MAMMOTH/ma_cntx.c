@@ -22,9 +22,7 @@
 
 //   ---     ---     ---     ---     ---
 
-static NIHIL MA_SCB_TABLE[9] = {            // table of state callbacks
-
-    NULL,                                   // NON              0x00000000
+static NIHIL MA_SCB_TABLE[8] = {            // table of state callbacks
 
     &REGMA,                                 // MAMMIT_SF_CREG   0x00000100
     NULL,                                   // MAMMIT_SF_CDEC   0x00000200
@@ -41,11 +39,14 @@ static NIHIL MA_SCB_TABLE[9] = {            // table of state callbacks
 
 NIHIL STOCB(void)                           {
 
-    uint sf   = mammi->state >> 8;
-    uint idex = 0;
+    uint sf    = mammi->cntx;
+    uint idex  = 0;
 
     for(uint x=0; x<8; x++) {
-        idex += sf&(1<<x);
+        uint b = !(sf&(1<<x));
+        if(!b) { break; }
+
+        idex  += b;
 
     }; return MA_SCB_TABLE[idex];                                                           };
 
@@ -98,8 +99,7 @@ void REGMA(void)                            {
 
         return;
 
-    }; CALOUT(K, "UT REG\n");
-mammi->state &=~MAMMIT_SF_CREG;      // effectively, an implicit else
+    }; mammi->state &=~MAMMIT_SF_CREG;      // effectively, an implicit else
                                                                                             };
 
 //   ---     ---     ---     ---     ---
@@ -107,10 +107,9 @@ mammi->state &=~MAMMIT_SF_CREG;      // effectively, an implicit else
 void PROCMA(void)                           {
     if(!(mammi->state&MAMMIT_SF_CPRC)) {
         mammi->state|=MAMMIT_SF_CPRC;
-        return
 
-    }; mammi->state &=~MAMMIT_SF_CPRC;
+        return;
 
-};
+    }; mammi->state &=~MAMMIT_SF_CPRC;                                                      };
 
 //   ---     ---     ---     ---     ---

@@ -165,6 +165,8 @@ extern uint     rd_step;
 extern uint     rd_units;
 
 extern uchar*   rd_rawv;
+
+extern MEMUNIT* rd_result;
 extern MEMUNIT* rd_lhand;
 extern MEMUNIT* rd_value;
 extern MEMUNIT* rd_oldval;
