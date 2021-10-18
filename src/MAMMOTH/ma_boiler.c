@@ -262,6 +262,12 @@ void VALSIZ(uchar* type, uchar* to) {
 
 //   ---     ---     ---     ---     ---
 
+void PROCADD(uint size)                     {
+    INCLVAL(size);
+};
+
+//   ---     ---     ---     ---     ---
+
 void TPADDR(ADDR* addr)                     {
 
     uchar szdata[3] = {0,0,0};              // unpack

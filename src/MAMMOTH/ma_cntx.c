@@ -108,6 +108,16 @@ void PROCMA(void)                           {
     if(!(mammi->state&MAMMIT_SF_CPRC)) {
         mammi->state|=MAMMIT_SF_CPRC;
 
+        pe_proc = (PROC*) CURLVAL;
+
+        rd_tkx++; uchar* name=tokens[rd_tkx];
+        pe_proc->id=IDNEW("PROC", name);
+
+        pe_proc->alias_blk=0;
+        pe_proc->total_blk=0;
+
+        INCLVAL(sizeof(PROC));
+
         return;
 
     }; mammi->state &=~MAMMIT_SF_CPRC;                                                      };

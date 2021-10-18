@@ -789,12 +789,9 @@ void RDPRC(ADDR* addr)                      {
     RSTSEC();
     RDEXP ();
 
-    while(cbyte>(UNITSZ-rd_size)) {
-        cbyte-=UNITSZ; cunit++;
-
-    };
-
 //   ---     ---     ---     ---     ---
+
+    CODE*     code  = (CODE*) pe_proc->blocks+0;
 
     uint      udr   = 0;                    // write offset into code->data
 
@@ -802,20 +799,22 @@ void RDPRC(ADDR* addr)                      {
     uintptr_t vaddr =                       (uintptr_t) addr;
 
                                             // MEMUNIT offset into addr->box
-    uint      upos  = FETMASK               (rd_units, cunit);
+
+    code->loc       = 0x00;
 
     for(uint x=0; x<sizeof(uintptr_t); x+=UNITSZ) {
         code->data[udr]=vaddr>>(x*UNITSZ); udr++;
 
     };
 
-    code->data[udr] = ((MEMUNIT) upos) | ( ((MEMUNIT) (cbyte*8))<<32 );
+    code->data[udr] = ((ulong) cbyte) | (((ulong) rd_units) << 32);
     udr++;
 
     code->data[udr] = szmask_a;
     udr++;
 
     code->data[udr] = *rd_result;
+    PROCADD(sizeof(CODE));
 
 //   ---     ---     ---     ---     ---
 
@@ -1320,8 +1319,6 @@ int main(int argc, char** argv)             {
     LDLNG(ZJC_DAFPAGE); memlng = GTLNG(); CLMEM(memlng);
     rd_buff = MEMBUFF(s, uchar, 0);
 
-    code    = MEMBUFF(memlng, CODE, 8192);
-
 //   ---     ---     ---     ---     ---
 
     if(from_bin) { int rb;
@@ -1335,7 +1332,11 @@ int main(int argc, char** argv)             {
     CALOUT(E, "\e[38;2;128;255;128m\n$PEIN:\n%s\n\e[0m\e[38;2;255;128;128m$OUT:", rd_buff);
     RDNXT(); CALOUT(E, "\e[0m");
 
-    lmcpy();
+    lmpush(
+ ( ((uintptr_t) (&(pe_proc->blocks))) \
+ - ((uintptr_t) (&(mammi->lvalues ))) ) / UNITSZ
+
+); lmpop();
 
     if(prmemlay) { CHKMEMLAY(); };
 

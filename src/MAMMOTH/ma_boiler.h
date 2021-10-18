@@ -54,6 +54,8 @@ void   VALNEW  (uchar*   name  ,
 void VALSIZ    (uchar* type    ,
                 uchar*  to     );           // get size of base type
 
+void PROCADD   (uint size      );
+
 //   ---     ---     ---     ---     ---
 // state flags...
 

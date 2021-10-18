@@ -148,10 +148,10 @@ typedef struct MAMM_ALIAS {                 // string to address redirection
 
 typedef struct MAMM_CODE {                  // operations as data
 
-    uint    insloc;                         // offset to instruction header
-    MEMUNIT data[];                         // bunch of bits read by instruction
+    uint    loc;                            // offset to instruction header
+    MEMUNIT data[4];                        // bunch of bits read by instruction
 
-} CODE; extern CODE* code;                  // for testing, delete later
+} CODE;
 
 //   ---     ---     ---     ---     ---
 
@@ -164,7 +164,7 @@ typedef struct MAMM_PROC {                  // data structure holding part of a 
 
     MEMUNIT blocks[];                       // encoded instructions
 
-} PROC;
+} PROC; extern PROC* pe_proc;
 
 //   ---     ---     ---     ---     ---
 
