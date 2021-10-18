@@ -38,8 +38,10 @@ extern "C" {
 
 #define UNITSZ sizeof(MEMUNIT)
 
-#define FREE_BLOCK  0xF9EEBABEF9EEB10CLL
-#define FRBLK       (NAMESZ-8)
+#define FREE_BLOCK      0x104EBABEF9EEB10CLL
+#define FRBLK           (NAMESZ-8)
+
+#define DEAD_BLOCK      0xF0CCBABEDEADBEEFLL
 
 //   ---     ---     ---     ---     ---
 
@@ -132,6 +134,37 @@ typedef struct MAMM_BLOCK_ACC {             // byte access helper
     sint cbyte;                             // byte offset into base
 
 } BLK;
+
+//   ---     ---     ---     ---     ---
+
+typedef struct MAMM_ALIAS {                 // string to address redirection
+
+    uchar name[ MAMMIT_TK_WIDTH \
+              - sizeof(uint)    ];          // name compares to some token
+
+    uint  loc;                              // lvalues+loc=address of aliased value
+
+} ALIAS;
+
+typedef struct MAMM_CODE {                  // operations as data
+
+    uint    insloc;                         // offset to instruction header
+    MEMUNIT data[];                         // bunch of bits read by instruction
+
+} CODE; extern CODE* code;                  // for testing, delete later
+
+//   ---     ---     ---     ---     ---
+
+typedef struct MAMM_PROC {                  // data structure holding part of a program
+
+    ID      id;                             // polyheader
+
+    uint    alias_blk;                      // [0..alias_blk ] is cast to ALIAS
+    uint    total_blk;                      // [alias_blk..-1] is cast to CODE
+
+    MEMUNIT blocks[];                       // encoded instructions
+
+} PROC;
 
 //   ---     ---     ---     ---     ---
 

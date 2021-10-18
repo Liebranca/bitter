@@ -390,15 +390,18 @@ void CHKMEMLAY(void)                        {
                                             // unpack and print addr && name
                 TPADDR                      (addr                                           );
                 CALOUT                      (E, "\n0x%" PRIXPTR " ID %s\n0x%"               \
-                                                PRIXPTR " \t\t0x",                          \
+                                                PRIXPTR "\t\t0x",                           \
                                                                                             \
                                             addr, addr->id.key, addr->box+0                 );
 
                 for(uint x=0; x<rd_units; x++) {
                     CALOUT                  (E, "%016" PRIX64 " ", addr->box[x]             );
+                    if(!((x+1)%2) && (x+1)<rd_units) {
+                        CALOUT(E, "\n0x%" PRIXPTR "\t\t0x", addr->box+x);
 
+                    };
                 }; ptr+=rd_units;
-            };
+            }; CALOUT(E, "\n");
 
         }; if(strstr(((REG*) ptr)->id.full, "REG*")==NULL) { break; }
     }; CALOUT(E, "\n\nLNAMES at {%u/%u} capacity | %u units remaining\n",                   \

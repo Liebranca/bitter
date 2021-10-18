@@ -20,6 +20,7 @@
 
 #include "ma_cntx.h"
 #include "ma_trans.h"
+#include "ma_ins.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -738,6 +739,7 @@ void REGTP(void)                            {
 
                                             // no redeclaration
     int    evil       = 0; MAMMCTCH         (NOREDCL(name), evil, MAMMIT_EV_DECL, name  );
+    CALOUT                                  (K, ">%s %s[%u]\n", type, name, rd_elems    );
 
     lngptr            = 0;
     RSTSEC();
@@ -750,6 +752,13 @@ void REGTP(void)                            {
 
 void RDPRC(ADDR* addr)                      {
 
+
+// TODO:
+//  -alias
+//  -wed
+//  -if/eif/else
+//  -for/jmp
+
     TPADDR(addr);
 
     lngptr       = 0;
@@ -759,6 +768,8 @@ void RDPRC(ADDR* addr)                      {
     uchar* nxt   = tokens[rd_tkx+1];
 
     uint   cbyte = 0;
+
+//   ---     ---     ---     ---     ---
 
     if(nxt[0]==0x40) {
         nxt++; rd_rawv=nxt;
@@ -783,8 +794,35 @@ void RDPRC(ADDR* addr)                      {
 
     };
 
-    addr->box[FETMASK(rd_units, cunit)] &=~(szmask_a    << (cbyte*8));
-    addr->box[FETMASK(rd_units, cunit)] |= (*rd_result) << (cbyte*8);                       };
+//   ---     ---     ---     ---     ---
+
+    uint      udr   = 0;                    // write offset into code->data
+
+                                            // numerical address of current block
+    uintptr_t vaddr =                       (uintptr_t) addr;
+
+                                            // MEMUNIT offset into addr->box
+    uint      upos  = FETMASK               (rd_units, cunit);
+
+    for(uint x=0; x<sizeof(uintptr_t); x+=UNITSZ) {
+        code->data[udr]=vaddr>>(x*UNITSZ); udr++;
+
+    };
+
+    code->data[udr] = ((MEMUNIT) upos) | ( ((MEMUNIT) (cbyte*8))<<32 );
+    udr++;
+
+    code->data[udr] = szmask_a;
+    udr++;
+
+    code->data[udr] = *rd_result;
+
+//   ---     ---     ---     ---     ---
+
+//  addr->box[FETMASK(rd_units, cunit)] &=~(szmask_a    << (cbyte*8));
+//  addr->box[FETMASK(rd_units, cunit)] |= (*rd_result) << (cbyte*8);
+
+                       };
 
 //   ---     ---     ---     ---     ---
 
@@ -1259,10 +1297,6 @@ void RDNXT(void)                            {
 
 //   ---     ---     ---     ---     ---
 
-// TODO:
-//  wed
-//  sec in @ indexing
-
 int main(int argc, char** argv)             {
 
     int   prmemlay = 0;
@@ -1286,6 +1320,8 @@ int main(int argc, char** argv)             {
     LDLNG(ZJC_DAFPAGE); memlng = GTLNG(); CLMEM(memlng);
     rd_buff = MEMBUFF(s, uchar, 0);
 
+    code    = MEMBUFF(memlng, CODE, 8192);
+
 //   ---     ---     ---     ---     ---
 
     if(from_bin) { int rb;
@@ -1298,6 +1334,8 @@ int main(int argc, char** argv)             {
 
     CALOUT(E, "\e[38;2;128;255;128m\n$PEIN:\n%s\n\e[0m\e[38;2;255;128;128m$OUT:", rd_buff);
     RDNXT(); CALOUT(E, "\e[0m");
+
+    lmcpy();
 
     if(prmemlay) { CHKMEMLAY(); };
 

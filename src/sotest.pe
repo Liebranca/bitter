@@ -1,12 +1,11 @@
 $$$$$$$$$$$$$$$$
 
 reg vars {
-    uint2 x;
+    uint4 x;
 
 };
 
 proc call {
-    x@1 = 0xFFFF00CC;
-    x@0 = 0xDEADBEEF;
+    x@3 = 0xFFFF00CC;
 
 };
