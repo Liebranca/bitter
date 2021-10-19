@@ -791,7 +791,7 @@ void RDPRC(ADDR* addr)                      {
 
 //   ---     ---     ---     ---     ---
 
-    CODE*     code  = (CODE*) pe_proc->blocks+0;
+    CODE*     code  = (CODE*) CURLVAL;
 
     uint      udr   = 0;                    // write offset into code->data
 
@@ -1332,11 +1332,7 @@ int main(int argc, char** argv)             {
     CALOUT(E, "\e[38;2;128;255;128m\n$PEIN:\n%s\n\e[0m\e[38;2;255;128;128m$OUT:", rd_buff);
     RDNXT(); CALOUT(E, "\e[0m");
 
-    lmpush(
- ( ((uintptr_t) (&(pe_proc->blocks))) \
- - ((uintptr_t) (&(mammi->lvalues ))) ) / UNITSZ
-
-); lmpop();
+    lmpush(MAMMIT_CNTX_FETCH(pe_proc, 0)); lmpop();
 
     if(prmemlay) { CHKMEMLAY(); };
 

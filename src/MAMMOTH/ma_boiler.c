@@ -213,7 +213,7 @@ void VALNEW(uchar*   name,
             MEMUNIT* val ,
             uint     size)                  {
 
-    MAMMIT_REG_ADD;
+    MAMMIT_CNTX_ADD(pe_reg);
 
     uchar base_type = rd_cast;
     if( 0x07 <= base_type
@@ -263,8 +263,9 @@ void VALSIZ(uchar* type, uchar* to) {
 //   ---     ---     ---     ---     ---
 
 void PROCADD(uint size)                     {
-    INCLVAL(size);
-};
+
+    MAMMIT_CNTX_ADD(pe_proc);
+    INCLVAL(size);                                                                          };
 
 //   ---     ---     ---     ---     ---
 
@@ -390,7 +391,7 @@ void CHKMEMLAY(void)                        {
 
         for(uint x=0; x<pe_reg->bound; x++) {
 
-            ADDR* addr      = (ADDR*) (mammi->lvalues+pe_reg->jmpt[x]);
+            ADDR* addr      = (ADDR*) (mammi->lvalues+pe_reg->start+pe_reg->jmpt[x]);
 
             if(addr!=NULL) {
                                             // unpack and print addr && name
@@ -410,7 +411,26 @@ void CHKMEMLAY(void)                        {
             }; CALOUT(E, "\n");
 
         }; if(strstr(((REG*) ptr)->id.full, "REG*")==NULL) { break; }
-    }; CALOUT(E, "\n\nLNAMES at {%u/%u} capacity | %u units remaining\n",                   \
+    };
+
+//   ---     ---     ---     ---     ---
+
+    CALOUT(E, "\n0x%" PRIXPTR " %s\n\n",           pe_proc, pe_proc->id.full        );
+    CALOUT(E, "0x%"   PRIXPTR " START\t%u\n",      &(pe_proc->start), pe_proc->start);
+    CALOUT(E, "0x%"   PRIXPTR " ELEMS\t%u\n",      &(pe_proc->elems), pe_proc->elems);
+    CALOUT(E, "0x%"   PRIXPTR " BOUND\t%u\n",      &(pe_proc->bound), pe_proc->bound);
+    CALOUT(E, "0x%"   PRIXPTR " SIZE\t%u units\n", &(pe_proc->size ), pe_proc->size );
+
+    for(uint x=0; x<pe_proc->bound; x++) {
+        CALOUT(E, "0x%" PRIXPTR " JMP%u\t%u\n", pe_proc->jmpt+x, x, pe_proc->jmpt[x]);
+
+    };
+
+
+//   ---     ---     ---     ---     ---
+
+
+       CALOUT(E, "\n\nLNAMES at {%u/%u} capacity | %u units remaining\n",                   \
                  mammi->lvaltop, NAMESZ, NAMESZ - mammi->lvaltop        );                  };
 
 //   ---     ---     ---     ---     ---

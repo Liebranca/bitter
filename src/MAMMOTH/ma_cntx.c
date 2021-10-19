@@ -52,6 +52,40 @@ NIHIL STOCB(void)                           {
 
 //   ---     ---     ---     ---     ---
 
+#define CNTX_INIT_BOILER(T, whom, idtype)                                                    \
+                                            /* fetch tokens */                               \
+    rd_tkx++; uchar*  name   =               tokens[rd_tkx];                                 \
+    rd_tkx++; uchar*  rwsize =               tokens[rd_tkx];                                 \
+              MEMUNIT chsize =               1;                                              \
+                                                                                             \
+/*   ---     ---     ---     ---     ---    // string translation and sizings... */          \
+                                                                                             \
+    if(rwsize[0]) {                         /* if no mag specified, assume 1     */          \
+        TRDECVAL                            (rwsize, &chsize                       );        \
+                                                                                             \
+    };                                                                                       \
+                                            /* set bounds and inc lval top       */          \
+    whom->bound              = GTUNITCNT    (sizeof(whom->bound), chsize           );        \
+                                                                                             \
+    whom->start = mammi->lvaltop;           /* set start idex                    */          \
+    whom->size  = 0;                        /* cleanup, just in case             */          \
+    whom->elems = 0;                        /*                                   */          \
+                                                                                             \
+                                                                                             \
+    INCLVAL                                 ( (sizeof(T)                           )         \
+                                            + ((whom->bound+1)*sizeof(whom->bound) ) );      \
+                                                                                             \
+                                            /* make id */                                    \
+    whom->id                 = IDNEW        (idtype, name                          );        \
+                                                                                             \
+/*   ---     ---     ---     ---     ---    // point unused slots to frblk */                \
+                                                                                             \
+    for(uint x=0; x<whom->bound; x++) {                                                      \
+        whom->jmpt[x]=FRBLK;                                                                 \
+    }
+
+//   ---     ---     ---     ---     ---
+
 void REGMA(void)                            {
 
     if(!(mammi->state&MAMMIT_SF_CREG)) {    // if unset, do and ret
@@ -59,44 +93,14 @@ void REGMA(void)                            {
         mammi->state |= MAMMIT_SF_CREG;     // set state
 
                                             // claim place in stack
-        pe_reg                      =       (REG*) CURLVAL;
+        pe_reg        = (REG*) CURLVAL;
 
-                                            // fetch tokens
-        rd_tkx++; uchar*  name      =       tokens[rd_tkx];
-        rd_tkx++; uchar*  rwsize    =       tokens[rd_tkx];
-                  MEMUNIT chsize    =       1;
+                                            // fooken boiler
+        CNTX_INIT_BOILER                    (REG, pe_reg, "REG*");
 
-        if(rwsize[0]) {                     // if no mag specified, assume 1
-            TRDECVAL                        (rwsize, &chsize                             );
+//   ---     ---     ---     ---     ---    // ut something to console
 
-        };
-
-//   ---     ---     ---     ---     ---
-
-        pe_reg->id         = IDNEW          ("REG*", name                                );
-        pe_reg->bound      = GTUNITCNT      (sizeof(pe_reg->bound), chsize               );
-
-        pe_reg->size       = 0;             // cleanup, just in case
-        pe_reg->elems      = 0;
-
-                                            // set start idex
-        pe_reg->start      =                mammi->lvaltop;
-
-                                            // calculate increase
-        INCLVAL                             ( (sizeof(REG)                            )  \
-                                            + ((pe_reg->bound+1)*sizeof(pe_reg->bound))  );
-
-//   ---     ---     ---     ---     ---
-
-        for(uint x=0; x<pe_reg->bound; x++) {
-            pe_reg->jmpt[x]=FRBLK;
-        };
-
-//   ---     ---     ---     ---     ---
-
-                                            // ut something to console
         CALOUT                              (K, "reg %s[%u]\n", name, pe_reg->bound      );
-
         return;
 
     }; mammi->state &=~MAMMIT_SF_CREG;      // effectively, an implicit else
@@ -110,13 +114,11 @@ void PROCMA(void)                           {
 
         pe_proc = (PROC*) CURLVAL;
 
-        rd_tkx++; uchar* name=tokens[rd_tkx];
-        pe_proc->id=IDNEW("PROC", name);
+        pe_proc->alias_blk = 0;
+        pe_proc->elems     = 0;
 
-        pe_proc->alias_blk=0;
-        pe_proc->total_blk=0;
-
-        INCLVAL(sizeof(PROC));
+                                            // fooken boiler
+        CNTX_INIT_BOILER                    (PROC, pe_proc, "POC*");
 
         return;
 

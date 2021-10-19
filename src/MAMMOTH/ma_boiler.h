@@ -264,11 +264,15 @@ void PROCADD   (uint size      );
 
 //   ---     ---     ---     ---     ---
 
-#define MAMMIT_REG_ADD {                                                                    \
-    pe_reg->jmpt[pe_reg->elems] = mammi->lvaltop;                                           \
-    if( ((size)/UNITSZ) < 1) { pe_reg->size++;                }                             \
-    else                     { pe_reg->size += (size)/UNITSZ; };                            \
-    pe_reg->elems++;                                                                        }
+#define MAMMIT_CNTX_ADD(whom) {                                                             \
+    whom->jmpt[whom->elems] = mammi->lvaltop - whom->start;                                 \
+    if( ((size)/UNITSZ) < 1) { whom->size++;                }                               \
+    else                     { whom->size += (size)/UNITSZ; };                              \
+    whom->elems++;                                                                          }
+
+#define MAMMIT_CNTX_FETCH(whom, off) ((whom->start) + (whom->jmpt[off]))
+
+//   ---     ---     ---     ---     ---
 
 #define MAMMIT_LVLB_NXT {                                                                   \
     mammi->lvlb_stack[mammi->lvlb]=rd_flags;                                                \

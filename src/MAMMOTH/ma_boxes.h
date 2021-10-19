@@ -160,9 +160,13 @@ typedef struct MAMM_PROC {                  // data structure holding part of a 
     ID      id;                             // polyheader
 
     uint    alias_blk;                      // [0..alias_blk ] is cast to ALIAS
-    uint    total_blk;                      // [alias_blk..-1] is cast to CODE
+    uint    elems;                          // [alias_blk..-1] is cast to CODE
 
-    MEMUNIT blocks[];                       // encoded instructions
+    uint    start;                          // idex of first block into lvalues
+    uint    bound;                          // max entries
+    uint    size;                           // space taken up by proc, in memunits
+
+    uint    jmpt[];                         // indices into lvalues
 
 } PROC; extern PROC* pe_proc;
 
