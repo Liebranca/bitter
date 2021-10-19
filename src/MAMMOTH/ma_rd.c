@@ -28,6 +28,10 @@
 
 //   ---     ---     ---     ---     ---
 
+static CTOK* ctok;
+
+//   ---     ---     ---     ---     ---
+
 void CALCUS_COLLAPSE(void)                  {
 
     switch(rd_cast) {
@@ -256,28 +260,24 @@ void MAEXPS(void)                           {
 //   ---     ---     ---     ---     ---
 
         case 0x26:
-            if(rd_flags&OP_AMPER) {
-                rd_flags &=~OP_AMPER;
-                rd_flags |= OP_DAMPR;
-
-                MAMMIT_LVLB_NXT;
-
-                goto POP_OPSTOP;
-
-            };  rd_flags |= OP_AMPER;
+            rd_flags |= OP_AMPER;
 
             goto POP_OPSTOP;
 
-        case 0x7c:
-            if(rd_flags&OP_PIPE) {
-                rd_flags &=~OP_PIPE;
-                rd_flags |= OP_DPIPE;
+        case 0xA4:
+            rd_flags |= OP_DAMPR;
+            MAMMIT_LVLB_NXT;
 
-                MAMMIT_LVLB_NXT;
+            goto POP_OPSTOP;
 
-                goto POP_OPSTOP;
+        case 0x7C:
+            rd_flags |= OP_PIPE;
 
-            };  rd_flags |= OP_PIPE;
+            goto POP_OPSTOP;
+
+        case 0xFA:
+            rd_flags |= OP_DPIPE;
+            MAMMIT_LVLB_NXT;
 
             goto POP_OPSTOP;
 
@@ -293,7 +293,7 @@ void MAEXPS(void)                           {
 
             goto POP_OPSTOP;
 
-        case 0x5e:
+        case 0x5E:
             rd_flags |= OP_XORUS;
 
             goto POP_OPSTOP;
@@ -301,18 +301,29 @@ void MAEXPS(void)                           {
 //   ---     ---     ---     ---     ---
 
         case 0x2B:
-            rd_flags &=~OP_MUL;
-            rd_flags &=~OP_DIV;
+            rd_flags |= OP_PLUS;
+            MAMMIT_LVLB_NXT;
 
-        case 0x28: MAMMIT_LVLB_NXT;
             goto POP_OPSTOP;
 
-//   ---     ---     ---     ---     ---
+        case 0xA9:
+            rd_flags |= OP_PPLUS;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
 
         case 0x2D:
             rd_flags |= OP_MINUS;
 
             goto POP_OPSTOP;
+
+        case 0xAB:
+            rd_flags |= OP_MMINU;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
+//   ---     ---     ---     ---     ---
 
         case 0x2A:
             rd_flags |= OP_MUL;
@@ -335,7 +346,7 @@ void MAEXPS(void)                           {
 
             goto POP_OPSTOP;
 
-        case 0x7e: MAMMIT_LVLB_NXT;
+        case 0x7E: MAMMIT_LVLB_NXT;
             rd_flags  = mammi->lvlb_stack[mammi->lvlb-1]&OP_MINUS;
             mammi->lvlb_stack[mammi->lvlb-1] &=~OP_MINUS;
             rd_flags |= OP_TILDE;
@@ -345,31 +356,20 @@ void MAEXPS(void)                           {
 //   ---     ---     ---     ---     ---
 
         case 0x3D:
-
-            if(mammi->lvlb) {
-
-                if(rd_rawv[1]==0x3D) {
-                    ;
-
-                }
-
-                elif(mammi->lvlb_stack[mammi->lvlb-1]&OP_W_EQUR) {
-                    mammi->lvlb_stack[mammi->lvlb-1] |= OP_EQUR;
-
-                    goto POP_OPSTOP;
-                }
-
-                elif(rd_flags&OP_W_EQUR) {
-                    rd_flags |= OP_EQUR;
-
-                    goto POP_OPSTOP;
-                };
-
-            };
-
-            rd_flags |= OP_EQUL;
+            rd_flags |= OP_EQUAL;
             MAMMIT_LVLB_NXT;
 
+            goto POP_OPSTOP;
+
+        case 0xBB:
+            rd_flags |= OP_ECOOL;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
+//   ---     ---     ---     ---     ---
+
+        case 0x28: MAMMIT_LVLB_NXT;
             goto POP_OPSTOP;
 
         case 0x40:
@@ -401,34 +401,28 @@ void MAEXPS(void)                           {
 //   ---     ---     ---     ---     ---
 
         case 0x3C:
-
-            if(mammi->lvlb) {
-                if(mammi->lvlb_stack[mammi->lvlb-1]&OP_LT) {
-                    mammi->lvlb_stack[mammi->lvlb-1] &=~OP_LT;
-                    mammi->lvlb_stack[mammi->lvlb-1] |= OP_LSHFT;
-
-                    goto POP_OPSTOP;
-                };
-            };
-
             rd_flags |= OP_LT;
             MAMMIT_LVLB_NXT;
 
             goto POP_OPSTOP;
 
+        case 0xBA:
+            rd_flags |= OP_LSHFT;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
         case 0x3E:
-
-            if(mammi->lvlb) {
-                if(mammi->lvlb_stack[mammi->lvlb-1]&OP_GT) {
-                    mammi->lvlb_stack[mammi->lvlb-1] &=~OP_GT;
-                    mammi->lvlb_stack[mammi->lvlb-1] |= OP_RSHFT;
-
-                    goto POP_OPSTOP;
-                };
-            };
-
             rd_flags |= OP_GT;
             MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
+        case 0xBC:
+            rd_flags |= OP_RSHFT;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
 
 //   ---     ---     ---     ---     ---
 
@@ -630,7 +624,7 @@ void RDEXP(void)                            {
 
     };
 
-    rd_value        = rd_lhand+rd_step;
+    rd_value        = rd_lhand+rd_step;     // put next *evaluated* token here
     CLMEM2(rd_value, rd_size);
 
 //   ---     ---     ---     ---     ---
@@ -640,22 +634,22 @@ void RDEXP(void)                            {
          &&  rd_rawv[1]==0x28        )
 
     ||  (mammi->state&MAMMIT_SF_CREG \
-         &&  rd_rawv[0]==0x2C        ) ) {
+         &&  rd_rawv[0]==0x2C        ) ) {  // ,(?) || @(?) sec check
 
-        while(mammi->lvlb) {
+        while(mammi->lvlb) {                // collapse stack leftovers
             MAMMIT_LVLB_PRV;
             CALCUS_COLLAPSE();
 
-        }; parsed++;
+        }; parsed++;                        // consider last value solved
 
-        if(ex_f<rd_tkx) {
+        if(ex_f<rd_tkx) {                   // advance if sec is not first token
             BYTESTEP();
         };
 
 //   ---     ---     ---     ---     ---
 
         rd_rawv++;
-        if(rd_rawv[0]==0x28) {
+        if(rd_rawv[0]==0x28) {              // eval sec expression
             RSTSEC(); SECEVAL: SECEXPS();
 
         }; goto EVAL_EXP;
@@ -741,6 +735,7 @@ void REGTP(void)                            {
     int    evil       = 0; MAMMCTCH         (NOREDCL(name), evil, MAMMIT_EV_DECL, name  );
     CALOUT                                  (K, ">%s %s[%u]\n", type, name, rd_elems    );
 
+    ctok              = MEMBUFF(memlng, CTOK, 8192);
     lngptr            = 0;
     RSTSEC();
 
@@ -787,9 +782,6 @@ void RDPRC(ADDR* addr)                      {
 //   ---     ---     ---     ---     ---
 
     RSTSEC();
-    RDEXP ();
-
-//   ---     ---     ---     ---     ---
 
     CODE*     code  = (CODE*) CURLVAL;
 
@@ -813,7 +805,13 @@ void RDPRC(ADDR* addr)                      {
     code->data[udr] = szmask_a;
     udr++;
 
-    code->data[udr] = *rd_result;
+//   ---     ---     ---     ---     ---
+
+    ctok = (CTOK*) (code->data+udr);
+
+    RDEXP();
+
+    /*code->data[udr] = *rd_result;*/
     PROCADD(sizeof(CODE));
 
 //   ---     ---     ---     ---     ---
@@ -1071,7 +1069,9 @@ void CHKTKNS(void)                          {
 void RDNXT(void)                            {
 
     uchar op[16]; CLMEM2(op, 16);           // operator storage ;>
-    uint  opi=0;                            // idex into opstor
+
+    uint  opi   = 0;                        // idex into opstor
+    uint  s_opi = 0;                        // special oppy idex
 
     TOP:
 
@@ -1105,18 +1105,49 @@ void RDNXT(void)                            {
 
         case 0x0000: return;                // double nullterm should never happen
 
-        case 0x243A:
+        case 0x243A:                        //      $:
+
             mammi->state |= MAMMIT_SF_PESC;
             rd_tk[rd_tkp]=rd_cur; rd_tkp++; rd_pos++; goto TOP;
 
-        case 0x3B3E:
+        case 0x3B3E:                        //      ;>
+
             mammi->state &=~MAMMIT_SF_PESC; rd_pos++; goto TOP;
 
-        case 0x2F2A:
+        case 0x2F2A:                        //      /*
+
             mammi->state |= MAMMIT_SF_PMCO; rd_pos++; goto TOP;
 
-        case 0x2F2F:
+        case 0x2F2F:                        //      //
+
             mammi->state |= MAMMIT_SF_PLCO; rd_pos++; goto TOP;
+
+//   ---     ---     ---     ---     ---    // doubled operators
+
+        case 0x2626: s_opi=0x00; goto SOPPY;// 80   &&
+        case 0x2B2B: s_opi=0x01; goto SOPPY;// 81   ++
+        case 0x2D2D: s_opi=0x02; goto SOPPY;// 82   --
+        case 0x3C3C: s_opi=0x03; goto SOPPY;// 83   <<
+        case 0x3D3D: s_opi=0x04; goto SOPPY;// 84   ==
+        case 0x3E3E: s_opi=0x05; goto SOPPY;// 85   >>
+        case 0x7C7C: s_opi=0x06; goto SOPPY;// 86   ||
+
+//   ---     ---     ---     ---     ---    // op= operators
+
+        case 0x213D: s_opi=0x07; goto SOPPY;// 87   !=
+        case 0x243D: s_opi=0x08; goto SOPPY;// 88   $=
+        case 0x253D: s_opi=0x09; goto SOPPY;// 89   %=
+        case 0x263D: s_opi=0x0A; goto SOPPY;// 8A   &=
+        case 0x2A3D: s_opi=0x0B; goto SOPPY;// 8B   *=
+        case 0x2B3D: s_opi=0x0C; goto SOPPY;// 8C   +=
+        case 0x2D3D: s_opi=0x0D; goto SOPPY;// 8D   -=
+        case 0x2F3D: s_opi=0x0E; goto SOPPY;// 8E   /=
+        case 0x3C3D: s_opi=0x0F; goto SOPPY;// 8F   <=
+        case 0x3E3D: s_opi=0x10; goto SOPPY;// 90   >=
+        case 0x5E3D: s_opi=0x11; goto SOPPY;// 91   ^=
+        case 0x7C3D: s_opi=0x12; goto SOPPY;// 92   |=
+
+        SOPPY: rd_cur=0x80+s_opi; rd_pos+=2;
 
     };
 
@@ -1179,20 +1210,32 @@ void RDNXT(void)                            {
 
 //   ---     ---     ---     ---     ---    OPERATORS L
 
-        case 0x3A:
+        case 0x3A:                          // :    colon
+
             if(mammi->state&MAMMIT_SF_PSEC) {
                 goto APTOK;
 
             }; goto OP_NONSEC;
 
-        case 0x21:                          // @(sec) operators
-        case 0x24:                          // used for memlng hackery
-        case 0x26:
-        case 0x28:
-        case 0x2A:
-        case 0x3C:
-        case 0x3D:
-        case 0x3E:
+//   ---     ---     ---     ---     ---    // @(sec) operators
+                                            // used for memlng hackery AND calcus
+
+        case 0x24:                          // $    money
+        case 0x26:                          // &    amper
+        case 0x28:                          // (    l_brackus
+        case 0x2A:                          // *    mul
+
+        case 0x3C:                          // <    lt
+        case 0x83:                          // <<   lshft
+
+        case 0x3D:                          // =    equal
+        case 0x88:                          // $=   emony
+        case 0x8B:                          // *=   emul
+        case 0x8A:                          // &=   eampr
+
+        case 0x3E:                          // >    gt
+        case 0x85:                          // >>   rshft
+
             if(mammi->state&MAMMIT_SF_PSEC) {
                 goto FORCE_INSERT;
 
@@ -1200,34 +1243,64 @@ void RDNXT(void)                            {
 
 //   ---     ---     ---     ---     ---    non @(sec) operators
 
-        case 0x22:
-        case 0x23:
-        case 0x25:
-        case 0x27:
-        case 0x2B:
-        case 0x2D:
-        case 0x2F:
-        case 0x3F:
-        case 0x40:
-        case 0x5B:
-        case 0x5C:
-        case 0x5D:
-        case 0x5E:
-        case 0x7C:
-        case 0x7E: OP_NONSEC:
+        case 0x27:                          // '    squot
+        case 0x22:                          // "    dquot
+        case 0x23:                          // #    kush
+
+        case 0x25:                          // %    modus
+        case 0x89:                          // %=   emodu
+
+
+        case 0x2B:                          // +    plus
+        case 0x81:                          // ++   pplus
+        case 0x8C:                          // +=   eplus
+
+        case 0x2D:                          // -    minus
+        case 0x82:                          // --   mminu
+        case 0x8D:                          // -=   eminu
+
+        case 0x2F:                          // /    div
+        case 0x8E:                          // /=   ediv
+
+        case 0x40:                          // @    at
+        case 0x3F:                          // ?    quest
+        case 0x21:                          // !    bang
+        case 0x87:                          // !=   ebang
+
+        case 0x5C:                          // \    escapus
+        case 0x5B:                          // [    l_subscriptus
+
+        case 0x5E:                          // ^    xorus
+        case 0x91:                          // ^=   exor
+
+        case 0x7C:                          // |    pipe
+        case 0x92:                          // |=   epipe
+
+        case 0x7E:                          // ~    tilde
+
+        case 0x8F:                          // <=   elt
+        case 0x90:                          // >=   egt
+        case 0x84:                          // ==   ecool
+
+        case 0x80:                          // &&   dampr
+        case 0x86:                          // ||   dpipe
+
+            OP_NONSEC:
             op[opi]=rd_cur; opi++;
             goto APTOK;
 
 //   ---     ---     ---     ---     ---    OPERATORS R
 
-        case 0x29:
+        case 0x29:                          // )    r_brackus
+        case 0x5D:                          // ]    r_subscriptus
+
             mammi->state  &=~MAMMIT_SF_PSEC;
             rd_tk[rd_tkp]  = rd_cur; rd_tkp++;
             goto APTOK;
 
 //   ---     ---     ---     ---     ---    TERMINATORS
 
-        case 0x2C:
+        case 0x2C:                          // ,    comma
 
             // APTOK copy-paste
             if(!(  0x01 <= rd_prv \
@@ -1250,13 +1323,13 @@ void RDNXT(void)                            {
 
             }; break;
 
-        case 0x7B: MAMMIT_LVLA_NXT
+        case 0x7B: MAMMIT_LVLA_NXT          // {    l_curlius
             goto PROCST;
 
-        case 0x7D: MAMMIT_LVLA_PRV
+        case 0x7D: MAMMIT_LVLA_PRV          // }    r_curlius
             goto PROCST;
 
-        case 0x3B: PROCST:
+        case 0x3B: PROCST:                  // ;    #EE
 
             if(rd_tkp) {                    // >only when theres chars left in slot
                 rd_tkp = 0; rd_tki++;       // reset position && advance slot
@@ -1332,7 +1405,7 @@ int main(int argc, char** argv)             {
     CALOUT(E, "\e[38;2;128;255;128m\n$PEIN:\n%s\n\e[0m\e[38;2;255;128;128m$OUT:", rd_buff);
     RDNXT(); CALOUT(E, "\e[0m");
 
-    lmpush(MAMMIT_CNTX_FETCH(pe_proc, 0)); lmpop();
+    /*lmpush(MAMMIT_CNTX_FETCH(pe_proc, 0)); lmpop();*/
 
     if(prmemlay) { CHKMEMLAY(); };
 

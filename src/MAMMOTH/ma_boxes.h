@@ -69,6 +69,22 @@ typedef struct MAMM_SYNTX_SYMBOL {          // used for string to funcall mambo
     NIHIL onrd;                             // links block with a given funcall
 
 } SYMBOL;
+                               
+//   ---     ---     ---     ---     ---
+
+#define CALCUS_CONSTANT 0xFCA1C005C0457A47LL
+#define CALCUS_FETCH    0xFCA1C005FE7C4B01LL
+
+typedef struct MAMM_CALCUS_TOKEN {          // breaks down expressions into maleable data
+
+    MEMUNIT prefix;                         // describes the block
+
+    uchar   lops[8];                        // left-hand operators
+    uchar   rops[8];                        // right-hand operators
+
+    MEMUNIT value;                          // some number; can be an address
+
+} CTOK;
 
 //   ---     ---     ---     ---     ---
 
@@ -104,7 +120,7 @@ typedef struct MAMM_INTERPRETER {           // smach for pe-text input
     };
 
     uchar     lvla_stack[FRAMESZ];          // markers for recalling previous context
-    uint      lvlb_stack[FRAMESZ];          // ^idem, for prev evalstate of expression
+    MEMUNIT   lvlb_stack[FRAMESZ];          // ^idem, for prev evalstate of expression
 
     uintptr_t vaddr;                        // next fetch at
     uint      vtype;                        // next fetch typedata

@@ -54,11 +54,26 @@ NIHIL STOCB(void)                           {
 
 uint statement_count(void)                  {
 
-    uchar* c   = rd_buff+rd_pos;
-    uint   cnt = 0;
+    uchar* c       = rd_buff+rd_pos;
+    uchar  last    = 0x00;
 
-    while(*c && *c!=0x7D) {
-        cnt+=(*c)==0x3B; c++;
+    uint   lvl     = mammi->lvla;
+    uint   old_lvl = lvl; lvl++;
+
+    uint   cnt     = 0;
+
+//   ---     ---     ---     ---     ---
+
+    while( (*c          ) \
+    &&     (lvl!=old_lvl) ) {
+
+        cnt += ((*c)==0x3B && last!=0x7D);
+
+        last = *c;
+        lvl += last==0x7B;
+        lvl -= last==0x7D;
+
+        c++;
 
     }; return cnt;                                                                          };
 
