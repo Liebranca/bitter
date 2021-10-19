@@ -52,6 +52,18 @@ NIHIL STOCB(void)                           {
 
 //   ---     ---     ---     ---     ---
 
+uint statement_count(void)                  {
+
+    uchar* c   = rd_buff+rd_pos;
+    uint   cnt = 0;
+
+    while(*c && *c!=0x7D) {
+        cnt+=(*c)==0x3B; c++;
+
+    }; return cnt;                                                                          };
+
+//   ---     ---     ---     ---     ---
+
 #define CNTX_INIT_BOILER(T, whom, idtype)                                                    \
                                             /* fetch tokens */                               \
     rd_tkx++; uchar*  name   =               tokens[rd_tkx];                                 \
@@ -60,8 +72,11 @@ NIHIL STOCB(void)                           {
                                                                                              \
 /*   ---     ---     ---     ---     ---    // string translation and sizings... */          \
                                                                                              \
-    if(rwsize[0]) {                         /* if no mag specified, assume 1     */          \
+    if(rwsize[0]) {                         /* if no mag specified, count ;s     */          \
         TRDECVAL                            (rwsize, &chsize                       );        \
+                                                                                             \
+    } else {                                                                                 \
+        chsize               =              statement_count();                               \
                                                                                              \
     };                                                                                       \
                                             /* set bounds and inc lval top       */          \
@@ -81,7 +96,7 @@ NIHIL STOCB(void)                           {
 /*   ---     ---     ---     ---     ---    // point unused slots to frblk */                \
                                                                                              \
     for(uint x=0; x<whom->bound; x++) {                                                      \
-        whom->jmpt[x]=FRBLK;                                                                 \
+        whom->jmpt[x]=FRBLK - whom->start;                                                   \
     }
 
 //   ---     ---     ---     ---     ---
@@ -91,9 +106,7 @@ void REGMA(void)                            {
     if(!(mammi->state&MAMMIT_SF_CREG)) {    // if unset, do and ret
 
         mammi->state |= MAMMIT_SF_CREG;     // set state
-
-                                            // claim place in stack
-        pe_reg        = (REG*) CURLVAL;
+        pe_reg        = (REG*) CURLVAL;     // claim place in stack
 
                                             // fooken boiler
         CNTX_INIT_BOILER                    (REG, pe_reg, "REG*");
