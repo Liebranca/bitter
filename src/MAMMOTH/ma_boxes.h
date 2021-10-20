@@ -72,15 +72,21 @@ typedef struct MAMM_SYNTX_SYMBOL {          // used for string to funcall mambo
                                
 //   ---     ---     ---     ---     ---
 
-#define CALCUS_CONSTANT 0xFCA1C005C0457A47LL
-#define CALCUS_FETCH    0xFCA1C005FE7C4B01LL
+#define CALCUS_CONST 0xC0457A47
+#define CALCUS_FETCH 0xFE7C4B01
 
 typedef struct MAMM_CALCUS_TOKEN {          // breaks down expressions into maleable data
 
-    MEMUNIT prefix;                         // describes the block
+    union {
+        struct {
+           uint    ttype;                   // token type
+           uint    vtype;                   // value type
 
-    uchar   lops[8];                        // left-hand operators
-    uchar   rops[8];                        // right-hand operators
+        }; MEMUNIT prefix;                  // describes the block
+    };
+
+    MEMUNIT lops;                           // left-hand operators
+    MEMUNIT rops;                           // right-hand operators
 
     MEMUNIT value;                          // some number; can be an address
 
@@ -165,7 +171,9 @@ typedef struct MAMM_ALIAS {                 // string to address redirection
 typedef struct MAMM_CODE {                  // operations as data
 
     uint    loc;                            // offset to instruction header
-    MEMUNIT data[4];                        // bunch of bits read by instruction
+    uint    size;                           // volume of data, measured in memunits
+
+    MEMUNIT data[];                         // bunch of bits read by instruction
 
 } CODE;
 

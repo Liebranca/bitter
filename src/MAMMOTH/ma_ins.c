@@ -73,12 +73,20 @@ void lmcpy(void)                            {
     udr++;
 
     umask            = ins->data[udr]; udr++;
-    value            = ins->data[udr]; udr++;
+    //value            = ins->data[udr]; udr++;
+
+    for(uint x=0; x<ins->size; x+=(sizeof(CTOK)/UNITSZ)) {
+        CTOK* t      = (CTOK*) (ins->data+udr+x);
+
+        CALOUT(E, ">CTOK @%u\n", x);
+        CALOUT(E, "0x%08" PRIX32 " %08" PRIX32 "\n0x%016" PRIX64 " %016" PRIX64 "\n0x%016" PRIX64 "\n\n", t->ttype, t->vtype, t->lops, t->rops, t->value);
+
+    };
 
 //   ---     ---     ---     ---     ---    // copy value
 
-    addr->box[upos] &=~(umask << (cbyte*8));// clean masked section
-    addr->box[upos] |=  value << (cbyte*8); // flip them bits
+    //addr->box[upos] &=~(umask << (cbyte*8));// clean masked section
+    //addr->box[upos] |=  value << (cbyte*8); // flip them bits
 
     // CALOUT(E, "%u units needed for %s\n", udr, __func__);
                                                                                             };

@@ -36,55 +36,26 @@ void CALCUS_COLLAPSE(void)                  {
 
     switch(rd_cast) {
 
-        case 0x03: {
-            schar* r = (schar*) rd_lhand;
-            schar* v = (schar*) rd_value;
+        case 0x03:
+        case 0x07:
+        case 0x04:
+        case 0x08:
+        case 0x05:
+        case 0x09:
+        case 0x06:
+        case 0x0A: {
+            MEMUNIT* r = rd_lhand;
+            MEMUNIT* v = rd_value;
+
+            *v&=szmask_a; *v=(*v)<<(rd_cbyte*8);
+
             CALCUS_OPSWITCH;
 
-        } case 0x07: {
-            uchar* r = (uchar*) rd_lhand;
-            uchar* v = (uchar*) rd_value;
-            CALCUS_OPSWITCH;
+        }
 
 //   ---     ---     ---     ---     ---
 
-        } case 0x04: {
-            sshort* r = (sshort*) rd_lhand;
-            sshort* v = (sshort*) rd_value;
-            CALCUS_OPSWITCH;
-
-        } case 0x08: {
-            ushort* r = (ushort*) rd_lhand;
-            ushort* v = (ushort*) rd_value;
-            CALCUS_OPSWITCH;
-
-//   ---     ---     ---     ---     ---
-
-        } case 0x05: {
-            sint* r = (sint*) rd_lhand;
-            sint* v = (sint*) rd_value;
-            CALCUS_OPSWITCH;
-
-        } case 0x09: {
-            uint* r = (uint*) rd_lhand;
-            uint* v = (uint*) rd_value;
-            CALCUS_OPSWITCH;
-
-//   ---     ---     ---     ---     ---
-
-        } case 0x06: {
-            slong* r = (slong*) rd_lhand;
-            slong* v = (slong*) rd_value;
-            CALCUS_OPSWITCH;
-
-        } case 0x0A: {
-            ulong* r = (ulong*) rd_lhand;
-            ulong* v = (ulong*) rd_value;
-            CALCUS_OPSWITCH;
-
-//   ---     ---     ---     ---     ---
-
-        } default: {
+        default: {
             float* r = (float*) rd_lhand;
             float* v = (float*) rd_value;
             CALCUS_OPSWITCH;
@@ -96,11 +67,12 @@ void CALCUS_COLLAPSE(void)                  {
 
 void TRNVAL(uint len)                       {
 
-    int  evil  = 0;
-    uint vlen  = len-1;
+    int  evil     = 0;
+    uint vlen     = len-1;
 
                                             // set OP_RADIX
-    rd_flags |=                             (strstr(typedata.base, "float") != NULL) << 1;
+    rd_flags     |=                         (strstr(typedata.base, "float") != NULL) << 1;
+    ctok->ttype   = CALCUS_CONST;
 
 //   ---     ---     ---     ---     ---
 
@@ -120,18 +92,20 @@ void TRNVAL(uint len)                       {
 
                 if  (rd_rawv[1]==0x78) {    // is hexlit
                     TRHEXVAL                (rd_rawv+vlen, rd_value              );
+
                 }
 
                 elif(rd_rawv[1]==0x62) {    // is bitlit
                     TRBITVAL                (rd_rawv+vlen, rd_value              );
 
-                };
+                }; ctok->value=*rd_value;
             }
 
 //   ---     ---     ---     ---     ---
 
             else {                          // string -> decimal
                 TRDECVAL                    (rd_rawv, rd_value                   );
+                ctok->value=*rd_value;
 
             }
         }
@@ -142,7 +116,8 @@ void TRNVAL(uint len)                       {
             if(rd_flags&OP_RADIX) {
                 goto RD_ASFLTP;
 
-            }; rd_value[0]=rd_rawv[0]-0x30;
+            }; *rd_value   = rd_rawv[0]-0x30;
+               ctok->value = *rd_value;
 
         };
     }
@@ -155,9 +130,11 @@ void TRNVAL(uint len)                       {
         RD_ASFLTP: MAMMCTCH                 (NOOVERSZ(rd_size, sizeof(float)     ),
                                              evil, MAMMIT_EV_VSIZ, typedata.base );
 
-        rd_flags|=OP_RADIX;
+        rd_flags   |= OP_RADIX;
 
         TRFLTVAL                            (rd_rawv, rd_value                   );
+
+        ctok->value = *rd_value;
     }
 
 //   ---     ---     ---     ---     ---
@@ -174,6 +151,9 @@ void TRNVAL(uint len)                       {
             uchar* type =                   ((ADDR*) nulmy)->id.type;            \
             VALSIZ                          (type, szdata                        );
 
+            ctok->ttype = CALCUS_FETCH;
+            ctok->vtype = (szdata[0]) | (szdata[1]<<8) | (szdata[2]<<16);
+
 //   ---     ---     ---     ---     ---
 
             if(szdata[2]) {                 // indexing required!
@@ -189,6 +169,8 @@ void TRNVAL(uint len)                       {
                     mammi->state |= MAMMIT_SF_PFET;
                     mammi->vaddr  = (uintptr_t) &(((ADDR*) nulmy)->box);
                     mammi->vtype  = szdata[0] | (szdata[1]<<8) | (szdata[2]<<16);
+
+                    ctok->value   = mammi->vaddr;
 
                 } else {
                     goto NO_IDEX_OP;
@@ -250,6 +232,8 @@ void TRNVAL(uint len)                       {
 //   ---     ---     ---     ---     ---
 
 void MAEXPS(void)                           {
+
+    uint ctok_cnt = 0;
 
     TOP:                                    // if operator chars in token, eval and pop them
     switch(rd_rawv[0]) {
@@ -521,13 +505,18 @@ void MAEXPS(void)                           {
 //   ---     ---     ---     ---     ---
 
         POP_OPSTOP:
-            rd_rawv++; goto TOP;
+            ctok->lops+=((MEMUNIT) (*rd_rawv))<<(ctok_cnt*8);
+            ctok_cnt++; rd_rawv++;
+
+            goto TOP;
 
     };
 
 //   ---     ---     ---     ---     ---
 
+    ctok_cnt = 0;
     uint len = strlen(rd_rawv);
+
     if(!len) { goto END; }
 
     POP_TERMINATORS:                        // same as oppies, but at end of token
@@ -543,6 +532,9 @@ void MAEXPS(void)                           {
             }; mammi->state &=~MAMMIT_SF_PSEC;
 
         POP_TESTOP:
+            ctok->rops+=((MEMUNIT) (*rd_rawv))<<(ctok_cnt*8);
+            ctok_cnt++;
+
             rd_rawv[len-1]=0x00;
             len--; if(!len) { goto END; }
             goto POP_TERMINATORS;
@@ -552,7 +544,7 @@ void MAEXPS(void)                           {
 //   ---     ---     ---     ---     ---
 
     TRNVAL(len);                            // translate string into value
-    END: ;                                                                                  };
+    END: ctok++;                                                                            };
 
 //   ---     ---     ---     ---     ---
 
@@ -712,6 +704,8 @@ void RDEXP(void)                            {
     }; rd_flags     = 0;                    // values defined above MAMMIT_OPSWITCH
        rd_rawv      = tokens[rd_tkx];       // current token
 
+    CLMEM2(ctok, sizeof(CTOK));
+
     if(mammi->state&MAMMIT_SF_PSEC) {
         goto SECEVAL;
 
@@ -830,7 +824,7 @@ void REGTP(void)                            {
     int    evil       = 0; MAMMCTCH         (NOREDCL(name), evil, MAMMIT_EV_DECL, name  );
     CALOUT                                  (K, ">%s %s[%u]\n", type, name, rd_elems    );
 
-    //ctok              = MEMBUFF(memlng, CTOK, 8192);
+    ctok              = MEMBUFF(memlng, CTOK, 8192);
     lngptr            = 0;
     RSTSEC();
 
@@ -862,6 +856,8 @@ void RDPRC(ADDR* addr)                      {
 
     if(nxt[0]==0x40) {
         nxt++; rd_rawv=nxt;
+
+        ctok=MEMBUFF(memlng, CTOK, 8192);
 
         RSTPTRS();
         MAEXPS ();
@@ -901,12 +897,11 @@ void RDPRC(ADDR* addr)                      {
 
 //   ---     ---     ---     ---     ---
 
-    //ctok = (CTOK*) (code->data+udr);
+    ctok      = (CTOK*) (code->data+udr); RDEXP();
 
-    RDEXP();
+    uint leap = (uint) ( ((uintptr_t) ctok) - ((uintptr_t) (code->data+udr)) );
 
-    /*code->data[udr] = *rd_result;*/
-    //PROCADD(sizeof(CODE));
+    PROCADD(sizeof(CODE)+leap); code->size=((leap/UNITSZ)<1) ? 1 : leap/UNITSZ;
 
 //   ---     ---     ---     ---     ---
 
@@ -1182,15 +1177,17 @@ void RDNXT(void)                            {
         if(mammi->state&MAMMIT_SF_PLCO) {
             if(rd_cur==0x0A) {
                 mammi->state &=~MAMMIT_SF_PLCO;
+                rd_pos++;
 
-            } else { goto TOP; }
+            }; goto TOP;
         }
 
         elif(mammi->state&MAMMIT_SF_PMCO) {
             if(rd_wid==0x2A2F) {
                 mammi->state &=~MAMMIT_SF_PMCO;
+                rd_pos++;
 
-            } else { goto TOP; }
+            }; goto TOP;
         };
 
 //   ---     ---     ---     ---     ---
@@ -1507,7 +1504,9 @@ int main(int argc, char** argv)             {
     CALOUT(E, "\e[38;2;128;255;128m\n$PEIN:\n%s\n\e[0m\e[38;2;255;128;128m$OUT:", rd_buff);
     RDNXT(); CALOUT(E, "\e[0m");
 
-    /*lmpush(MAMMIT_CNTX_FETCH(pe_proc, 0)); lmpop();*/
+    /*CALOUT(E, "0x%08" PRIX32 " %08" PRIX32 "\n0x%016" PRIX64 " %016" PRIX64 "\n0x%016" PRIX64 "\n", ctok->ttype, ctok->vtype, ctok->lops, ctok->rops, ctok->value);*/
+
+    lmpush(MAMMIT_CNTX_FETCH(pe_proc, 0)); lmpop();
 
     if(prmemlay) { CHKMEMLAY(); };
 

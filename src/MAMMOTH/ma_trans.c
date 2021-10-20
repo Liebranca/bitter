@@ -81,14 +81,16 @@ void TRBITVAL(uchar*   src ,
             break;
 
                                             // easy money
-        }; to[cbyte/UNITSZ] |=              ((c==0x31) << cbit)<<(rd_cbyte*8);
+        }; *to +=                           ((c==0x31) << cbit)<<(cbyte*8);
 
 //   ---     ---     ---     ---     ---
 
         if(cbit==7) {                       // if all bits set move to next byte
             cbyte++; cbit=0;                // ... and go back to first bit!
-            continue;
+            if(cbyte==UNITSZ) {
+                cbyte=0; to++;
 
+            }; continue;
         }; cbit++;                          // else go to next bit
 
     } while(*src-- != 0x62);                                                                };
