@@ -413,6 +413,13 @@ void MAEXPS(void)                           {
 
             goto POP_OPSTOP;
 
+        case 0x3F: MAMMIT_LVLB_NXT;
+            rd_flags  = mammi->lvlb_stack[mammi->lvlb-1]&OP_MINUS;
+            mammi->lvlb_stack[mammi->lvlb-1] &=~OP_MINUS;
+            rd_flags |= OP_QUEST;
+
+            goto POP_OPSTOP;
+
         case 0x7E: MAMMIT_LVLB_NXT;
             rd_flags  = mammi->lvlb_stack[mammi->lvlb-1]&OP_MINUS;
             mammi->lvlb_stack[mammi->lvlb-1] &=~OP_MINUS;
@@ -551,12 +558,10 @@ void MAEXPS(void)                           {
 
 void SECEXPS(void)                          {
 
-    rd_oldval = rd_value+rd_step;
+    rd_oldval  = rd_value+rd_step;
+    *rd_oldval = *rd_value;
 
-    for(uint x=0; x<rd_step; x++) {
-        rd_oldval[x]=rd_value[x];
-
-    }; mammi->state |= MAMMIT_SF_PSEC;
+    mammi->state |= MAMMIT_SF_PSEC;
 
     MAEXPS();                               // expand token (parse operators, fetch values)
 
@@ -587,12 +592,11 @@ void SECEXPS(void)                          {
 
     MEMUNIT  sflags_i = 0;
     MEMUNIT* sflags   = mammi->lvlb_stack+0;
-    MEMUNIT  sec_val  = ((*rd_value)>>(rd_cbyte*8))&szmask_a;
+    MEMUNIT  sec_val  = *rd_value;
 
-    for(uint x=0; x<rd_step; x++) {
-        rd_value[x]=rd_oldval[x];
+    *rd_value         = *rd_oldval;
 
-    }; MEMUNIT bstep = (!sec_val) ? 1 : sec_val;
+    MEMUNIT bstep = (!sec_val) ? 1 : sec_val;
 
 //   ---     ---     ---     ---     ---
 
@@ -628,12 +632,12 @@ void SECEXPS(void)                          {
             sec_cur.cbyte = sec_beg.cbyte; break;
 
         case OP_RSHFT | OP_MUL: sflags[sflags_i] &=~ (OP_RSHFT | OP_MUL);
-            sec_cur.base  = sec_end.base;
-            sec_cur.cbyte = sec_end.cbyte; break;
+            sec_cur.base  = (sec_end.base-1);
+            sec_cur.cbyte = (sec_end.cbyte-rd_size); break;
 
 //   ---     ---     ---     ---     ---
 
-        case OP_EQUAL | OP_MUL: { sflags[sflags_i] &=~ (OP_EQUAL | OP_MUL);
+        case OP_EMUL: { sflags[sflags_i] &=~ OP_EMUL;
             MEMUNIT* addr = ((MEMUNIT*) memlng->buff)+sec_cur.base;
             *addr        &=~(szmask_a<<(sec_cur.cbyte*8));
             *addr        |= (sec_val)<<(sec_cur.cbyte*8); break;
@@ -646,11 +650,9 @@ void SECEXPS(void)                          {
         }
 
         case OP_EAMPR: { sflags[sflags_i] &=~ OP_EAMPR;
-            if(sec_end.cbyte<0) { break; }
-
-            MEMUNIT* addr = ((MEMUNIT*) memlng->buff)+sec_end.base;
-            *addr        &=~(szmask_a<<((sec_end.cbyte-rd_size)*8));
-            *addr        |= (sec_val)<<((sec_end.cbyte-rd_size)*8); break;
+            MEMUNIT* addr = ((MEMUNIT*) memlng->buff)+(sec_end.base);
+            *addr        &=~(szmask_a<<((sec_end.cbyte)*8));
+            *addr        |= (sec_val)<<((sec_end.cbyte)*8); break;
         }
 
 //   ---     ---     ---     ---     ---
@@ -660,9 +662,13 @@ void SECEXPS(void)                          {
             uint old_base  = sec_beg.base;
             sint old_cbyte = sec_beg.cbyte;
 
-            while(sec_beg.base!=sec_end.base) {
+            while(sec_beg.base<=sec_end.base) {
                 addr[sec_beg.base] &=~(szmask_a<<(sec_beg.cbyte*8));
                 addr[sec_beg.base] |= (sec_val)<<(sec_beg.cbyte*8);
+
+                if( (sec_beg.base  == sec_end.base ) \
+                &&  (sec_beg.cbyte == sec_end.cbyte) ) { break; }
+
                 MOVBLK(&sec_beg, 1);
 
             };
@@ -746,9 +752,11 @@ void RDEXP(void)                            {
 
                                             // collapse arithmetic-wise
     SOLVE:
-        //CALOUT(E, "l%d\t 0x%" PRIX32 "\t v%d\t -> ", *rd_lhand, rd_flags, *rd_value);
+        //CALOUT(E, "0x%016" PRIX64 " %016" PRIX64 " %016" PRIX64 " -> ",
+        //          *rd_lhand, rd_flags, *rd_value                      );
+
         CALCUS_COLLAPSE();
-        //CALOUT(E, "%d\n", *rd_lhand);
+        //CALOUT(E, "%016" PRIX64 "\n", *rd_lhand);
 
     goto EVAL_EXP;
 

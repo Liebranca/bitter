@@ -318,8 +318,8 @@ void RSTSEC(void)                           {
     sec_cur.base  = lngptr;
     sec_cur.cbyte = rd_cbyte;
 
-    sec_end.base  = (rd_elems*rd_size)/UNITSZ;
-    sec_end.cbyte = UNITSZ;
+    sec_end.base  = ((rd_elems*rd_size)/UNITSZ)-1;
+    sec_end.cbyte = UNITSZ-rd_size;
 
     rd_rawv++;                                                                              };
 
@@ -415,6 +415,8 @@ void CHKMEMLAY(void)                        {
 
 //   ---     ---     ---     ---     ---
 
+    if(!pe_proc) { goto END; }
+
     CALOUT(E, "\n0x%" PRIXPTR " %s\n\n",           pe_proc, pe_proc->id.full        );
     CALOUT(E, "0x%"   PRIXPTR " START\t%u\n",      &(pe_proc->start), pe_proc->start);
     CALOUT(E, "0x%"   PRIXPTR " ELEMS\t%u\n",      &(pe_proc->elems), pe_proc->elems);
@@ -429,8 +431,7 @@ void CHKMEMLAY(void)                        {
 
 //   ---     ---     ---     ---     ---
 
-
-       CALOUT(E, "\n\nLNAMES at {%u/%u} capacity | %u units remaining\n",                   \
-                 mammi->lvaltop, NAMESZ, NAMESZ - mammi->lvaltop        );                  };
+    END: CALOUT(E, "\n\nLNAMES at {%u/%u} capacity | %u units remaining\n",                 \
+                   mammi->lvaltop, NAMESZ, NAMESZ - mammi->lvaltop        );                };
 
 //   ---     ---     ---     ---     ---

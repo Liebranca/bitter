@@ -225,8 +225,11 @@ void PROCADD   (uint size      );
     case OP_EBANG:                          \
         (*r)=(*r)!=(*v); OPSWITCH_MINUSX;   \
                                             \
+    case OP_QUEST:                          \
+        (*r)=(*v)!=0; OPSWITCH_MINUSX;      \
+                                            \
     case OP_EQUAL:                          \
-        (*r)==(*v); OPSWITCH_MINUSX;        \
+        (*r)=(*v); OPSWITCH_MINUSX;         \
                                             \
     case OP_ECOOL:                          \
         (*r)=(*r)==(*v); OPSWITCH_MINUSX;   \
@@ -280,9 +283,9 @@ void PROCADD   (uint size      );
                                             \
     case OP_EPLUS:                          \
     case OP_PLUS:                           \
+    default:                                \
         (*r)+=(*v); break;                  \
                                             \
-    default: break;                         \
                                             \
     }; (*v)=0; break;                       }
 
