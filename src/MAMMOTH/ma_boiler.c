@@ -356,10 +356,10 @@ void MAFETCH(MEMUNIT* r, MEMUNIT* v)        {
 
 //   ---     ---     ---     ---     ---
 
-    while(cbyte>(UNITSZ-size)) {
-        cbyte-=UNITSZ; cunit++;
+    cunit         = cbyte  / UNITSZ;
+    cbyte        -= cunit  * UNITSZ;
 
-    }; addr+=FETMASK(units, cunit);
+    addr         += FETMASK(units, cunit);
 
 //   ---     ---     ---     ---     ---
 
@@ -451,10 +451,10 @@ void CALCUS_COLLAPSE(void)                  {
             MEMUNIT* r = rd_lhand;
             MEMUNIT* v = rd_value;
 
-            *v&=szmask_a; *v=(*v)<<(rd_cbyte*8);
+            if(!(rd_flags&OP_AT)) {
+                *v&=szmask_a; *v=(*v)<<(rd_cbyte*8);
 
-            CALCUS_OPSWITCH;
-
+            }; CALCUS_OPSWITCH;
         }
 
 //   ---     ---     ---     ---     ---

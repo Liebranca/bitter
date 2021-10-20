@@ -146,7 +146,8 @@ void PROCMA(void)                           {
         pe_proc->elems     = 0;
 
                                             // fooken boiler
-        CNTX_INIT_BOILER                    (PROC, pe_proc, "POC*");
+        CNTX_INIT_BOILER                    (PROC, pe_proc, "POC*"                   );
+        CALOUT                              (K, "proc %s[%u]\n", name, pe_proc->bound);
 
         return;
 
