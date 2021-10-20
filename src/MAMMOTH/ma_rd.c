@@ -63,7 +63,6 @@ void CALCUS_COLLAPSE(void)                  {
         } case 0x05: {
             sint* r = (sint*) rd_lhand;
             sint* v = (sint*) rd_value;
-
             CALCUS_OPSWITCH;
 
         } case 0x09: {
@@ -264,19 +263,33 @@ void MAEXPS(void)                           {
 
             goto POP_OPSTOP;
 
-        case 0xA4:
+        case 0x80:
             rd_flags |= OP_DAMPR;
             MAMMIT_LVLB_NXT;
 
             goto POP_OPSTOP;
+
+        case 0x8A:
+            rd_flags |= OP_EAMPR;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
+//   ---     ---     ---     ---     ---
 
         case 0x7C:
             rd_flags |= OP_PIPE;
 
             goto POP_OPSTOP;
 
-        case 0xFA:
+        case 0x86:
             rd_flags |= OP_DPIPE;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
+        case 0x92:
+            rd_flags |= OP_EPIPE;
             MAMMIT_LVLB_NXT;
 
             goto POP_OPSTOP;
@@ -288,13 +301,33 @@ void MAEXPS(void)                           {
 
             goto POP_OPSTOP;
 
+        case 0x88:
+            rd_flags |= OP_EMONY;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
         case 0x25:
             rd_flags |= OP_MODUS;
 
             goto POP_OPSTOP;
 
+        case 0x89:
+            rd_flags |= OP_EMODU;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
+//   ---     ---     ---     ---     ---
+
         case 0x5E:
             rd_flags |= OP_XORUS;
+
+            goto POP_OPSTOP;
+
+        case 0x91:
+            rd_flags |= OP_EXOR;
+            MAMMIT_LVLB_NXT;
 
             goto POP_OPSTOP;
 
@@ -306,19 +339,33 @@ void MAEXPS(void)                           {
 
             goto POP_OPSTOP;
 
-        case 0xA9:
+        case 0x81:
             rd_flags |= OP_PPLUS;
             MAMMIT_LVLB_NXT;
 
             goto POP_OPSTOP;
+
+        case 0x8C:
+            rd_flags |= OP_EPLUS;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
+//   ---     ---     ---     ---     ---
 
         case 0x2D:
             rd_flags |= OP_MINUS;
 
             goto POP_OPSTOP;
 
-        case 0xAB:
+        case 0x82:
             rd_flags |= OP_MMINU;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
+        case 0x8D:
+            rd_flags |= OP_EMINU;
             MAMMIT_LVLB_NXT;
 
             goto POP_OPSTOP;
@@ -331,9 +378,23 @@ void MAEXPS(void)                           {
 
             goto POP_OPSTOP;
 
+        case 0x8B:
+            rd_flags |= OP_EMUL;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
+//   ---     ---     ---     ---     ---
+
         case 0x2F:
             rd_flags &=~OP_MUL;
             rd_flags |= OP_DIV;
+
+            goto POP_OPSTOP;
+
+        case 0x8E:
+            rd_flags |= OP_EDIV;
+            MAMMIT_LVLB_NXT;
 
             goto POP_OPSTOP;
 
@@ -343,6 +404,12 @@ void MAEXPS(void)                           {
             rd_flags  = mammi->lvlb_stack[mammi->lvlb-1]&OP_MINUS;
             mammi->lvlb_stack[mammi->lvlb-1] &=~OP_MINUS;
             rd_flags |= OP_BANG;
+
+            goto POP_OPSTOP;
+
+        case 0x87:
+            rd_flags |= OP_EBANG;
+            MAMMIT_LVLB_NXT;
 
             goto POP_OPSTOP;
 
@@ -361,7 +428,7 @@ void MAEXPS(void)                           {
 
             goto POP_OPSTOP;
 
-        case 0xBB:
+        case 0x84:
             rd_flags |= OP_ECOOL;
             MAMMIT_LVLB_NXT;
 
@@ -406,11 +473,19 @@ void MAEXPS(void)                           {
 
             goto POP_OPSTOP;
 
-        case 0xBA:
+        case 0x83:
             rd_flags |= OP_LSHFT;
             MAMMIT_LVLB_NXT;
 
             goto POP_OPSTOP;
+
+        case 0x8F:
+            rd_flags |= OP_ELT;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
+//   ---     ---     ---     ---     ---
 
         case 0x3E:
             rd_flags |= OP_GT;
@@ -418,11 +493,23 @@ void MAEXPS(void)                           {
 
             goto POP_OPSTOP;
 
-        case 0xBC:
+        case 0x85:
             rd_flags |= OP_RSHFT;
             MAMMIT_LVLB_NXT;
 
             goto POP_OPSTOP;
+
+        case 0x90:
+            rd_flags |= OP_RSHFT;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
+//   ---     ---     ---     ---     ---
+
+        case 0x93:
+        case 0x94:
+            CALOUT(E, "Arrow/walkback not implemented (%s @%u)\n", __func__, __LINE__);
 
 //   ---     ---     ---     ---     ---
 
@@ -498,9 +585,9 @@ void SECEXPS(void)                          {
 
 //   ---     ---     ---     ---     ---
 
-    uint    sflags_i = 0;
-    uint*   sflags   = mammi->lvlb_stack+0;
-    MEMUNIT sec_val  = ((*rd_value)>>(rd_cbyte*8))&szmask_a;
+    MEMUNIT  sflags_i = 0;
+    MEMUNIT* sflags   = mammi->lvlb_stack+0;
+    MEMUNIT  sec_val  = ((*rd_value)>>(rd_cbyte*8))&szmask_a;
 
     for(uint x=0; x<rd_step; x++) {
         rd_value[x]=rd_oldval[x];
@@ -546,19 +633,19 @@ void SECEXPS(void)                          {
 
 //   ---     ---     ---     ---     ---
 
-        case OP_EQUL | OP_MUL: { sflags[sflags_i] &=~ (OP_EQUL | OP_MUL);
+        case OP_EQUAL | OP_MUL: { sflags[sflags_i] &=~ (OP_EQUAL | OP_MUL);
             MEMUNIT* addr = ((MEMUNIT*) memlng->buff)+sec_cur.base;
             *addr        &=~(szmask_a<<(sec_cur.cbyte*8));
             *addr        |= (sec_val)<<(sec_cur.cbyte*8); break;
         }
 
-        case OP_EQUL | OP_MONEY: { sflags[sflags_i] &=~ (OP_EQUL | OP_MONEY);
+        case OP_EMONY: { sflags[sflags_i] &=~ OP_EMONY;
             MEMUNIT* addr = ((MEMUNIT*) memlng->buff)+sec_beg.base;
             *addr        &=~(szmask_a<<(sec_beg.cbyte*8));
             *addr        |= (sec_val)<<(sec_beg.cbyte*8); break;
         }
 
-        case OP_EQUL | OP_AMPER: { sflags[sflags_i] &=~ (OP_EQUL | OP_AMPER);
+        case OP_EAMPR: { sflags[sflags_i] &=~ OP_EAMPR;
             if(sec_end.cbyte<0) { break; }
 
             MEMUNIT* addr = ((MEMUNIT*) memlng->buff)+sec_end.base;
@@ -568,7 +655,7 @@ void SECEXPS(void)                          {
 
 //   ---     ---     ---     ---     ---
 
-        case OP_EQUL: { sflags[sflags_i] &=~ OP_EQUL;
+        case OP_EQUAL: { sflags[sflags_i] &=~ OP_EQUAL;
             MEMUNIT* addr  = ((MEMUNIT*) memlng->buff)+0;
             uint old_base  = sec_beg.base;
             sint old_cbyte = sec_beg.cbyte;
@@ -735,7 +822,7 @@ void REGTP(void)                            {
     int    evil       = 0; MAMMCTCH         (NOREDCL(name), evil, MAMMIT_EV_DECL, name  );
     CALOUT                                  (K, ">%s %s[%u]\n", type, name, rd_elems    );
 
-    ctok              = MEMBUFF(memlng, CTOK, 8192);
+    //ctok              = MEMBUFF(memlng, CTOK, 8192);
     lngptr            = 0;
     RSTSEC();
 
@@ -746,7 +833,6 @@ void REGTP(void)                            {
 //   ---     ---     ---     ---     ---
 
 void RDPRC(ADDR* addr)                      {
-
 
 // TODO:
 //  -alias
@@ -807,12 +893,12 @@ void RDPRC(ADDR* addr)                      {
 
 //   ---     ---     ---     ---     ---
 
-    ctok = (CTOK*) (code->data+udr);
+    //ctok = (CTOK*) (code->data+udr);
 
     RDEXP();
 
     /*code->data[udr] = *rd_result;*/
-    PROCADD(sizeof(CODE));
+    //PROCADD(sizeof(CODE));
 
 //   ---     ---     ---     ---     ---
 
@@ -1147,7 +1233,12 @@ void RDNXT(void)                            {
         case 0x5E3D: s_opi=0x11; goto SOPPY;// 91   ^=
         case 0x7C3D: s_opi=0x12; goto SOPPY;// 92   |=
 
-        SOPPY: rd_cur=0x80+s_opi; rd_pos+=2;
+//   ---     ---     ---     ---     ---    // very special operators
+
+        case 0x2D3E: s_opi=0x13; goto SOPPY;// 93   ->
+        case 0x3E2D: s_opi=0x14; goto SOPPY;// 94   <-
+
+        SOPPY: rd_cur=0x80+s_opi; rd_pos++; break;
 
     };
 
@@ -1284,6 +1375,9 @@ void RDNXT(void)                            {
 
         case 0x80:                          // &&   dampr
         case 0x86:                          // ||   dpipe
+
+        case 0x93:                          // ->   arrow
+        case 0x94:                          // <-   brrow
 
             OP_NONSEC:
             op[opi]=rd_cur; opi++;

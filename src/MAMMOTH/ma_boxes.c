@@ -71,7 +71,8 @@ uint     rd_line     =  1;                  // current line
 
 //   ---     ---     ---     ---     ---
 
-uint     rd_flags    = 0;                   // tracks opstate at current level
+MEMUNIT  rd_flags    = 0;                   // tracks opstate at current level
+
 uint     rd_size     = 0;                   // bytesize of current fetch/assign op
 uint     rd_elems    = 0;                   // element count of array
 uint     rd_cbyte    = 0;                   // used for rd_size < unitsz

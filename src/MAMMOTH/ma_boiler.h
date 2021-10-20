@@ -172,23 +172,26 @@ void PROCADD   (uint size      );
     }; break
 
 #define OP_FORCEBIN(op)                     \
-    (*r)=((uint)(*r))op((uint)(*v))
+    (*r)=((MEMUNIT)(*r))op((MEMUNIT)(*v))
 
 #define OP_FORCEUNA(op)                     \
-    (*r)=op(uint)(*v)
+    (*r)=op(MEMUNIT)(*v)
 
 //   ---     ---     ---     ---     ---
 
 #define CALCUS_OPSWITCH {                   \
                                             \
-    switch(rd_flags&0xFFFFFFFC) {           \
+    switch(rd_flags&0xFFFFFFFFFFFFBFFFLL) { \
                                             \
+    case OP_EMUL:                           \
     case OP_MUL:                            \
         (*r)*=(*v); OPSWITCH_MINUSX;        \
                                             \
+    case OP_EDIV:                           \
     case OP_DIV:                            \
         (*r)/=(*v); OPSWITCH_MINUSX;        \
                                             \
+    case OP_EMODU:                          \
     case OP_MODUS:                          \
         OP_FORCEBIN(%); OPSWITCH_MINUSX;    \
                                             \
@@ -201,7 +204,7 @@ void PROCADD   (uint size      );
     case OP_GT:                             \
         (*r)=(*r)>(*v);  OPSWITCH_MINUSX;   \
                                             \
-    case OP_GT | OP_EQUR:                   \
+    case OP_EGT:                            \
         (*r)=(*r)>=(*v); OPSWITCH_MINUSX;   \
                                             \
     case OP_LSHFT:                          \
@@ -210,7 +213,7 @@ void PROCADD   (uint size      );
     case OP_LT:                             \
         (*r)=(*r)<(*v);  OPSWITCH_MINUSX;   \
                                             \
-    case OP_LT | OP_EQUR:                   \
+    case OP_ELT:                            \
         (*r)=(*r)<=(*v); OPSWITCH_MINUSX;   \
                                             \
                                             \
@@ -219,10 +222,13 @@ void PROCADD   (uint size      );
     case OP_BANG:                           \
         (*r)=!(*v); OPSWITCH_MINUSX;        \
                                             \
-    case OP_BANG | OP_EQUR:                 \
+    case OP_EBANG:                          \
         (*r)=(*r)!=(*v); OPSWITCH_MINUSX;   \
                                             \
-    case OP_EQUL | OP_EQUR:                 \
+    case OP_EQUAL:                          \
+        (*r)==(*v); OPSWITCH_MINUSX;        \
+                                            \
+    case OP_ECOOL:                          \
         (*r)=(*r)==(*v); OPSWITCH_MINUSX;   \
                                             \
                                             \
@@ -231,20 +237,25 @@ void PROCADD   (uint size      );
     case OP_DAMPR:                          \
         OP_FORCEBIN(&&); OPSWITCH_MINUSX;   \
                                             \
+    case OP_EAMPR:                          \
     case OP_AMPER:                          \
         OP_FORCEBIN(&); OPSWITCH_MINUSX;    \
+                                            \
                                             \
     case OP_DPIPE:                          \
         OP_FORCEBIN(||); OPSWITCH_MINUSX;   \
                                             \
+    case OP_EPIPE:                          \
     case OP_PIPE:                           \
         OP_FORCEBIN(|); OPSWITCH_MINUSX;    \
                                             \
+                                            \
 /*   ---     ---     ---     ---     --- */ \
                                             \
-                                            \
+    case OP_EXOR:                           \
     case OP_XORUS:                          \
         OP_FORCEBIN(^); OPSWITCH_MINUSX;    \
+                                            \
                                             \
     case OP_TILDE:                          \
         OP_FORCEUNA(~); OPSWITCH_MINUSX;    \
@@ -259,8 +270,19 @@ void PROCADD   (uint size      );
                                             \
 /*   ---     ---     ---     ---     --- */ \
                                             \
-    default:                                \
+    case OP_PPLUS:                          \
+        (*r)++; break;                      \
+                                            \
+    case OP_MMINU:                          \
+        (*r)--; break;                      \
+                                            \
+/*   ---     ---     ---     ---     --- */ \
+                                            \
+    case OP_EPLUS:                          \
+    case OP_PLUS:                           \
         (*r)+=(*v); break;                  \
+                                            \
+    default: break;                         \
                                             \
     }; (*v)=0; break;                       }
 

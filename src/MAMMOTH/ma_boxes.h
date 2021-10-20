@@ -210,7 +210,8 @@ extern uint     rd_pos;
 
 //   ---     ---     ---     ---     ---
 
-extern uint     rd_flags;
+extern MEMUNIT  rd_flags;
+
 extern uint     rd_size;
 extern uint     rd_elems;
 extern uint     rd_cbyte;
