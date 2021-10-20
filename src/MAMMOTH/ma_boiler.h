@@ -54,7 +54,13 @@ void   VALNEW  (uchar*   name  ,
 void VALSIZ    (uchar* type    ,
                 uchar*  to     );           // get size of base type
 
-void PROCADD   (uint size      );
+void PROCADD   (uint size      );           // append line to proc
+
+uint POPOPS    (void           );           // pop operators from value
+
+//   ---     ---     ---     ---     ---
+
+void CALCUS_COLLAPSE(void);                 // magic
 
 //   ---     ---     ---     ---     ---
 // state flags...
@@ -229,7 +235,8 @@ void PROCADD   (uint size      );
         (*r)=(*v)!=0; OPSWITCH_MINUSX;      \
                                             \
     case OP_EQUAL:                          \
-        (*r)=(*v); OPSWITCH_MINUSX;         \
+        (*r)=(*v); rd_flags&=~OP_EQUAL;     \
+        OPSWITCH_MINUSX;                    \
                                             \
     case OP_ECOOL:                          \
         (*r)=(*r)==(*v); OPSWITCH_MINUSX;   \

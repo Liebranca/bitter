@@ -1,7 +1,7 @@
 $$$$$$$$$$$$$$$$
 
 reg vars {
-    wide4 x;
+    wide4 x = 0xDE74;
 
 };
 

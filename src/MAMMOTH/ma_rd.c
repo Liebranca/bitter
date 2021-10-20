@@ -28,51 +28,18 @@
 
 //   ---     ---     ---     ---     ---
 
-static CTOK* ctok;
-
-//   ---     ---     ---     ---     ---
-
-void CALCUS_COLLAPSE(void)                  {
-
-    switch(rd_cast) {
-
-        case 0x03:
-        case 0x07:
-        case 0x04:
-        case 0x08:
-        case 0x05:
-        case 0x09:
-        case 0x06:
-        case 0x0A: {
-            MEMUNIT* r = rd_lhand;
-            MEMUNIT* v = rd_value;
-
-            *v&=szmask_a; *v=(*v)<<(rd_cbyte*8);
-
-            CALCUS_OPSWITCH;
-
-        }
-
-//   ---     ---     ---     ---     ---
-
-        default: {
-            float* r = (float*) rd_lhand;
-            float* v = (float*) rd_value;
-            CALCUS_OPSWITCH;
-
-        };
-    };                                                                                      };
-
-//   ---     ---     ---     ---     ---
-
-void TRNVAL(uint len)                       {
+void TRNVAL(uint len)                       { if(!len) { return; }
 
     int  evil     = 0;
     uint vlen     = len-1;
 
                                             // set OP_RADIX
     rd_flags     |=                         (strstr(typedata.base, "float") != NULL) << 1;
-    ctok->ttype   = CALCUS_CONST;
+
+    if(rd_ctok) {
+        rd_ctok->ttype = CALCUS_CONST;
+
+    };
 
 //   ---     ---     ---     ---     ---
 
@@ -98,14 +65,14 @@ void TRNVAL(uint len)                       {
                 elif(rd_rawv[1]==0x62) {    // is bitlit
                     TRBITVAL                (rd_rawv+vlen, rd_value              );
 
-                }; ctok->value=*rd_value;
+                }; if(rd_ctok) { rd_ctok->value=*rd_value; }
             }
 
 //   ---     ---     ---     ---     ---
 
             else {                          // string -> decimal
                 TRDECVAL                    (rd_rawv, rd_value                   );
-                ctok->value=*rd_value;
+                if(rd_ctok) { rd_ctok->value=*rd_value; }
 
             }
         }
@@ -117,7 +84,7 @@ void TRNVAL(uint len)                       {
                 goto RD_ASFLTP;
 
             }; *rd_value   = rd_rawv[0]-0x30;
-               ctok->value = *rd_value;
+               if(rd_ctok) { rd_ctok->value=*rd_value; }
 
         };
     }
@@ -134,7 +101,7 @@ void TRNVAL(uint len)                       {
 
         TRFLTVAL                            (rd_rawv, rd_value                   );
 
-        ctok->value = *rd_value;
+        if(rd_ctok) { rd_ctok->value=*rd_value; }
     }
 
 //   ---     ---     ---     ---     ---
@@ -150,9 +117,6 @@ void TRNVAL(uint len)                       {
         if(nulmy!=NULL) {                   // get type and decode typedata
             uchar* type =                   ((ADDR*) nulmy)->id.type;            \
             VALSIZ                          (type, szdata                        );
-
-            ctok->ttype = CALCUS_FETCH;
-            ctok->vtype = (szdata[0]) | (szdata[1]<<8) | (szdata[2]<<16);
 
 //   ---     ---     ---     ---     ---
 
@@ -170,7 +134,12 @@ void TRNVAL(uint len)                       {
                     mammi->vaddr  = (uintptr_t) &(((ADDR*) nulmy)->box);
                     mammi->vtype  = szdata[0] | (szdata[1]<<8) | (szdata[2]<<16);
 
-                    ctok->value   = mammi->vaddr;
+                    if(rd_ctok) {
+                        rd_ctok->ttype = CALCUS_FETCH;
+                        rd_ctok->vtype = mammi->vtype;
+                        rd_ctok->value = mammi->vaddr;
+
+                    };
 
                 } else {
                     goto NO_IDEX_OP;
@@ -231,320 +200,7 @@ void TRNVAL(uint len)                       {
 
 //   ---     ---     ---     ---     ---
 
-void MAEXPS(void)                           {
-
-    uint ctok_cnt = 0;
-
-    TOP:                                    // if operator chars in token, eval and pop them
-    switch(rd_rawv[0]) {
-
-        default: break;
-
-//   ---     ---     ---     ---     ---
-
-        case 0x26:
-            rd_flags |= OP_AMPER;
-
-            goto POP_OPSTOP;
-
-        case 0x80:
-            rd_flags |= OP_DAMPR;
-            MAMMIT_LVLB_NXT;
-
-            goto POP_OPSTOP;
-
-        case 0x8A:
-            rd_flags |= OP_EAMPR;
-            MAMMIT_LVLB_NXT;
-
-            goto POP_OPSTOP;
-
-//   ---     ---     ---     ---     ---
-
-        case 0x7C:
-            rd_flags |= OP_PIPE;
-
-            goto POP_OPSTOP;
-
-        case 0x86:
-            rd_flags |= OP_DPIPE;
-            MAMMIT_LVLB_NXT;
-
-            goto POP_OPSTOP;
-
-        case 0x92:
-            rd_flags |= OP_EPIPE;
-            MAMMIT_LVLB_NXT;
-
-            goto POP_OPSTOP;
-
-//   ---     ---     ---     ---     ---
-
-        case 0x24:
-            rd_flags |= OP_MONEY;
-
-            goto POP_OPSTOP;
-
-        case 0x88:
-            rd_flags |= OP_EMONY;
-            MAMMIT_LVLB_NXT;
-
-            goto POP_OPSTOP;
-
-        case 0x25:
-            rd_flags |= OP_MODUS;
-
-            goto POP_OPSTOP;
-
-        case 0x89:
-            rd_flags |= OP_EMODU;
-            MAMMIT_LVLB_NXT;
-
-            goto POP_OPSTOP;
-
-//   ---     ---     ---     ---     ---
-
-        case 0x5E:
-            rd_flags |= OP_XORUS;
-
-            goto POP_OPSTOP;
-
-        case 0x91:
-            rd_flags |= OP_EXOR;
-            MAMMIT_LVLB_NXT;
-
-            goto POP_OPSTOP;
-
-//   ---     ---     ---     ---     ---
-
-        case 0x2B:
-            rd_flags |= OP_PLUS;
-            MAMMIT_LVLB_NXT;
-
-            goto POP_OPSTOP;
-
-        case 0x81:
-            rd_flags |= OP_PPLUS;
-            MAMMIT_LVLB_NXT;
-
-            goto POP_OPSTOP;
-
-        case 0x8C:
-            rd_flags |= OP_EPLUS;
-            MAMMIT_LVLB_NXT;
-
-            goto POP_OPSTOP;
-
-//   ---     ---     ---     ---     ---
-
-        case 0x2D:
-            rd_flags |= OP_MINUS;
-
-            goto POP_OPSTOP;
-
-        case 0x82:
-            rd_flags |= OP_MMINU;
-            MAMMIT_LVLB_NXT;
-
-            goto POP_OPSTOP;
-
-        case 0x8D:
-            rd_flags |= OP_EMINU;
-            MAMMIT_LVLB_NXT;
-
-            goto POP_OPSTOP;
-
-//   ---     ---     ---     ---     ---
-
-        case 0x2A:
-            rd_flags |= OP_MUL;
-            rd_flags &=~OP_DIV;
-
-            goto POP_OPSTOP;
-
-        case 0x8B:
-            rd_flags |= OP_EMUL;
-            MAMMIT_LVLB_NXT;
-
-            goto POP_OPSTOP;
-
-//   ---     ---     ---     ---     ---
-
-        case 0x2F:
-            rd_flags &=~OP_MUL;
-            rd_flags |= OP_DIV;
-
-            goto POP_OPSTOP;
-
-        case 0x8E:
-            rd_flags |= OP_EDIV;
-            MAMMIT_LVLB_NXT;
-
-            goto POP_OPSTOP;
-
-//   ---     ---     ---     ---     ---
-
-        case 0x21: MAMMIT_LVLB_NXT;
-            rd_flags  = mammi->lvlb_stack[mammi->lvlb-1]&OP_MINUS;
-            mammi->lvlb_stack[mammi->lvlb-1] &=~OP_MINUS;
-            rd_flags |= OP_BANG;
-
-            goto POP_OPSTOP;
-
-        case 0x87:
-            rd_flags |= OP_EBANG;
-            MAMMIT_LVLB_NXT;
-
-            goto POP_OPSTOP;
-
-        case 0x3F: MAMMIT_LVLB_NXT;
-            rd_flags  = mammi->lvlb_stack[mammi->lvlb-1]&OP_MINUS;
-            mammi->lvlb_stack[mammi->lvlb-1] &=~OP_MINUS;
-            rd_flags |= OP_QUEST;
-
-            goto POP_OPSTOP;
-
-        case 0x7E: MAMMIT_LVLB_NXT;
-            rd_flags  = mammi->lvlb_stack[mammi->lvlb-1]&OP_MINUS;
-            mammi->lvlb_stack[mammi->lvlb-1] &=~OP_MINUS;
-            rd_flags |= OP_TILDE;
-
-            goto POP_OPSTOP;
-
-//   ---     ---     ---     ---     ---
-
-        case 0x3D:
-            rd_flags |= OP_EQUAL;
-            MAMMIT_LVLB_NXT;
-
-            goto POP_OPSTOP;
-
-        case 0x84:
-            rd_flags |= OP_ECOOL;
-            MAMMIT_LVLB_NXT;
-
-            goto POP_OPSTOP;
-
-//   ---     ---     ---     ---     ---
-
-        case 0x28: MAMMIT_LVLB_NXT;
-            goto POP_OPSTOP;
-
-        case 0x40:
-
-            if(!(mammi->state&MAMMIT_SF_PFET)) {
-                CALOUT(E, "Using '@' operator without fetch-from\n");
-                return;
-
-            };
-
-            rd_flags |= OP_AT;
-            MAMMIT_LVLB_NXT;
-
-            goto POP_OPSTOP;
-
-        case 0x3A:
-
-            if(mammi->state&MAMMIT_SF_PFET) {
-                MAMMIT_LVLB_PRV;
-                CALCUS_COLLAPSE();
-                MAMMIT_LVLB_PRV;
-                CALCUS_COLLAPSE();
-
-                goto POP_OPSTOP;
-
-            }; MAMMIT_LVLB_NXT;
-            goto POP_OPSTOP;
-
-//   ---     ---     ---     ---     ---
-
-        case 0x3C:
-            rd_flags |= OP_LT;
-            MAMMIT_LVLB_NXT;
-
-            goto POP_OPSTOP;
-
-        case 0x83:
-            rd_flags |= OP_LSHFT;
-            MAMMIT_LVLB_NXT;
-
-            goto POP_OPSTOP;
-
-        case 0x8F:
-            rd_flags |= OP_ELT;
-            MAMMIT_LVLB_NXT;
-
-            goto POP_OPSTOP;
-
-//   ---     ---     ---     ---     ---
-
-        case 0x3E:
-            rd_flags |= OP_GT;
-            MAMMIT_LVLB_NXT;
-
-            goto POP_OPSTOP;
-
-        case 0x85:
-            rd_flags |= OP_RSHFT;
-            MAMMIT_LVLB_NXT;
-
-            goto POP_OPSTOP;
-
-        case 0x90:
-            rd_flags |= OP_RSHFT;
-            MAMMIT_LVLB_NXT;
-
-            goto POP_OPSTOP;
-
-//   ---     ---     ---     ---     ---
-
-        case 0x93:
-        case 0x94:
-            CALOUT(E, "Arrow/walkback not implemented (%s @%u)\n", __func__, __LINE__);
-
-//   ---     ---     ---     ---     ---
-
-        POP_OPSTOP:
-            ctok->lops+=((MEMUNIT) (*rd_rawv))<<(ctok_cnt*8);
-            ctok_cnt++; rd_rawv++;
-
-            goto TOP;
-
-    };
-
-//   ---     ---     ---     ---     ---
-
-    ctok_cnt = 0;
-    uint len = strlen(rd_rawv);
-
-    if(!len) { goto END; }
-
-    POP_TERMINATORS:                        // same as oppies, but at end of token
-    switch(rd_rawv[len-1]) {
-
-        default: break;
-
-        case 0x29:
-
-            if(mammi->lvlb) {
-                MAMMIT_LVLB_PRV;            // lonely parens >;
-
-            }; mammi->state &=~MAMMIT_SF_PSEC;
-
-        POP_TESTOP:
-            ctok->rops+=((MEMUNIT) (*rd_rawv))<<(ctok_cnt*8);
-            ctok_cnt++;
-
-            rd_rawv[len-1]=0x00;
-            len--; if(!len) { goto END; }
-            goto POP_TERMINATORS;
-
-    };
-
-//   ---     ---     ---     ---     ---
-
-    TRNVAL(len);                            // translate string into value
-    END: ctok++;                                                                            };
+void MAEXPS(void)                           { TRNVAL(POPOPS()); if(rd_ctok) { rd_ctok++; }  };
 
 //   ---     ---     ---     ---     ---
 
@@ -704,7 +360,7 @@ void RDEXP(void)                            {
     }; rd_flags     = 0;                    // values defined above MAMMIT_OPSWITCH
        rd_rawv      = tokens[rd_tkx];       // current token
 
-    CLMEM2(ctok, sizeof(CTOK));
+    if(rd_ctok) { CLMEM2(rd_ctok, sizeof(CTOK)); }
 
     if(mammi->state&MAMMIT_SF_PSEC) {
         goto SECEVAL;
@@ -824,7 +480,7 @@ void REGTP(void)                            {
     int    evil       = 0; MAMMCTCH         (NOREDCL(name), evil, MAMMIT_EV_DECL, name  );
     CALOUT                                  (K, ">%s %s[%u]\n", type, name, rd_elems    );
 
-    ctok              = MEMBUFF(memlng, CTOK, 8192);
+    rd_ctok           = NULL;
     lngptr            = 0;
     RSTSEC();
 
@@ -857,7 +513,7 @@ void RDPRC(ADDR* addr)                      {
     if(nxt[0]==0x40) {
         nxt++; rd_rawv=nxt;
 
-        ctok=MEMBUFF(memlng, CTOK, 8192);
+        rd_ctok=NULL;
 
         RSTPTRS();
         MAEXPS ();
@@ -897,18 +553,9 @@ void RDPRC(ADDR* addr)                      {
 
 //   ---     ---     ---     ---     ---
 
-    ctok      = (CTOK*) (code->data+udr); RDEXP();
-
-    uint leap = (uint) ( ((uintptr_t) ctok) - ((uintptr_t) (code->data+udr)) );
-
-    PROCADD(sizeof(CODE)+leap); code->size=((leap/UNITSZ)<1) ? 1 : leap/UNITSZ;
-
-//   ---     ---     ---     ---     ---
-
-//  addr->box[FETMASK(rd_units, cunit)] &=~(szmask_a    << (cbyte*8));
-//  addr->box[FETMASK(rd_units, cunit)] |= (*rd_result) << (cbyte*8);
-
-                       };
+    rd_ctok   = (CTOK*) (code->data+udr); RDEXP();
+    uint leap = (uint) ( ((uintptr_t) rd_ctok) - ((uintptr_t) (code->data+udr)) );
+    PROCADD(sizeof(CODE)+leap); code->size=((leap/UNITSZ)<1) ? 1 : leap/UNITSZ;             };
 
 //   ---     ---     ---     ---     ---
 
@@ -1503,8 +1150,6 @@ int main(int argc, char** argv)             {
 
     CALOUT(E, "\e[38;2;128;255;128m\n$PEIN:\n%s\n\e[0m\e[38;2;255;128;128m$OUT:", rd_buff);
     RDNXT(); CALOUT(E, "\e[0m");
-
-    /*CALOUT(E, "0x%08" PRIX32 " %08" PRIX32 "\n0x%016" PRIX64 " %016" PRIX64 "\n0x%016" PRIX64 "\n", ctok->ttype, ctok->vtype, ctok->lops, ctok->rops, ctok->value);*/
 
     lmpush(MAMMIT_CNTX_FETCH(pe_proc, 0)); lmpop();
 

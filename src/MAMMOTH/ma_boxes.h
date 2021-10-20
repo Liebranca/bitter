@@ -90,7 +90,7 @@ typedef struct MAMM_CALCUS_TOKEN {          // breaks down expressions into male
 
     MEMUNIT value;                          // some number; can be an address
 
-} CTOK;
+} CTOK; extern CTOK* rd_ctok;
 
 //   ---     ---     ---     ---     ---
 

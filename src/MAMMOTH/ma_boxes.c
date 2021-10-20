@@ -97,5 +97,6 @@ BLK      sec_end     = {0};                 // end "&" block of sec operation
 
 REG*     pe_reg      = NULL;                // current memreg
 PROC*    pe_proc     = NULL;                // current mutable codeblock
+CTOK*    rd_ctok     = NULL;                // magic calcus token
 
 //   ---     ---     ---     ---     ---

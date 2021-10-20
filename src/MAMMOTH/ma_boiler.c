@@ -435,3 +435,355 @@ void CHKMEMLAY(void)                        {
                    mammi->lvaltop, NAMESZ, NAMESZ - mammi->lvaltop        );                };
 
 //   ---     ---     ---     ---     ---
+
+void CALCUS_COLLAPSE(void)                  {
+
+    switch(rd_cast) {
+
+        case 0x03:
+        case 0x07:
+        case 0x04:
+        case 0x08:
+        case 0x05:
+        case 0x09:
+        case 0x06:
+        case 0x0A: {
+            MEMUNIT* r = rd_lhand;
+            MEMUNIT* v = rd_value;
+
+            *v&=szmask_a; *v=(*v)<<(rd_cbyte*8);
+
+            CALCUS_OPSWITCH;
+
+        }
+
+//   ---     ---     ---     ---     ---
+
+        default: {
+            float* r = (float*) rd_lhand;
+            float* v = (float*) rd_value;
+            CALCUS_OPSWITCH;
+
+        };
+    };                                                                                      };
+
+//   ---     ---     ---     ---     ---
+
+uint POPOPS(void)                           {
+
+    uint ctok_cnt = 0;
+
+    TOP:                                    // if operator chars in token, eval and pop them
+    switch(rd_rawv[0]) {
+
+        default: break;
+
+//   ---     ---     ---     ---     ---
+
+        case 0x26:
+            rd_flags |= OP_AMPER;
+
+            goto POP_OPSTOP;
+
+        case 0x80:
+            rd_flags |= OP_DAMPR;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
+        case 0x8A:
+            rd_flags |= OP_EAMPR;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
+//   ---     ---     ---     ---     ---
+
+        case 0x7C:
+            rd_flags |= OP_PIPE;
+
+            goto POP_OPSTOP;
+
+        case 0x86:
+            rd_flags |= OP_DPIPE;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
+        case 0x92:
+            rd_flags |= OP_EPIPE;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
+//   ---     ---     ---     ---     ---
+
+        case 0x24:
+            rd_flags |= OP_MONEY;
+
+            goto POP_OPSTOP;
+
+        case 0x88:
+            rd_flags |= OP_EMONY;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
+        case 0x25:
+            rd_flags |= OP_MODUS;
+
+            goto POP_OPSTOP;
+
+        case 0x89:
+            rd_flags |= OP_EMODU;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
+//   ---     ---     ---     ---     ---
+
+        case 0x5E:
+            rd_flags |= OP_XORUS;
+
+            goto POP_OPSTOP;
+
+        case 0x91:
+            rd_flags |= OP_EXOR;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
+//   ---     ---     ---     ---     ---
+
+        case 0x2B:
+            rd_flags |= OP_PLUS;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
+        case 0x81:
+            rd_flags |= OP_PPLUS;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
+        case 0x8C:
+            rd_flags |= OP_EPLUS;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
+//   ---     ---     ---     ---     ---
+
+        case 0x2D:
+            rd_flags |= OP_MINUS;
+
+            goto POP_OPSTOP;
+
+        case 0x82:
+            rd_flags |= OP_MMINU;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
+        case 0x8D:
+            rd_flags |= OP_EMINU;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
+//   ---     ---     ---     ---     ---
+
+        case 0x2A:
+            rd_flags |= OP_MUL;
+            rd_flags &=~OP_DIV;
+
+            goto POP_OPSTOP;
+
+        case 0x8B:
+            rd_flags |= OP_EMUL;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
+//   ---     ---     ---     ---     ---
+
+        case 0x2F:
+            rd_flags &=~OP_MUL;
+            rd_flags |= OP_DIV;
+
+            goto POP_OPSTOP;
+
+        case 0x8E:
+            rd_flags |= OP_EDIV;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
+//   ---     ---     ---     ---     ---
+
+        case 0x21: MAMMIT_LVLB_NXT;
+            rd_flags  = mammi->lvlb_stack[mammi->lvlb-1]&OP_MINUS;
+            mammi->lvlb_stack[mammi->lvlb-1] &=~OP_MINUS;
+            rd_flags |= OP_BANG;
+
+            goto POP_OPSTOP;
+
+        case 0x87:
+            rd_flags |= OP_EBANG;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
+        case 0x3F: MAMMIT_LVLB_NXT;
+            rd_flags  = mammi->lvlb_stack[mammi->lvlb-1]&OP_MINUS;
+            mammi->lvlb_stack[mammi->lvlb-1] &=~OP_MINUS;
+            rd_flags |= OP_QUEST;
+
+            goto POP_OPSTOP;
+
+        case 0x7E: MAMMIT_LVLB_NXT;
+            rd_flags  = mammi->lvlb_stack[mammi->lvlb-1]&OP_MINUS;
+            mammi->lvlb_stack[mammi->lvlb-1] &=~OP_MINUS;
+            rd_flags |= OP_TILDE;
+
+            goto POP_OPSTOP;
+
+//   ---     ---     ---     ---     ---
+
+        case 0x3D:
+            rd_flags |= OP_EQUAL;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
+        case 0x84:
+            rd_flags |= OP_ECOOL;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
+//   ---     ---     ---     ---     ---
+
+        case 0x28: MAMMIT_LVLB_NXT;
+            goto POP_OPSTOP;
+
+        case 0x40:
+
+            if(!(mammi->state&MAMMIT_SF_PFET)) {
+                CALOUT(E, "Using '@' operator without fetch-from\n");
+                return 0;
+
+            };
+
+            rd_flags |= OP_AT;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
+        case 0x3A:
+
+            if(mammi->state&MAMMIT_SF_PFET) {
+                MAMMIT_LVLB_PRV;
+                CALCUS_COLLAPSE();
+                MAMMIT_LVLB_PRV;
+                CALCUS_COLLAPSE();
+
+                goto POP_OPSTOP;
+
+            }; MAMMIT_LVLB_NXT;
+            goto POP_OPSTOP;
+
+//   ---     ---     ---     ---     ---
+
+        case 0x3C:
+            rd_flags |= OP_LT;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
+        case 0x83:
+            rd_flags |= OP_LSHFT;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
+        case 0x8F:
+            rd_flags |= OP_ELT;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
+//   ---     ---     ---     ---     ---
+
+        case 0x3E:
+            rd_flags |= OP_GT;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
+        case 0x85:
+            rd_flags |= OP_RSHFT;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
+        case 0x90:
+            rd_flags |= OP_RSHFT;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
+//   ---     ---     ---     ---     ---
+
+        case 0x93:
+        case 0x94:
+            CALOUT(E, "Arrow/walkback not implemented (%s @%u)\n", __func__, __LINE__);
+
+//   ---     ---     ---     ---     ---
+
+        POP_OPSTOP:
+            if(rd_ctok) {
+                rd_ctok->lops+=((MEMUNIT) (*rd_rawv))<<(ctok_cnt*8);
+                ctok_cnt++;
+
+            };
+
+            rd_rawv++; goto TOP;
+
+    };
+
+//   ---     ---     ---     ---     ---
+
+    ctok_cnt = 0;
+    uint len = strlen(rd_rawv);
+
+    if(!len) { goto END; }
+
+    POP_TERMINATORS:                        // same as oppies, but at end of token
+    switch(rd_rawv[len-1]) {
+
+        default: break;
+
+        case 0x29:
+
+            if(mammi->lvlb) {
+                MAMMIT_LVLB_PRV;            // lonely parens >;
+
+            }; mammi->state &=~MAMMIT_SF_PSEC;
+
+        POP_TESTOP:
+
+            if(rd_ctok) {
+                rd_ctok->rops+=((MEMUNIT) (*rd_rawv))<<(ctok_cnt*8);
+                ctok_cnt++;
+
+            };
+
+            rd_rawv[len-1]=0x00;
+            len--; if(!len) { break; }
+            goto POP_TERMINATORS;
+
+    }; END: return len;                                                                     };
+
+//   ---     ---     ---     ---     ---
