@@ -1,12 +1,13 @@
 $$$$$$$$$$$$$$$$
 
 reg vars {
-    wide4 x = 0xDE74,(*>2:*=0xDEAD);
+    char4 x ,(*>>:*=0xFF);
 
 };
 
+
 proc call {
-    x@7 = x@3;
+    x@1 = 0xFF;
 
 };
 

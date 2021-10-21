@@ -280,8 +280,8 @@ void SECEXPS(void)                          {
             sec_cur.cbyte = sec_beg.cbyte; break;
 
         case OP_RSHFT | OP_MUL: sflags[sflags_i] &=~ (OP_RSHFT | OP_MUL);
-            sec_cur.base  = (sec_end.base-1);
-            sec_cur.cbyte = (sec_end.cbyte-rd_size); break;
+            sec_cur.base  = (sec_end.base);
+            sec_cur.cbyte = (sec_end.cbyte); break;
 
 //   ---     ---     ---     ---     ---
 
@@ -474,6 +474,11 @@ void REGTP(void)                            {
 
     }; rd_units       = (rd_elems*rd_size)/UNITSZ;
 
+    if(!rd_units) {
+        rd_units      = 1;
+
+    };
+
 //   ---     ---     ---     ---     ---
 
                                             // no redeclaration
@@ -576,8 +581,8 @@ void NTNAMES(void)                          {
                                             // cool constant block for awesome prints
     ADDR* frblk       =                     (ADDR*) (mammi->lvalues+FRBLK);
 
-    frblk->id.full[0] = 0x03;               // type/sizing flags
-    frblk->id.full[1] = 0x00;
+    frblk->id.full[0] = 0x0A;               // type/sizing flags
+    frblk->id.full[1] = 0x02;
     frblk->id.full[2] = 0x00;
     frblk->id.full[3] = 0x00;
 
@@ -1151,7 +1156,7 @@ int main(int argc, char** argv)             {
     CALOUT(E, "\e[38;2;128;255;128m\n$PEIN:\n%s\n\e[0m\e[38;2;255;128;128m$OUT:", rd_buff);
     RDNXT(); CALOUT(E, "\e[0m");
 
-    lmpush(MAMMIT_CNTX_FETCH(pe_proc, 0)); lmpop();
+    if(pe_proc) { lmpush(MAMMIT_CNTX_FETCH(pe_proc, 0)); lmpop(); }
 
     if(prmemlay) { CHKMEMLAY(); };
 
@@ -1160,6 +1165,8 @@ int main(int argc, char** argv)             {
         DLMEM   (bin);
 
     };
+
+    CALOUT(E, "0x%016" PRIX64 "\n",((ADDR*) (mammi->lvalues+pe_reg->jmpt[1]))->box[0]);
 
 //   ---     ---     ---     ---     ---
 

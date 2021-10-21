@@ -192,7 +192,7 @@ void UPKTYPE(uchar* typeval)                {
         default:                            // everything else goes
             base[j]=c; j++; break;
 
-    }; BOT: i++; if(i<len) { goto TOP; }                                                    };
+    }; BOT: i++; if(i<len) { goto TOP; } if(!typedata.arrsize) { typedata.arrsize=1; }      };
 
 //   ---     ---     ---     ---     ---
 
@@ -272,10 +272,12 @@ void PROCADD(uint size)                     {
 void TPADDR(ADDR* addr)                     {
 
     uchar szdata[3] = {0,0,0};              // unpack
-    VALSIZ                                  (addr->id.type, szdata);
+     VALSIZ                                 (addr->id.type, szdata);
 
                                             // sizing ints for the read
     rd_elems        = GTUNITCNT             (szdata[0], szdata[1] );
+    rd_size         = szdata[0];
+
     rd_step         = rd_size/UNITSZ;
 
     if(!rd_step) {
@@ -283,12 +285,15 @@ void TPADDR(ADDR* addr)                     {
 
     }; rd_units     =                       (rd_elems*rd_size)/UNITSZ;
 
+    if(!rd_units) {
+        rd_units    = 1;
+
+    };
+
 //   ---     ---     ---     ---     ---
 
     szmask_a        = SIZMASK(rd_size);
-
-    uint cbyte      = 0;
-    uint i          = 0;                                                                    };
+    uint cbyte      = 0;                                                                    };
 
 //   ---     ---     ---     ---     ---
 
@@ -401,10 +406,16 @@ void CHKMEMLAY(void)                        {
                                                                                             \
                                             addr, addr->id.key, addr->box+0                 );
 
-                for(uint x=0; x<rd_units; x++) {
-                    CALOUT                  (E, "%016" PRIX64 " ", addr->box[x]             );
-                    if(!((x+1)%2) && (x+1)<rd_units) {
-                        CALOUT(E, "\n0x%" PRIXPTR "\t\t0x", addr->box+x);
+                uint px=43;
+                for(uint y=0; y<rd_units; y++) {
+
+                    CALOUT                  (E, "\r\e[%uC", px                              );
+                    CALOUT                  (E, "%016" PRIX64 " ", addr->box[y]             );
+                    px=26;
+
+                    if(!((y+1)%2) && (y+1)<rd_units) {
+                        CALOUT(E, "\r\e[59C\n0x%" PRIXPTR "\t\t0x", addr->box+y+1);
+                        px=43;
 
                     };
                 }; ptr+=rd_units;
