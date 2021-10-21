@@ -206,7 +206,7 @@ void MAEXPS(void)                           { TRNVAL(POPOPS()); if(rd_ctok) { rd
 
 void SECEXPS(void)                          {
 
-    rd_oldval  = rd_value+rd_step;
+    rd_oldval  = rd_value+(rd_step*rd_units);
     *rd_oldval = *rd_value;
 
     mammi->state |= MAMMIT_SF_PSEC;
@@ -298,7 +298,7 @@ void SECEXPS(void)                          {
         }
 
         case OP_EAMPR: { sflags[sflags_i] &=~ OP_EAMPR;
-            MEMUNIT* addr = ((MEMUNIT*) memlng->buff)+(sec_end.base);
+            MEMUNIT* addr = ((MEMUNIT*) memlng->buff)+sec_end.base;
             *addr        &=~(szmask_a<<((sec_end.cbyte)*8));
             *addr        |= (sec_val)<<((sec_end.cbyte)*8); break;
         }
@@ -1165,8 +1165,6 @@ int main(int argc, char** argv)             {
         DLMEM   (bin);
 
     };
-
-    CALOUT(E, "0x%016" PRIX64 "\n",((ADDR*) (mammi->lvalues+pe_reg->jmpt[1]))->box[0]);
 
 //   ---     ---     ---     ---     ---
 

@@ -1,13 +1,13 @@
 $$$$$$$$$$$$$$$$
 
 reg vars {
-    char4 x ,(*>>:*=0xFF);
+    uint4 x ,(*>8:*=0xDEADBEEF:&<8:=0xFFFF8F8F);
 
 };
 
-
+/*
 proc call {
     x@1 = 0xFF;
 
-};
+};*/
 
