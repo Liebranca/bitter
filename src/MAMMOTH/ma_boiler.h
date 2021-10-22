@@ -298,7 +298,6 @@ void CALCUS_COLLAPSE(void);                 // magic
     default:                                \
         (*r)+=(*v); break;                  \
                                             \
-                                            \
     }; (*v)=0; break;                       }
 
 //   ---     ---     ---     ---     ---

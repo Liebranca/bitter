@@ -237,7 +237,7 @@ void VALNEW(uchar*   name,
 
 //   ---     ---     ---     ---     ---
 
-void VALSIZ(uchar* type, uchar* to) {
+void VALSIZ(uchar* type, uchar* to)         {
 
     uchar base    = type[0];
     uchar arrsize = type[1];
@@ -688,8 +688,10 @@ uint POPOPS(void)                           {
         case 0x40:
 
             if(!(mammi->state&MAMMIT_SF_PFET)) {
-                CALOUT(E, "Using '@' operator without fetch-from\n");
-                return 0;
+                /*CALOUT(E, "Using '@' operator without fetch-from\n");
+                return 0;*/
+
+                goto POP_OPSTOP;
 
             };
 

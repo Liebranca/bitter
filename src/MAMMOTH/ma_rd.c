@@ -385,6 +385,9 @@ void RDEXP(void)                            {
 
         if( mammi->state&MAMMIT_SF_CPRC \
         &&  rd_rawv[0]==0x2C            ) {
+            rd_ctok->ttype = CALCUS_SEPAR;
+            rd_ctok++;
+
             return;
 
         };

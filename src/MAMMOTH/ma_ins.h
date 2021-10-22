@@ -15,7 +15,7 @@ void lmpop (void         );                 // exec next instruction in queue
 void lmcpy (void         );                 // copy x to y
 
 void lmasl (MEMUNIT* data,
-            uint     udr ,
+            uint*    udr ,
             uint     size);                 // arithmetics solver
 
 //   ---     ---     ---     ---     ---
