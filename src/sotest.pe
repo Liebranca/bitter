@@ -1,12 +1,12 @@
 $$$$$$$$$$$$$$$$
 
 reg vars {
-    wide4 x ,(=0xDE74);
+    wide2 x 0xDE74, 0xDEAD;
 
 };
 
 proc call {
-    x@8 = 0xDEAD;
+    x@0 = x@1;
 
 };
 

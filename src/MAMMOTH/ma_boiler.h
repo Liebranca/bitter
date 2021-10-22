@@ -241,6 +241,11 @@ void CALCUS_COLLAPSE(void);                 // magic
     case OP_ECOOL:                          \
         (*r)=(*r)==(*v); OPSWITCH_MINUSX;   \
                                             \
+    case OP_KUSH: {                         \
+        MEMUNIT tmp=(*r);                   \
+        (*r)=(*v); (*v)=(tmp);              \
+        OPSWITCH_MINUSX;                    \
+    }                                       \
                                             \
 /*   ---     ---     ---     ---     --- */ \
                                             \

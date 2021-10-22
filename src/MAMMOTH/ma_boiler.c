@@ -371,7 +371,7 @@ void MAFETCH(MEMUNIT* r, MEMUNIT* v)        {
     (*r) = ((*addr) & (SIZMASK(size)<<(cbyte*8))) >> (cbyte*8);
 
     rd_flags&=~OP_AT;
-    mammi->state&=~MAMMIT_SF_PFET; };
+    mammi->state&=~MAMMIT_SF_PFET;                                                          };
 
 //   ---     ---     ---     ---     ---
 
@@ -661,6 +661,12 @@ uint POPOPS(void)                           {
             goto POP_OPSTOP;
 
 //   ---     ---     ---     ---     ---
+
+        case 0x23:
+            rd_flags |= OP_KUSH;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
 
         case 0x3D:
             rd_flags |= OP_EQUAL;
