@@ -372,12 +372,10 @@ void RDEXP(void)                            {
 
 //   ---     ---     ---     ---     ---
 
-    if( (mammi->state&MAMMIT_SF_CPRC \
-         &&  rd_rawv[0]==0x40        \
+    if( (    rd_rawv[0]==0x40        \
          &&  rd_rawv[1]==0x28        )
 
-    ||  (mammi->state&MAMMIT_SF_CREG \
-         &&  rd_rawv[0]==0x2C        ) ) {  // ,(?) || @(?) sec check
+    ||  (    rd_rawv[0]==0x2C        ) ) {  // ,(?) || @(?) sec check
 
         while(mammi->lvlb) {                // collapse stack leftovers
             MAMMIT_LVLB_PRV;
@@ -385,8 +383,15 @@ void RDEXP(void)                            {
 
         }; parsed++;                        // consider last value solved
 
+        if( mammi->state&MAMMIT_SF_CPRC \
+        &&  rd_rawv[0]==0x2C            ) {
+            return;
+
+        };
+
         if(ex_f<rd_tkx) {                   // advance if sec is not first token
             BYTESTEP();
+
         };
 
 //   ---     ---     ---     ---     ---
@@ -495,62 +500,40 @@ void REGTP(void)                            {
 
 //   ---     ---     ---     ---     ---
 
-void RDPRC(ADDR* addr)                      {
+void RDPRC(void)                            {
 
-// TODO:
-//  -alias
-//  -wed
-//  -if/eif/else
-//  -for/jmp
+    CODE*     code  = (CODE*) CURLVAL;      // 'pop' from stack
 
-    TPADDR(addr);
+    uint      udr   = 0;                    // useful counters
+    uint      leap  = 0;
 
-    lngptr       = 0;
-    uint   cunit = 0;
-
-    uchar* name  = tokens[rd_tkx];
-    uchar* nxt   = tokens[rd_tkx+1];
-
-    uint   cbyte = 0;
+    code->loc       = ins_code;             // save id of current instruction
+    lngptr          = 0;                    // stack rewind
 
 //   ---     ---     ---     ---     ---
 
-    if(nxt[0]==0x40) {
-        nxt++; rd_rawv=nxt;
+    for(uint x=0; x<ins_argc; x++) {        // set ptr, cleanup, eval expression
 
-        rd_ctok=NULL;
+        rd_ctok     =                       (CTOK*) (code->data+udr                 );
 
-        RSTPTRS();
-        MAEXPS ();
+        RSTSEC                              (                                       );
+        RDEXP                               (                                       );
 
-        MEMUNIT* addr = ((MEMUNIT*) memlng->buff)+sec_beg.base;
+                                            // calculate token count!
+        leap        =                       (uint) ( ((uintptr_t) rd_ctok         ) \
+                                                   - ((uintptr_t) (code->data+udr)) );
 
-        cbyte=(*rd_value)*rd_size;
-        rd_tkx++;
+        udr        += (leap/UNITSZ);        // go to next
 
     };
 
 //   ---     ---     ---     ---     ---
 
-    RSTSEC();
+                                            // add instruction data to proc
+    PROCADD                                 (sizeof(CODE)+leap                      );
+    code->size      =                       udr;                                    \
 
-    CODE*     code  = (CODE*) CURLVAL;
-    uint      udr   = 0;                    // write offset into code->data
-
-    code->loc       = 0x00;
-
-    code->data[udr] = (uintptr_t) addr; udr++;
-
-    code->data[udr] = ( (  ulong) cbyte )      \
-                      | (((ulong) lngptr) << 32);
-
-    udr++;
-
-//   ---     ---     ---     ---     ---
-
-    rd_ctok   = (CTOK*) (code->data+udr); RDEXP();
-    uint leap = (uint) ( ((uintptr_t) rd_ctok) - ((uintptr_t) (code->data+udr)) );
-    PROCADD(sizeof(CODE)+leap); code->size=((leap/UNITSZ)<1) ? 1 : leap/UNITSZ;             };
+                                                                                            };
 
 //   ---     ---     ---     ---     ---
 
@@ -637,6 +620,24 @@ void NTNAMES(void)                          {
         mammi->slots[y] = contexts[x];      // copy data to array and insert in lkp table
         HASHSET                             (GNAMES_HASH, byref(mammi->slots[y].id)    );
 
+    };
+
+//   ---     ---     ---     ---     ---
+
+    SYMBOL instructions[]={                 // oh noes
+
+        SYMNEW("$INS", "cpy", swcpy)
+
+    };
+
+    for(uint x=0, y=0; x<ARRSIZE(instructions); x++) {
+
+                                            // get next slot idex
+        STACKPOP                            (byref(mammi->slstack), y                  );
+
+        mammi->slots[y] = instructions[x];  // copy data to array and insert in lkp table
+        HASHSET                             (GNAMES_HASH, byref(mammi->slots[y].id)    );
+
     };                                                                                      };
 
 void DLNAMES(void)                          { DLMEM(LNAMES_HASH);                           \
@@ -674,7 +675,7 @@ void CHKTKNS(void)                          {
     elif(mammi->state&MAMMIT_SF_CPRC) {     // context == proc
 
         SEQN   = "CPRC";
-        SEQ[0] = "LVAL\x01";
+        SEQ[0] = "$INS\x01";
         SEQI   = 1;
 
     };
@@ -749,32 +750,15 @@ void CHKTKNS(void)                          {
 
 //   ---     ---     ---     ---     ---
 
+                                            // fetch from global table __by_key__ (slowest)
+            STR_HASHGET                     (GNAMES_HASH, key, nulmy, 0                );
 
-            if(!strcmp(seq_k, "LVAL")) {    // fetch from local table __by_key__ (slowest)
-                STR_HASHGET                 (LNAMES_HASH, key, nulmy, 0                );
-
-                if(nulmy!=NULL) {
-                    ADDR* addr=(ADDR*) nulmy;
-
-                    // symbol is funptr
-                    if( 0<=addr->id.type[0]
-                    &&  2>=addr->id.type[0] ) {
-                        ;
-
-                    } else {
-                        RDPRC(addr);
-
-                    };
-                }; nulmy=NULL;
-
-            } else {                        // ^same on global table
-                STR_HASHGET                 (GNAMES_HASH, key, nulmy, 0                );
-
-            }; valid = nulmy!=NULL;         // success on fetch means we might have to
+            valid = nulmy!=NULL;            // success on fetch means we might have to
             if(valid) {                     // modify mammit state based on symbols read
                 sym = (SYMBOL*) nulmy;      // no sneaky funcalls on invalid input, please
 
-        }};                                 // now hope you didn't make any silly mistakes
+            };
+        };                                  // now hope you didn't make any silly mistakes
 
 //   ---     ---     ---     ---     ---
 
@@ -784,7 +768,7 @@ void CHKTKNS(void)                          {
                                              rd_tkx, seq_k, tokens[rd_tkx]             );*/
 
             if(sym) { if(sym->onrd) {       // this is why I want if x then y syntax
-                sym->onrd();
+                sym->onrd(); if(!strcmp(seq_k, "$INS")) { RDPRC(); };
 
             }};
         }

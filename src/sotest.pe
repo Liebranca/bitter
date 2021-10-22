@@ -1,12 +1,11 @@
 $$$$$$$$$$$$$$$$
 
 reg vars {
-    wide2 x 0xDE74, 0xDEAD;
+    wide x  0xDE74, 0xDEAD;
 
 };
 
 proc call {
-    x@0 = x@1;
+    cpy     x@0, x@1;
 
 };
-

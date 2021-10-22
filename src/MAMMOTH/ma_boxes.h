@@ -250,6 +250,11 @@ extern uint     lngptr;
 
 //   ---     ---     ---     ---     ---
 
+extern uint     ins_code;
+extern uint     ins_argc;
+
+//   ---     ---     ---     ---     ---
+
 #ifdef __cplusplus
 }
 #endif

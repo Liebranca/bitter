@@ -20,6 +20,10 @@ void lmasl (MEMUNIT* data,
 
 //   ---     ---     ---     ---     ---
 
+void swcpy(void          );                 // flip switches for instruction sw***
+
+//   ---     ---     ---     ---     ---
+
 #ifdef __cplusplus
 }
 #endif

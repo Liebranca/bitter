@@ -49,7 +49,7 @@ void lmcpy(void)                            {
     uint      cbyte  = 0;                   // byte-wise offset
 
 //   ---     ---     ---     ---     ---    // read address
-
+/*
     addr             =                      (ADDR*) ins->data[udr]; udr++;          \
     TPADDR                                  (addr                                   );
 
@@ -60,18 +60,20 @@ void lmcpy(void)                            {
     cbyte           -=                      upos  * UNITSZ;                         \
 
     upos             = FETMASK              (rd_units, upos                         );
-
+*/
 //   ---     ---     ---     ---     ---    // clean the stack
 
     RSTPTRS                                 (                                       );
-    CLMEM2                                  (rd_result, UNITSZ*FEH32(ins->data[udr]));
+    CLMEM2                                  (rd_result, UNITSZ*ins->size            );
 
-    udr++;                                  // inc to start of token list, solve expression
+                                            // solve expression
     lmasl                                   (ins->data, udr, ins->size              );
 
+/*
                                             // clean masked section jic and set
     addr->box[upos] &=~                     (szmask_a     << (cbyte*8));
-    addr->box[upos] |=                      (*rd_result ) << (cbyte*8);                     };
+    addr->box[upos] |=                      (*rd_result ) << (cbyte*8);*/
+                     };
 
 //   ---     ---     ---     ---     ---
 
@@ -100,6 +102,8 @@ void lmasl(MEMUNIT* data,
             *rd_value     = t->value;
 
         };
+
+CALOUT(E, ">0x%08" PRIX64 " : %016" PRIX64 "\n", t->ttype, t->value);
 
 //   ---     ---     ---     ---     ---
 
@@ -134,5 +138,18 @@ void lmasl(MEMUNIT* data,
 
         };
     };                                                                                      };
+
+//   ---     ---     ---     ---     ---
+
+void swboil(void)                           {
+    // placeholder
+                                                                                            };
+
+void swcpy(void)                            {
+    ins_code = 0x00;
+    ins_argc = 2;
+
+    swboil();
+                                                                                            };
 
 //   ---     ---     ---     ---     ---
