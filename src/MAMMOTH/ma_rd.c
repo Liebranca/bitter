@@ -533,7 +533,7 @@ void RDPRC(void)                            {
 //   ---     ---     ---     ---     ---
 
                                             // add instruction data to proc
-    PROCADD                                 (sizeof(CODE)+leap                      );
+    PROCADD                                 (sizeof(CODE)+(udr*UNITSZ)              );
     code->size      =                       udr;                                    \
 
                                                                                             };
@@ -1135,7 +1135,14 @@ int main(int argc, char** argv)             {
     CALOUT(E, "\e[38;2;128;255;128m\n$PEIN:\n%s\n\e[0m\e[38;2;255;128;128m$OUT:", rd_buff);
     RDNXT(); CALOUT(E, "\e[0m");
 
-    if(pe_proc) { lmpush(MAMMIT_CNTX_FETCH(pe_proc, 0)); lmpop(); }
+    if(pe_proc) {
+
+        for(uint x=0; x<pe_proc->elems; x++) {
+            lmpush(MAMMIT_CNTX_FETCH(pe_proc, x));
+            lmpop();
+
+        };
+    };
 
     if(prmemlay) { CHKMEMLAY(); };
 

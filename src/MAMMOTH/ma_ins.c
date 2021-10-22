@@ -38,7 +38,7 @@ static uint  costk_top    = 0;              // top of stack
 void lmpush(uint loc)                       { costk[costk_top]=loc; costk_top++;            };
 void lmpop (void    )                       { costk_top--; uint loc=costk[costk_top];       \
                                               ins = (CODE*) (mammi->lvalues+loc);           \
-                                              lm_ins_arr[ins->loc]();                       };
+                                              lm_ins_arr[ins->loc](); ins=NULL;             };
 
 //   ---     ---     ---     ---     ---
 

@@ -262,10 +262,7 @@ void VALSIZ(uchar* type, uchar* to)         {
 
 //   ---     ---     ---     ---     ---
 
-void PROCADD(uint size)                     {
-
-    MAMMIT_CNTX_ADD(pe_proc);
-    INCLVAL(size);                                                                          };
+void PROCADD(uint size)                     { MAMMIT_CNTX_ADD(pe_proc); INCLVAL(size);      };
 
 //   ---     ---     ---     ---     ---
 

@@ -6,6 +6,8 @@ reg vars {
 };
 
 proc call {
-    wap     x@3, x@1;
+    mov     x@0, x@7;
+    cpy     x@3, x@1;
+    wap     x@6, x@5;
 
 };
