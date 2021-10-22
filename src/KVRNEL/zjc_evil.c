@@ -35,6 +35,28 @@ static       DANG   CALREG[64];             // call register; a call dump
 
 //   ---     ---     ---     ---     ---
 
+char* __shpath(char* path)                  {
+                                            // shortens filepath to everything after "/src/"
+    char* file    = path;
+    char* curchar = '\0';
+
+    int src[3]    = { 0, 0, 0 };
+
+    while (*path++)                         // iter through string
+    {   curchar = path;                     /* check if current char is a slash            *
+                                             * if so, check that next three match "src"    */
+        if (  (*curchar == '\\')
+           || (*curchar == '/' )  )         { src[0] = *(path+1) == 's';
+                                              src[1] = *(path+2) == 'r';
+                                              src[2] = *(path+3) == 'c';
+
+                                            // shorten file string on success
+            if(src[0] && src[1] && src[2])  { file = path+5; break; }                       };
+
+    } return file;                          /* original path is returned on failure */      };
+
+//   ---     ---     ---     ---     ---
+
 static char* PALETTE[] = {
     "\e[38;2;0;255;255m\e[48;2;23;30;35m",
     "\e[38;2;0;255;0m\e[48;2;23;30;35m",

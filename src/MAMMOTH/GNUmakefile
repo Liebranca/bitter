@@ -71,7 +71,7 @@ $(TRSH)/%.d: %.c %.h $(TRSH)/MKLOG
 
 $(TRSH)/%.o: %.c %.h $(TRSH)/MKLOG
 	@echo $<
-	@gcc $(OFLG) $(INCLUDES) $(DFLG) $(PFLG) -c $< -o $@
+	@gcc $(OFLG) $(INCLUDES) $(DFLG) $(PFLG) -Wa,-a=$(subst .o,.asm,$@) -c $< -o $@
 
 #   ---     ---     ---     ---     ---
 

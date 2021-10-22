@@ -49,7 +49,7 @@ void MOVBLK(BLK* b, int dirn)               {
 
             };
         };
-    };                                                                                      };
+    }; b->base=(b->base)&(rd_units-1);                                                      };
 
 //   ---     ---     ---     ---     ---
 

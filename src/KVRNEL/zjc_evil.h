@@ -68,31 +68,9 @@ typedef void (*STARK  )(void* buff);        // pointer to void func taking a voi
 typedef void (*NIHIL  )(void      );        // pointer to void func taking no args
 
 //   ---     ---     ---     ---     ---
-/* utils */                                 /* generally i wouldn't define shit in a  *
-                                             * fucking header but i can't make this   *
-                                             * work otherwise; the macros need all    *
-                                             * of it to be here, else other files     *
-                                             * can't make much use of them            */
+/* utils */
 
-static char* __shpath(char* path)           {
-                                            // shortens filepath to everything after "/src/"
-    char* file    = path;
-    char* curchar = '\0';
-
-    int src[3]    = { 0, 0, 0 };
-
-    while (*path++)                         // iter through string
-    {   curchar = path;                     /* check if current char is a slash            *
-                                             * if so, check that next three match "src"    */
-        if (  (*curchar == '\\')
-           || (*curchar == '/' )  )         { src[0] = *(path+1) == 's';
-                                              src[1] = *(path+2) == 'r';
-                                              src[2] = *(path+3) == 'c';
-
-                                            // shorten file string on success
-            if(src[0] && src[1] && src[2])  { file = path+5; break; }                       };
-
-    } return file;                          /* original path is returned on failure */      };
+char* __shpath (char* path                );// fixed ;> shortens path to /src/|... onwards
 
 void __writoa  (int x, char* buff, int rdx);// wraps itoa
 int  __wrstrcmp(char* s0, char* s1        );// wraps strcmp
