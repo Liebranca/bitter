@@ -6,7 +6,7 @@ reg vars {
 };
 
 proc call {
-    x@8 = x@8;
+    x@8 = 0xDEAD;
 
 };
 

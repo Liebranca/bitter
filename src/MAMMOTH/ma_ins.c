@@ -44,58 +44,52 @@ void lmpop (void    )                       { costk_top--; uint loc=costk[costk_
 void lmcpy(void)                            {
 
     ADDR*     addr   = NULL;                // pointer to mem sub-region
-    uintptr_t vaddr  = 0x00;                // init address to constant
 
-    uint      udr    = 0;                   // cur read offset into data
-    uint      units  = 0;                   // unit-wise region bounds
+    uint      udr    = 0;                   // offset into data
     uint      upos   = 0;                   // unit-wise offset
     uint      cbyte  = 0;                   // byte-wise offset
 
-    ulong     umask  = 0;                   // typemask
-    MEMUNIT   value  = 0;                   // value to be copied over
-
 //   ---     ---     ---     ---     ---    // read address
 
-    for(uint x=0; x<sizeof(uintptr_t); x+=UNITSZ) {
-        vaddr+=(ins->data[udr])<<(x*UNITSZ); udr++;
-
-    }; addr          =                      (ADDR*) vaddr;
-
-    TPADDR(addr); rd_cast=0x0A;
+    addr             =                      (ADDR*) ins->data[udr]; udr++;               \
+    TPADDR                                  (addr                                        );
 
 //   ---     ---     ---     ---     ---    // unpack sizing data
 
-    cbyte            = (ins->data[udr] & (SIZMASK(sizeof(uint))));
-    units            = ins->data[udr] >> (8*(sizeof(uint)));
+    cbyte            = FEL32                (ins->data[udr]                              );
+    upos             =                      cbyte / UNITSZ;                              \
+    cbyte           -=                      upos  * UNITSZ;                              \
 
-    upos             = cbyte / UNITSZ;
-    cbyte           -= upos  * UNITSZ;
+    upos             = FETMASK              (rd_units, upos                              );
 
-    upos             = FETMASK(units, upos);
-    udr++;
+//   ---     ---     ---     ---     ---    // clean the stack
 
-    umask            = ins->data[udr]; udr++;
+    RSTPTRS                                 (                                            );
+    CLMEM2                                  (rd_result, UNITSZ*FEH32(ins->data[udr])     );
 
-//   ---     ---     ---     ---     ---
-
-    RSTPTRS(); CLMEM2(rd_result, UNITSZ*128);
-
-    for(uint x=0; x<ins->size; x+=(sizeof(CTOK)/UNITSZ)) {
-
-        uchar buff[UNITSZ*2]; CLMEM2(buff, UNITSZ*2);
-
-        CTOK* t      = (CTOK*) (ins->data+udr+x);
-        rd_rawv      = buff+0;
+    udr++;                                  // inc to start of token list
 
 //   ---     ---     ---     ---     ---
 
-        if(t->ttype==CALCUS_FETCH) {
-            mammi->state |= MAMMIT_SF_PFET;
-            mammi->vaddr  = (uintptr_t) t->value;
-            mammi->vtype  = t->vtype;
+    for(uint x=0; x<ins->size;  \
+        x+=(sizeof(CTOK)/UNITSZ)) {         // expand tokens
 
-        } else {
-            *rd_value     = t->value;
+        uchar buff[UNITSZ*2]; CLMEM2        (buff, UNITSZ*2                              );
+
+        CTOK* t      =                      (CTOK*) (ins->data+udr+x);                   \
+        rd_rawv      =                      buff+0;                                      \
+
+//   ---     ---     ---     ---     ---
+
+        if(t->ttype==CALCUS_FETCH) {        // pointer. setup fetch switches
+
+            mammi->state |=                 MAMMIT_SF_PFET;                              \
+            mammi->vaddr  =                 (uintptr_t) t->value;                        \
+            mammi->vtype  =                 t->vtype;                                    \
+
+        } else {                            // else it's a constant
+
+            *rd_value     =                 t->value;                                    \
 
         };
 
@@ -103,18 +97,27 @@ void lmcpy(void)                            {
 
         for(uint y=0; y<UNITSZ; y++) {      // paste leftside operators into leftside of str
 
-            uchar c  = (uchar) ((t->lops>>(y*8))&0xFF);
-            if(!c) { break; } rd_rawv[y]=c;
+            uchar c       =                 (uchar) ((t->lops>>(y*8))&0xFF);             \
+            if(!c) {
+                break;
+
+            } rd_rawv[y]  = c;
 
         };                                  // ^idem, rightside
 
-        for(uint y=(UNITSZ*2)-1, z=0; y>-1; y--, z++) {
-            uchar c  = (uchar) ((t->rops>>(z*8))&0xFF);
-            if(!c) { break; } rd_rawv[y]=c;
+        for(uint y=(UNITSZ*2)-1, z=0;
+            y>-1; y--, z++          ) {
 
-        }; uint len = POPOPS();             // now pop 'em to get evalstate
+            uchar c  =                      (uchar) ((t->rops>>(z*8))&0xFF);             \
+            if(!c) {
+                break;
 
-//   ---     ---     ---     ---     ---
+            } rd_rawv[y]  = c;
+
+                                            // now pop 'em to get evalstate
+        }; uint len       = POPOPS          (                                            );
+
+//   ---     ---     ---     ---     ---    // compress expanded tokens into final value
 
         SOLVE: CALCUS_COLLAPSE();
         if(mammi->lvlb>0) {
@@ -122,12 +125,13 @@ void lmcpy(void)                            {
             goto SOLVE;
 
         };
-    }; value = *rd_result;
+    };
 
 //   ---     ---     ---     ---     ---    // copy value
 
-    addr->box[upos] &=~(umask << (cbyte*8));// clean masked section
-    addr->box[upos] |=  value << (cbyte*8); // flip them bits
+    // clean masked section jic and set
+    addr->box[upos] &=~(szmask_a     << (cbyte*8));
+    addr->box[upos] |= (*rd_result ) << (cbyte*8);
                                                                                             };
 
 //   ---     ---     ---     ---     ---

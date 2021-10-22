@@ -535,25 +535,15 @@ void RDPRC(ADDR* addr)                      {
     RSTSEC();
 
     CODE*     code  = (CODE*) CURLVAL;
-
     uint      udr   = 0;                    // write offset into code->data
-
-                                            // numerical address of current block
-    uintptr_t vaddr =                       (uintptr_t) addr;
-
-                                            // MEMUNIT offset into addr->box
 
     code->loc       = 0x00;
 
-    for(uint x=0; x<sizeof(uintptr_t); x+=UNITSZ) {
-        code->data[udr]=vaddr>>(x*UNITSZ); udr++;
+    code->data[udr] = (uintptr_t) addr; udr++;
 
-    };
+    code->data[udr] = ( (  ulong) cbyte )      \
+                      | (((ulong) lngptr) << 32);
 
-    code->data[udr] = ((ulong) cbyte) | (((ulong) rd_units) << 32);
-    udr++;
-
-    code->data[udr] = szmask_a;
     udr++;
 
 //   ---     ---     ---     ---     ---

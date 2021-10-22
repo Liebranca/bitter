@@ -272,7 +272,7 @@ void PROCADD(uint size)                     {
 void TPADDR(ADDR* addr)                     {
 
     uchar szdata[3] = {0,0,0};              // unpack
-     VALSIZ                                 (addr->id.type, szdata);
+    VALSIZ                                  (addr->id.type, szdata);
 
                                             // sizing ints for the read
     rd_elems        = GTUNITCNT             (szdata[0], szdata[1] );

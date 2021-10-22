@@ -334,6 +334,11 @@ void CALCUS_COLLAPSE(void);                 // magic
 
 //   ---     ---     ---     ---     ---
 
+#define FEL32(v) ((v)&(SIZMASK(4)))
+#define FEH32(v) ((v)>>32)
+
+//   ---     ---     ---     ---     ---
+
 #ifdef __cplusplus
 }
 #endif
