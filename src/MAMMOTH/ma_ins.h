@@ -13,12 +13,16 @@ extern "C" {
 void lmpush(uint loc     );                 // queue instruction
 void lmpop (void         );                 // exec next instruction in queue
 void lmcpy (void         );                 // copy x to y
+void lmmov (void         );                 // x to y, xor x
+void lmwap (void         );                 // swap x and y
 
 void lmasl (uint* udr    );                 // arithmetics solver
 
 //   ---     ---     ---     ---     ---
 
 void swcpy (void         );                 // flip switches for instruction sw***
+void swmov (void         );
+void swwap (void         );
 
 //   ---     ---     ---     ---     ---
 

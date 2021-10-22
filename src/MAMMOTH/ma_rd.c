@@ -629,7 +629,9 @@ void NTNAMES(void)                          {
 
     SYMBOL instructions[]={                 // oh noes
 
-        SYMNEW("$INS", "cpy", swcpy)
+        SYMNEW("$INS", "cpy", swcpy),
+        SYMNEW("$INS", "mov", swmov),
+        SYMNEW("$INS", "wap", swwap)
 
     };
 

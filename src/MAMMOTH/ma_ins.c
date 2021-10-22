@@ -22,7 +22,9 @@
 //   ---     ---     ---     ---     ---
 
 static NIHIL lm_ins_arr[] = {               // table of low-level instructions
-    &lmcpy
+    &lmcpy,
+    &lmmov,
+    &lmwap
 
 };
 
@@ -78,34 +80,62 @@ int lmfet(ADDR** dst,
 
 //   ---     ---     ---     ---     ---
 
-void lmcpy(void)                            {
-
-    ADDR*     addr_a         = NULL;        // dst operand
-    ADDR*     addr_b         = NULL;        // src operand
-
-    uint      udr            = 0;           // offset into ins->data
-    uint      offsets[4];                   // [0..2] upos_a, cbyte_a
-                                            // [2..4] upos_b, cbyte_b
-
-//   ---     ---     ---     ---     ---    // err-catch the fetch
-
-
-    MAMMCTCH                                (lmfet(&addr_a, &udr, offsets),     \
-                                             gblevil, MAMMIT_EV_NFET, "dst"     );
-
-    szmask_b                 = szmask_a;
-
-    MAMMCTCH                                (lmfet(&addr_b, &udr, offsets+2),   \
-                                             gblevil, MAMMIT_EV_NFET, "src"     );
+#define TWO_FET_OP                                                                          \
+                                                                                            \
+    ADDR*     addr_a         = NULL;        /* dst operand                     */           \
+    ADDR*     addr_b         = NULL;        /* src operand                     */           \
+                                                                                            \
+    uint      udr            = 0;           /* offset into ins->data           */           \
+    uint      offsets[4];                   /* [0..2] upos_a, cbyte_a          */           \
+                                            /* [2..4] upos_b, cbyte_b          */           \
+                                                                                            \
+/*   ---     ---     ---     ---     ---    /* err-catch the fetch             */           \
+                                                                                            \
+                                                                                            \
+    MAMMCTCH                                (lmfet(&addr_a, &udr, offsets),                 \
+                                             gblevil, MAMMIT_EV_NFET, "dst"     );          \
+                                                                                            \
+    szmask_b                 = szmask_a;                                                    \
+                                                                                            \
+    MAMMCTCH                                (lmfet(&addr_b, &udr, offsets+2),               \
+                                             gblevil, MAMMIT_EV_NFET, "src"     );          \
+                                                                                            \
+/*   ---     ---     ---     ---     ---                                       */           \
+                                                                                            \
+    MEMUNIT value            =              (  (addr_b->box[ offsets[3] ]                   \
+                                            &  (szmask_a<<(offsets[2]*8)) ) )               \
+                                                                                            \
+                                            >> (offsets[2]*8                )
 
 //   ---     ---     ---     ---     ---
 
-    MEMUNIT value            =              (  (addr_b->box[ offsets[3] ] \
-                                            &  (szmask_a<<(offsets[2]*8)) ) )
-
-                                            >> (offsets[2]*8                );
+void lmcpy(void)                            { TWO_FET_OP;
 
                                             // clean masked section jic and set
+    addr_a->box[offsets[1]] &=~             (szmask_b     << (offsets[0]*8));
+    addr_a->box[offsets[1]] |=              value         << (offsets[0]*8);                };
+
+void lmmov(void)                            { TWO_FET_OP;
+
+                                            // ^same as cpy
+    addr_a->box[offsets[1]] &=~             (szmask_b     << (offsets[0]*8));
+    addr_a->box[offsets[1]] |=              value         << (offsets[0]*8);
+
+                                            // then clean src
+    addr_b->box[offsets[3]] &=~             (szmask_a     << (offsets[2]*8));                };
+
+void lmwap(void)                            { TWO_FET_OP;
+
+    MEMUNIT value2           =              (  (addr_a->box[ offsets[1] ] \
+                                            &  (szmask_b<<(offsets[0]*8)) ) )
+
+                                            >> (offsets[0]*8                );
+
+                                            // ^same as cpy, but b = a
+    addr_b->box[offsets[3]] &=~             (szmask_a     << (offsets[2]*8));
+    addr_b->box[offsets[3]] |=              value2        << (offsets[2]*8);
+
+                                            // then a = old_b
     addr_a->box[offsets[1]] &=~             (szmask_b     << (offsets[0]*8));
     addr_a->box[offsets[1]] |=              value         << (offsets[0]*8);                };
 
@@ -174,15 +204,10 @@ void lmasl(uint* udr)                       {
 
 //   ---     ---     ---     ---     ---
 
-void swboil(void)                           {
-    // placeholder
-                                                                                            };
+void swboil(void)                           { /* placeholder */                             };
 
-void swcpy(void)                            {
-    ins_code = 0x00;
-    ins_argc = 2;
-
-    swboil();
-                                                                                            };
+void swcpy(void)                            { ins_code = 0x00; ins_argc = 2; swboil();      };
+void swmov(void)                            { ins_code = 0x01; ins_argc = 2; swboil();      };
+void swwap(void)                            { ins_code = 0x02; ins_argc = 2; swboil();      };
 
 //   ---     ---     ---     ---     ---
