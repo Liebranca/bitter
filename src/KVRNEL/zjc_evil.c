@@ -194,6 +194,9 @@ void __terminator (int errcode, char* info) {
         case 0x010002:
             mbody =                         "Oversized value for type %s%s";            break;
 
+        case 0x010003:
+            mbody =                         "Element %s%s\e[0m is not an address-of";   break;
+
         default: mbody =                    "UNRECOGNIZED %s%s";                        break;
 
                                             };

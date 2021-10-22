@@ -6,6 +6,6 @@ reg vars {
 };
 
 proc call {
-    cpy     x@3, x@1;
+    cpy     x@0, x@1;
 
 };

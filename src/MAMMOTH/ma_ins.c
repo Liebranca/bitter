@@ -50,6 +50,34 @@ void lmoff(uint* off)                       {
 
 //   ---     ---     ---     ---     ---
 
+int lmfet(ADDR** dst,
+          uint*  udr,
+          uint*  off)                       {
+
+                                            // cleanup
+    RSTPTRS                                 (                                   );
+    CLMEM2                                  (rd_result, UNITSZ*ins->size        );
+
+    rd_cbyte     ^= rd_cbyte;
+    mammi->vaddr ^= mammi->vaddr;
+
+                                            // fetch target
+    lmasl                                   (udr                                );
+
+    if(!mammi->vaddr) { return ERROR; }
+
+    *dst          =                         (ADDR*) (mammi->vaddr-sizeof(ID));  \
+    TPADDR                                  (*dst                               );
+
+    off[0]        = *rd_result;
+    off[1]       ^= off[1];
+
+    lmoff(off);
+
+    return DONE;                                                                            };
+
+//   ---     ---     ---     ---     ---
+
 void lmcpy(void)                            {
 
     ADDR*     addr_a         = NULL;        // dst operand
@@ -59,49 +87,23 @@ void lmcpy(void)                            {
     uint      offsets[4];                   // [0..2] upos_a, cbyte_a
                                             // [2..4] upos_b, cbyte_b
 
-//   ---     ---     ---     ---     ---    // clean the stack
+//   ---     ---     ---     ---     ---    // err-catch the fetch
 
-    RSTPTRS                                 (                                   );
-    CLMEM2                                  (rd_result, UNITSZ*ins->size        );
 
-    rd_cbyte                 = 0;
-
-                                            // fetch target and sizing data
-    lmasl                                   (ins->data, &udr, ins->size         );
-    addr_a                   =              (ADDR*) (mammi->vaddr-sizeof(ID));  \
-    TPADDR                                  (addr_a                             );
-
-    offsets[0]               = *rd_result;
-    offsets[1]               = 0;
+    MAMMCTCH                                (lmfet(&addr_a, &udr, offsets),     \
+                                             gblevil, MAMMIT_EV_NFET, "dst"     );
 
     szmask_b                 = szmask_a;
 
-    lmoff(offsets);
+    MAMMCTCH                                (lmfet(&addr_b, &udr, offsets+2),   \
+                                             gblevil, MAMMIT_EV_NFET, "src"     );
 
 //   ---     ---     ---     ---     ---
 
-    RSTPTRS                                 (                                   );
-    CLMEM2                                  (rd_result, UNITSZ*ins->size        );
+    MEMUNIT value            =              (  (addr_b->box[ offsets[3] ] \
+                                            &  (szmask_a<<(offsets[2]*8)) ) )
 
-    rd_cbyte                 = 0;
-
-    lmasl                                   (ins->data, &udr, ins->size         );
-    addr_b                   =              (ADDR*) (mammi->vaddr-sizeof(ID));  \
-    TPADDR                                  (addr_b                             );
-
-    offsets[2]               = *rd_result;
-    offsets[3]               = 0;
-
-    lmoff(offsets+2);
-
-//   ---     ---     ---     ---     ---
-
-    MEMUNIT value            =              ( (addr_b->box[ offsets[3] ] \
-                                            & (szmask_a<<(offsets[2]*8)) )      )
-
-                                            >> (offsets[2]*8                    );
-
-    CALOUT(E, "A [%u : %u] | B [%u : %u]\n", offsets[0],offsets[1],offsets[2],offsets[3]);
+                                            >> (offsets[2]*8                );
 
                                             // clean masked section jic and set
     addr_a->box[offsets[1]] &=~             (szmask_b     << (offsets[0]*8));
@@ -109,16 +111,14 @@ void lmcpy(void)                            {
 
 //   ---     ---     ---     ---     ---
 
-void lmasl(MEMUNIT* data,
-           uint*    udr ,
-           uint     size)                   {
+void lmasl(uint* udr)                       {
 
-    for(;(*udr)<size; (*udr)+=(sizeof(CTOK)/UNITSZ)) {
+    for(;(*udr)<ins->size; (*udr)+=(sizeof(CTOK)/UNITSZ)) {
 
                                             // expand tokens
         uchar buff[UNITSZ*2]; CLMEM2        (buff, UNITSZ*2               );
 
-        CTOK* t = (CTOK*) (data+(*udr));
+        CTOK* t = (CTOK*) (ins->data+(*udr));
         rd_rawv = buff+0;
 
 //   ---     ---     ---     ---     ---

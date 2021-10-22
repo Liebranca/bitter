@@ -14,13 +14,11 @@ void lmpush(uint loc     );                 // queue instruction
 void lmpop (void         );                 // exec next instruction in queue
 void lmcpy (void         );                 // copy x to y
 
-void lmasl (MEMUNIT* data,
-            uint*    udr ,
-            uint     size);                 // arithmetics solver
+void lmasl (uint* udr    );                 // arithmetics solver
 
 //   ---     ---     ---     ---     ---
 
-void swcpy(void          );                 // flip switches for instruction sw***
+void swcpy (void         );                 // flip switches for instruction sw***
 
 //   ---     ---     ---     ---     ---
 

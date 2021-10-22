@@ -89,6 +89,7 @@ void CALCUS_COLLAPSE(void);                 // magic
 #define MAMMIT_EV_BEG  0x00010000
 #define MAMMIT_EV_DECL 0x00000001
 #define MAMMIT_EV_VSIZ 0x00000002
+#define MAMMIT_EV_NFET 0x00000003
 
 // ommited __shpath(__FILE__)
 #define MAMMLOC "TEST", "NON", rd_line
