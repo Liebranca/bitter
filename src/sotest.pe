@@ -1,11 +1,11 @@
 $$$$$$$$$$$$$$$$
 
 reg vars {
-    uchar2 x;
+  char2 x 0b00, 0b01, 0b11;
 
 };
 
 proc call {
-    cpy x@0,~:0x0E;
+  cpy x@0,?:0b01|0b10;
 
 };

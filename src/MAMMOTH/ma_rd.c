@@ -1133,7 +1133,7 @@ int main(int argc, char** argv)             {
 //   ---     ---     ---     ---     ---
 
     CALOUT(E, "\e[38;2;128;255;128m\n$PEIN:\n%s\n\e[0m\e[38;2;255;128;128m$OUT:", rd_buff);
-    RDNXT(); CALOUT(E, "\e[0m");
+    RDNXT(); CALOUT(E, "\e[0m\n");
 
     if(pe_proc) {
 

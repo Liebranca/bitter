@@ -151,71 +151,80 @@ void lmwap(void)                            { TWO_FET_OP(0, 0);
 
 void lmasl(uint* udr)                       {
 
-    for(;(*udr)<ins->size; (*udr)+=(sizeof(CTOK)/UNITSZ)) {
+    CTOK* t;                                // current token
 
-                                            // expand tokens
-        uchar buff[UNITSZ*2]; CLMEM2        (buff, UNITSZ*2               );
+    uchar buff[UNITSZ*2];                   // for loading operator symbols
+    uchar c = 0x00;                         // for reading one operator at a time
 
-        CTOK* t = (CTOK*) (ins->data+(*udr));
-        rd_rawv = buff+0;
+    EVAL_EXP: if((*udr)>=ins->size) { goto RESULT; }
 
-//   ---     ---     ---     ---     ---
+    CLMEM2(buff, UNITSZ*2);
 
-        for(uint y=0; y<UNITSZ; y++) {      // paste leftside operators into leftside of str
-
-            uchar c       =                 (uchar) ((t->lops>>(y*8))&0xFF);
-            if(!c) {
-                break;
-
-            } rd_rawv[y]  = c;
-
-        };                                  // ^idem, rightside
-
-        for(uint y=(UNITSZ*2)-1, z=0;
-            y>-1; y--, z++          ) {
-
-            uchar c      =                  (uchar) ((t->rops>>(z*8))&0xFF);
-            if(!c) {
-                break;
-
-            } rd_rawv[y] = c;
-
-                                            // now pop 'em to get evalstate
-        }; POPOPS                           (                             );
+    t       = (CTOK*) (ins->data+(*udr));
+    rd_rawv = buff+0;
 
 //   ---     ---     ---     ---     ---
 
-        if(t->ttype==CALCUS_FETCH) {        // pointer. setup fetch switches
-            mammi->vaddr  = (uintptr_t) t->value;
-            mammi->vtype  = t->vtype;
+    for(uint y=0; y<UNITSZ; y++) {          // paste leftside operators into leftside of str
 
-        }
+        c = (uchar) ((t->lops>>(y*8))&0xFF);// shift && mask to next byte
 
-        elif(t->ttype==CALCUS_SEPAR) {
+        if(!c) {
             break;
 
-        } else {                            // else it's a constant
+        } rd_rawv[y]  = c;
 
-            *rd_value     = t->value;
+    };                                      // ^idem, rightside
 
-        };
+    for(uint y=(UNITSZ*2)-1, z=0;
+        y>-1; y--, z++          ) {
+
+        c = (uchar) ((t->rops>>(z*8))&0xFF);
+        if(!c) {
+            break;
+
+        } rd_rawv[y] = c;
+
+                                            // now pop 'em to get evalstate
+    }; POPOPS                               (                             );
+
+//   ---     ---     ---     ---     ---
+
+    if(t->ttype==CALCUS_FETCH) {            // pointer. setup fetch switches
+        mammi->vaddr  = (uintptr_t) t->value;
+        mammi->vtype  = t->vtype;
+
+    }
+
+    elif(t->ttype==CALCUS_SEPAR) {
+        goto ALT_EXIT;
+
+    } else {                                // else it's a constant
+
+        *rd_value     = t->value;
+
+    };
 
 //   ---     ---     ---     ---     ---    // compress expanded tokens into final value
 
-        SOLVE:
+    (*udr)+=sizeof(CTOK)/UNITSZ; CALOUT(E, "\n");
 
+    SOLVE:
         CALOUT(E, "0x%016" PRIX64 " %016" PRIX64 " %016" PRIX64 " -> ",
                   *rd_lhand, rd_flags, *rd_value                      );
 
         CALCUS_COLLAPSE();
         CALOUT(E, "%016" PRIX64 "\n", *rd_lhand);
 
-        if(mammi->lvlb>0) {
-            MAMMIT_LVLB_PRV;
-            goto SOLVE;
+    goto EVAL_EXP;
 
-        };
-    }; (*udr)+=sizeof(CTOK)/UNITSZ;                                                         };
+    RESULT: if(mammi->lvlb>0) {
+        MAMMIT_LVLB_PRV;
+        goto SOLVE;
+
+    }; return;
+
+    ALT_EXIT: (*udr)+=sizeof(CTOK)/UNITSZ; CALOUT(E, "\n");                                 };
 
 //   ---     ---     ---     ---     ---
 
