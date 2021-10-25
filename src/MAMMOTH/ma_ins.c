@@ -161,23 +161,6 @@ void lmasl(uint* udr)                       {
 
 //   ---     ---     ---     ---     ---
 
-        if(t->ttype==CALCUS_FETCH) {        // pointer. setup fetch switches
-            mammi->vaddr  = (uintptr_t) t->value;
-            mammi->vtype  = t->vtype;
-
-        }
-
-        elif(t->ttype==CALCUS_SEPAR) {
-            break;
-
-        } else {                            // else it's a constant
-
-            *rd_value     = t->value;
-
-        };
-
-//   ---     ---     ---     ---     ---
-
         for(uint y=0; y<UNITSZ; y++) {      // paste leftside operators into leftside of str
 
             uchar c       =                 (uchar) ((t->lops>>(y*8))&0xFF);
@@ -200,9 +183,33 @@ void lmasl(uint* udr)                       {
                                             // now pop 'em to get evalstate
         }; POPOPS                           (                             );
 
+//   ---     ---     ---     ---     ---
+
+        if(t->ttype==CALCUS_FETCH) {        // pointer. setup fetch switches
+            mammi->vaddr  = (uintptr_t) t->value;
+            mammi->vtype  = t->vtype;
+
+        }
+
+        elif(t->ttype==CALCUS_SEPAR) {
+            break;
+
+        } else {                            // else it's a constant
+
+            *rd_value     = t->value;
+
+        };
+
 //   ---     ---     ---     ---     ---    // compress expanded tokens into final value
 
-        SOLVE: CALCUS_COLLAPSE();
+        SOLVE:
+
+        CALOUT(E, "0x%016" PRIX64 " %016" PRIX64 " %016" PRIX64 " -> ",
+                  *rd_lhand, rd_flags, *rd_value                      );
+
+        CALCUS_COLLAPSE();
+        CALOUT(E, "%016" PRIX64 "\n", *rd_lhand);
+
         if(mammi->lvlb>0) {
             MAMMIT_LVLB_PRV;
             goto SOLVE;

@@ -410,11 +410,11 @@ void RDEXP(void)                            {
 
                                             // collapse arithmetic-wise
     SOLVE:
-        //CALOUT(E, "0x%016" PRIX64 " %016" PRIX64 " %016" PRIX64 " -> ",
-        //          *rd_lhand, rd_flags, *rd_value                      );
+        CALOUT(E, "0x%016" PRIX64 " %016" PRIX64 " %016" PRIX64 " -> ",
+                  *rd_lhand, rd_flags, *rd_value                      );
 
         CALCUS_COLLAPSE();
-        //CALOUT(E, "%016" PRIX64 "\n", *rd_lhand);
+        CALOUT(E, "%016" PRIX64 "\n", *rd_lhand);
 
     goto EVAL_EXP;
 

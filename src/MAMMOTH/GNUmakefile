@@ -15,7 +15,7 @@ endif
 
 OFLG      = -s -Os -fno-unwind-tables -fno-asynchronous-unwind-tables
 OFLG     += -fsingle-precision-constant -ffast-math -fno-ident
-LFLG      = -ffunction-sections -fdata-sections -Wl,--gc-sections
+LFLG      = -s -Os -ffunction-sections -fdata-sections -Wl,--gc-sections
 
 FSWAT     = MAMMOTH
 MKWAT     = mamm.exe
