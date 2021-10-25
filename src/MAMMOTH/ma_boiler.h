@@ -172,6 +172,11 @@ void CALCUS_COLLAPSE(void);                 // magic
 
 //   ---     ---     ---     ---     ---
 
+#define OP_BSUBS 0x0000040000000000LL
+#define OP_ESUBS 0x0000080000000000LL
+
+//   ---     ---     ---     ---     ---
+
 #define OPSWITCH_MINUSX                     \
     if(rd_flags&OP_MINUS) {                 \
         (*r)=-(*r);                         \

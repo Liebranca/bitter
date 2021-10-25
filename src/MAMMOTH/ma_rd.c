@@ -119,8 +119,8 @@ void TRNVAL(uint len)                       { if(!len) { return; }
             VALSIZ                          (type, szdata                        );
 
 //   ---     ---     ---     ---     ---
-
-            if(szdata[2]) {                 // indexing required!
+            // lets skip this step, trust me!
+            if(0 /*szdata[2]*/) {           // indexing required!
                 if(!(rd_tkx<rd_tki)) {
                     NO_IDEX_OP:
                     CALOUT(E, "Symbol %s requires indexing operation\n", rd_rawv);
@@ -129,6 +129,7 @@ void TRNVAL(uint len)                       { if(!len) { return; }
 
                 }
 
+                
                 elif(tokens[rd_tkx+1][0]==0x40) {
                     mammi->state |= MAMMIT_SF_PFET;
                     mammi->vaddr  = (uintptr_t) &(((ADDR*) nulmy)->box);
@@ -148,13 +149,28 @@ void TRNVAL(uint len)                       { if(!len) { return; }
 
 //   ---     ---     ---     ---     ---
 
-            } else {                        // read as it is
-                uint*  var  = ADDRFET       (uint, nulmy                        );
+            } else {                        // convert label to parent-relative address
 
-                for(uint i=0;i<szdata[0];i++) {
-                    if(i>rd_size) { break; } rd_value[i] = var[i];
+                *rd_value  = ((uintptr_t) nulmy) - ((uintptr_t) mammi->lvalues+0);
+                *rd_value += sizeof(ID);
+                *rd_value /= UNITSZ;
+
+/*  this is a deref
+    useful, but not what we want *here*
+
+                MEMUNIT* var       =        ADDRFET(uint, nulmy);
+
+                uint     var_elems =        GTUNITCNT(szdata[0], szdata[1]);
+                uint     var_size  =        szdata[0];
+                uint     var_units =        (var_elems*var_size)/UNITSZ;
+
+                for(uint i=0;i<var_units;i++) {
+                    if(i>=rd_units) { break; }
+                    *rd_value = *var; rd_value++; var++;
 
                 };
+*/
+
             }
 
         } else {
@@ -1134,6 +1150,11 @@ int main(int argc, char** argv)             {
 
     CALOUT(E, "\e[38;2;128;255;128m\n$PEIN:\n%s\n\e[0m\e[38;2;255;128;128m$OUT:", rd_buff);
     RDNXT(); CALOUT(E, "\e[0m\n");
+
+    MEMUNIT p  = (uintptr_t) (mammi->lvalues+(pe_reg->start+pe_reg->jmpt[1]));
+    p         += sizeof(ID); p = *((MEMUNIT*) p);
+
+    CALOUT(E, "z at 0x%" PRIXPTR "\n", mammi->lvalues+p);
 
     if(pe_proc) {
 

@@ -2,10 +2,13 @@ $$$$$$$$$$$$$$$$
 
 reg vars {
   char2 x 0b00, 0b01, 0b11;
+  char2 y x+4+4;
+  char2 z;
 
 };
 
+/*
 proc call {
-  cpy x@0,?:0b01|0b10;
+  cpy x@0,[x+1];
 
-};
+};*/

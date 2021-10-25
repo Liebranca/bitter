@@ -25,7 +25,6 @@ $(CURDIR)/AVTO:
          > $(CURDIR)/AVTO
 
 kvrnel: $(CURDIR)/AVTO
-	@clear
 	@cd $(CURDIR)/KVRNEL; make
 
 mamm: kvrnel
@@ -52,7 +51,7 @@ clean:
 	@echo kvrnel
 	@cd $(CURDIR)/KVRNEL; make clean -s;
 	@echo mammoth
-	@cd $(CURDIR)/KVRNEL; make clean -s;
+	@cd $(CURDIR)/MAMMOTH; make clean -s;
 	@echo sin
 	@cd $(CURDIR)/SIN; make clean -s;
 	@echo chasm

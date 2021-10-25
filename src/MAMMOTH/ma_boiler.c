@@ -460,7 +460,7 @@ void CALCUS_COLLAPSE(void)                  {
             MEMUNIT* v = rd_value;
 
             if(!(rd_flags&OP_AT)) {
-                *v&=szmask_a; *v=(*v)<<(rd_cbyte*8);
+                *v=(*v)<<(rd_cbyte*8);
 
             }; CALCUS_OPSWITCH;
         }
@@ -682,6 +682,14 @@ uint POPOPS(void)                           {
         case 0x28: MAMMIT_LVLB_NXT;
             goto POP_OPSTOP;
 
+        case 0x5B:
+            rd_flags |= OP_BSUBS;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_OPSTOP;
+
+//   ---     ---     ---     ---     ---
+
         case 0x40:
 
             if(!(mammi->state&MAMMIT_SF_PFET)) {
@@ -780,6 +788,12 @@ uint POPOPS(void)                           {
     switch(rd_rawv[len-1]) {
 
         default: break;
+
+        case 0x5D:
+            rd_flags |= OP_ESUBS;
+            MAMMIT_LVLB_NXT;
+
+            goto POP_TESTOP;
 
         case 0x29:
 
