@@ -79,40 +79,16 @@ uint statement_count(void)                  {
 
 //   ---     ---     ---     ---     ---
 
-#define CNTX_INIT_BOILER(T, whom, idtype)                                                    \
-                                            /* fetch tokens */                               \
+#define CNTX_INIT_BOILER {                                                                   \
+                                                                                             \
+    cur_cntx   = (CNTX*) CURLVAL;           /* fetch tokens */                               \
     rd_tkx++; uchar*  name   =               tokens[rd_tkx];                                 \
-    rd_tkx++; uchar*  rwsize =               tokens[rd_tkx];                                 \
-              MEMUNIT chsize =               1;                                              \
+    rd_tkx++;                                                                                \
                                                                                              \
-/*   ---     ---     ---     ---     ---    // string translation and sizings... */          \
-                                                                                             \
-    if(rwsize[0]) {                         /* if no mag specified, count ;s     */          \
-        TRDECVAL                            (rwsize, &chsize                       );        \
-                                                                                             \
-    } else {                                                                                 \
-        chsize               =              statement_count();                               \
-                                                                                             \
-    };                                                                                       \
-                                            /* set bounds and inc lval top       */          \
-    whom->bound              = GTUNITCNT    (sizeof(whom->bound), chsize           );        \
-                                                                                             \
-    whom->start = mammi->lvaltop;           /* set start idex                    */          \
-    whom->size  = 0;                        /* cleanup, just in case             */          \
-    whom->elems = 0;                        /*                                   */          \
-                                                                                             \
-                                                                                             \
-    INCLVAL                                 ( (sizeof(T)                           )         \
-                                            + ((whom->bound+1)*sizeof(whom->bound) ) );      \
-                                                                                             \
-                                            /* make id */                                    \
-    whom->id                 = IDNEW        (idtype, name                          );        \
-                                                                                             \
-/*   ---     ---     ---     ---     ---    // point unused slots to frblk */                \
-                                                                                             \
-    for(uint x=0; x<whom->bound; x++) {                                                      \
-        whom->jmpt[x]=FRBLK - whom->start;                                                   \
-    }
+    INCLVAL                                 (sizeof(CNTX)               );                   \
+    JMPT_INSERT                             (whom                       );                   \
+    STR_HASHSET                             (LNAMES_HASH, name, whom    );                  }
+
 
 //   ---     ---     ---     ---     ---
 
@@ -120,15 +96,8 @@ void REGMA(void)                            {
 
     if(!(mammi->state&MAMMIT_SF_CREG)) {    // if unset, do and ret
 
-        mammi->state |= MAMMIT_SF_CREG;     // set state
-        pe_reg        = (REG*) CURLVAL;     // claim place in stack
-
-                                            // fooken boiler
-        CNTX_INIT_BOILER                    (REG, pe_reg, "REG*");
-
-//   ---     ---     ---     ---     ---    // ut something to console
-
-        CALOUT                              (K, "reg %s[%u]\n", name, pe_reg->bound      );
+        mammi->state |= MAMMIT_SF_CREG;     // fooken boiler
+        CNTX_INIT_BOILER;
         return;
 
     }; mammi->state &=~MAMMIT_SF_CREG;      // effectively, an implicit else
@@ -138,17 +107,8 @@ void REGMA(void)                            {
 
 void PROCMA(void)                           {
     if(!(mammi->state&MAMMIT_SF_CPRC)) {
-        mammi->state|=MAMMIT_SF_CPRC;
-
-        pe_proc = (PROC*) CURLVAL;
-
-        pe_proc->alias_blk = 0;
-        pe_proc->elems     = 0;
-
-                                            // fooken boiler
-        CNTX_INIT_BOILER                    (PROC, pe_proc, "POC*"                   );
-        CALOUT                              (K, "proc %s[%u]\n", name, pe_proc->bound);
-
+        mammi->state |= MAMMIT_SF_CPRC;
+        CNTX_INIT_BOILER;
         return;
 
     }; mammi->state &=~MAMMIT_SF_CPRC;                                                      };

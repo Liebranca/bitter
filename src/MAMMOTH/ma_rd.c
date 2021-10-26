@@ -132,7 +132,8 @@ void TRNVAL(uint len)                       { if(!len) { return; }
                 
                 elif(tokens[rd_tkx+1][0]==0x40) {
                     mammi->state |= MAMMIT_SF_PFET;
-                    mammi->vaddr  = (uintptr_t) &(((ADDR*) nulmy)->box);
+                    ADDR* addr    = (ADDR*) nulmy;
+                    mammi->vaddr  = MAMMIT_CNTX_WBAK(REG, addr, nulmy);;
                     mammi->vtype  = szdata[0] | (szdata[1]<<8) | (szdata[2]<<16);
 
                     if(rd_ctok) {
@@ -549,7 +550,7 @@ void RDPRC(void)                            {
 //   ---     ---     ---     ---     ---
 
                                             // add instruction data to proc
-    PROCADD                                 (sizeof(CODE)+(udr*UNITSZ)              );
+    PROCADD                                 ((sizeof(CODE)/UNITSZ)+udr              );
     code->size      =                       udr;                                    \
 
                                                                                             };
@@ -560,7 +561,7 @@ void NTNAMES(void)                          {
 
                                             // interpreter nit
     ID id = IDNEW                           ("MAMM", "I"                               );
-    MEMGET                                  (MAMMIT, mammi, NAMESZ*sizeof(uint), &id   );
+    MEMGET                                  (MAMMIT, mammi, NAMESZ*sizeof(ADDR), &id   );
     MKSTK                                   (byref(mammi->slstack), NAMESZ             );
 
     for(int x=NAMESZ-1; x>0; x--) {         // fill stack with indices
@@ -569,6 +570,8 @@ void NTNAMES(void)                          {
                                             // nit the hashes
     }; GNAMES_HASH    = MKHASH              (7, "gnames_hash"                          );
        LNAMES_HASH    = MKHASH              (5, "lnames_hash"                          );
+
+//   ---     ---     ---     ---     ---
 
                                             // cool constant block for awesome prints
     ADDR* frblk       =                     (ADDR*) (mammi->lvalues+FRBLK);
@@ -585,7 +588,14 @@ void NTNAMES(void)                          {
     frblk->id.full[8] = 0x4B;
     frblk->id.full[9] = 0x00;
 
-    frblk->box[0]     =  FREE_BLOCK;        // occult hexspeak; improves quality of dumps
+    frblk->box    [0] =  FREE_BLOCK;        // occult hexspeak; improves quality of dumps
+
+//   ---     ---     ---     ---     ---
+
+    for(uint x=0; x<NAMESZ; x++) {
+        mammi->jmpt[x]=*frblk;
+
+    };
 
 //   ---     ---     ---     ---     ---
 

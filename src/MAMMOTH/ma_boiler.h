@@ -14,7 +14,7 @@ void   CHKMEMLAY(void               );      // contiguousness test
 
 void   MOVBLK   (BLK* b, int dirn   );      // block byte && memunit shifts
 void   BYTESTEP (void               );      // advance rd_result by rd_size
-void   TPADDR   (ADDR* addr         );      // decode addr typedata
+void   TPADDR   (uchar type         );      // adjust read settings
 void   RSTSEC   (void               );      // prep for first seceval run
 void   RSTPTRS  (void               );      // reset result, lhand, value (not lngptr)
 
@@ -51,7 +51,7 @@ void   VALNEW  (uchar*   name  ,
                 MEMUNIT* val   ,
                 uint     size  );           // used for populating lnames
 
-void VALSIZ    (uchar* type    ,
+void VALSIZ    (uchar  type    ,
                 uchar*  to     );           // get size of base type
 
 void PROCADD   (uint size      );           // append line to proc
@@ -313,23 +313,13 @@ void CALCUS_COLLAPSE(void);                 // magic
 
 //   ---     ---     ---     ---     ---
 
-#define ADDRFET(T, addr) (T*) (((ADDR*) addr)->box+0)
+#define JMPT_INSERT(x) mammi->jmpt[mammi->jmpt_i]=(uintptr_t) (x); mammi->jmpt_i++
 
 #define CURLVAL (mammi->lvalues+mammi->lvaltop)
 
 #define INCLVAL(x) {                                                                        \
     if( ((x)/UNITSZ) < 1) { mammi->lvaltop++;             }                                 \
     else                  { mammi->lvaltop += (x)/UNITSZ; };                                }
-
-//   ---     ---     ---     ---     ---
-
-#define MAMMIT_CNTX_ADD(whom) {                                                             \
-    whom->jmpt[whom->elems] = mammi->lvaltop - whom->start;                                 \
-    if( ((size)/UNITSZ) < 1) { whom->size++;                }                               \
-    else                     { whom->size += (size)/UNITSZ; };                              \
-    whom->elems++;                                                                          }
-
-#define MAMMIT_CNTX_FETCH(whom, off) ((whom->start) + (whom->jmpt[off]))
 
 //   ---     ---     ---     ---     ---
 

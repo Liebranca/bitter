@@ -1,9 +1,9 @@
 $$$$$$$$$$$$$$$$
 
 reg vars {
-  char2 x 0b00, 0b01, 0b11;
-  char2 y x+4+4;
-  char2 z;
+  char x 0b00, 0b01, 0b11;
+  char y x+4+4;
+  char z;
 
 };
 

@@ -95,19 +95,14 @@ typedef struct MAMM_CALCUS_TOKEN {          // breaks down expressions into male
 
 //   ---     ---     ---     ---     ---
 
-typedef struct MAMM_MEMREG {                // defines memory subdivisions
+typedef struct MAMM_CNTX {
 
-    ID     id;                              // identifier
+    uint    elems;                          // number of labels
+    uint    size;                           // total size, measured in memunits
 
-    uint   start;                           // idex of first block into lvalues
-    uint   elems;                           // number of entries
-    uint   bound;                           // max entries
+    MEMUNIT state;                          // internal state flags
 
-    uint   size;                            // space taken up by reg, in memunits
-
-    uint   jmpt[];                          // indices into lvalues; start+jmpt[x] = var
-
-} REG; extern REG* pe_reg;
+} CNTX; extern CNTX* cur_cntx;
 
 //   ---     ---     ---     ---     ---
 
@@ -134,20 +129,15 @@ typedef struct MAMM_INTERPRETER {           // smach for pe-text input
 
     uint      lvaltop;                      // next offset @lvalues that's free
     MEMUNIT   lvalues   [NAMESZ ];          // yer vars arrrr
-                                
+
     SYMBOL    slots     [NAMESZ ];          // array of built-ins
     STK       slstack;                      // stack of (free)indices into built-ins array
+    uint      slstack_i [NAMESZ ];          // stack space
+
+    uint      jmpt_i;                       // top of jump table
+    uintptr_t jmpt      [       ];          // offsets into lvalues
 
 } MAMMIT; extern MAMMIT* mammi;
-
-//   ---     ---     ---     ---     ---
-
-typedef struct MAMM_ADDR {                  // helper struct for var fetch/insert
-
-    ID      id;                             // typedata (0x00-03) name (0x04-17)
-    MEMUNIT box[];                          // stored data
-
-} ADDR;
 
 //   ---     ---     ---     ---     ---
 
@@ -160,15 +150,6 @@ typedef struct MAMM_BLOCK_ACC {             // byte access helper
 
 //   ---     ---     ---     ---     ---
 
-typedef struct MAMM_ALIAS {                 // string to address redirection
-
-    uchar name[ MAMMIT_TK_WIDTH \
-              - sizeof(uint)    ];          // name compares to some token
-
-    uint  loc;                              // lvalues+loc=address of aliased value
-
-} ALIAS;
-
 typedef struct MAMM_CODE {                  // operations as data
 
     uint    loc;                            // offset to instruction header
@@ -177,23 +158,6 @@ typedef struct MAMM_CODE {                  // operations as data
     MEMUNIT data[];                         // bunch of bits read by instruction
 
 } CODE;
-
-//   ---     ---     ---     ---     ---
-
-typedef struct MAMM_PROC {                  // data structure holding part of a program
-
-    ID      id;                             // polyheader
-
-    uint    alias_blk;                      // [0..alias_blk ] is cast to ALIAS
-    uint    elems;                          // [alias_blk..-1] is cast to CODE
-
-    uint    start;                          // idex of first block into lvalues
-    uint    bound;                          // max entries
-    uint    size;                           // space taken up by proc, in memunits
-
-    uint    jmpt[];                         // indices into lvalues
-
-} PROC; extern PROC* pe_proc;
 
 //   ---     ---     ---     ---     ---
 
