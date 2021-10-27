@@ -202,8 +202,7 @@ void VALNEW(uchar*   name,
     for(uint x=0; x<size; x++) {            // copy units over
         data[x]=val[x];
                                             // send lookup data to table
-    }; JMPT_INSERT                          (data, size             );
-       STR_HASHSET                          (LNAMES_HASH, name, data);                      };
+    }; JMPT_INSERT                          (data, size, "VAL*", name);                     };
 
 //   ---     ---     ---     ---     ---
 

@@ -84,16 +84,15 @@ uint statement_count(void)                  {
         mammi->lvaltop++;                                                                    \
     }                                                                                        \
     cur_cntx   = (CNTX*) CURLVAL;           /* fetch tokens */                               \
-    rd_tkx++; uchar*  name   =               tokens[rd_tkx];                                 \
+    rd_tkx++; uchar*  name   =              tokens[rd_tkx];                                  \
     rd_tkx++;                                                                                \
                                                                                              \
     cur_cntx->elems = 0;                                                                     \
     cur_cntx->size  = 0;                                                                     \
     cur_cntx->state = mammi->state;                                                          \
                                                                                              \
-    INCLVAL                                 (sizeof(CNTX)               );                   \
-    JMPT_INSERT                             (cur_cntx, sizeof(CNTX)     );                   \
-    STR_HASHSET                             (LNAMES_HASH, name, cur_cntx);                  }
+    INCLVAL                                 (sizeof(CNTX)                        );          \
+    JMPT_INSERT                             (cur_cntx, sizeof(CNTX), "CNTX", name);         }
 
 
 //   ---     ---     ---     ---     ---

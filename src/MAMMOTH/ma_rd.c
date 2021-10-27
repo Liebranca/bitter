@@ -148,7 +148,7 @@ void TRNVAL(uint len)                       { if(!len) { return; }
 
             } else {                        // convert label to address
 
-                *rd_value  = ((uintptr_t) nulmy);
+                *rd_value  = mammi->jmpt[((LABEL*) nulmy)->loc];
 
 /*  this is a deref
     useful, but not what we want *here*
@@ -554,7 +554,7 @@ void NTNAMES(void)                          {
 
                                             // interpreter nit
     ID id = IDNEW                           ("MAMM", "I"                               );
-    MEMGET                                  (MAMMIT, mammi, NAMESZ*UNITSZ, &id         );
+    MEMGET                                  (MAMMIT, mammi, 0, &id                     );
     MKSTK                                   (byref(mammi->slstack), NAMESZ             );
 
     for(int x=NAMESZ-1; x>0; x--) {         // fill stack with indices

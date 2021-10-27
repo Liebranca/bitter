@@ -65,11 +65,22 @@ typedef struct MAMM_TYPEVAL_DATA {          // to simplify reading wacky types
 
 typedef struct MAMM_SYNTX_SYMBOL {          // used for string to funcall mambo
 
-    ID    id;                               // polyheader, makes this block hashable
-    NIHIL onrd;                             // links block with a given funcall
+    ID      id;                             // polyheader, makes this block hashable
+
+    NIHIL   onrd;                           // links block with a given funcall
+    MEMUNIT pad;                            // manual padding
 
 } SYMBOL;
-                               
+
+typedef struct MAMM_SYNTX_LABEL  {          // an alias for an address
+
+    ID      id;                             // polyheader, makes this block hashable
+
+    MEMUNIT loc;                            // location of self within table
+    MEMUNIT p_loc;                          // location of parent
+
+} LABEL;
+
 //   ---     ---     ---     ---     ---
 
 #define CALCUS_CONST 0xC0457A47
@@ -135,7 +146,8 @@ typedef struct MAMM_INTERPRETER {           // smach for pe-text input
     uint      slstack_i [NAMESZ ];          // stack space
 
     uint      jmpt_i;                       // top of jump table
-    uintptr_t jmpt      [       ];          // offsets into lvalues
+    LABEL     jmpt_h    [NAMESZ ];          // descriptors for contents of table
+    uintptr_t jmpt      [NAMESZ ];          // offsets into lvalues
 
 } MAMMIT; extern MAMMIT* mammi;
 
