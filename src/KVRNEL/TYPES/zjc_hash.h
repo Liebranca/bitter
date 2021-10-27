@@ -65,13 +65,13 @@ HASH* GWHASH(HASH* h);
 
 #if KVR_DEBUG & KVR_CALLOH                  /* catch full bucket */
     #define STR_HASHSET(h, key, data)       { FLHASH(1); /* set mode to insertion */         \
-        ID lkp=IDNEW("LKP_", key); lkp.y=-2; int key_in_hash=INHASH(h, lkp); int retx=0;     \
+        ID lkp=IDNEW("LKP_", key); lkp.y=-2; int key_in_hash=INHASH(h, &lkp); int retx=0;    \
         if(!key_in_hash) { ERRCATCH(NK4HSLOT(), retx, 72, lkp->key); h->nitems++; };         \
         if(!retx       ) { STHASH(data);                                          };        }
 
 #else
     #define STR_HASHSET(h, key, data)       { FLHASH(1);                                     \
-        ID lkp=IDNEW("LKP_", key); lkp.y=-2; int key_in_hash=INHASH(h, lkp); int retx=0;     \
+        ID lkp=IDNEW("LKP_", key); lkp.y=-2; int key_in_hash=INHASH(h, &lkp); int retx=0;    \
         if(!key_in_hash) { retx=NK4HSLOT(); h->nitems++;};                                   \
         if(!retx       ) { STHASH(data);                };                                  }
 

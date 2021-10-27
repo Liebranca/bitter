@@ -85,19 +85,25 @@ uint statement_count(void)                  {
     rd_tkx++; uchar*  name   =               tokens[rd_tkx];                                 \
     rd_tkx++;                                                                                \
                                                                                              \
+    cur_cntx->elems = 0;                                                                     \
+    cur_cntx->size  = 0;                                                                     \
+    cur_cntx->state = mammi->state;                                                          \
+                                                                                             \
     INCLVAL                                 (sizeof(CNTX)               );                   \
-    JMPT_INSERT                             (whom                       );                   \
-    STR_HASHSET                             (LNAMES_HASH, name, whom    );                  }
+    JMPT_INSERT                             (cur_cntx, sizeof(CNTX)     );                   \
+    STR_HASHSET                             (LNAMES_HASH, name, cur_cntx);                  }
 
 
 //   ---     ---     ---     ---     ---
 
 void REGMA(void)                            {
 
+    if(mammi->cntx && mammi->lvla) { MAMMIT_LVLA_PRV; };
+
     if(!(mammi->state&MAMMIT_SF_CREG)) {    // if unset, do and ret
 
         mammi->state |= MAMMIT_SF_CREG;     // fooken boiler
-        CNTX_INIT_BOILER;
+        CNTX_INIT_BOILER; MAMMIT_LVLA_NXT;
         return;
 
     }; mammi->state &=~MAMMIT_SF_CREG;      // effectively, an implicit else
@@ -106,9 +112,12 @@ void REGMA(void)                            {
 //   ---     ---     ---     ---     ---
 
 void PROCMA(void)                           {
+
+    if(mammi->cntx && mammi->lvla) { MAMMIT_LVLA_PRV; };
+
     if(!(mammi->state&MAMMIT_SF_CPRC)) {
         mammi->state |= MAMMIT_SF_CPRC;
-        CNTX_INIT_BOILER;
+        CNTX_INIT_BOILER; MAMMIT_LVLA_NXT;
         return;
 
     }; mammi->state &=~MAMMIT_SF_CPRC;                                                      };

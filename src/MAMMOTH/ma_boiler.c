@@ -26,7 +26,7 @@ uint GTUNITCNT(uint size, uint mag)         {
     while(size > UNITSZ) {
         mag++; size-=UNITSZ;
 
-    }; return (uint) ((pow(2, 3+mag) + 0.5)/size);                                          };
+    }; return (uint) ((pow(2, 2+mag) + 0.5)/size);                                          };
 
 void MOVBLK(BLK* b, int dirn)               {
 
@@ -50,6 +50,10 @@ void MOVBLK(BLK* b, int dirn)               {
             };
         };
     }; b->base=(b->base)&(rd_units-1);                                                      };
+
+uint GTARRSZ(uint loc)                      { uintptr_t a = mammi->jmpt[loc+0];             \
+                                              uintptr_t b = mammi->jmpt[loc+1];             \
+                                              return (b-a)/UNITSZ;                          };
 
 //   ---     ---     ---     ---     ---
 
@@ -167,7 +171,8 @@ void UPKTYPE(uchar* typeval)                {
         default:                            // everything else goes
             base[j]=c; j++; break;
 
-    }; BOT: i++; if(i<len) { goto TOP; } if(!typedata.arrsize) { typedata.arrsize=1; }      };
+    }; BOT: i++; if(i<len) { goto TOP; }
+    typedata.arrsize=(typedata.arrsize<2) ? 2 : typedata.arrsize;                           };
 
 //   ---     ---     ---     ---     ---
 
@@ -190,37 +195,28 @@ void VALNEW(uchar*   name,
 
     MEMUNIT* data    = CURLVAL;
     mammi->lvaltop  += size;
+
     cur_cntx->size  += size;
     cur_cntx->elems++;
 
     for(uint x=0; x<size; x++) {            // copy units over
         data[x]=val[x];
                                             // send lookup data to table
-    }; JMPT_INSERT                          (data                   );
+    }; JMPT_INSERT                          (data, size             );
        STR_HASHSET                          (LNAMES_HASH, name, data);                      };
 
 //   ---     ---     ---     ---     ---
 
-void VALSIZ(uchar type, uchar* to)          {
-
-    if( 0x07 <= type
-    &&  0x0A >= type) { type-=0x04; };
-
-    to[0]     = 4;
-    to[1]     = arrsize;
-    to[2]     = (indlvl | arrsize) != 0;
-
-//   ---     ---     ---     ---     ---
+uchar VALSIZ(uchar type)                    {
 
     if(type < 0x03) {                       // funptr
-        to[0]=sizeof(STARK); return;
+        return sizeof(STARK);
 
     } elif( 0x03 <= type \
       &&    0x06 >= type ) {                // num type
-        to[0]=(uchar) (pow(2, type-0x03)+0.5);
-        return;
+        return (uchar) (pow(2, type-0x03)+0.5);
 
-    }; to[0]=sizeof(float);                                                                 };
+    }; return sizeof(float);                                                                };
 
 //   ---     ---     ---     ---     ---
 
@@ -231,16 +227,15 @@ void PROCADD(uint size)                     {
 
 //   ---     ---     ---     ---     ---
 
-void TPADDR(uchar type)                     {
-
-    uchar szdata[3] = {0,0,0};              // unpack
-    VALSIZ                                  (type, szdata        );
+void TPADDR(uchar type, uint elems)         {
 
                                             // sizing ints for the read
-    rd_elems        = GTUNITCNT             (szdata[0], szdata[1]);
-    rd_size         = szdata[0];
+    rd_size         = VALSIZ                (type                );
+    rd_elems        = elems;
 
     rd_step         = rd_size/UNITSZ;
+
+//   ---     ---     ---     ---     ---
 
     if(!rd_step) {
         rd_step     = 1;
@@ -339,69 +334,47 @@ void MAFETCH(MEMUNIT* r, MEMUNIT* v)        {
 
 void CHKMEMLAY(void)                        {
 
-
-    MEMUNIT* ptr = mammi->lvalues+0;
+    uint      loc = 0;
+    uintptr_t ptr = mammi->jmpt[loc];
 
     while(ptr) {
 
-        pe_reg = (REG*) ptr;                // print regdata
-        CALOUT(E, "\n0x%" PRIXPTR " %s\n\n",           pe_reg, pe_reg->id.full        );
-        CALOUT(E, "0x%"   PRIXPTR " START\t%u\n",      &(pe_reg->start), pe_reg->start);
-        CALOUT(E, "0x%"   PRIXPTR " ELEMS\t%u\n",      &(pe_reg->elems), pe_reg->elems);
-        CALOUT(E, "0x%"   PRIXPTR " BOUND\t%u\n",      &(pe_reg->bound), pe_reg->bound);
-        CALOUT(E, "0x%"   PRIXPTR " SIZE\t%u units\n", &(pe_reg->size ), pe_reg->size );
+        ptr          = mammi->jmpt[loc];
+        if(*((MEMUNIT*) ptr)==FREE_BLOCK) { break; };
 
-        for(uint x=0; x<pe_reg->bound; x++) {
-            CALOUT(E, "0x%" PRIXPTR " JMP%u\t%u\n", pe_reg->jmpt+x, x, pe_reg->jmpt[x].box[0]);
+        CNTX*     cx = (CNTX*) ptr;
 
-        };
+        CALOUT(E, "\n0x%" PRIXPTR " BLOCK_START Sx%016"  PRIX64 "\n\n", cx, cx->state);
+        CALOUT(E, "0x%"   PRIXPTR " ELEMS\t%u\n", &(cx->elems), cx->elems            );
+        CALOUT(E, "0x%"   PRIXPTR " USIZE\t%u\n", &(cx->size ), cx->size             );
 
-        for(uint x=0; x<pe_reg->bound; x++) {
+        for(uint x=0; x<cx->elems; x++) { loc++;
 
-            ADDR*    addr = (ADDR*) (mammi->lvalues+pe_reg->jmpt[x]);
-            MEMUNIT* data = mammi->lvalues+(pe_reg->start+addr->box[0]);
+            ptr           = mammi->jmpt[loc];
+            if(*((MEMUNIT*) ptr)==FREE_BLOCK) { break; };
 
-            if(addr!=NULL) {
-                                            // unpack and print addr && name
-                TPADDR                      (addr                                           );
-                CALOUT                      (E, "\n0x%" PRIXPTR " ID %s\n0x%"               \
-                                                PRIXPTR "\t\t0x",                           \
-                                                                                            \
-                                            addr, addr->id.key, data                        );
+            MEMUNIT* data = (MEMUNIT*) ptr;
 
-                uint px=43;
-                for(uint y=0; y<rd_units; y++) {
+                                            // unpack and print addr
+            TPADDR                          (0x06, GTARRSZ(loc)                             );
+            CALOUT                          (E, "\n0x%" PRIXPTR "\t\t0x", ptr               );
 
-                    CALOUT                  (E, "\r\e[%uC", px                              );
-                    CALOUT                  (E, "%016" PRIX64 " ", data[y]                  );
-                    px=26;
+            uint px=43;
+            for(uint y=0; y<rd_units; y++) {
 
-                    if(!((y+1)%2) && (y+1)<rd_units) {
-                        CALOUT(E, "\r\e[59C\n0x%" PRIXPTR "\t\t0x", data+y+1);
-                        px=43;
+                CALOUT                      (E, "\r\e[%uC", px                              );
+                CALOUT                      (E, "%016" PRIX64 " ", data[y]                  );
+                px=26;
 
-                    };
-                }; ptr+=rd_units;
+                if(!((y+1)%2) && ((y+1)<rd_units)) {
+                    CALOUT(E, "\r\e[59C\n0x%" PRIXPTR "\t\t0x", data+y+1);
+                    px=43;
+
+                };
+
             }; CALOUT(E, "\n");
-
-        }; if(strstr(((REG*) ptr)->id.full, "REG*")==NULL) { break; }
+        }; loc++;
     };
-
-//   ---     ---     ---     ---     ---
-
-    if(!pe_proc) { goto END; }
-
-    CALOUT(E, "\n0x%" PRIXPTR " %s\n\n",           pe_proc, pe_proc->id.full        );
-    CALOUT(E, "0x%"   PRIXPTR " START\t%u\n",      &(pe_proc->start), pe_proc->start);
-    CALOUT(E, "0x%"   PRIXPTR " ELEMS\t%u\n",      &(pe_proc->elems), pe_proc->elems);
-    CALOUT(E, "0x%"   PRIXPTR " BOUND\t%u\n",      &(pe_proc->bound), pe_proc->bound);
-    CALOUT(E, "0x%"   PRIXPTR " SIZE\t%u units\n", &(pe_proc->size ), pe_proc->size );
-
-    for(uint x=0; x<pe_proc->bound; x++) {
-        CALOUT(E, "0x%" PRIXPTR " JMP%u\t%u\n", pe_proc->jmpt+x, x, pe_proc->jmpt[x].box[0]);
-
-    };
-
 
 //   ---     ---     ---     ---     ---
 
@@ -415,13 +388,9 @@ void CALCUS_COLLAPSE(void)                  {
     switch(rd_cast) {
 
         case 0x03:
-        case 0x07:
         case 0x04:
-        case 0x08:
         case 0x05:
-        case 0x09:
-        case 0x06:
-        case 0x0A: {
+        case 0x06: {
             MEMUNIT* r = rd_lhand;
             MEMUNIT* v = rd_value;
 

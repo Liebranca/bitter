@@ -99,5 +99,6 @@ uint     ins_code    = 0x00;                // idex into instruction table
 uint     ins_argc    = 0;                   // argcount of instruction
 
 CNTX*    cur_cntx    = NULL;                // where we at
+CTOK*    rd_ctok     = NULL;                // calcus token
 
 //   ---     ---     ---     ---     ---

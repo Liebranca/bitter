@@ -1,14 +1,4 @@
 $$$$$$$$$$$$$$$$
 
-reg vars {
+reg vars;
   char x 0b00, 0b01, 0b11;
-  char y x+4+4;
-  char z;
-
-};
-
-/*
-proc call {
-  cpy x@0,[x+1];
-
-};*/

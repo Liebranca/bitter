@@ -38,10 +38,10 @@ extern "C" {
 
 #define UNITSZ sizeof(MEMUNIT)
 
-#define FREE_BLOCK      0x104EBABEF9EEB10CLL
+#define FREE_BLOCK      ((uintptr_t) 0xF9EEB10CF9EEB10CLL)
 #define FRBLK           (NAMESZ-8)
 
-#define DEAD_BLOCK      0xF0CCBABEDEADBEEFLL
+#define DEAD_BLOCK      ((uintptr_t) 0xDEADBEEFDEADBEEFLL)
 
 //   ---     ---     ---     ---     ---
 
@@ -95,12 +95,12 @@ typedef struct MAMM_CALCUS_TOKEN {          // breaks down expressions into male
 
 //   ---     ---     ---     ---     ---
 
-typedef struct MAMM_CNTX {
+typedef struct MAMM_CNTX {                  // a sentinel for block end/start
+
+    MEMUNIT state;                          // internal state flags
 
     uint    elems;                          // number of labels
     uint    size;                           // total size, measured in memunits
-
-    MEMUNIT state;                          // internal state flags
 
 } CNTX; extern CNTX* cur_cntx;
 

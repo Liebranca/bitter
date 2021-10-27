@@ -14,7 +14,10 @@ void   CHKMEMLAY(void               );      // contiguousness test
 
 void   MOVBLK   (BLK* b, int dirn   );      // block byte && memunit shifts
 void   BYTESTEP (void               );      // advance rd_result by rd_size
-void   TPADDR   (uchar type         );      // adjust read settings
+
+void   TPADDR   (uchar type         ,
+                 uint  elems        );      // adjust read settings
+
 void   RSTSEC   (void               );      // prep for first seceval run
 void   RSTPTRS  (void               );      // reset result, lhand, value (not lngptr)
 
@@ -35,7 +38,7 @@ void   REGNHL   (void               );      // these just set some flags
 void   REGTRK   (void               );      // could maybe be replaces by a single fun
 void   REGCHR   (void               );      // however, i felt like being lazy
 void   REGWID   (void               );
-void   REGINT   (void               );
+void   REGWRD   (void               );
 void   REGLNG   (void               );
 void   REGFLT   (void               );
 
@@ -51,12 +54,11 @@ void   VALNEW  (uchar*   name  ,
                 MEMUNIT* val   ,
                 uint     size  );           // used for populating lnames
 
-void VALSIZ    (uchar  type    ,
-                uchar*  to     );           // get size of base type
+uchar  VALSIZ  (uchar  type    );           // get size of base type
 
-void PROCADD   (uint size      );           // append line to proc
+void   PROCADD (uint size      );           // append line to proc
 
-uint POPOPS    (void           );           // pop operators from value
+uint   POPOPS  (void           );           // pop operators from value
 
 //   ---     ---     ---     ---     ---
 
@@ -313,7 +315,9 @@ void CALCUS_COLLAPSE(void);                 // magic
 
 //   ---     ---     ---     ---     ---
 
-#define JMPT_INSERT(x) mammi->jmpt[mammi->jmpt_i]=(uintptr_t) (x); mammi->jmpt_i++
+#define JMPT_INSERT(x, size)                                                                \
+    mammi->jmpt[mammi->jmpt_i+0]=(uintptr_t) (x);                                           \
+    mammi->jmpt[mammi->jmpt_i+1]=(uintptr_t) ((x)+(size)); mammi->jmpt_i++
 
 #define CURLVAL (mammi->lvalues+mammi->lvaltop)
 

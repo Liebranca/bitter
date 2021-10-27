@@ -109,14 +109,12 @@ void TRNVAL(uint len)                       { if(!len) { return; }
     else {
 
         void* nulmy     = NULL;             // dummy for getter/valid check
-        uchar szdata[3] = {0,0,0};          // stor for typedata
 
                                             // fetch
         STR_HASHGET                         (LNAMES_HASH, rd_rawv, nulmy, 0      );
 
         if(nulmy!=NULL) {                   // get type and decode typedata
-            uchar* type =                   ((ADDR*) nulmy)->id.type;            \
-            VALSIZ                          (type, szdata                        );
+            uint size = VALSIZ              (0x06                                );
 
 //   ---     ---     ---     ---     ---
             // lets skip this step, trust me!
@@ -132,9 +130,7 @@ void TRNVAL(uint len)                       { if(!len) { return; }
                 
                 elif(tokens[rd_tkx+1][0]==0x40) {
                     mammi->state |= MAMMIT_SF_PFET;
-                    ADDR* addr    = (ADDR*) nulmy;
-                    mammi->vaddr  = MAMMIT_CNTX_WBAK(REG, addr, nulmy);;
-                    mammi->vtype  = szdata[0] | (szdata[1]<<8) | (szdata[2]<<16);
+                    // mammi->vtype  = szdata[0] | (szdata[1]<<8) | (szdata[2]<<16);
 
                     if(rd_ctok) {
                         rd_ctok->ttype = CALCUS_FETCH;
@@ -150,11 +146,9 @@ void TRNVAL(uint len)                       { if(!len) { return; }
 
 //   ---     ---     ---     ---     ---
 
-            } else {                        // convert label to parent-relative address
+            } else {                        // convert label to address
 
-                *rd_value  = ((uintptr_t) nulmy) - ((uintptr_t) mammi->lvalues+0);
-                *rd_value += sizeof(ID);
-                *rd_value /= UNITSZ;
+                *rd_value  = ((uintptr_t) nulmy);
 
 /*  this is a deref
     useful, but not what we want *here*
@@ -502,13 +496,12 @@ void REGTP(void)                            {
     if(!rd_units) {
         rd_units      = 1;
 
-    };
+    }; CALOUT(E, "%u\n", rd_units);
 
 //   ---     ---     ---     ---     ---
 
                                             // no redeclaration
     int    evil       = 0; MAMMCTCH         (NOREDCL(name), evil, MAMMIT_EV_DECL, name  );
-    CALOUT                                  (K, ">%s %s[%u]\n", type, name, rd_elems    );
 
     rd_ctok           = NULL;
     lngptr            = 0;
@@ -516,6 +509,7 @@ void REGTP(void)                            {
 
                                             // solve expression and store result
     RDEXP                                   (                                           );
+    CALOUT                                  (K, ">%s %s[%u]\n", type, name, rd_elems    );
     VALNEW                                  (name, ((MEMUNIT*) memlng->buff)+0, rd_units);  };
 
 //   ---     ---     ---     ---     ---
@@ -561,7 +555,7 @@ void NTNAMES(void)                          {
 
                                             // interpreter nit
     ID id = IDNEW                           ("MAMM", "I"                               );
-    MEMGET                                  (MAMMIT, mammi, NAMESZ*sizeof(ADDR), &id   );
+    MEMGET                                  (MAMMIT, mammi, NAMESZ*UNITSZ, &id         );
     MKSTK                                   (byref(mammi->slstack), NAMESZ             );
 
     for(int x=NAMESZ-1; x>0; x--) {         // fill stack with indices
@@ -573,27 +567,8 @@ void NTNAMES(void)                          {
 
 //   ---     ---     ---     ---     ---
 
-                                            // cool constant block for awesome prints
-    ADDR* frblk       =                     (ADDR*) (mammi->lvalues+FRBLK);
-
-    frblk->id.full[0] = 0x0A;               // type/sizing flags
-    frblk->id.full[1] = 0x02;
-    frblk->id.full[2] = 0x00;
-    frblk->id.full[3] = 0x00;
-
-    frblk->id.full[4] = 0x46;               // manual strings like a champ
-    frblk->id.full[5] = 0x52;
-    frblk->id.full[6] = 0x42;
-    frblk->id.full[7] = 0x4C;
-    frblk->id.full[8] = 0x4B;
-    frblk->id.full[9] = 0x00;
-
-    frblk->box    [0] =  FREE_BLOCK;        // occult hexspeak; improves quality of dumps
-
-//   ---     ---     ---     ---     ---
-
     for(uint x=0; x<NAMESZ; x++) {
-        mammi->jmpt[x]=*frblk;
+        mammi->lvalues[x]=FREE_BLOCK;
 
     };
 
@@ -609,7 +584,7 @@ void NTNAMES(void)                          {
 
         SYMNEW("TYPE", "char",   REGCHR),   // unit/unit
         SYMNEW("TYPE", "wide",   REGWID),   // unit/4
-        SYMNEW("TYPE", "int",    REGINT),   // unit/2
+        SYMNEW("TYPE", "word",   REGWRD),   // unit/2
         SYMNEW("TYPE", "long",   REGLNG),   // unit
 
         SYMNEW("TYPE", "float",  REGFLT)
@@ -799,7 +774,10 @@ void CHKTKNS(void)                          {
                                              rd_tkx, seq_k, tokens[rd_tkx]             );*/
 
             if(sym) { if(sym->onrd) {       // this is why I want if x then y syntax
-                sym->onrd(); if(!strcmp(seq_k, "$INS")) { RDPRC(); };
+                sym->onrd();
+
+                if  (!strcmp(seq_k, "$INS")) { RDPRC(); }
+                elif(!strcmp(seq_k, "TYPE")) { REGTP(); };
 
             }};
         }
@@ -1158,22 +1136,17 @@ int main(int argc, char** argv)             {
 
 //   ---     ---     ---     ---     ---
 
-    CALOUT(E, "\e[38;2;128;255;128m\n$PEIN:\n%s\n\e[0m\e[38;2;255;128;128m$OUT:", rd_buff);
+    CALOUT(E, "\e[38;2;128;255;128m\n$PEIN:\n%s\n\e[0m\e[38;2;255;128;128m$OUT:\n", rd_buff);
     RDNXT(); CALOUT(E, "\e[0m\n");
 
-    MEMUNIT p  = (uintptr_t) (mammi->lvalues+(pe_reg->start+pe_reg->jmpt[1]));
-    p         += sizeof(ID); p = *((MEMUNIT*) p);
-
-    CALOUT(E, "z at 0x%" PRIXPTR "\n", mammi->lvalues+p);
-
-    if(pe_proc) {
+    /*if(pe_proc) {
 
         for(uint x=0; x<pe_proc->elems; x++) {
             lmpush(MAMMIT_CNTX_FETCH(pe_proc, x));
             lmpop();
 
         };
-    };
+    };*/
 
     if(prmemlay) { CHKMEMLAY(); };
 
