@@ -56,13 +56,21 @@ void   VALNEW  (uchar*   name  ,
 
 uchar  VALSIZ  (uchar  type    );           // get size of base type
 
-void   PROCADD (uint size      );           // append line to proc
+void   PROCADD (uchar* name    ,
+                CODE*  val     ,
+                uint   size    );           // append line to proc
+
 
 uint   POPOPS  (void           );           // pop operators from value
 
 //   ---     ---     ---     ---     ---
 
 void CALCUS_COLLAPSE(void);                 // magic
+
+void JMPT_INSERT(void*  x   ,
+                 uint   size,
+                 uchar* meta,
+                 uchar* name);              // table insertions
 
 //   ---     ---     ---     ---     ---
 // state flags...
@@ -312,41 +320,6 @@ void CALCUS_COLLAPSE(void);                 // magic
 
 #define FETMASK(elems, idex) (idex)&((elems)-1)
 #define SIZMASK(size) ((0x01LL<<(size*8))-1)
-
-//   ---     ---     ---     ---     ---
-
-#define JMPT_INSERT(x, size, meta, name) {                                                  \
-                                                                                            \
-    LABEL* l = (mammi->jmpt_h+mammi->jmpt_i);                                               \
-    l->id    = IDNEW((meta), (name));                                                       \
-                                                                                            \
-    l->loc   = mammi->jmpt_i;                                                               \
-    l->p_loc = 0;                                                                           \
-                                                                                            \
-/*   ---     ---     ---     ---     ---    find parent             */                      \
-                                                                                            \
-    if(cur_cntx && mammi->jmpt_i) {                                                         \
-                                                                                            \
-                                                                                            \
-        uintptr_t paddr=(uintptr_t) cur_cntx;                                               \
-                                                                                            \
-        for(uint jil_x=(mammi->jmpt_i-1);                                                   \
-            jil_x > -1; jil_x++        ) {                                                  \
-                                                                                            \
-            LABEL* pl = (mammi->jmpt_h+jil_x);                                              \
-            if(mammi->jmpt[pl->loc]==paddr) {                                               \
-                l->p_loc = pl->loc; break;                                                  \
-                                                                                            \
-            };                                                                              \
-        };                                                                                  \
-    };                                                                                      \
-                                                                                            \
-/*   ---     ---     ---     ---     ---    do the actual insertion */                      \
-                                                                                            \
-    HASHSET(LNAMES_HASH, byref(l->id));                                                     \
-                                                                                            \
-    mammi->jmpt[mammi->jmpt_i+0]=(uintptr_t) (x);                                           \
-    mammi->jmpt[mammi->jmpt_i+1]=(uintptr_t) ((x)+(size)); mammi->jmpt_i++;                 }
 
 #define CURLVAL (mammi->lvalues+mammi->lvaltop)
 

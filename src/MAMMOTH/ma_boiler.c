@@ -193,11 +193,15 @@ void VALNEW(uchar*   name,
             MEMUNIT* val ,
             uint     size)                  {
 
+    if(size%2) { size++; }
+
     MEMUNIT* data    = CURLVAL;
     mammi->lvaltop  += size;
 
     cur_cntx->size  += size;
     cur_cntx->elems++;
+
+CALOUT(E, "\n%s size %u\n", name, size);
 
     for(uint x=0; x<size; x++) {            // copy units over
         data[x]=val[x];
@@ -219,10 +223,17 @@ uchar VALSIZ(uchar type)                    {
 
 //   ---     ---     ---     ---     ---
 
-void PROCADD(uint size)                     {
+void PROCADD(uchar* name,
+             CODE*  val ,
+             uint   size)                   {
+
+    if(size%2) { size++; }
+
     mammi->lvaltop  += size;
     cur_cntx->size  += size;
-    cur_cntx->elems++;                                                                      };
+    cur_cntx->elems++;
+
+    JMPT_INSERT(val, size, "INS*", name);                                                   };
 
 //   ---     ---     ---     ---     ---
 
@@ -342,8 +353,19 @@ void CHKMEMLAY(void)                        {
         if(*((MEMUNIT*) ptr)==FREE_BLOCK) { break; };
 
         CNTX*     cx = (CNTX*) ptr;
+        if(!cx->elems) { break; }
 
-        CALOUT(E, "\n0x%" PRIXPTR " BLOCK_START Sx%016"  PRIX64 "\n\n", cx, cx->state);
+        uchar* name  = mammi->jmpt_h[loc].id.key;
+        for(int x=0;x<strlen(name);x++) {
+            if(name[x]>=0x61 && name[x]<=0x7B) {
+                name[x]-=0x20;
+
+            };
+        };
+
+        CALOUT(E, "\n0x%" PRIXPTR " BLOCK_START Sx%016"  PRIX64 " %s \n\n"           ,
+                                                  cx, cx->state, name                );
+
         CALOUT(E, "0x%"   PRIXPTR " ELEMS\t%u\n", &(cx->elems), cx->elems            );
         CALOUT(E, "0x%"   PRIXPTR " USIZE\t%u\n", &(cx->size ), cx->size             );
 
@@ -352,11 +374,25 @@ void CHKMEMLAY(void)                        {
             ptr           = mammi->jmpt[loc];
             if(*((MEMUNIT*) ptr)==FREE_BLOCK) { break; };
 
+            name  = mammi->jmpt_h[loc].id.key;
+            int y=0;
+            for(;y<strlen(name);y++) {
+                if(name[y]>=0x61 && name[y]<=0x7B) {
+                    name[y]-=0x20;
+
+                };
+            };
+
             MEMUNIT* data = (MEMUNIT*) ptr;
 
                                             // unpack and print addr
             TPADDR                          (0x06, GTARRSZ(loc)                             );
-            CALOUT                          (E, "\n0x%" PRIXPTR "\t\t0x", ptr               );
+            if(y<4) {
+            CALOUT                          (E, "\n0x%" PRIXPTR " %s\t\t0x", ptr, name      );
+
+            } else {
+            CALOUT                          (E, "\n0x%" PRIXPTR " %s\t0x", ptr, name        );
+            };
 
             uint px=43;
             for(uint y=0; y<rd_units; y++) {
@@ -371,7 +407,7 @@ void CHKMEMLAY(void)                        {
 
                 };
             };
-        }; loc++;
+        }; loc++; CALOUT(E, "\n");
     };
 
 //   ---     ---     ---     ---     ---
@@ -748,5 +784,42 @@ uint POPOPS(void)                           {
             goto POP_TERMINATORS;
 
     }; END: return len;                                                                     };
+
+//   ---     ---     ---     ---     ---
+
+void JMPT_INSERT(void*  x   ,
+                 uint   size,
+                 uchar* meta,
+                 uchar* name)               {
+
+    LABEL* l = (mammi->jmpt_h+mammi->jmpt_i);
+    l->id    = IDNEW(meta, name);
+
+    l->loc   = mammi->jmpt_i;
+    l->p_loc = 0;
+
+//   ---     ---     ---     ---     ---    find parent
+
+    if(cur_cntx && mammi->jmpt_i) {
+        uintptr_t paddr=(uintptr_t) cur_cntx;
+        for(int y=(int) mammi->jmpt_i;
+            y > -1; y--              ) {
+
+            LABEL* pl = (mammi->jmpt_h+y);
+            if(mammi->jmpt[pl->loc]==paddr) {
+                l->p_loc = pl->loc; break;
+
+            };
+        };
+    };
+
+//   ---     ---     ---     ---     ---    insertion
+
+    HASHSET(LNAMES_HASH, byref(l->id));
+
+    mammi->jmpt[mammi->jmpt_i+0]=(uintptr_t) x;
+    mammi->jmpt[mammi->jmpt_i+1]=(uintptr_t) (x+(size*UNITSZ));
+
+    mammi->jmpt_i++;                                                                        };
 
 //   ---     ---     ---     ---     ---

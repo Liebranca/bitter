@@ -80,7 +80,7 @@ uint statement_count(void)                  {
 //   ---     ---     ---     ---     ---
 
 #define CNTX_INIT_BOILER {                                                                   \
-    if( (((uintptr_t)(mammi->lvalues+0))&0x08)==0x08) {                                      \
+    if( (((uintptr_t)(mammi->lvalues+mammi->lvaltop))&0x08)==0x08) {                         \
         mammi->lvaltop++;                                                                    \
     }                                                                                        \
     cur_cntx   = (CNTX*) CURLVAL;           /* fetch tokens */                               \

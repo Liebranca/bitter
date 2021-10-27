@@ -540,13 +540,28 @@ void RDPRC(void)                            {
 
     };
 
+//   ---     ---     ---     ---     ---    make instruction identifier
+
+    uchar  buff[ZJC_IDK_WIDTH];
+    uchar* cntx_key = "";
+
+    uintptr_t paddr=(uintptr_t) cur_cntx;
+    for(int y=(int)mammi->jmpt_i;
+        y > -1; y--          ) {
+
+        LABEL* pl = (mammi->jmpt_h+y);
+        if(mammi->jmpt[pl->loc]==paddr) {
+            cntx_key=pl->id.key; break;
+
+        };
+    }; snprintf(buff, ZJC_IDK_WIDTH, "%s%u", cntx_key, cur_cntx->elems);
+
+
 //   ---     ---     ---     ---     ---
 
                                             // add instruction data to proc
-    PROCADD                                 ((sizeof(CODE)/UNITSZ)+udr              );
-    code->size      =                       udr;                                    \
-
-                                                                                            };
+    PROCADD                                 (buff, code, (sizeof(CODE)/UNITSZ)+udr);
+    code->size = udr;                                                                       };
 
 //   ---     ---     ---     ---     ---
 
