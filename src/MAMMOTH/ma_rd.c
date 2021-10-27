@@ -421,11 +421,11 @@ void RDEXP(void)                            {
 
                                             // collapse arithmetic-wise
     SOLVE:
-        CALOUT(E, "0x%016" PRIX64 " %016" PRIX64 " %016" PRIX64 " -> ",
-                  *rd_lhand, rd_flags, *rd_value                      );
+        //CALOUT(E, "0x%016" PRIX64 " %016" PRIX64 " %016" PRIX64 " -> ",
+        //          *rd_lhand, rd_flags, *rd_value                      );
 
         CALCUS_COLLAPSE();
-        CALOUT(E, "%016" PRIX64 "\n", *rd_lhand);
+        //CALOUT(E, "%016" PRIX64 "\n", *rd_lhand);
 
     goto EVAL_EXP;
 
@@ -496,7 +496,7 @@ void REGTP(void)                            {
     if(!rd_units) {
         rd_units      = 1;
 
-    }; CALOUT(E, "%u\n", rd_units);
+    };
 
 //   ---     ---     ---     ---     ---
 
@@ -509,7 +509,6 @@ void REGTP(void)                            {
 
                                             // solve expression and store result
     RDEXP                                   (                                           );
-    CALOUT                                  (K, ">%s %s[%u]\n", type, name, rd_elems    );
     VALNEW                                  (name, ((MEMUNIT*) memlng->buff)+0, rd_units);  };
 
 //   ---     ---     ---     ---     ---
@@ -732,7 +731,14 @@ void CHKTKNS(void)                          {
 
 //   ---     ---     ---     ---     ---
 
-            if(!strcmp(seq_k, "TYPE")) {    // corner case: type flags, arrays, pointers
+typedata.arrsize=2;     //type agnostic test
+typedata.base[0]='c';
+typedata.base[1]='h';
+typedata.base[2]='a';
+typedata.base[3]='r';
+typedata.base[4]='\0';
+
+            /*if(!strcmp(seq_k, "TYPE")) {    // corner case: type flags, arrays, pointers
 
                 UPKTYPE(tokens[rd_tkx]);    // decompose type descriptor
 
@@ -743,16 +749,16 @@ void CHKTKNS(void)                          {
                     key[x]=typedata.base[x];// key == base typename
 
                 }; key[x]=0x00;             // put the nullterm there...
-            }
+            }*/
 
 //   ---     ---     ---     ---     ---
 
-            else { uint x;
-                for(x=0; x<len; x++) {       // now copy
-                    key[x]=tokens[rd_tkx][x];// key == base typename
+            uint x;
+            for(x=0; x<len; x++) {          // now copy
+                key[x]=tokens[rd_tkx][x];   // key == base typename
 
-                }; key[x]=0x00;             // put the nullterm there...
-            };
+            }; key[x]=0x00;                 // put the nullterm there...
+
 
 //   ---     ---     ---     ---     ---
 
@@ -776,10 +782,13 @@ void CHKTKNS(void)                          {
             if(sym) { if(sym->onrd) {       // this is why I want if x then y syntax
                 sym->onrd();
 
-                if  (!strcmp(seq_k, "$INS")) { RDPRC(); }
-                elif(!strcmp(seq_k, "TYPE")) { REGTP(); };
+                if(rd_tkx<rd_tki) {
+                    if  (mammi->state&MAMMIT_SF_CPRC) { RDPRC(); }
+                    elif(mammi->state&MAMMIT_SF_CREG) { REGTP(); };
 
+                };
             }};
+
         }
 
         else {                              // very much the same as above

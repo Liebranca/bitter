@@ -52,10 +52,10 @@ void lmoff(uint* off)                       {
 
 //   ---     ---     ---     ---     ---
 
-int lmfet(ADDR** dst        ,
-          uint*  udr        ,
-          uint*  off        ,
-          uint   allow_const)               {
+int lmfet(uintptr_t* dst        ,
+          uint*      udr        ,
+          uint*      off        ,
+          uint       sol_addr   )           {
 
                                             // cleanup
     RSTPTRS                                 (                                   );
@@ -67,32 +67,39 @@ int lmfet(ADDR** dst        ,
                                             // fetch target
     lmasl                                   (udr                                );
 
-    if(!allow_const) {
-        if(!mammi->vaddr) { return ERROR; }
+//   ---     ---     ---     ---     ---
 
-        *dst          =                         (ADDR*) (mammi->vaddr-sizeof(ID));  \
-        TPADDR                                  (*dst                               );
+    if(sol_addr) {                          // enforce alignment
+        off[0]=0;
+        while((*rd_result)%16) {
+            (*rd_result)--;
+            off[0]++;
 
-        off[0]        = *rd_result;
-        off[1]       ^= off[1];
+        }; TPADDR(rd_cast, 8);              // infer sizes
 
-        lmoff(off);
+//   ---     ---     ---     ---     ---
 
-    }; return DONE;                                                                         };
+    off[1]       ^= off[1];
+    *dst          = *rd_result;
+
+    lmoff(off);
+
+
+    }; return DONE;                                                                            };
 
 //   ---     ---     ---     ---     ---
 
 #define IF_CONST_ALLOWED(allow, v, src, cbyte, cunit, mask) {                                \
-    if  (src  ) { v=(src->box[ cunit ]&(mask<<(cbyte*8))) >> (cbyte*8); }                    \
-    elif(allow) { v=*rd_result;                                         }                   }
+    if  (allow) { v=( ((MEMUNIT*) (src))[ cunit ]&(mask<<(cbyte*8))) >> (cbyte*8); }         \
+    else        { v=*rd_result;                                                    }        }
 
 #define TWO_FET_OP(aca, acb)                                                                 \
                                                                                              \
-    ADDR*     addr_a         = NULL;        /* dst operand                     */            \
-    ADDR*     addr_b         = NULL;        /* src operand                     */            \
+    uintptr_t  addr_a        = 0;           /* dst operand                     */            \
+    uintptr_t  addr_b        = 0;           /* src operand                     */            \
                                                                                              \
-    uint      udr            = 0;           /* offset into ins->data           */            \
-    uint      offsets[4];                   /* [0..2] upos_a, cbyte_a          */            \
+    uint       udr           = 0;           /* offset into ins->data           */            \
+    uint       offsets[4];                  /* [0..2] upos_a, cbyte_a          */            \
                                             /* [2..4] upos_b, cbyte_b          */            \
                                                                                              \
 /*   ---     ---     ---     ---     ---    /* err-catch the fetch             */            \
@@ -122,30 +129,30 @@ int lmfet(ADDR** dst        ,
 
 //   ---     ---     ---     ---     ---
 
-void lmcpy(void)                            { TWO_FET_OP(0, 1);
+void lmcpy(void)                            { TWO_FET_OP(1, 0);
 
                                             // clean masked section jic and set
-    addr_a->box[offsets[1]] &=~             (szmask_b     << (offsets[0]*8));
-    addr_a->box[offsets[1]] |=              value_b       << (offsets[0]*8);                };
+    ((MEMUNIT*) addr_a)[offsets[1]] &=~     (szmask_b     << (offsets[0]*8));
+    ((MEMUNIT*) addr_a)[offsets[1]] |=      value_b       << (offsets[0]*8);                };
 
-void lmmov(void)                            { TWO_FET_OP(0, 0);
+void lmmov(void)                            { TWO_FET_OP(1, 1);
 
                                             // ^same as cpy
-    addr_a->box[offsets[1]] &=~             (szmask_b     << (offsets[0]*8));
-    addr_a->box[offsets[1]] |=              value_b       << (offsets[0]*8);
+    ((MEMUNIT*) addr_a)[offsets[1]] &=~     (szmask_b     << (offsets[0]*8));
+    ((MEMUNIT*) addr_a)[offsets[1]] |=      value_b       << (offsets[0]*8);
 
                                             // then clean src
-    addr_b->box[offsets[3]] &=~             (szmask_a     << (offsets[2]*8));                };
+    ((MEMUNIT*)addr_b)[offsets[3]] &=~      (szmask_a     << (offsets[2]*8));               };
 
-void lmwap(void)                            { TWO_FET_OP(0, 0);
+void lmwap(void)                            { TWO_FET_OP(1, 1);
 
                                             // ^same as cpy, but b = a
-    addr_b->box[offsets[3]] &=~             (szmask_a     << (offsets[2]*8));
-    addr_b->box[offsets[3]] |=              value_a       << (offsets[2]*8);
+    ((MEMUNIT*)addr_b)[offsets[3]] &=~      (szmask_a     << (offsets[2]*8));
+    ((MEMUNIT*)addr_b)[offsets[3]] |=       value_a       << (offsets[2]*8);
 
                                             // then a = old_b
-    addr_a->box[offsets[1]] &=~             (szmask_b     << (offsets[0]*8));
-    addr_a->box[offsets[1]] |=              value_b       << (offsets[0]*8);                };
+    ((MEMUNIT*) addr_a)[offsets[1]] &=~     (szmask_b     << (offsets[0]*8));
+    ((MEMUNIT*) addr_a)[offsets[1]] |=      value_b       << (offsets[0]*8);                };
 
 //   ---     ---     ---     ---     ---
 

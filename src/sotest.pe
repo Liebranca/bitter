@@ -2,3 +2,8 @@ $$$$$$$$$$$$$$$$
 
 reg vars;
   char x 0b00, 0b01, 0b11;
+
+proc call;
+  cpy x,8;
+
+

@@ -80,7 +80,9 @@ uint statement_count(void)                  {
 //   ---     ---     ---     ---     ---
 
 #define CNTX_INIT_BOILER {                                                                   \
-                                                                                             \
+    if( (((uintptr_t)(mammi->lvalues+0))&0x08)==0x08) {                                      \
+        mammi->lvaltop++;                                                                    \
+    }                                                                                        \
     cur_cntx   = (CNTX*) CURLVAL;           /* fetch tokens */                               \
     rd_tkx++; uchar*  name   =               tokens[rd_tkx];                                 \
     rd_tkx++;                                                                                \
@@ -98,28 +100,34 @@ uint statement_count(void)                  {
 
 void REGMA(void)                            {
 
-    if(mammi->cntx && mammi->lvla) { MAMMIT_LVLA_PRV; };
+    if(mammi->state&MAMMIT_SF_CREG) {       // state cleanup
+        mammi->state &=~MAMMIT_SF_CREG;
 
-    if(!(mammi->state&MAMMIT_SF_CREG)) {    // if unset, do and ret
-
-        mammi->state |= MAMMIT_SF_CREG;     // fooken boiler
-        CNTX_INIT_BOILER; MAMMIT_LVLA_NXT;
         return;
 
-    }; mammi->state &=~MAMMIT_SF_CREG;      // effectively, an implicit else
-                                                                                            };
+    } elif(mammi->lvla) { MAMMIT_LVLA_PRV; }
+    MAMMIT_LVLA_NXT;
+
+    mammi->state |= MAMMIT_SF_CREG;         // fooken boiler
+    CNTX_INIT_BOILER;
+
+    return;                                                                                 };
 
 //   ---     ---     ---     ---     ---
 
 void PROCMA(void)                           {
 
-    if(mammi->cntx && mammi->lvla) { MAMMIT_LVLA_PRV; };
+    if(mammi->state&MAMMIT_SF_CPRC) {
+        mammi->state &=~MAMMIT_SF_CPRC;
 
-    if(!(mammi->state&MAMMIT_SF_CPRC)) {
-        mammi->state |= MAMMIT_SF_CPRC;
-        CNTX_INIT_BOILER; MAMMIT_LVLA_NXT;
         return;
 
-    }; mammi->state &=~MAMMIT_SF_CPRC;                                                      };
+    } elif(mammi->lvla) { MAMMIT_LVLA_PRV; }
+    MAMMIT_LVLA_NXT;
+
+    mammi->state |= MAMMIT_SF_CPRC;
+    CNTX_INIT_BOILER;
+
+    return;                                                                                 };
 
 //   ---     ---     ---     ---     ---

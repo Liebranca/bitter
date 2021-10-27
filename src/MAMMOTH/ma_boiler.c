@@ -371,8 +371,7 @@ void CHKMEMLAY(void)                        {
                     px=43;
 
                 };
-
-            }; CALOUT(E, "\n");
+            };
         }; loc++;
     };
 
