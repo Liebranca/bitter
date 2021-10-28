@@ -4,6 +4,6 @@ reg vars;
   char x 0b01, 0b10, 0b11;
 
 proc call;
-  cpy x+2,[x];
+  cpy x+2,[x+1];
 
 

@@ -216,12 +216,17 @@ void JMPT_INSERT(void*  x   ,
                                             \
             };                              \
                                             \
-            MAMMIT_LVLB_NXT;                \
+            MAMMIT_LVLB_PRV;                \
             CALCUS_COLLAPSE();              \
                                             \
-        }; uintptr_t addr=*rd_value;        \
-        *r=*((MEMUNIT*) addr); break;       \
+        }; uintptr_t addr=0;                \
                                             \
+        if(mammi->lvlb) {                   \
+            MAMMIT_LVLB_PRV;                \
+                                            \
+        }; addr=(*rd_lhand)+(*rd_value);    \
+        *rd_lhand=*((MEMUNIT*) addr);       \
+        break;                              \
                                             \
     case OP_EMUL:                           \
     case OP_MUL:                            \
@@ -332,7 +337,7 @@ void JMPT_INSERT(void*  x   ,
     default:                                \
         (*r)+=(*v); break;                  \
                                             \
-    }; (*v)=0; break;                       }
+    }; (*v)=0;                              }
 
 //   ---     ---     ---     ---     ---
 

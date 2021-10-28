@@ -89,7 +89,7 @@ int lmfet(uintptr_t* dst        ,
 
 #define IF_CONST_ALLOWED(allow, v, src, cbyte, cunit, mask) {                                \
     if  (allow) { v=( ((MEMUNIT*) (src))[ cunit ]&(mask<<(cbyte*8))) >> (cbyte*8); }         \
-    else        { v=*rd_result;                                                    }        }
+    else        { v=(*rd_result)&mask;                                             }        }
 
 #define TWO_FET_OP(aca, acb)                                                                 \
                                                                                              \
@@ -218,11 +218,7 @@ void lmasl(uint* udr)                       {
     (*udr)+=sizeof(CTOK)/UNITSZ;
 
     SOLVE:
-        //CALOUT(E, "0x%016" PRIX64 " %016" PRIX64 " %016" PRIX64 " -> ",
-        //          *rd_lhand, rd_flags, *rd_value                      );
-
         CALCUS_COLLAPSE();
-        //CALOUT(E, "%016" PRIX64 "\n", *rd_lhand);
 
     goto EVAL_EXP;
 

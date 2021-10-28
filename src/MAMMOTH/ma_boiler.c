@@ -435,10 +435,14 @@ void CALCUS_COLLAPSE(void)                  {
             MEMUNIT* r = rd_lhand;
             MEMUNIT* v = rd_value;
 
+            //CALOUT(E, "0x%016" PRIX64 " %016" PRIX64 " %016" PRIX64 " -> ",
+            //          *rd_lhand, rd_flags, *rd_value                      );
+
             if(!(rd_flags&OP_AT)) {
                 *v=(*v)<<(rd_cbyte*8);
 
             }; CALCUS_OPSWITCH;
+            //CALOUT(E, "%016" PRIX64 "\n", *rd_lhand); break;
         }
 
 //   ---     ---     ---     ---     ---
