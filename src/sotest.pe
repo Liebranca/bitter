@@ -1,9 +1,9 @@
 $$$$$$$$$$$$$$$$
 
 reg vars;
-  char x 10, 0b01, 0b11;
+  char x 0b01, 0b10, 0b11;
 
 proc call;
-  cpy x+16,0xFF;
+  cpy x+2,[x];
 
 

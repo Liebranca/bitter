@@ -239,6 +239,15 @@ void TPADDR(uchar type, uint elems)         {
 
                                             // sizing ints for the read
     rd_size         = VALSIZ                (type                );
+
+    if(elems == -1) {
+        elems = 0;
+        while((elems*rd_size)<UNITSZ*2) {
+            elems++;
+
+        };
+    };
+
     rd_elems        = elems;
 
     rd_step         = rd_size/UNITSZ;
@@ -772,7 +781,7 @@ uint POPOPS(void)                           {
         POP_TESTOP:
 
             if(rd_ctok) {
-                rd_ctok->rops+=((MEMUNIT) (*rd_rawv))<<(ctok_cnt*8);
+                rd_ctok->rops+=((MEMUNIT) (rd_rawv[len-1]))<<(ctok_cnt*8);
                 ctok_cnt++;
 
             };

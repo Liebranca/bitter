@@ -207,6 +207,22 @@ void JMPT_INSERT(void*  x   ,
                                             \
     switch(rd_flags&0xFFFFFFFFFFFFBFFFLL) { \
                                             \
+                                            \
+    case OP_ESUBS:                          \
+        while(!rd_flags&OP_BSUBS) {         \
+            if(((int) lngptr)<0) {          \
+                lngptr=0;                   \
+                break;                      \
+                                            \
+            };                              \
+                                            \
+            MAMMIT_LVLB_NXT;                \
+            CALCUS_COLLAPSE();              \
+                                            \
+        }; uintptr_t addr=*rd_value;        \
+        *r=*((MEMUNIT*) addr); break;       \
+                                            \
+                                            \
     case OP_EMUL:                           \
     case OP_MUL:                            \
         (*r)*=(*v); OPSWITCH_MINUSX;        \

@@ -75,9 +75,7 @@ int lmfet(uintptr_t* dst        ,
             (*rd_result)--;
             off[0]++;
 
-        };
-
-        TPADDR(rd_cast, 2);                 // infer sizes
+        }; TPADDR(rd_cast, -1);             // infer sizes
 
 //   ---     ---     ---     ---     ---
 
@@ -175,6 +173,7 @@ void lmasl(uint* udr)                       {
 
 //   ---     ---     ---     ---     ---
 
+    uint w=0;
     for(uint y=0; y<UNITSZ; y++) {          // paste leftside operators into leftside of str
 
         c = (uchar) ((t->lops>>(y*8))&0xFF);// shift && mask to next byte
@@ -182,18 +181,18 @@ void lmasl(uint* udr)                       {
         if(!c) {
             break;
 
-        } rd_rawv[y]  = c;
+        }; rd_rawv[y]  = c; w++;
 
     };                                      // ^idem, rightside
 
-    for(uint y=(UNITSZ*2)-1, z=0;
+    for(int y=(UNITSZ*2)-1, z=0;
         y>-1; y--, z++          ) {
 
         c = (uchar) ((t->rops>>(z*8))&0xFF);
         if(!c) {
             break;
 
-        } rd_rawv[y] = c;
+        } rd_rawv[w] = c;
 
                                             // now pop 'em to get evalstate
     }; POPOPS                               (                             );
