@@ -127,7 +127,6 @@ void TRNVAL(uint len)                       { if(!len) { return; }
 
                 }
 
-                
                 elif(tokens[rd_tkx+1][0]==0x40) {
                     mammi->state |= MAMMIT_SF_PFET;
                     // mammi->vtype  = szdata[0] | (szdata[1]<<8) | (szdata[2]<<16);
@@ -147,26 +146,10 @@ void TRNVAL(uint len)                       { if(!len) { return; }
 //   ---     ---     ---     ---     ---
 
             } else {                        // convert label to address
+                *rd_value      = mammi->jmpt[((LABEL*) nulmy)->loc];
+                rd_ctok->value = *rd_value;
 
-                *rd_value  = mammi->jmpt[((LABEL*) nulmy)->loc];
-
-/*  this is a deref
-    useful, but not what we want *here*
-
-                MEMUNIT* var       =        ADDRFET(uint, nulmy);
-
-                uint     var_elems =        GTUNITCNT(szdata[0], szdata[1]);
-                uint     var_size  =        szdata[0];
-                uint     var_units =        (var_elems*var_size)/UNITSZ;
-
-                for(uint i=0;i<var_units;i++) {
-                    if(i>=rd_units) { break; }
-                    *rd_value = *var; rd_value++; var++;
-
-                };
-*/
-
-            }
+            };
 
         } else {
             CALOUT(E, "Can't fetch key %s\n", rd_rawv);
@@ -528,6 +511,7 @@ void RDPRC(void)                            {
     for(uint x=0; x<ins_argc; x++) {        // set ptr, cleanup, eval expression
 
         rd_ctok     =                       (CTOK*) (code->data+udr                 );
+        rd_cbyte   ^= rd_cbyte;
 
         RSTSEC                              (                                       );
         RDEXP                               (                                       );
@@ -1163,14 +1147,18 @@ int main(int argc, char** argv)             {
     CALOUT(E, "\e[38;2;128;255;128m\n$PEIN:\n%s\n\e[0m\e[38;2;255;128;128m$OUT:\n", rd_buff);
     RDNXT(); CALOUT(E, "\e[0m\n");
 
-    /*if(pe_proc) {
+    char buff[ZJC_IDK_WIDTH];
+    for(uint x=0; x<cur_cntx->elems; x++) {
+        snprintf(buff, ZJC_IDK_WIDTH, "call%u", x);
 
-        for(uint x=0; x<pe_proc->elems; x++) {
-            lmpush(MAMMIT_CNTX_FETCH(pe_proc, x));
+        void* nulmy; STR_HASHGET(LNAMES_HASH, buff, nulmy, 0);
+        if(nulmy!=NULL) {
+            LABEL* l=(LABEL*) nulmy;
+            lmpush(l->loc);
             lmpop();
 
         };
-    };*/
+    };
 
     if(prmemlay) { CHKMEMLAY(); };
 

@@ -10,6 +10,8 @@ extern "C" {
 //   ---     ---     ---     ---     ---
 
 uint   GTUNITCNT(uint size, uint mag);      // calculate arrsize%unitsz
+uint   GTARRSZ  (uint loc           );      // cur loc to next
+
 void   CHKMEMLAY(void               );      // contiguousness test
 
 void   MOVBLK   (BLK* b, int dirn   );      // block byte && memunit shifts

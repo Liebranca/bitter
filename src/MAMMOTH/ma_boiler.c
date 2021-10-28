@@ -201,8 +201,6 @@ void VALNEW(uchar*   name,
     cur_cntx->size  += size;
     cur_cntx->elems++;
 
-CALOUT(E, "\n%s size %u\n", name, size);
-
     for(uint x=0; x<size; x++) {            // copy units over
         data[x]=val[x];
                                             // send lookup data to table
@@ -260,7 +258,7 @@ void TPADDR(uchar type, uint elems)         {
 //   ---     ---     ---     ---     ---
 
     szmask_a        = SIZMASK(rd_size);
-    uint cbyte      = 0;                                                                    };
+    rd_cbyte       ^= rd_cbyte;                                                             };
 
 //   ---     ---     ---     ---     ---
 
@@ -347,7 +345,7 @@ void CHKMEMLAY(void)                        {
     uint      loc = 0;
     uintptr_t ptr = mammi->jmpt[loc];
 
-    while(ptr) {
+    while(ptr && (loc < mammi->jmpt_i)) {
 
         ptr          = mammi->jmpt[loc];
         if(*((MEMUNIT*) ptr)==FREE_BLOCK) { break; };

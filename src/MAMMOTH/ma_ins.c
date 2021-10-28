@@ -37,7 +37,7 @@ static uint  costk_top    = 0;              // top of stack
 
 void lmpush(uint loc)                       { costk[costk_top]=loc; costk_top++;            };
 void lmpop (void    )                       { costk_top--; uint loc=costk[costk_top];       \
-                                              ins = (CODE*) (mammi->lvalues+loc);           \
+                                              ins = (CODE*) (mammi->jmpt[loc]);             \
                                               lm_ins_arr[ins->loc](); ins=NULL;             };
 
 //   ---     ---     ---     ---     ---
@@ -75,17 +75,17 @@ int lmfet(uintptr_t* dst        ,
             (*rd_result)--;
             off[0]++;
 
-        }; TPADDR(rd_cast, 8);              // infer sizes
+        };
+
+        TPADDR(rd_cast, 2);                 // infer sizes
 
 //   ---     ---     ---     ---     ---
 
-    off[1]       ^= off[1];
-    *dst          = *rd_result;
+        off[1]       ^= off[1];
+        lmoff(off);
 
-    lmoff(off);
-
-
-    }; return DONE;                                                                            };
+    }; *dst           = *rd_result;
+    return DONE;                                                                            };
 
 //   ---     ---     ---     ---     ---
 
@@ -163,7 +163,10 @@ void lmasl(uint* udr)                       {
     uchar buff[UNITSZ*2];                   // for loading operator symbols
     uchar c = 0x00;                         // for reading one operator at a time
 
-    EVAL_EXP: if((*udr)>=ins->size) { goto RESULT; }
+    uchar force_solve = 0;                  // quick exit flag
+
+    EVAL_EXP: if( ((*udr)>=ins->size) \
+              ||  (force_solve      ) )     { goto RESULT; }
 
     CLMEM2(buff, UNITSZ*2);
 
@@ -204,24 +207,23 @@ void lmasl(uint* udr)                       {
     }
 
     elif(t->ttype==CALCUS_SEPAR) {
-        goto ALT_EXIT;
+        force_solve=1; goto RESULT;
 
     } else {                                // else it's a constant
-
         *rd_value     = t->value;
 
     };
 
 //   ---     ---     ---     ---     ---    // compress expanded tokens into final value
 
-    (*udr)+=sizeof(CTOK)/UNITSZ; CALOUT(E, "\n");
+    (*udr)+=sizeof(CTOK)/UNITSZ;
 
     SOLVE:
-        CALOUT(E, "0x%016" PRIX64 " %016" PRIX64 " %016" PRIX64 " -> ",
-                  *rd_lhand, rd_flags, *rd_value                      );
+        //CALOUT(E, "0x%016" PRIX64 " %016" PRIX64 " %016" PRIX64 " -> ",
+        //          *rd_lhand, rd_flags, *rd_value                      );
 
         CALCUS_COLLAPSE();
-        CALOUT(E, "%016" PRIX64 "\n", *rd_lhand);
+        //CALOUT(E, "%016" PRIX64 "\n", *rd_lhand);
 
     goto EVAL_EXP;
 
@@ -229,9 +231,10 @@ void lmasl(uint* udr)                       {
         MAMMIT_LVLB_PRV;
         goto SOLVE;
 
-    }; return;
+    }; if(force_solve) { goto ALT_EXIT; }
+    return;
 
-    ALT_EXIT: (*udr)+=sizeof(CTOK)/UNITSZ; CALOUT(E, "\n");                                 };
+    ALT_EXIT: (*udr)+=sizeof(CTOK)/UNITSZ;                                                  };
 
 //   ---     ---     ---     ---     ---
 
