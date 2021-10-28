@@ -43,6 +43,8 @@ extern "C" {
 
 #define DEAD_BLOCK      ((uintptr_t) 0xDEADBEEFDEADBEEFLL)
 
+#define NUM_PASSES 2
+
 //   ---     ---     ---     ---     ---
 
 typedef struct MAMM_TYPEVAL_DATA {          // to simplify reading wacky types
@@ -151,6 +153,8 @@ typedef struct MAMM_INTERPRETER {           // smach for pe-text input
 
     uchar     entry     [ZJC_IDK_WIDTH];    // program entry point
     MEMUNIT   next;                         // next line in program
+
+    uint      pass;                         // pass number
 
 } MAMMIT; extern MAMMIT* mammi;
 

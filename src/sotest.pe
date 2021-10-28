@@ -5,11 +5,12 @@ entry main;
 reg  vars;
   char  x 0b01, 0b10, 0b11;
 
-proc end;
-  exit  0xDE74;
-
 proc main;
   cpy   x+3,[x+1];
   cpy   x+2,8;
 
   jmp   end;
+
+proc end;
+  exit  0xDE74;
+

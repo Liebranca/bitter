@@ -125,6 +125,17 @@ void JMPT_INSERT(void*  x   ,
     }; retx = cal->state; __popcalreg();                                                     }
 
 //   ---     ---     ---     ---     ---
+
+#define ON_PASS(p0, p1)                                                                      \
+    if(mammi->pass==0) {                                                                     \
+        p0;                                                                                  \
+                                                                                             \
+    } elif (mammi->pass==1) {                                                                \
+        p1;                                                                                  \
+                                                                                             \
+    }
+
+//   ---     ---     ---     ---     ---
 // operators
 
 #define OP_PLUS  0x0000000000000001LL

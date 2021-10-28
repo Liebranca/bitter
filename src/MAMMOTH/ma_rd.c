@@ -151,7 +151,7 @@ void TRNVAL(uint len)                       { if(!len) { return; }
 
             };
 
-        } else {
+        } elif(mammi->pass) {
             CALOUT(E, "Can't fetch key %s\n", rd_rawv);
 
         };
@@ -483,8 +483,10 @@ void REGTP(void)                            {
 
 //   ---     ---     ---     ---     ---
 
-                                            // no redeclaration
-    int    evil       = 0; MAMMCTCH         (NOREDCL(name), evil, MAMMIT_EV_DECL, name  );
+    if(!mammi->pass) {                      // no redeclaration
+        int    evil   = 0; MAMMCTCH         (NOREDCL(name), evil, MAMMIT_EV_DECL, name  );
+
+    };
 
     rd_ctok           = NULL;
     lngptr            = 0;
@@ -1134,6 +1136,19 @@ void RDNXT(void)                            {
 
 //   ---     ---     ---     ---     ---
 
+void CLPASS(void)                           {
+    rd_pos         ^= rd_pos;
+    mammi->lvaltop ^= mammi->lvaltop;
+    mammi->jmpt_i  ^= mammi->jmpt_i;
+    mammi->state   ^= mammi->state;
+
+    CLMEM2(mammi->lvla_stack, FRAMESZ*sizeof(mammi->lvla_stack[0]));
+    CLMEM2(mammi->lvlb_stack, FRAMESZ*sizeof(mammi->lvlb_stack[0]));
+
+    mammi->pass++;                                                                          };
+
+//   ---     ---     ---     ---     ---
+
 int main(int argc, char** argv)             {
 
     int   prmemlay = 0;
@@ -1168,7 +1183,7 @@ int main(int argc, char** argv)             {
 //   ---     ---     ---     ---     ---
 
     CALOUT(E, "\e[38;2;128;255;128m\n$PEIN:\n%s\n\e[0m\e[38;2;255;128;128m$OUT:\n", rd_buff);
-    RDNXT(); CALOUT(E, "\e[0m\n");
+    RDNXT(); CLPASS(); RDNXT(); CALOUT(E, "\e[0m\n");
 
 //   ---     ---     ---     ---     ---
 
