@@ -99,15 +99,9 @@ uint statement_count(void)                  {
 
 void REGMA(void)                            {
 
-    if(mammi->state&MAMMIT_SF_CREG) {       // state cleanup
-        mammi->state &=~MAMMIT_SF_CREG;
-
-        return;
-
-    } elif(mammi->lvla) { MAMMIT_LVLA_PRV; }
-    MAMMIT_LVLA_NXT;
-
-    mammi->state |= MAMMIT_SF_CREG;         // fooken boiler
+    if(!mammi->lvla) { MAMMIT_LVLA_NXT; }
+    mammi->state &=~MAMMIT_SF_CNTX;
+    mammi->state |= MAMMIT_SF_CREG;
     CNTX_INIT_BOILER;
 
     return;                                                                                 };
@@ -116,14 +110,8 @@ void REGMA(void)                            {
 
 void PROCMA(void)                           {
 
-    if(mammi->state&MAMMIT_SF_CPRC) {
-        mammi->state &=~MAMMIT_SF_CPRC;
-
-        return;
-
-    } elif(mammi->lvla) { MAMMIT_LVLA_PRV; }
-    MAMMIT_LVLA_NXT;
-
+    if(!mammi->lvla) { MAMMIT_LVLA_NXT; }
+    mammi->state &=~MAMMIT_SF_CNTX;
     mammi->state |= MAMMIT_SF_CPRC;
     CNTX_INIT_BOILER;
 

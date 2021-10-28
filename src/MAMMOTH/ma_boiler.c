@@ -55,6 +55,14 @@ uint GTARRSZ(uint loc)                      { uintptr_t a = mammi->jmpt[loc+0]; 
                                               uintptr_t b = mammi->jmpt[loc+1];             \
                                               return (b-a)/UNITSZ;                          };
 
+uint ADDRTOLOC(uintptr_t addr)              {
+    for(uint x=0; x<mammi->jmpt_i; x++) {
+        if(addr==mammi->jmpt[x]) {
+            return x;
+
+        };
+    }; return (uint) FATAL;                                                                 };
+
 //   ---     ---     ---     ---     ---
 
 int NOREDCL(uchar* name)                    {
@@ -267,7 +275,10 @@ void TPADDR(uchar type, uint elems)         {
 //   ---     ---     ---     ---     ---
 
     szmask_a        = SIZMASK(rd_size);
-    rd_cbyte       ^= rd_cbyte;                                                             };
+    if(!szmask_a) {
+        szmask_a    = 0xFFFFFFFFFFFFFFFFLL;
+
+    }; rd_cbyte    ^= rd_cbyte;                                                             };
 
 //   ---     ---     ---     ---     ---
 

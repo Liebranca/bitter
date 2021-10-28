@@ -616,21 +616,23 @@ void NTNAMES(void)                          {
 
     for(uint x=0, y=0; x<ARRSIZE(contexts); x++) {
 
-                                            // get next slot idex
         STACKPOP                            (byref(mammi->slstack), y                  );
+        mammi->slots[y] = contexts[x];
 
-        mammi->slots[y] = contexts[x];      // copy data to array and insert in lkp table
         HASHSET                             (GNAMES_HASH, byref(mammi->slots[y].id)    );
 
     };
 
 //   ---     ---     ---     ---     ---
 
-    SYMBOL instructions[]={                 // oh noes
+    SYMBOL instructions[]={                 // symbols describing some operation
 
-        SYMNEW("$INS", "cpy", swcpy),
-        SYMNEW("$INS", "mov", swmov),
-        SYMNEW("$INS", "wap", swwap)
+        SYMNEW("$INS", "cpy",  swcpy ),
+        SYMNEW("$INS", "mov",  swmov ),
+        SYMNEW("$INS", "wap",  swwap ),
+
+        SYMNEW("$INS", "jmp",  swjmp ),
+        SYMNEW("$INS", "exit", swexit)
 
     };
 
@@ -638,11 +640,30 @@ void NTNAMES(void)                          {
 
                                             // get next slot idex
         STACKPOP                            (byref(mammi->slstack), y                  );
+        mammi->slots[y] = instructions[x];
 
-        mammi->slots[y] = instructions[x];  // copy data to array and insert in lkp table
         HASHSET                             (GNAMES_HASH, byref(mammi->slots[y].id)    );
 
-    };                                                                                      };
+    };
+
+//   ---     ---     ---     ---     ---
+
+    SYMBOL directives[]={                   // instructions to the interpreter
+
+        SYMNEW("DRTV", "entry", stentry)
+
+    };
+
+    for(uint x=0, y=0; x<ARRSIZE(directives); x++) {
+
+        STACKPOP                            (byref(mammi->slstack), y                  );
+        mammi->slots[y] = directives[x];
+
+        HASHSET                             (GNAMES_HASH, byref(mammi->slots[y].id)    );
+
+    };
+
+                                                                                      };
 
 void DLNAMES(void)                          { DLMEM(LNAMES_HASH);                           \
                                               DLMEM(GNAMES_HASH); DLMEM(mammi);             };
@@ -832,6 +853,8 @@ void RDNXT(void)                            {
 
             }; goto TOP;
         };
+
+// CALOUT(E, "%c (0x%" PRIX8 ")\n", rd_cur, rd_cur);
 
 //   ---     ---     ---     ---     ---
 
@@ -1147,18 +1170,38 @@ int main(int argc, char** argv)             {
     CALOUT(E, "\e[38;2;128;255;128m\n$PEIN:\n%s\n\e[0m\e[38;2;255;128;128m$OUT:\n", rd_buff);
     RDNXT(); CALOUT(E, "\e[0m\n");
 
-    char buff[ZJC_IDK_WIDTH];
-    for(uint x=0; x<cur_cntx->elems; x++) {
-        snprintf(buff, ZJC_IDK_WIDTH, "call%u", x);
+//   ---     ---     ---     ---     ---
 
-        void* nulmy; STR_HASHGET(LNAMES_HASH, buff, nulmy, 0);
+    char  buff[ZJC_IDK_WIDTH];
+    void* nulmy=NULL;
+
+    if(mammi->entry[0]) {
+        STR_HASHGET(LNAMES_HASH, mammi->entry, nulmy, 0);
         if(nulmy!=NULL) {
-            LABEL* l=(LABEL*) nulmy;
-            lmpush(l->loc);
-            lmpop();
+            LABEL* entry = (LABEL*) nulmy;
+            mammi->next  = entry->loc+1;
+
+//   ---     ---     ---     ---     ---
+
+            while(mammi->next<mammi->jmpt_i) {
+                LABEL* l=mammi->jmpt_h+mammi->next;
+                if(*((uint*) l->id.type)==0x2A534E49) {
+                    // CALOUT(E, "RUN <%s>\n", l->id.full);
+                    ldins(l->loc);
+
+                }; mammi->next++;
+            }; CALOUT(E, "%s exit with code <0x%" PRIX64 ">\n"   ,
+                      mammi->entry, mammi->lvalues[mammi->lvaltop]);
+
+//   ---     ---     ---     ---     ---
+
+        } else {
+            CALOUT(E, "Invalid entry point <%s>", mammi->entry);
 
         };
     };
+
+//   ---     ---     ---     ---     ---
 
     if(prmemlay) { CHKMEMLAY(); };
 

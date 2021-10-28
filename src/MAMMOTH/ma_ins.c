@@ -19,12 +19,18 @@
 #include "ma_ins.h"
 #include "ma_boiler.h"
 
+#include <stdio.h>
+#include <string.h>
+
 //   ---     ---     ---     ---     ---
 
 static NIHIL lm_ins_arr[] = {               // table of low-level instructions
     &lmcpy,
     &lmmov,
-    &lmwap
+    &lmwap,
+    NULL,
+    &lmjmp,
+    &lmexit
 
 };
 
@@ -38,6 +44,9 @@ static uint  costk_top    = 0;              // top of stack
 void lmpush(uint loc)                       { costk[costk_top]=loc; costk_top++;            };
 void lmpop (void    )                       { costk_top--; uint loc=costk[costk_top];       \
                                               ins = (CODE*) (mammi->jmpt[loc]);             \
+                                              lm_ins_arr[ins->loc](); ins=NULL;             };
+
+void ldins (uint loc)                       { ins = (CODE*) (mammi->jmpt[loc]);             \
                                               lm_ins_arr[ins->loc](); ins=NULL;             };
 
 //   ---     ---     ---     ---     ---
@@ -63,10 +72,8 @@ int lmfet(uintptr_t* dst        ,
 
     rd_cbyte     ^= rd_cbyte;
     mammi->vaddr ^= mammi->vaddr;
-
                                             // fetch target
     lmasl                                   (udr                                );
-
 //   ---     ---     ---     ---     ---
 
     if(sol_addr) {                          // enforce alignment
@@ -90,6 +97,23 @@ int lmfet(uintptr_t* dst        ,
 #define IF_CONST_ALLOWED(allow, v, src, cbyte, cunit, mask) {                                \
     if  (allow) { v=( ((MEMUNIT*) (src))[ cunit ]&(mask<<(cbyte*8))) >> (cbyte*8); }         \
     else        { v=(*rd_result)&mask;                                             }        }
+
+//   ---     ---     ---     ---     ---
+
+#define ONE_FET_OP(ac)                                                                       \
+    uintptr_t  addr          = 0;           /* sole operand                    */            \
+    uint       udr           = 0;           /* offset into ins->data           */            \
+    uint       offsets[2];                  /* [0..2] upos, cbyte              */            \
+                                                                                             \
+/*   ---     ---     ---     ---     ---    /* err-catch the fetch             */            \
+                                                                                             \
+                                                                                             \
+    lmfet(&addr, &udr, offsets, ac);                                                         \
+                                                                                             \
+    MEMUNIT value;                                                                           \
+    IF_CONST_ALLOWED(ac, value, addr, offsets[0], offsets[1], szmask_a)
+
+//   ---     ---     ---     ---     ---
 
 #define TWO_FET_OP(aca, acb)                                                                 \
                                                                                              \
@@ -151,6 +175,24 @@ void lmwap(void)                            { TWO_FET_OP(1, 1);
                                             // then a = old_b
     ((MEMUNIT*) addr_a)[offsets[1]] &=~     (szmask_b     << (offsets[0]*8));
     ((MEMUNIT*) addr_a)[offsets[1]] |=      value_b       << (offsets[0]*8);                };
+
+void lmjmp(void)                            { rd_cast=0x06; TPADDR(rd_cast, -1); ONE_FET_OP(0);
+
+    uchar loc_buff[18];
+    uint  loc = ADDRTOLOC(value);
+
+    snprintf(loc_buff, 18, "0x%" PRIXPTR "", value);
+    MAMMCTCH(loc, gblevil, MAMMIT_EV_JUMP, loc_buff);
+
+    mammi->next=loc;                                                                        };
+
+void lmexit(void)                           { rd_cast=0x06; TPADDR(rd_cast, -1); ONE_FET_OP(0);
+
+                                            /* cleanup any sentinels */
+    mammi->lvalues[mammi->lvaltop]^=mammi->lvalues[mammi->lvaltop];
+
+    mammi->lvalues[mammi->lvaltop]=value;   /* set return code       */
+    mammi->next = mammi->jmpt_i;            /* force program to quit */                     };
 
 //   ---     ---     ---     ---     ---
 
@@ -238,5 +280,21 @@ void swboil(void)                           { /* placeholder */                 
 void swcpy(void)                            { ins_code = 0x00; ins_argc = 2; swboil();      };
 void swmov(void)                            { ins_code = 0x01; ins_argc = 2; swboil();      };
 void swwap(void)                            { ins_code = 0x02; ins_argc = 2; swboil();      };
+
+void swjmp(void)                            { ins_code = 0x04; ins_argc = 1; swboil();      };
+
+void swexit(void)                           { ins_code = 0x05; ins_argc = 1; swboil();      };
+
+//   ---     ---     ---     ---     ---
+
+void stentry(void)                          {
+
+    rd_tkx++; uchar* s=tokens[rd_tkx];
+              int    x=0;
+
+    for(; x<strlen(s); x++) {
+        mammi->entry[x]=s[x];
+
+    }; mammi->entry[x]=0x00;                                                                };
 
 //   ---     ---     ---     ---     ---

@@ -197,6 +197,9 @@ void __terminator (int errcode, char* info) {
         case 0x010003:
             mbody =                         "Element %s%s\e[0m is not an address-of";   break;
 
+        case 0x010004:
+            mbody =                         "Cannot jump to address %s<%s>";            break;
+
         default: mbody =                    "UNRECOGNIZED %s%s";                        break;
 
                                             };

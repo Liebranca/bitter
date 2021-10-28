@@ -132,22 +132,25 @@ typedef struct MAMM_INTERPRETER {           // smach for pe-text input
 
     };
 
-    uchar     lvla_stack[FRAMESZ];          // markers for recalling previous context
-    MEMUNIT   lvlb_stack[FRAMESZ];          // ^idem, for prev evalstate of expression
+    uchar     lvla_stack[FRAMESZ      ];    // markers for recalling previous context
+    MEMUNIT   lvlb_stack[FRAMESZ      ];    // ^idem, for prev evalstate of expression
 
     uintptr_t vaddr;                        // next fetch at
     uint      vtype;                        // next fetch typedata
 
     uint      lvaltop;                      // next offset @lvalues that's free
-    MEMUNIT   lvalues   [NAMESZ ];          // yer vars arrrr
+    MEMUNIT   lvalues   [NAMESZ       ];    // yer vars arrrr
 
-    SYMBOL    slots     [NAMESZ ];          // array of built-ins
+    SYMBOL    slots     [NAMESZ       ];    // array of built-ins
     STK       slstack;                      // stack of (free)indices into built-ins array
-    uint      slstack_i [NAMESZ ];          // stack space
+    uint      slstack_i [NAMESZ       ];    // stack space
 
     uint      jmpt_i;                       // top of jump table
-    LABEL     jmpt_h    [NAMESZ ];          // descriptors for contents of table
-    uintptr_t jmpt      [NAMESZ ];          // offsets into lvalues
+    LABEL     jmpt_h    [NAMESZ       ];    // descriptors for contents of table
+    uintptr_t jmpt      [NAMESZ       ];    // offsets into lvalues
+
+    uchar     entry     [ZJC_IDK_WIDTH];    // program entry point
+    MEMUNIT   next;                         // next line in program
 
 } MAMMIT; extern MAMMIT* mammi;
 

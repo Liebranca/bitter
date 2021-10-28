@@ -19,7 +19,7 @@ NIHIL STOCB (void);                         // get callback for current state
 #define MAMMIT_LVLA_NXT { mammi->lvla_stack[mammi->lvla]=mammi->cntx; mammi->lvla++;    }
 
 #define MAMMIT_LVLA_PRV {                                                               \
-    NIHIL cb=STOCB(); if(cb) { cb(); } mammi->lvla--;                                   \
+    /*NIHIL cb=STOCB(); if(cb) { cb(); }*/ mammi->lvla--;                               \
     mammi->cntx=mammi->lvla_stack[mammi->lvla];                                         }
 
 //   ---     ---     ---     ---     ---

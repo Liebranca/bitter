@@ -12,6 +12,9 @@ extern "C" {
 uint   GTUNITCNT(uint size, uint mag);      // calculate arrsize%unitsz
 uint   GTARRSZ  (uint loc           );      // cur loc to next
 
+uint   ADDRTOLOC(uintptr_t addr     );      // address to table loc
+                                            // pretty slow. no good way to do it (for now)
+
 void   CHKMEMLAY(void               );      // contiguousness test
 
 void   MOVBLK   (BLK* b, int dirn   );      // block byte && memunit shifts
@@ -102,6 +105,7 @@ void JMPT_INSERT(void*  x   ,
 #define MAMMIT_EV_DECL 0x00000001
 #define MAMMIT_EV_VSIZ 0x00000002
 #define MAMMIT_EV_NFET 0x00000003
+#define MAMMIT_EV_JUMP 0x00000004
 
 // ommited __shpath(__FILE__)
 #define MAMMLOC "TEST", "NON", rd_line
