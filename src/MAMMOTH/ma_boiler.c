@@ -233,7 +233,7 @@ void PROCADD(uchar* name,
              CODE*  val ,
              uint   size)                   {
 
-    if(size%2) { size++; }
+    while(!size || size%2) { size++; }
 
     mammi->lvaltop  += size;
     cur_cntx->size  += size;
@@ -759,7 +759,7 @@ uint POPOPS(void)                           {
 
         POP_OPSTOP:
             if(rd_ctok) {
-                rd_ctok->lops+=((MEMUNIT) (*rd_rawv))<<(ctok_cnt*8);
+                rd_ctok->lops[ctok_cnt]=*rd_rawv;
                 ctok_cnt++;
 
             };
@@ -781,8 +781,9 @@ uint POPOPS(void)                           {
         default: break;
 
         case 0x5D:
-            rd_flags |= OP_ESUBS;
             MAMMIT_LVLB_NXT;
+            rd_flags |= OP_ESUBS;
+            CALCUS_COLLAPSE();
 
             goto POP_TESTOP;
 
@@ -796,7 +797,7 @@ uint POPOPS(void)                           {
         POP_TESTOP:
 
             if(rd_ctok) {
-                rd_ctok->rops+=((MEMUNIT) (rd_rawv[len-1]))<<(ctok_cnt*8);
+                rd_ctok->rops[ctok_cnt]=rd_rawv[len-1];
                 ctok_cnt++;
 
             };

@@ -18,9 +18,7 @@
 #include "KVRNEL/MEM/kvr_str.h"
 #include "KVRNEL/MEM/kvr_bin.h"
 
-#include "ma_cntx.h"
-#include "ma_trans.h"
-#include "ma_ins.h"
+#include "ma_rd.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -518,11 +516,11 @@ void RDPRC(void)                            {
         RSTSEC                              (                                       );
         RDEXP                               (                                       );
 
-                                            // calculate token count!
+                                             // calculate token count!
         leap        =                       (uint) ( ((uintptr_t) rd_ctok         ) \
                                                    - ((uintptr_t) (code->data+udr)) );
 
-        udr        += (leap/UNITSZ);        // go to next
+        udr        += leap/UNITSZ;
 
     };
 
@@ -547,7 +545,7 @@ void RDPRC(void)                            {
 
                                             // add instruction data to proc
     PROCADD                                 (buff, code, (sizeof(CODE)/UNITSZ)+udr);
-    code->size = udr;                                                                       };
+    code->size=udr;                                                                         };
 
 //   ---     ---     ---     ---     ---
 

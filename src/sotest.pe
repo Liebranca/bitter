@@ -6,10 +6,9 @@ reg   vars;
   long  x ,(=);
 
 proc  end;
-  exit  0xDE74;
+  cpy   x,0;
+  exit  [x];
 
 proc  main;
-  cpy   x,0;
-  cpy   end+0x30, 0xF0CC;
-
-  jmp end;
+  cpy   x,[end];
+  jmp   end+0x10;

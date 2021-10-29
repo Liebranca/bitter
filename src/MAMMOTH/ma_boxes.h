@@ -93,14 +93,14 @@ typedef struct MAMM_CALCUS_TOKEN {          // breaks down expressions into male
 
     union {
         struct {
-           uint    ttype;                   // token type
-           uint    vtype;                   // value type
+           uint     ttype;                  // token type
+           uint     vtype;                  // value type 
 
-        }; MEMUNIT prefix;                  // describes the block
+        }; MEMUNIT  prefix;                 // describes the block
     };
 
-    MEMUNIT lops;                           // left-hand operators
-    MEMUNIT rops;                           // right-hand operators
+    uchar   lops[8];                        // left-hand operators
+    uchar   rops[8];                        // right-hand operators
 
     MEMUNIT value;                          // some number; can be an address
 

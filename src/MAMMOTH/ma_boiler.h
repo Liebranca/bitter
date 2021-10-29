@@ -223,25 +223,28 @@ void JMPT_INSERT(void*  x   ,
     switch(rd_flags&0xFFFFFFFFFFFFBFFFLL) { \
                                             \
                                             \
+                                            \
     case OP_ESUBS:                          \
-        while(!rd_flags&OP_BSUBS) {         \
+        while(!(rd_flags&OP_BSUBS)) {       \
             if(((int) lngptr)<0) {          \
                 lngptr=0;                   \
                 break;                      \
                                             \
             };                              \
                                             \
-            MAMMIT_LVLB_PRV;                \
-            CALCUS_COLLAPSE();              \
+            if(mammi->lvlb) {               \
+                MAMMIT_LVLB_PRV;            \
+                CALCUS_COLLAPSE();          \
                                             \
-        }; uintptr_t addr=0;                \
+            }; break;                       \
+        }; break;                           \
                                             \
-        if(mammi->lvlb) {                   \
-            MAMMIT_LVLB_PRV;                \
-                                            \
-        }; addr=(*rd_lhand)+(*rd_value);    \
-        *rd_lhand=*((MEMUNIT*) addr);       \
+    case OP_BSUBS: {                        \
+        uintptr_t addr=(*rd_value);         \
+        *(v)=*((MEMUNIT*) addr);            \
+        *(r)=*(v);                          \
         break;                              \
+    }                                       \
                                             \
     case OP_EMUL:                           \
     case OP_MUL:                            \
@@ -347,12 +350,15 @@ void JMPT_INSERT(void*  x   ,
                                             \
 /*   ---     ---     ---     ---     --- */ \
                                             \
+    case OP_MINUS:                          \
+        (*r)-=(*v); break;                  \
+                                            \
     case OP_EPLUS:                          \
     case OP_PLUS:                           \
     default:                                \
         (*r)+=(*v); break;                  \
                                             \
-    }; (*v)=0;                              }
+    }; (*v)=0; rd_flags^=rd_flags;          }
 
 //   ---     ---     ---     ---     ---
 

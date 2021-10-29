@@ -216,25 +216,22 @@ void lmasl(uint* udr)                       {
 //   ---     ---     ---     ---     ---
 
     uint w=0;
-    for(uint y=0; y<UNITSZ; y++) {          // paste leftside operators into leftside of str
+    for(uint y=0; y<ARRSIZE(t->lops); y++) { // paste leftside operators into leftside of str
 
-        c = (uchar) ((t->lops>>(y*8))&0xFF);// shift && mask to next byte
-
-        if(!c) {
+        c = t->lops[y]; if(!c) {
             break;
 
         }; rd_rawv[y]  = c; w++;
 
     };                                      // ^idem, rightside
 
-    for(int y=(UNITSZ*2)-1, z=0;
-        y>-1; y--, z++          ) {
+    for(int y=(ARRSIZE(t->rops)-1), z=0;
+        y>-1; y--, z++                  ) {
 
-        c = (uchar) ((t->rops>>(z*8))&0xFF);
-        if(!c) {
+        c = t->rops[z]; if(!c) {
             break;
 
-        } rd_rawv[w] = c;
+        } rd_rawv[w] = c; w++;
 
                                             // now pop 'em to get evalstate
     }; POPOPS                               (                             );
