@@ -241,13 +241,7 @@ void lmasl(uint* udr)                       {
 
 //   ---     ---     ---     ---     ---
 
-    if(t->ttype==CALCUS_FETCH) {            // pointer. setup fetch switches
-        mammi->vaddr  = (uintptr_t) t->value;
-        mammi->vtype  = t->vtype;
-
-    }
-
-    elif(t->ttype==CALCUS_SEPAR) {
+    if(t->ttype==CALCUS_SEPAR) {
         force_solve=1; goto RESULT;
 
     } else {                                // else it's a constant
