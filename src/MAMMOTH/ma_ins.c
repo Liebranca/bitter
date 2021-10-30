@@ -30,6 +30,8 @@ static NIHIL lm_ins_arr[] = {               // table of low-level instructions
     &lmwap,
     NULL,
     &lmjmp,
+    &lmjif,
+    NULL,
     &lmexit
 
 };
@@ -127,8 +129,7 @@ int lmfet(uintptr_t* dst        ,
 /*   ---     ---     ---     ---     ---    /* err-catch the fetch             */            \
                                                                                              \
                                                                                              \
-    MAMMCTCH                                (lmfet(&addr_a, &udr, offsets, aca  ),           \
-                                             gblevil, MAMMIT_EV_NFET, "dst"     );           \
+    lmfet(&addr_a, &udr, offsets, aca);                                                      \
                                                                                              \
                                                                                              \
     MEMUNIT value_a;                                                                         \
@@ -138,8 +139,7 @@ int lmfet(uintptr_t* dst        ,
                                                                                              \
 /*   ---     ---     ---     ---     ---                                       */            \
                                                                                              \
-    MAMMCTCH                                (lmfet(&addr_b, &udr, offsets+2, acb),           \
-                                             gblevil, MAMMIT_EV_NFET, "src"     );           \
+    lmfet(&addr_b, &udr, offsets+2, acb);                                                    \
                                                                                              \
     {   ulong tmp            = szmask_a;                                                     \
         szmask_a             = szmask_b;                                                     \
@@ -151,13 +151,17 @@ int lmfet(uintptr_t* dst        ,
 
 //   ---     ---     ---     ---     ---
 
-void lmcpy(void)                            { TWO_FET_OP(1, 0);
+void lmcpy(void)                            {
+
+    TWO_FET_OP(1, 0);
 
                                             // clean masked section jic and set
     ((MEMUNIT*) addr_a)[offsets[1]] &=~     (szmask_b     << (offsets[0]*8));
     ((MEMUNIT*) addr_a)[offsets[1]] |=      value_b       << (offsets[0]*8);                };
 
-void lmmov(void)                            { TWO_FET_OP(1, 1);
+void lmmov(void)                            {
+
+    TWO_FET_OP(1, 1);
 
                                             // ^same as cpy
     ((MEMUNIT*) addr_a)[offsets[1]] &=~     (szmask_b     << (offsets[0]*8));
@@ -166,7 +170,9 @@ void lmmov(void)                            { TWO_FET_OP(1, 1);
                                             // then clean src
     ((MEMUNIT*)addr_b)[offsets[3]] &=~      (szmask_a     << (offsets[2]*8));               };
 
-void lmwap(void)                            { TWO_FET_OP(1, 1);
+void lmwap(void)                            {
+
+    TWO_FET_OP(1, 1);
 
                                             // ^same as cpy, but b = a
     ((MEMUNIT*)addr_b)[offsets[3]] &=~      (szmask_a     << (offsets[2]*8));
@@ -176,15 +182,27 @@ void lmwap(void)                            { TWO_FET_OP(1, 1);
     ((MEMUNIT*) addr_a)[offsets[1]] &=~     (szmask_b     << (offsets[0]*8));
     ((MEMUNIT*) addr_a)[offsets[1]] |=      value_b       << (offsets[0]*8);                };
 
-void lmjmp(void)                            { rd_cast=0x06; TPADDR(rd_cast, -1); ONE_FET_OP(0);
+void lmjmp(void)                            {
 
-    uchar loc_buff[18];
+    rd_cast=0x06;
+    TPADDR(rd_cast, -1);
+    ONE_FET_OP(0);
+
     uint  loc = ADDRTOLOC(value);
 
-    snprintf(loc_buff, 18, "0x%" PRIXPTR "", value);
-    MAMMCTCH(loc, gblevil, MAMMIT_EV_JUMP, loc_buff);
-
     mammi->next=loc;                                                                        };
+
+void lmjif(void)                            {
+
+    rd_cast=0x06;
+    TPADDR(rd_cast, -1);
+
+    TWO_FET_OP(0,0);
+    if(value_b) {
+        uint  loc = ADDRTOLOC(value_a);
+        mammi->next=loc;
+
+    };                                                                                      };
 
 void lmexit(void)                           { rd_cast=0x06; TPADDR(rd_cast, -1); ONE_FET_OP(0);
 
@@ -268,13 +286,14 @@ void lmasl(uint* udr)                       {
 
 void swboil(void)                           { /* placeholder */                             };
 
-void swcpy(void)                            { ins_code = 0x00; ins_argc = 2; swboil();      };
-void swmov(void)                            { ins_code = 0x01; ins_argc = 2; swboil();      };
-void swwap(void)                            { ins_code = 0x02; ins_argc = 2; swboil();      };
+void swcpy (void)                           { ins_code = 0x00; ins_argc = 2; swboil();      };
+void swmov (void)                           { ins_code = 0x01; ins_argc = 2; swboil();      };
+void swwap (void)                           { ins_code = 0x02; ins_argc = 2; swboil();      };
 
-void swjmp(void)                            { ins_code = 0x04; ins_argc = 1; swboil();      };
+void swjmp (void)                           { ins_code = 0x04; ins_argc = 1; swboil();      };
+void swjif (void)                           { ins_code = 0x05; ins_argc = 2; swboil();      };
 
-void swexit(void)                           { ins_code = 0x05; ins_argc = 1; swboil();      };
+void swexit(void)                           { ins_code = 0x07; ins_argc = 1; swboil();      };
 
 //   ---     ---     ---     ---     ---
 

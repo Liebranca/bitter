@@ -2,13 +2,15 @@ $$$$$$$$$$$$$$$$
 
 entry main;
 
-reg   vars;
+reg vars;
   long  x ,(=);
 
-proc  end;
+proc end;
   cpy   x,0;
   exit  [x];
 
-proc  main;
-  cpy   x,[end];
+proc main;
+  cpy   x,1+[x];
+  jif   main, 0x10>[x];
+
   jmp   end+0x10;

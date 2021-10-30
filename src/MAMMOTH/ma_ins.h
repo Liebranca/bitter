@@ -19,6 +19,8 @@ void lmmov (void         );                 // x to y, xor x
 void lmwap (void         );                 // swap x and y
 
 void lmjmp (void         );                 // jump to label
+void lmjif (void         );                 // jump if
+
 void lmexit(void         );                 // exit program
 
 void lmasl (uint* udr    );                 // arithmetics solver
@@ -30,6 +32,7 @@ void swmov (void         );
 void swwap (void         );
 
 void swjmp (void         );
+void swjif (void         );
 
 void swexit(void         );
 
