@@ -619,7 +619,12 @@ void NTNAMES(void)                          {
         SYMNEW("$INS", "jmp",  swjmp ),
         SYMNEW("$INS", "jif",  swjif ),
         SYMNEW("$INS", "eif",  sweif ),
-        SYMNEW("$INS", "exit", swexit)
+        SYMNEW("$INS", "exit", swexit),
+
+        SYMNEW("$INS", "add",  swadd ),
+        SYMNEW("$INS", "sub",  swsub ),
+        SYMNEW("$INS", "inc",  swinc ),
+        SYMNEW("$INS", "dec",  swdec )
 
     };
 

@@ -3,12 +3,15 @@ $$$$$$$$$$$$$$$$
 entry main;
 
 reg vars;
-  long  x ,(=);
+  long  x ,(=0x0A);
 
 proc end;
-  cpy   x,0x1FF;
   exit  [x];
 
 proc main;
   wed   char;
+
+  dec   x;
+  jif   main,?:[x];
+
   jmp   end;

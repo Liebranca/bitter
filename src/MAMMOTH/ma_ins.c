@@ -29,10 +29,16 @@ static NIHIL lm_ins_arr[] = {               // table of low-level instructions
     &lmmov,
     &lmwap,
     &lmwed,
+
     &lmjmp,
     &lmjif,
     &lmeif,
-    &lmexit
+    &lmexit,
+
+    &lmadd,
+    &lmsub,
+    &lminc,
+    &lmdec
 
 };
 
@@ -157,8 +163,7 @@ int lmfet(uintptr_t* dst        ,
     uint       udr           = 0;           /* offset into ins->data           */            \
     uint       offsets[2];                  /* [0..2] upos, cbyte              */            \
                                                                                              \
-/*   ---     ---     ---     ---     ---    /* err-catch the fetch             */            \
-                                                                                             \
+/*   ---     ---     ---     ---     ---  */                                                 \
                                                                                              \
     lmfet(&addr, &udr, offsets, ac);                                                         \
                                                                                              \
@@ -176,8 +181,7 @@ int lmfet(uintptr_t* dst        ,
     uint       offsets[4];                  /* [0..2] upos_a, cbyte_a          */            \
                                             /* [2..4] upos_b, cbyte_b          */            \
                                                                                              \
-/*   ---     ---     ---     ---     ---    /* err-catch the fetch             */            \
-                                                                                             \
+/*   ---     ---     ---     ---     ---  */                                                 \
                                                                                              \
     lmfet(&addr_a, &udr, offsets, aca);                                                      \
                                                                                              \
@@ -291,6 +295,20 @@ void lmexit(void)                           {
 
 //   ---     ---     ---     ---     ---
 
+void lmadd(void)                            { TWO_FET_OP(1, 0);
+    ((MEMUNIT*) addr_a)[offsets[1]] +=      value_b << (offsets[0]*8);                      };
+
+void lmsub(void)                            { TWO_FET_OP(1, 0);
+    ((MEMUNIT*) addr_a)[offsets[1]] -=      value_b << (offsets[0]*8);                      };
+
+void lminc(void)                            { ONE_FET_OP(0);
+    ((MEMUNIT*) addr)[offsets[1]]   +=      1       << (offsets[0]*8);                     };
+
+void lmdec(void)                            { ONE_FET_OP(1);
+    ((MEMUNIT*) addr)[offsets[1]]   -=      1       << (offsets[0]*8);                      };
+
+//   ---     ---     ---     ---     ---
+
 void lmasl(uint* udr)                       {
 
     CTOK* t;                                // current token
@@ -370,6 +388,11 @@ void swjmp (void)                           { ins_code = 0x04; ins_argc = 1; swb
 void swjif (void)                           { ins_code = 0x05; ins_argc = 2; swboil();      };
 void sweif (void)                           { ins_code = 0x06; ins_argc = 2; swboil();      };
 void swexit(void)                           { ins_code = 0x07; ins_argc = 1; swboil();      };
+
+void swadd (void)                           { ins_code = 0x08; ins_argc = 2; swboil();      };
+void swsub (void)                           { ins_code = 0x09; ins_argc = 2; swboil();      };
+void swinc (void)                           { ins_code = 0x0A; ins_argc = 1; swboil();      };
+void swdec (void)                           { ins_code = 0x0B; ins_argc = 1; swboil();      };
 
 //   ---     ---     ---     ---     ---
 
