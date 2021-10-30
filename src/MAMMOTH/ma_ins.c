@@ -121,7 +121,7 @@ void lmoff(uint* off)                       {
 int lmfet(uintptr_t* dst        ,
           uint*      udr        ,
           uint*      off        ,
-          uint       sol_addr   )           {
+          uint       allow      )           {
 
                                             // cleanup
     RSTPTRS                                 (                                   );
@@ -132,9 +132,10 @@ int lmfet(uintptr_t* dst        ,
 
                                             // fetch target
     lmasl                                   (udr                                );
+
 //   ---     ---     ---     ---     ---
 
-    if(sol_addr) {                          // enforce alignment
+    if(allow&1) {                           // enforce alignment
         off[0]=0;
         while((*rd_result)%16) {
             (*rd_result)--;
@@ -152,9 +153,9 @@ int lmfet(uintptr_t* dst        ,
 
 //   ---     ---     ---     ---     ---
 
-#define IF_CONST_ALLOWED(allow, v, src, cbyte, cunit, mask) {                                \
-    if  (allow) { v=( ((MEMUNIT*) (src))[ cunit ]&(mask<<(cbyte*8))) >> (cbyte*8); }         \
-    else        { v=(*rd_result)&mask;                                             }        }
+#define IF_CONST_ALLOWED(allow, v, src, cbyte, cunit, mask) {                               \
+    if  (allow&1) { v=( ((MEMUNIT*) (src))[ cunit ]&(mask<<(cbyte*8))) >> (cbyte*8); }      \
+    else          { v=(*rd_result)&mask;                                             }      }
 
 //   ---     ---     ---     ---     ---
 
@@ -163,12 +164,24 @@ int lmfet(uintptr_t* dst        ,
     uint       udr           = 0;           /* offset into ins->data           */            \
     uint       offsets[2];                  /* [0..2] upos, cbyte              */            \
                                                                                              \
+    INSZ       is;                                                                           \
+                                                                                             \
 /*   ---     ---     ---     ---     ---  */                                                 \
+                                                                                             \
+    if(ac&2) {                                                                               \
+        is=svinsz(0x06);                                                                     \
+                                                                                             \
+    };                                                                                       \
                                                                                              \
     lmfet(&addr, &udr, offsets, ac);                                                         \
                                                                                              \
     MEMUNIT value;                                                                           \
-    IF_CONST_ALLOWED(ac, value, addr, offsets[0], offsets[1], szmask_a)
+    IF_CONST_ALLOWED(ac, value, addr, offsets[0], offsets[1], szmask_a)                      \
+                                                                                             \
+    if(ac&2) {                                                                               \
+        ldinsz(&is);                                                                         \
+                                                                                             \
+    }
 
 //   ---     ---     ---     ---     ---
 
@@ -181,7 +194,14 @@ int lmfet(uintptr_t* dst        ,
     uint       offsets[4];                  /* [0..2] upos_a, cbyte_a          */            \
                                             /* [2..4] upos_b, cbyte_b          */            \
                                                                                              \
+    INSZ       is;                                                                           \
+                                                                                             \
 /*   ---     ---     ---     ---     ---  */                                                 \
+                                                                                             \
+    if(aca&2) {                                                                              \
+        is=svinsz(0x06);                                                                     \
+                                                                                             \
+    };                                                                                       \
                                                                                              \
     lmfet(&addr_a, &udr, offsets, aca);                                                      \
                                                                                              \
@@ -189,9 +209,19 @@ int lmfet(uintptr_t* dst        ,
     MEMUNIT value_a;                                                                         \
     IF_CONST_ALLOWED(aca, value_a, addr_a, offsets[0], offsets[1], szmask_a);                \
                                                                                              \
+    if(aca&2) {                                                                              \
+        ldinsz(&is);                                                                         \
+                                                                                             \
+    };                                                                                       \
+                                                                                             \
     szmask_b                 = szmask_a;                                                     \
                                                                                              \
 /*   ---     ---     ---     ---     ---                                       */            \
+                                                                                             \
+    if(acb&2) {                                                                              \
+        is=svinsz(0x06);                                                                     \
+                                                                                             \
+    };                                                                                       \
                                                                                              \
     lmfet(&addr_b, &udr, offsets+2, acb);                                                    \
                                                                                              \
@@ -201,13 +231,18 @@ int lmfet(uintptr_t* dst        ,
                                                                                              \
                                                                                              \
     MEMUNIT value_b;                                                                         \
-    IF_CONST_ALLOWED(acb, value_b, addr_b, offsets[2], offsets[3], szmask_b);
+    IF_CONST_ALLOWED(acb, value_b, addr_b, offsets[2], offsets[3], szmask_b);                \
+                                                                                             \
+    if(acb&2) {                                                                              \
+        ldinsz(&is);                                                                         \
+                                                                                             \
+    };                                                                                       \
 
 //   ---     ---     ---     ---     ---
 
 void lmcpy(void)                            {
 
-    TWO_FET_OP(1, 0);
+    TWO_FET_OP(0b01, 0);
 
                                             // clean masked section jic and set
     ((MEMUNIT*) addr_a)[offsets[1]] &=~     (szmask_b     << (offsets[0]*8));
@@ -215,7 +250,7 @@ void lmcpy(void)                            {
 
 void lmmov(void)                            {
 
-    TWO_FET_OP(1, 1);
+    TWO_FET_OP(0b01, 0b01);
 
                                             // ^same as cpy
     ((MEMUNIT*) addr_a)[offsets[1]] &=~     (szmask_b     << (offsets[0]*8));
@@ -226,7 +261,7 @@ void lmmov(void)                            {
 
 void lmwap(void)                            {
 
-    TWO_FET_OP(1, 1);
+    TWO_FET_OP(0b01, 0b01);
 
                                             // ^same as cpy, but b = a
     ((MEMUNIT*)addr_b)[offsets[3]] &=~      (szmask_a     << (offsets[2]*8));
@@ -238,7 +273,7 @@ void lmwap(void)                            {
 
 void lmwed(void)                            {
 
-    ONE_FET_OP(0);
+    ONE_FET_OP(0b10);
     SYMBOL* sym = mammi->slots+value;
 
     if(*((uint*) sym->id.type)==0x45505954) {
@@ -250,61 +285,53 @@ void lmwed(void)                            {
 
 void lmjmp(void)                            {
 
-    INSZ is=svinsz(0x06);
-    ONE_FET_OP(0);
+    ONE_FET_OP(0b10);
 
     uint  loc = ADDRTOLOC(value);
-    mammi->next=loc;
-
-    ldinsz(&is);                                                                            };
+    mammi->next=loc;                                                                        };
 
 void lmjif(void)                            {
 
-    INSZ is=svinsz(0x06);
-    TWO_FET_OP(0,0);
+    TWO_FET_OP(0b10,0);
 
     if(value_b) {
         uint  loc = ADDRTOLOC(value_a);
         mammi->next=loc;
 
-    }; ldinsz(&is);                                                                         };
+    };                                                                                      };
 
 void lmeif(void)                            {
 
-    INSZ is=svinsz(0x06);
-    TWO_FET_OP(0,0);
+    TWO_FET_OP(0b10,0);
 
     if(!value_a) {
         uint  loc = ADDRTOLOC(value_b);
         mammi->next=loc;
 
-    }; ldinsz(&is);                                                                         };
+    };                                                                                      };
 
 void lmexit(void)                           {
 
-    INSZ is=svinsz(0x06);
-    ONE_FET_OP(0);
+    ONE_FET_OP(0b10);
 
-                                            // cleanup any sentinels
-    mammi->lvalues[mammi->lvaltop]^=mammi->lvalues[mammi->lvaltop];
+                                            /* cleanup any sentinels */
+    mammi->lvalues[mammi->lvaltop] ^=       mammi->lvalues[mammi->lvaltop];
 
-    mammi->lvalues[mammi->lvaltop]=value;   // set return code
-    mammi->next = mammi->jmpt_i;            // force program to quit
-
-    ldinsz(&is);                                                                            };
+    mammi->lvalues[mammi->lvaltop]  = value;/* set return code       */
+    mammi->next = mammi->jmpt_i;            /* force program to quit */                     };
 
 //   ---     ---     ---     ---     ---
 
-void lmadd(void)                            { TWO_FET_OP(1, 0);
+void lmadd(void)                            { TWO_FET_OP(0b01, 0);
     ((MEMUNIT*) addr_a)[offsets[1]] +=      value_b << (offsets[0]*8);                      };
 
-void lmsub(void)                            { TWO_FET_OP(1, 0);
+void lmsub(void)                            { TWO_FET_OP(0b01, 0);
     ((MEMUNIT*) addr_a)[offsets[1]] -=      value_b << (offsets[0]*8);                      };
 
-void lminc(void)                            { ONE_FET_OP(0);
+void lminc(void)                            { ONE_FET_OP(0b01);
     ((MEMUNIT*) addr)[offsets[1]]   +=      1       << (offsets[0]*8);                     };
 
-void lmdec(void)                            { ONE_FET_OP(1);
+void lmdec(void)                            { ONE_FET_OP(0b01);
     ((MEMUNIT*) addr)[offsets[1]]   -=      1       << (offsets[0]*8);                      };
 
 //   ---     ---     ---     ---     ---

@@ -3,7 +3,7 @@ $$$$$$$$$$$$$$$$
 entry main;
 
 reg vars;
-  long  x ,(=0x0A);
+  char  x ,(=),0x04;
 
 proc end;
   exit  [x];
@@ -11,7 +11,8 @@ proc end;
 proc main;
   wed   char;
 
-  dec   x;
-  jif   main,?:[x];
+  inc   x;
+  sub   x+1,1;
+  jif   main,?:[x+1];
 
   jmp   end;
