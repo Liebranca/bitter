@@ -28,10 +28,10 @@ static NIHIL lm_ins_arr[] = {               // table of low-level instructions
     &lmcpy,
     &lmmov,
     &lmwap,
-    NULL,
+    &lmwed,
     &lmjmp,
     &lmjif,
-    NULL,
+    &lmeif,
     &lmexit
 
 };
@@ -40,6 +40,55 @@ static CODE* ins          = NULL;           // current instruction
 
 static uint  costk[16];                     // stack of code locations
 static uint  costk_top    = 0;              // top of stack
+
+//   ---     ---     ---     ---     ---
+
+typedef struct INS_SIZES {
+
+    uint    cast;
+    uint    cbyte;
+
+    uint    size;
+    uint    elems;
+    uint    units;
+    uint    step;
+
+    MEMUNIT mask_a;
+    MEMUNIT mask_b;
+
+} INSZ;
+
+INSZ svinsz(uint cast_to) {
+
+    INSZ i   = {0};
+
+    i.cast   = rd_cast;
+    i.cbyte  = rd_cbyte;
+
+    i.size   = rd_size;
+    i.elems  = rd_elems;
+    i.units  = rd_units;
+    i.step   = rd_step;
+
+    i.mask_a = szmask_a;
+    i.mask_b = szmask_b;
+
+    rd_cast=cast_to;
+
+    return i;                                                                               };
+
+void ldinsz(INSZ* i) {
+
+    rd_cast  = i->cast;
+    rd_cbyte = i->cbyte;
+
+    rd_size  = i->size;
+    rd_elems = i->elems;
+    rd_units = i->units;
+    rd_step  = i->step;
+
+    szmask_a = i->mask_a;
+    szmask_b = i->mask_b;                                                                    };
 
 //   ---     ---     ---     ---     ---
 
@@ -72,8 +121,9 @@ int lmfet(uintptr_t* dst        ,
     RSTPTRS                                 (                                   );
     CLMEM2                                  (rd_result, UNITSZ*ins->size        );
 
-    rd_cbyte     ^= rd_cbyte;
-    mammi->vaddr ^= mammi->vaddr;
+                                            // apply typing to the read
+    TPADDR                                  (rd_cast, -1                        );
+
                                             // fetch target
     lmasl                                   (udr                                );
 //   ---     ---     ---     ---     ---
@@ -84,7 +134,7 @@ int lmfet(uintptr_t* dst        ,
             (*rd_result)--;
             off[0]++;
 
-        }; TPADDR(rd_cast, -1);             // infer sizes
+        };
 
 //   ---     ---     ---     ---     ---
 
@@ -182,35 +232,62 @@ void lmwap(void)                            {
     ((MEMUNIT*) addr_a)[offsets[1]] &=~     (szmask_b     << (offsets[0]*8));
     ((MEMUNIT*) addr_a)[offsets[1]] |=      value_b       << (offsets[0]*8);                };
 
+void lmwed(void)                            {
+
+    ONE_FET_OP(0);
+    SYMBOL* sym = mammi->slots+value;
+
+    if(*((uint*) sym->id.type)==0x45505954) {
+        sym->onrd();
+
+    };                                                                                      };
+
+//   ---     ---     ---     ---     ---
+
 void lmjmp(void)                            {
 
-    rd_cast=0x06;
-    TPADDR(rd_cast, -1);
+    INSZ is=svinsz(0x06);
     ONE_FET_OP(0);
 
     uint  loc = ADDRTOLOC(value);
+    mammi->next=loc;
 
-    mammi->next=loc;                                                                        };
+    ldinsz(&is);                                                                            };
 
 void lmjif(void)                            {
 
-    rd_cast=0x06;
-    TPADDR(rd_cast, -1);
-
+    INSZ is=svinsz(0x06);
     TWO_FET_OP(0,0);
+
     if(value_b) {
         uint  loc = ADDRTOLOC(value_a);
         mammi->next=loc;
 
-    };                                                                                      };
+    }; ldinsz(&is);                                                                         };
 
-void lmexit(void)                           { rd_cast=0x06; TPADDR(rd_cast, -1); ONE_FET_OP(0);
+void lmeif(void)                            {
 
-                                            /* cleanup any sentinels */
+    INSZ is=svinsz(0x06);
+    TWO_FET_OP(0,0);
+
+    if(!value_a) {
+        uint  loc = ADDRTOLOC(value_b);
+        mammi->next=loc;
+
+    }; ldinsz(&is);                                                                         };
+
+void lmexit(void)                           {
+
+    INSZ is=svinsz(0x06);
+    ONE_FET_OP(0);
+
+                                            // cleanup any sentinels
     mammi->lvalues[mammi->lvaltop]^=mammi->lvalues[mammi->lvaltop];
 
-    mammi->lvalues[mammi->lvaltop]=value;   /* set return code       */
-    mammi->next = mammi->jmpt_i;            /* force program to quit */                     };
+    mammi->lvalues[mammi->lvaltop]=value;   // set return code
+    mammi->next = mammi->jmpt_i;            // force program to quit
+
+    ldinsz(&is);                                                                            };
 
 //   ---     ---     ---     ---     ---
 
@@ -267,9 +344,7 @@ void lmasl(uint* udr)                       {
 //   ---     ---     ---     ---     ---    // compress expanded tokens into final value
 
     (*udr)+=sizeof(CTOK)/UNITSZ;
-
-    SOLVE:
-        CALCUS_COLLAPSE();
+    SOLVE: CALCUS_COLLAPSE();
 
     goto EVAL_EXP;
 
@@ -289,10 +364,11 @@ void swboil(void)                           { /* placeholder */                 
 void swcpy (void)                           { ins_code = 0x00; ins_argc = 2; swboil();      };
 void swmov (void)                           { ins_code = 0x01; ins_argc = 2; swboil();      };
 void swwap (void)                           { ins_code = 0x02; ins_argc = 2; swboil();      };
+void swwed (void)                           { ins_code = 0x03; ins_argc = 1; swboil();      };
 
 void swjmp (void)                           { ins_code = 0x04; ins_argc = 1; swboil();      };
 void swjif (void)                           { ins_code = 0x05; ins_argc = 2; swboil();      };
-
+void sweif (void)                           { ins_code = 0x06; ins_argc = 2; swboil();      };
 void swexit(void)                           { ins_code = 0x07; ins_argc = 1; swboil();      };
 
 //   ---     ---     ---     ---     ---

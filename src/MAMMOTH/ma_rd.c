@@ -106,48 +106,32 @@ void TRNVAL(uint len)                       { if(!len) { return; }
 
     else {
 
-        void* nulmy     = NULL;             // dummy for getter/valid check
+        void* nulmy        = NULL;          // dummy for getter/valid check
 
-                                            // fetch
-        STR_HASHGET                         (LNAMES_HASH, rd_rawv, nulmy, 0      );
+                                            // fetch from global symbols...
+        STR_HASHGET                         (GNAMES_HASH, rd_rawv, nulmy, 0      );
 
-        if(nulmy!=NULL) {                   // get type and decode typedata
-            uint size = VALSIZ              (0x06                                );
-
-//   ---     ---     ---     ---     ---
-            // lets skip this step, trust me!
-            if(0 /*szdata[2]*/) {           // indexing required!
-                if(!(rd_tkx<rd_tki)) {
-                    NO_IDEX_OP:
-                    CALOUT(E, "Symbol %s requires indexing operation\n", rd_rawv);
-
-                    return;
-
-                }
-
-                elif(tokens[rd_tkx+1][0]==0x40) {
-                    mammi->state |= MAMMIT_SF_PFET;
-                    // mammi->vtype  = szdata[0] | (szdata[1]<<8) | (szdata[2]<<16);
-
-                    if(rd_ctok) {
-                        rd_ctok->ttype = CALCUS_FETCH;
-                        rd_ctok->vtype = mammi->vtype;
-                        rd_ctok->value = mammi->vaddr;
-
-                    };
-
-                } else {
-                    goto NO_IDEX_OP;
-
-                };
+        if(!nulmy) {                        // not found? fetch from locals...
+            STR_HASHGET                     (LNAMES_HASH, rd_rawv, nulmy, 0      );
 
 //   ---     ---     ---     ---     ---
 
-            } else {                        // convert label to address
-                *rd_value      = mammi->jmpt[((LABEL*) nulmy)->loc];
-                rd_ctok->value = *rd_value;
+        } else {                            // convert symbol to index
+            rd_ctok->ttype = CALCUS_NIHIL;
+            *rd_value      = ( ((uintptr_t) nulmy       ) \
+                             - ((uintptr_t) mammi->slots) ) / sizeof(SYMBOL);
 
-            };
+            rd_ctok->value = *rd_value;
+            return;
+
+        }
+
+//   ---     ---     ---     ---     ---
+
+        if(nulmy!=NULL) {                   // convert label to address
+            rd_ctok->ttype = CALCUS_FETCH;
+            *rd_value      = mammi->jmpt[((LABEL*) nulmy)->loc];
+            rd_ctok->value = *rd_value;
 
         } elif(mammi->pass) {
             CALOUT(E, "Can't fetch key %s\n", rd_rawv);
@@ -630,10 +614,11 @@ void NTNAMES(void)                          {
         SYMNEW("$INS", "cpy",  swcpy ),
         SYMNEW("$INS", "mov",  swmov ),
         SYMNEW("$INS", "wap",  swwap ),
+        SYMNEW("$INS", "wed",  swwed ),
 
         SYMNEW("$INS", "jmp",  swjmp ),
         SYMNEW("$INS", "jif",  swjif ),
-
+        SYMNEW("$INS", "eif",  sweif ),
         SYMNEW("$INS", "exit", swexit)
 
     };

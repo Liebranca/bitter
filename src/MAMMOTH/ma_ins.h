@@ -17,10 +17,11 @@ void lmpop (void         );                 // exec next instruction in queue
 void lmcpy (void         );                 // copy x to y
 void lmmov (void         );                 // x to y, xor x
 void lmwap (void         );                 // swap x and y
+void lmwed (void         );                 // set typing rules
 
 void lmjmp (void         );                 // jump to label
 void lmjif (void         );                 // jump if
-
+void lmeif (void         );                 // jump if not
 void lmexit(void         );                 // exit program
 
 void lmasl (uint* udr    );                 // arithmetics solver
@@ -30,10 +31,10 @@ void lmasl (uint* udr    );                 // arithmetics solver
 void swcpy (void         );                 // flip switches for instruction sw***
 void swmov (void         );
 void swwap (void         );
-
+void swwed (void         );
 void swjmp (void         );
 void swjif (void         );
-
+void sweif (void         );
 void swexit(void         );
 
 //   ---     ---     ---     ---     ---
