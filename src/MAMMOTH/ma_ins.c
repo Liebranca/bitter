@@ -38,7 +38,16 @@ static NIHIL lm_ins_arr[] = {               // table of low-level instructions
     &lmadd,
     &lmsub,
     &lminc,
-    &lmdec
+    &lmdec,
+
+    &lmmul,
+    &lmdiv,
+    &lmmod,
+    NULL,
+
+    &lmand,
+    &lmor,
+    &lmxor
 
 };
 
@@ -334,6 +343,36 @@ void lminc(void)                            { ONE_FET_OP(0b01);
 void lmdec(void)                            { ONE_FET_OP(0b01);
     ((MEMUNIT*) addr)[offsets[1]]   -=      1       << (offsets[0]*8);                      };
 
+void lmmul (void)                           { TWO_FET_OP(0b01, 0);
+
+    ((MEMUNIT*) addr_a)[offsets[1]] &=~     (szmask_b         << (offsets[0]*8));
+    ((MEMUNIT*) addr_a)[offsets[1]] |=      (value_a*value_b) << (offsets[0]*8);            };
+
+void lmdiv (void)                           { TWO_FET_OP(0b01, 0);
+
+    ((MEMUNIT*) addr_a)[offsets[1]] &=~     (szmask_b         << (offsets[0]*8));
+    ((MEMUNIT*) addr_a)[offsets[1]] |=      (value_a/value_b) << (offsets[0]*8);            };
+
+void lmmod (void)                           { TWO_FET_OP(0b01, 0);
+
+    ((MEMUNIT*) addr_a)[offsets[1]] &=~     (szmask_b         << (offsets[0]*8));
+    ((MEMUNIT*) addr_a)[offsets[1]] |=      (value_a%value_b) << (offsets[0]*8);            };
+
+void lmand (void)                           { TWO_FET_OP(0b01, 0);
+
+    ((MEMUNIT*) addr_a)[offsets[1]] &=~     (szmask_b         << (offsets[0]*8));
+    ((MEMUNIT*) addr_a)[offsets[1]] |=      (value_a&value_b) << (offsets[0]*8);            };
+
+void lmor  (void)                           { TWO_FET_OP(0b01, 0);
+
+    ((MEMUNIT*) addr_a)[offsets[1]] &=~     (szmask_b         << (offsets[0]*8));
+    ((MEMUNIT*) addr_a)[offsets[1]] |=      (value_a|value_b) << (offsets[0]*8);            };
+
+void lmxor (void)                           { TWO_FET_OP(0b01, 0);
+
+    ((MEMUNIT*) addr_a)[offsets[1]] &=~     (szmask_b         << (offsets[0]*8));
+    ((MEMUNIT*) addr_a)[offsets[1]] |=      (value_a^value_b) << (offsets[0]*8);            };
+
 //   ---     ---     ---     ---     ---
 
 void lmasl(uint* udr)                       {
@@ -404,22 +443,28 @@ void lmasl(uint* udr)                       {
 
 //   ---     ---     ---     ---     ---
 
-void swboil(void)                           { /* placeholder */                             };
+void swcpy (void)                           { ins_code = 0x00; ins_argc = 2;                };
+void swmov (void)                           { ins_code = 0x01; ins_argc = 2;                };
+void swwap (void)                           { ins_code = 0x02; ins_argc = 2;                };
+void swwed (void)                           { ins_code = 0x03; ins_argc = 1;                };
 
-void swcpy (void)                           { ins_code = 0x00; ins_argc = 2; swboil();      };
-void swmov (void)                           { ins_code = 0x01; ins_argc = 2; swboil();      };
-void swwap (void)                           { ins_code = 0x02; ins_argc = 2; swboil();      };
-void swwed (void)                           { ins_code = 0x03; ins_argc = 1; swboil();      };
+void swjmp (void)                           { ins_code = 0x04; ins_argc = 1;                };
+void swjif (void)                           { ins_code = 0x05; ins_argc = 2;                };
+void sweif (void)                           { ins_code = 0x06; ins_argc = 2;                };
+void swexit(void)                           { ins_code = 0x07; ins_argc = 1;                };
 
-void swjmp (void)                           { ins_code = 0x04; ins_argc = 1; swboil();      };
-void swjif (void)                           { ins_code = 0x05; ins_argc = 2; swboil();      };
-void sweif (void)                           { ins_code = 0x06; ins_argc = 2; swboil();      };
-void swexit(void)                           { ins_code = 0x07; ins_argc = 1; swboil();      };
+void swadd (void)                           { ins_code = 0x08; ins_argc = 2;                };
+void swsub (void)                           { ins_code = 0x09; ins_argc = 2;                };
+void swinc (void)                           { ins_code = 0x0A; ins_argc = 1;                };
+void swdec (void)                           { ins_code = 0x0B; ins_argc = 1;                };
 
-void swadd (void)                           { ins_code = 0x08; ins_argc = 2; swboil();      };
-void swsub (void)                           { ins_code = 0x09; ins_argc = 2; swboil();      };
-void swinc (void)                           { ins_code = 0x0A; ins_argc = 1; swboil();      };
-void swdec (void)                           { ins_code = 0x0B; ins_argc = 1; swboil();      };
+void swmul (void)                           { ins_code = 0x0C; ins_argc = 2;                };
+void swdiv (void)                           { ins_code = 0x0D; ins_argc = 2;                };
+void swmod (void)                           { ins_code = 0x0E; ins_argc = 2;                };
+
+void swand (void)                           { ins_code = 0x10; ins_argc = 2;                };
+void swor  (void)                           { ins_code = 0x11; ins_argc = 2;                };
+void swxor (void)                           { ins_code = 0x12; ins_argc = 2;                };
 
 //   ---     ---     ---     ---     ---
 

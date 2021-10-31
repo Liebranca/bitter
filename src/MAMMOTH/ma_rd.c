@@ -624,7 +624,16 @@ void NTNAMES(void)                          {
         SYMNEW("$INS", "add",  swadd ),
         SYMNEW("$INS", "sub",  swsub ),
         SYMNEW("$INS", "inc",  swinc ),
-        SYMNEW("$INS", "dec",  swdec )
+        SYMNEW("$INS", "dec",  swdec ),
+
+        SYMNEW("$INS", "mul",  swmul ),
+        SYMNEW("$INS", "div",  swdiv ),
+        SYMNEW("$INS", "mod",  swmod ),
+
+        SYMNEW("$INS", "and",  swand ),
+        SYMNEW("$INS", "or" ,  swor  ),
+        SYMNEW("$INS", "xor",  swxor )
+
 
     };
 
@@ -1191,7 +1200,6 @@ int main(int argc, char** argv)             {
             while(mammi->next<mammi->jmpt_i) {
                 LABEL* l=mammi->jmpt_h+mammi->next;
                 if(*((uint*) l->id.type)==0x2A534E49) {
-                    // CALOUT(E, "RUN <%s>\n", l->id.full);
                     ldins(l->loc);
 
                 }; mammi->next++;

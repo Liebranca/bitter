@@ -3,16 +3,11 @@ $$$$$$$$$$$$$$$$
 entry main;
 
 reg vars;
-  char  x ,(=),0x04,0x08;
-
-proc end;
-  exit  [x];
+  char  x 0b1010;
+  char  y 0b0011;
 
 proc main;
-  wed   char;
+  wed   wide;
+  xor   x,[y];
 
-  inc   x;
-  sub   x+1,1;
-  jif   main,?:[x+1];
-
-  jmp   end;
+  exit  [x];
