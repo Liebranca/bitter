@@ -3,7 +3,7 @@ $$$$$$$$$$$$$$$$
 entry main;
 
 reg vars;
-  char  x ,(=),0x04;
+  char  x ,(=),0x04,0x08;
 
 proc end;
   exit  [x];

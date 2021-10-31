@@ -450,7 +450,7 @@ void CALCUS_COLLAPSE(void)                  {
             //          *rd_lhand, rd_flags, *rd_value                      );
 
             if(!(rd_flags&OP_AT)) {
-                *v=(*v)<<(rd_cbyte*8);
+                *v  = (*v)<<(rd_cbyte*8);
 
             }; CALCUS_OPSWITCH;
             //CALOUT(E, "%016" PRIX64 "\n", *rd_lhand); break;
@@ -461,7 +461,7 @@ void CALCUS_COLLAPSE(void)                  {
         default: {
             float* r = (float*) rd_lhand;
             float* v = (float*) rd_value;
-            CALCUS_OPSWITCH;
+            // CALCUS_OPSWITCH;
 
         };
     };                                                                                      };

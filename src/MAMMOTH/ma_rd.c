@@ -1195,8 +1195,8 @@ int main(int argc, char** argv)             {
                     ldins(l->loc);
 
                 }; mammi->next++;
-            }; CALOUT(E, "%s exit with code <0x%" PRIX64 ">\n"   ,
-                      mammi->entry, mammi->lvalues[mammi->lvaltop]);
+            }; CALOUT(E, "%s exit with code <0x%" PRIX64 ">\n"             ,
+                      mammi->entry, mammi->lvalues[mammi->lvaltop]&szmask_a);
 
 //   ---     ---     ---     ---     ---
 

@@ -242,7 +242,7 @@ void JMPT_INSERT(void*  x   ,
     case OP_BSUBS: {                        \
         uintptr_t addr=(*rd_value);         \
         *(v)=*((MEMUNIT*) addr);            \
-        *(r)=*(v);                          \
+        *(r)=(*(v))&szmask_a;               \
         break;                              \
     }                                       \
                                             \

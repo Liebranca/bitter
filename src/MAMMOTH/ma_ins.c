@@ -366,7 +366,7 @@ void lmasl(uint* udr)                       {
     };                                      // ^idem, rightside
 
     for(int y=(ARRSIZE(t->rops)-1), z=0;
-        y>-1; y--, z++                  ) {
+        y>-1; y--, z++                 ) {
 
         c = t->rops[z]; if(!c) {
             break;
