@@ -656,7 +656,12 @@ void NTNAMES(void)                          {
 
         SYMNEW("$INS", "and",  swand ),
         SYMNEW("$INS", "or" ,  swor  ),
-        SYMNEW("$INS", "xor",  swxor )
+        SYMNEW("$INS", "xor",  swxor ),
+        SYMNEW("$INS", "nor",  swnor ),
+        SYMNEW("$INS", "nand", swnand),
+        SYMNEW("$INS", "xnor", swxnor),
+
+        SYMNEW("$INS", "til",  swtil )
 
 
     };

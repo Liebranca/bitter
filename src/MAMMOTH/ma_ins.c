@@ -39,15 +39,18 @@ static NIHIL lm_ins_arr[] = {               // table of low-level instructions
     &lmsub,
     &lminc,
     &lmdec,
-
     &lmmul,
     &lmdiv,
     &lmmod,
-    NULL,
 
     &lmand,
     &lmor,
-    &lmxor
+    &lmxor,
+    &lmnor,
+    &lmnand,
+    &lmxnor,
+
+    &lmtil
 
 };
 
@@ -373,6 +376,8 @@ void lmmod (void)                           { TWO_FET_OP(0b01, 0);
     ((MEMUNIT*) addr_a)[offsets[1]] &=~     szmask_a << (offsets[0]*8);
     ((MEMUNIT*) addr_a)[offsets[1]] |=      result   << (offsets[0]*8);                     };
 
+//   ---     ---     ---     ---     ---
+
 void lmand (void)                           { TWO_FET_OP(0b01, 0);
 
     MEMUNIT result                   =      (value_a&value_b)&szmask_a;
@@ -390,6 +395,32 @@ void lmxor (void)                           { TWO_FET_OP(0b01, 0);
     MEMUNIT result                   =      (value_a^value_b)&szmask_a;
     ((MEMUNIT*) addr_a)[offsets[1]] &=~     szmask_a << (offsets[0]*8);
     ((MEMUNIT*) addr_a)[offsets[1]] |=      result   << (offsets[0]*8);                     };
+
+void lmnor (void)                           { TWO_FET_OP(0b01, 0);
+
+    MEMUNIT result                   =      (!(value_a|value_b))&szmask_a;
+    ((MEMUNIT*) addr_a)[offsets[1]] &=~     szmask_a << (offsets[0]*8);
+    ((MEMUNIT*) addr_a)[offsets[1]] |=      result   << (offsets[0]*8);                     };
+
+void lmnand(void)                           { TWO_FET_OP(0b01, 0);
+
+    MEMUNIT result                   =      (!(value_a&value_b))&szmask_a;
+    ((MEMUNIT*) addr_a)[offsets[1]] &=~     szmask_a << (offsets[0]*8);
+    ((MEMUNIT*) addr_a)[offsets[1]] |=      result   << (offsets[0]*8);                     };
+
+void lmxnor(void)                           { TWO_FET_OP(0b01, 0);
+
+    MEMUNIT result                   =      (!(value_a^value_b))&szmask_a;
+    ((MEMUNIT*) addr_a)[offsets[1]] &=~     szmask_a << (offsets[0]*8);
+    ((MEMUNIT*) addr_a)[offsets[1]] |=      result   << (offsets[0]*8);                     };
+
+//   ---     ---     ---     ---     ---
+
+void lmtil (void)                           { ONE_FET_OP(0b01);
+
+    MEMUNIT result                 =        (~value)&szmask_a;
+    ((MEMUNIT*) addr)[offsets[1]] &=~       szmask_a << (offsets[0]*8);
+    ((MEMUNIT*) addr)[offsets[1]] |=        result   << (offsets[0]*8);                     };
 
 //   ---     ---     ---     ---     ---
 
@@ -475,14 +506,18 @@ void swadd (void)                           { ins_code = 0x08; ins_argc = 2;    
 void swsub (void)                           { ins_code = 0x09; ins_argc = 2;                };
 void swinc (void)                           { ins_code = 0x0A; ins_argc = 1;                };
 void swdec (void)                           { ins_code = 0x0B; ins_argc = 1;                };
-
 void swmul (void)                           { ins_code = 0x0C; ins_argc = 2;                };
 void swdiv (void)                           { ins_code = 0x0D; ins_argc = 2;                };
 void swmod (void)                           { ins_code = 0x0E; ins_argc = 2;                };
 
-void swand (void)                           { ins_code = 0x10; ins_argc = 2;                };
-void swor  (void)                           { ins_code = 0x11; ins_argc = 2;                };
-void swxor (void)                           { ins_code = 0x12; ins_argc = 2;                };
+void swand (void)                           { ins_code = 0x0F; ins_argc = 2;                };
+void swor  (void)                           { ins_code = 0x10; ins_argc = 2;                };
+void swxor (void)                           { ins_code = 0x11; ins_argc = 2;                };
+void swnor (void)                           { ins_code = 0x12; ins_argc = 2;                };
+void swnand(void)                           { ins_code = 0x13; ins_argc = 2;                };
+void swxnor(void)                           { ins_code = 0x14; ins_argc = 2;                };
+
+void swtil (void)                           { ins_code = 0x15; ins_argc = 1;                };
 
 //   ---     ---     ---     ---     ---
 

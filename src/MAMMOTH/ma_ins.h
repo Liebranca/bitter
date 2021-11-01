@@ -28,7 +28,6 @@ void lmadd (void         );                 // a+=b
 void lmsub (void         );                 // a-=b
 void lminc (void         );                 // a++
 void lmdec (void         );                 // a--
-
 void lmmul (void         );                 // a*=b
 void lmdiv (void         );                 // a/=b
 void lmmod (void         );                 // a%=b
@@ -36,6 +35,11 @@ void lmmod (void         );                 // a%=b
 void lmand (void         );                 // a&=b
 void lmor  (void         );                 // a|=b
 void lmxor (void         );                 // a^=b
+void lmnor (void         );                 // a=!(a|b)
+void lmnand(void         );                 // a=!(a&b)
+void lmxnor(void         );                 // a=!(a^b)
+
+void lmtil (void         );                 // a=~a
 
 void lmasl (uint* udr    );                 // arithmetics solver
 
@@ -59,10 +63,15 @@ void swdec (void         );
 void swmul (void         );
 void swdiv (void         );
 void swmod (void         );
-
 void swand (void         );
+
 void swor  (void         );
 void swxor (void         );
+void swnor (void         );
+void swnand(void         );
+
+void swxnor(void         );
+void swtil (void         );
 
 //   ---     ---     ---     ---     ---
 

@@ -3,7 +3,8 @@ $$$$$$$$$$$$$$$$
 entry main;
 
 reg vars;
-  long  x "DEADMEATDEADMEAT!!!!!!!!!!!!!!!!!!";
+  wide  x 0x01;
 
 proc main;
+  til   x;
   exit  [x];
