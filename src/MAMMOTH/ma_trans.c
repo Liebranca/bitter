@@ -65,6 +65,27 @@ void TRHEXVAL(uchar*   src ,
 
 //   ---     ---     ---     ---     ---
 
+uint TRSTRVAL(uchar*   src ,
+              MEMUNIT* to  )                {
+
+    uchar  cbyte = 0x00;                    // curent byte
+    uchar  c     = 0x00;                    // empty char
+
+    ushort len   = 0;                       // length of string
+
+//   ---     ---     ---     ---     ---
+
+    do { c=*src; if(!c) { break; }
+
+        *to|=((MEMUNIT) c) << (cbyte*8);
+        cbyte++; len++;
+
+        if(cbyte==UNITSZ) { cbyte=0; to++; };
+
+    } while(*src++); return len;                                                            };
+
+//   ---     ---     ---     ---     ---
+
 void TRBITVAL(uchar*   src ,
               MEMUNIT* to  )                {
 

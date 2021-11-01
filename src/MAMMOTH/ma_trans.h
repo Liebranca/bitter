@@ -13,6 +13,9 @@ extern "C" {
 void TRHEXVAL(uchar*   src ,
               MEMUNIT* to  );               // hexstr to num
 
+uint TRSTRVAL(uchar*   src ,
+              MEMUNIT* to  );               // strstr to num
+
 void TRBITVAL(uchar*   src ,
               MEMUNIT* to  );               // bitstr to num
 

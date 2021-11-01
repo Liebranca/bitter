@@ -3,11 +3,8 @@ $$$$$$$$$$$$$$$$
 entry main;
 
 reg vars;
-  char  x 0b1010;
-  char  y 0b0011;
+  char  x "DEADMEATDEADMEAT";
 
 proc main;
   wed   wide;
-  xor   x,[y];
-
   exit  [x];

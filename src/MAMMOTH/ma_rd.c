@@ -41,7 +41,6 @@ void TRNVAL(uint len)                       { if(!len) { return; }
 
 //   ---     ---     ---     ---     ---
 
-
     if( (0x30 <= rd_rawv[0])
     &&  (0x39 >= rd_rawv[0]) ) {
 
@@ -83,6 +82,22 @@ void TRNVAL(uint len)                       { if(!len) { return; }
 
             }; *rd_value   = rd_rawv[0]-0x30;
                if(rd_ctok) { rd_ctok->value=*rd_value; }
+
+        };
+    }
+
+//   ---     ---     ---     ---     ---    string strings!
+
+    elif( rd_rawv[0]==0x22 \
+    ||    rd_rawv[0]==0x27 )                {
+
+        mammi->state |= MAMMIT_SF_PSTR;
+        uint slen     = TRSTRVAL(rd_rawv+1, rd_result);
+
+
+        while(slen>UNITSZ*2) {
+            slen-=UNITSZ*2;
+            rd_units+=2;
 
         };
     }
@@ -384,13 +399,15 @@ void RDEXP(void)                            {
 
 //   ---     ---     ---     ---     ---
 
+    if(mammi->state&MAMMIT_SF_PSTR) {
+        mammi->state&=~MAMMIT_SF_PSTR;
+        goto EVAL_EXP;
+
+    };
+
                                             // collapse arithmetic-wise
     SOLVE:
-        //CALOUT(E, "0x%016" PRIX64 " %016" PRIX64 " %016" PRIX64 " -> ",
-        //          *rd_lhand, rd_flags, *rd_value                      );
-
         CALCUS_COLLAPSE();
-        //CALOUT(E, "%016" PRIX64 "\n", *rd_lhand);
 
     goto EVAL_EXP;
 
@@ -855,7 +872,15 @@ void RDNXT(void)                            {
             }; goto TOP;
         };
 
-// CALOUT(E, "%c (0x%" PRIX8 ")\n", rd_cur, rd_cur);
+//   ---     ---     ---     ---     ---
+
+        if(mammi->state&MAMMIT_SF_PSTR) {
+            if(rd_cur!=0x27 && rd_cur!=0x22) {
+                goto FORCE_INSERT;
+
+            }; mammi->state&=~MAMMIT_SF_PSTR;
+            goto TOP;
+        };
 
 //   ---     ---     ---     ---     ---
 
@@ -1004,10 +1029,15 @@ void RDNXT(void)                            {
 
             };
 
-//   ---     ---     ---     ---     ---    non @(sec) operators
+//   ---     ---     ---     ---     ---    strings!
 
         case 0x27:                          // '    squot
         case 0x22:                          // "    dquot
+            mammi->state |= MAMMIT_SF_PSTR;
+            goto FORCE_INSERT;
+
+//   ---     ---     ---     ---     ---    non @(sec) operators
+
         case 0x23:                          // #    kush
 
         case 0x25:                          // %    modus
@@ -1052,6 +1082,7 @@ void RDNXT(void)                            {
         case 0x94:                          // <-   brrow
 
             OP_NONSEC:
+
             op[opi]=rd_cur; opi++;
             goto APTOK;
 
