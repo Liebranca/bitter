@@ -321,7 +321,7 @@ void lmeif(void)                            {
 
 void lmexit(void)                           {
 
-    ONE_FET_OP(0b10);
+    ONE_FET_OP(0);
 
                                             /* cleanup any sentinels */
     mammi->lvalues[mammi->lvaltop] ^=       mammi->lvalues[mammi->lvaltop];

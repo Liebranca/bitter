@@ -319,8 +319,7 @@ void RSTPTRS(void)                          {
     rd_lhand  = rd_result;
     rd_value  = rd_lhand+rd_step;
 
-    CLMEM2(rd_value, rd_size);
-    CLMEM2(rd_lhand, rd_elems*rd_size);                                                     };
+    CLMEM2(memlng->buff, 128*UNITSZ);                                                       };
 
 //   ---     ---     ---     ---     ---
 

@@ -31,8 +31,8 @@ void TRNVAL(uint len)                       { if(!len) { return; }
     int  evil     = 0;
     uint vlen     = len-1;
 
-                                            // set OP_RADIX
-    rd_flags     |=                         (strstr(typedata.base, "float") != NULL) << 1;
+                                            // set is float
+    rd_flags     |=                         (strstr(typedata.base, "float") != NULL)*OP_RADIX;
 
     if(rd_ctok) {
         rd_ctok->ttype = CALCUS_CONST;
@@ -95,7 +95,7 @@ void TRNVAL(uint len)                       { if(!len) { return; }
         uint slen     = TRSTRVAL(rd_rawv+1, rd_result);
 
 
-        while(slen>UNITSZ*2) {
+        while(slen>(UNITSZ*2)) {
             slen-=UNITSZ*2;
             rd_units+=2;
 
@@ -132,22 +132,26 @@ void TRNVAL(uint len)                       { if(!len) { return; }
 //   ---     ---     ---     ---     ---
 
         } else {                            // convert symbol to index
-            rd_ctok->ttype = CALCUS_NIHIL;
             *rd_value      = ( ((uintptr_t) nulmy       ) \
                              - ((uintptr_t) mammi->slots) ) / sizeof(SYMBOL);
 
-            rd_ctok->value = *rd_value;
-            return;
+            if(rd_ctok) {
+                rd_ctok->ttype = CALCUS_NIHIL;
+                rd_ctok->value = *rd_value;
 
+            }; return;
         }
 
 //   ---     ---     ---     ---     ---
 
         if(nulmy!=NULL) {                   // convert label to address
-            rd_ctok->ttype = CALCUS_FETCH;
             *rd_value      = mammi->jmpt[((LABEL*) nulmy)->loc];
-            rd_ctok->value = *rd_value;
 
+            if(rd_ctok) {
+                rd_ctok->ttype = CALCUS_FETCH;
+                rd_ctok->value = *rd_value;
+
+            };
         } elif(mammi->pass) {
             CALOUT(E, "Can't fetch key %s\n", rd_rawv);
 
@@ -336,7 +340,7 @@ void SECEXPS(void)                          {
 void RDEXP(void)                            {
 
     uint   parsed     = 0;                  // how many *expressions* have been read
-    uint ex_f         = rd_tkx+1;           // idex to first token in expression
+    uint   ex_f       = rd_tkx+1;           // idex to first token in expression
 
     RSTPTRS();
 
@@ -344,8 +348,7 @@ void RDEXP(void)                            {
 
     EVAL_EXP: rd_tkx++;                     // read next token in expression
 
-    if( !(rd_tkx<rd_tki   ) \
-    ||   (parsed>=rd_elems) ) {             // ... or jump to end if all tokens read
+    if( !(rd_tkx<rd_tki   ) ) {             // ... or jump to end if all tokens read
         goto RESULT;
 
     }; rd_flags     = 0;                    // values defined above MAMMIT_OPSWITCH
@@ -386,6 +389,12 @@ void RDEXP(void)                            {
         if(ex_f<rd_tkx) {                   // advance if sec is not first token
             BYTESTEP();
 
+            if(parsed>=rd_elems) {
+                rd_elems+=(UNITSZ*2)/rd_size;
+                rd_units+=2;
+
+            };
+
         };
 
 //   ---     ---     ---     ---     ---
@@ -417,7 +426,7 @@ void RDEXP(void)                            {
         MAMMIT_LVLB_PRV;                    // this doesn't account for unclosed () parens
         goto SOLVE;                         // so beware! PE$O will not care for that mistake
 
-    };                                                                                      };
+    };                                                                                       };
 
 //   ---     ---     ---     ---     ---
 
@@ -516,7 +525,6 @@ void RDPRC(void)                            {
 
         RSTSEC                              (                                       );
         RDEXP                               (                                       );
-
                                              // calculate token count!
         leap        =                       (uint) ( ((uintptr_t) rd_ctok         ) \
                                                    - ((uintptr_t) (code->data+udr)) );
@@ -540,7 +548,6 @@ void RDPRC(void)                            {
 
         };
     }; snprintf(buff, ZJC_IDK_WIDTH, "%s%u", cntx_key, cur_cntx->elems);
-
 
 //   ---     ---     ---     ---     ---
 

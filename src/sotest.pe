@@ -3,8 +3,7 @@ $$$$$$$$$$$$$$$$
 entry main;
 
 reg vars;
-  char  x "DEADMEATDEADMEAT";
+  long  x "DEADMEATDEADMEAT!!!!!!!!!!!!!!!!!!";
 
 proc main;
-  wed   wide;
   exit  [x];
