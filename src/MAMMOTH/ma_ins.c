@@ -50,7 +50,14 @@ static NIHIL lm_ins_arr[] = {               // table of low-level instructions
     &lmnand,
     &lmxnor,
 
-    &lmtil
+    &lmtil,
+    &lmnot,
+    &lmis,
+    &lmeq,
+    &lmneq,
+
+    &lmshr,
+    &lmshl
 
 };
 
@@ -288,7 +295,8 @@ void lmwed(void)                            {
     ONE_FET_OP(0b10);
     SYMBOL* sym = mammi->slots+value;
 
-    if(*((uint*) sym->id.type)==0x45505954) {
+    if( (*((uint*) sym->id.type)==0x45505954)
+    ||  (*((uint*) sym->id.type)==0x47414C46) ) {
         sym->onrd();
 
     };                                                                                      };
@@ -422,6 +430,54 @@ void lmtil (void)                           { ONE_FET_OP(0b01);
     ((MEMUNIT*) addr)[offsets[1]] &=~       szmask_a << (offsets[0]*8);
     ((MEMUNIT*) addr)[offsets[1]] |=        result   << (offsets[0]*8);                     };
 
+void lmnot (void)                           { ONE_FET_OP(0b01);
+
+    MEMUNIT result                 =        (!value)&szmask_a;
+    ((MEMUNIT*) addr)[offsets[1]] &=~       szmask_a << (offsets[0]*8);
+    ((MEMUNIT*) addr)[offsets[1]] |=        result   << (offsets[0]*8);                     };
+
+void lmis  (void)                           { ONE_FET_OP(0b01);
+
+    MEMUNIT result                 =        (value!=0)&szmask_a;
+    ((MEMUNIT*) addr)[offsets[1]] &=~       szmask_a << (offsets[0]*8);
+    ((MEMUNIT*) addr)[offsets[1]] |=        result   << (offsets[0]*8);                     };
+
+void lmeq  (void)                           { TWO_FET_OP(0b01, 0);
+
+    MEMUNIT result                   =      (value_a==value_b)&szmask_a;
+    ((MEMUNIT*) addr_a)[offsets[1]] &=~     szmask_a << (offsets[0]*8);
+    ((MEMUNIT*) addr_a)[offsets[1]] |=      result   << (offsets[0]*8);                     };
+
+void lmneq (void)                           { TWO_FET_OP(0b01, 0);
+
+    MEMUNIT result                   =      (value_a!=value_b)&szmask_a;
+    ((MEMUNIT*) addr_a)[offsets[1]] &=~     szmask_a << (offsets[0]*8);
+    ((MEMUNIT*) addr_a)[offsets[1]] |=      result   << (offsets[0]*8);                     };
+
+//   ---     ---     ---     ---     ---
+
+void lmshr (void)                           { TWO_FET_OP(0b01, 0);
+
+    MEMUNIT result                   =      (value_a>>value_b)&szmask_a;
+
+    if(typedata.flags&1) {                  // corner case: handle signed shift
+
+        if( (value_a&szmask_a) > (szmask_a/2)) {
+
+            result                   =      ((0xFFLL<<value_b)|result)&szmask_a;
+
+        };
+    };
+
+    ((MEMUNIT*) addr_a)[offsets[1]] &=~     szmask_a << (offsets[0]*8);
+    ((MEMUNIT*) addr_a)[offsets[1]] |=      result   << (offsets[0]*8);                     };
+
+void lmshl (void)                           { TWO_FET_OP(0b01, 0);
+
+    MEMUNIT result                   =      (value_a<<value_b)&szmask_a;
+    ((MEMUNIT*) addr_a)[offsets[1]] &=~     szmask_a << (offsets[0]*8);
+    ((MEMUNIT*) addr_a)[offsets[1]] |=      result   << (offsets[0]*8);                     };
+
 //   ---     ---     ---     ---     ---
 
 void lmasl(uint* udr)                       {
@@ -469,6 +525,10 @@ void lmasl(uint* udr)                       {
     if(t->ttype==CALCUS_SEPAR) {
         force_solve=1; goto RESULT;
 
+    } elif(t->ttype==CALCUS_FETCH) {
+        mammi->state |= MAMMIT_SF_PFET;
+        *rd_value     = t->value;
+
     } else {                                // else it's a constant
         *rd_value     = t->value;
 
@@ -485,7 +545,9 @@ void lmasl(uint* udr)                       {
         MAMMIT_LVLB_PRV;
         goto SOLVE;
 
-    }; if(force_solve) { goto ALT_EXIT; }
+    }; mammi->state &=~MAMMIT_SF_PFET;
+
+    if(force_solve) { goto ALT_EXIT; }
     return;
 
     ALT_EXIT: (*udr)+=sizeof(CTOK)/UNITSZ;                                                  };
@@ -518,6 +580,13 @@ void swnand(void)                           { ins_code = 0x13; ins_argc = 2;    
 void swxnor(void)                           { ins_code = 0x14; ins_argc = 2;                };
 
 void swtil (void)                           { ins_code = 0x15; ins_argc = 1;                };
+void swnot (void)                           { ins_code = 0x16; ins_argc = 1;                };
+void swis  (void)                           { ins_code = 0x17; ins_argc = 1;                };
+void sweq  (void)                           { ins_code = 0x18; ins_argc = 2;                };
+void swneq (void)                           { ins_code = 0x19; ins_argc = 2;                };
+
+void swshr (void)                           { ins_code = 0x1A; ins_argc = 2;                };
+void swshl (void)                           { ins_code = 0x1B; ins_argc = 2;                };
 
 //   ---     ---     ---     ---     ---
 

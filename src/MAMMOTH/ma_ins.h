@@ -40,6 +40,13 @@ void lmnand(void         );                 // a=!(a&b)
 void lmxnor(void         );                 // a=!(a^b)
 
 void lmtil (void         );                 // a=~a
+void lmnot (void         );                 // a=!a
+void lmis  (void         );                 // a=a!=0
+void lmeq  (void         );                 // a=a==b
+void lmneq (void         );                 // a=a!=b
+
+void lmshr (void         );                 // a>>b
+void lmshl (void         );                 // a<<b
 
 void lmasl (uint* udr    );                 // arithmetics solver
 
@@ -72,6 +79,13 @@ void swnand(void         );
 
 void swxnor(void         );
 void swtil (void         );
+void swnot (void         );
+void swis  (void         );
+void sweq  (void         );
+void swneq (void         );
+
+void swshr (void         );
+void swshl (void         );
 
 //   ---     ---     ---     ---     ---
 

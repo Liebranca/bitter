@@ -3,8 +3,9 @@ $$$$$$$$$$$$$$$$
 entry main;
 
 reg vars;
-  wide  x 0x01;
+  wide  x 0xFEFF;
 
 proc main;
-  til   x;
+  wed   signed;
+  shr   x,8;
   exit  [x];

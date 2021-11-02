@@ -120,6 +120,11 @@ void REGLNG(void)                           { rd_cast = 0x06;                   
 
 void REGFLT(void)                           { rd_cast = 0x0B;                               };
 
+//   ---     ---     ---     ---     ---    flags
+
+void REGSGN(void)                           { typedata.flags |= 1;                          };
+void REGUSG(void)                           { typedata.flags &=~1;                          };
+
 //   ---     ---     ---     ---     ---
 
 void UPKTYPE(uchar* typeval)                {
@@ -434,6 +439,161 @@ void CHKMEMLAY(void)                        {
 
 //   ---     ---     ---     ---     ---
 
+#define OP_FORCEBIN(op)                     \
+    (*r)=((MEMUNIT)(*r))op((MEMUNIT)(*v))
+
+#define OP_FORCEUNA(op)                     \
+    (*r)=op(MEMUNIT)(*v)
+
+//   ---     ---     ---     ---     ---
+
+void CALCUS_OPSWITCH(void)                  {
+
+    MEMUNIT* r = rd_lhand;
+    MEMUNIT* v = rd_value;
+
+    switch(rd_flags&0xFFFFFFFFFFFFBFFFLL) {
+
+    case OP_ESUBS:
+        mammi->state|=MAMMIT_SF_PFET;
+        break;
+
+    case OP_BSUBS: {
+        mammi->state&=~MAMMIT_SF_PFET;
+        uintptr_t addr=(*rd_value);
+        *(v)=*((MEMUNIT*) addr);
+        *(r)=(*(v))&szmask_a;
+        break;
+    }
+
+    case OP_EMUL:
+    case OP_MUL:
+        (*r)*=(*v); goto OPSWITCH_MINUSX;
+
+    case OP_EDIV:
+    case OP_DIV:
+        (*r)/=(*v); goto OPSWITCH_MINUSX;
+
+    case OP_EMODU:
+    case OP_MODUS:
+        OP_FORCEBIN(%); goto OPSWITCH_MINUSX;
+
+//   ---     ---     ---     ---     ---
+
+    case OP_RSHFT:
+        OP_FORCEBIN(>>); goto OPSWITCH_MINUSX;
+
+    case OP_GT:
+        (*r)=(*r)>(*v);  goto OPSWITCH_MINUSX;
+
+    case OP_EGT:
+        (*r)=(*r)>=(*v); goto OPSWITCH_MINUSX;
+
+    case OP_LSHFT:
+        OP_FORCEBIN(<<); goto OPSWITCH_MINUSX;
+
+    case OP_LT:
+        (*r)=(*r)<(*v);  goto OPSWITCH_MINUSX;
+
+    case OP_ELT:
+        (*r)=(*r)<=(*v); goto OPSWITCH_MINUSX;
+
+//   ---     ---     ---     ---     ---
+
+    case OP_BANG:
+        (*r)=!(*v); goto OPSWITCH_MINUSX;
+
+    case OP_EBANG:
+        (*r)=(*r)!=(*v); goto OPSWITCH_MINUSX;
+
+    case OP_QUEST:
+        (*r)=(*v)!=0; goto OPSWITCH_MINUSX;
+
+    case OP_EQUAL:
+        (*r)=(*v); rd_flags&=~OP_EQUAL;
+        goto OPSWITCH_MINUSX;
+
+    case OP_ECOOL:
+        (*r)=(*r)==(*v); goto OPSWITCH_MINUSX;
+
+    case OP_KUSH: {
+        MEMUNIT tmp=(*r);
+        (*r)=(*v); (*v)=(tmp);
+        goto OPSWITCH_MINUSX;
+    }
+
+//   ---     ---     ---     ---     ---
+
+    case OP_DAMPR:
+        OP_FORCEBIN(&&); goto OPSWITCH_MINUSX;
+
+    case OP_EAMPR:
+    case OP_AMPER:
+        OP_FORCEBIN(&); goto OPSWITCH_MINUSX;
+
+    case OP_DPIPE:
+        OP_FORCEBIN(||); goto OPSWITCH_MINUSX;
+
+    case OP_EPIPE:
+    case OP_PIPE:
+        OP_FORCEBIN(|); goto OPSWITCH_MINUSX;
+
+//   ---     ---     ---     ---     ---
+
+    case OP_EXOR:
+    case OP_XORUS:
+        OP_FORCEBIN(^); goto OPSWITCH_MINUSX;
+
+    case OP_TILDE:
+        OP_FORCEUNA(~); goto OPSWITCH_MINUSX;
+
+//   ---     ---     ---     ---     ---
+
+    case OP_AT: {
+        MAFETCH((MEMUNIT*) r, (MEMUNIT*) v);
+        goto OPSWITCH_MINUSX;
+    };
+
+//   ---     ---     ---     ---     ---
+
+    case OP_PPLUS:
+        (*r)++; (*r)=(*r)&szmask_a; break;
+
+    case OP_MMINU:
+        (*r)--; (*r)=(*r)&szmask_a; break;
+
+//   ---     ---     ---     ---     ---
+
+    case OP_MINUS:
+        (*r)-=(*v); break;
+
+    case OP_EPLUS:
+    case OP_PLUS:
+    default:
+        (*r)+=(*v); break;
+
+    }; (*v)=0; rd_flags^=rd_flags;
+
+  if(!(mammi->state&MAMMIT_SF_PFET)) {
+        (*r)=(*r)&szmask_a;
+
+    }; return;
+
+//   ---     ---     ---     ---     ---
+
+    OPSWITCH_MINUSX:
+        if(rd_flags&OP_MINUS) {
+            (*r)=-(*r);
+            rd_flags&=~OP_MINUS;
+        };
+
+  if(!(mammi->state&MAMMIT_SF_PFET)) {
+        (*r)=(*r)&szmask_a;
+
+    };                                                                                      };
+
+//   ---     ---     ---     ---     ---
+
 void CALCUS_COLLAPSE(void)                  {
 
     switch(rd_cast) {
@@ -442,16 +602,13 @@ void CALCUS_COLLAPSE(void)                  {
         case 0x04:
         case 0x05:
         case 0x06: {
-            MEMUNIT* r = rd_lhand;
-            MEMUNIT* v = rd_value;
 
             //CALOUT(E, "0x%016" PRIX64 " %016" PRIX64 " %016" PRIX64 " -> ",
             //          *rd_lhand, rd_flags, *rd_value                      );
 
-            if(!(rd_flags&OP_AT)) {
-                *v  = (*v)<<(rd_cbyte*8);
+            *rd_value  = (*rd_value)<<(rd_cbyte*8);
+            CALCUS_OPSWITCH();;
 
-            }; CALCUS_OPSWITCH;
             //CALOUT(E, "%016" PRIX64 "\n", *rd_lhand); break;
         }
 

@@ -121,6 +121,8 @@ void TRNVAL(uint len)                       { if(!len) { return; }
 
     else {
 
+        mammi->state |= MAMMIT_SF_PFET;
+
         void* nulmy        = NULL;          // dummy for getter/valid check
 
                                             // fetch from global symbols...
@@ -160,7 +162,7 @@ void TRNVAL(uint len)                       { if(!len) { return; }
 
 //   ---     ---     ---     ---     ---
 
-    BOT:
+    BOT:/*
 
     if(rd_flags&OP_MINUS) {                 // if negative, do the bit flipping
 
@@ -172,7 +174,6 @@ void TRNVAL(uint len)                       { if(!len) { return; }
 //   ---     ---     ---     ---     ---
 
         else {                              // everything else
-
             for(uint x=0, carry=0;
                 x<rd_step; x++      ) {     // take two's
                 rd_value[x]=(~rd_value[x]); // flip bits
@@ -190,8 +191,7 @@ void TRNVAL(uint len)                       { if(!len) { return; }
                 };
             };
         };
-
-    };                                                                                      };
+    };*/                                                                                    };
 
 //   ---     ---     ---     ---     ---
 
@@ -593,7 +593,10 @@ void NTNAMES(void)                          {
         SYMNEW("TYPE", "word",   REGWRD),   // unit/2
         SYMNEW("TYPE", "long",   REGLNG),   // unit
 
-        SYMNEW("TYPE", "float",  REGFLT)
+        SYMNEW("TYPE", "float",  REGFLT),   // floats
+
+        SYMNEW("FLAG", "signed", REGSGN),   // signed
+        SYMNEW("FLAG", "unsig",  REGUSG)    // unsigned
 
     };
 
@@ -661,7 +664,14 @@ void NTNAMES(void)                          {
         SYMNEW("$INS", "nand", swnand),
         SYMNEW("$INS", "xnor", swxnor),
 
-        SYMNEW("$INS", "til",  swtil )
+        SYMNEW("$INS", "til",  swtil ),
+        SYMNEW("$INS", "not",  swnot ),
+        SYMNEW("$INS", "is",   swis  ),
+        SYMNEW("$INS", "eq",   sweq  ),
+        SYMNEW("$INS", "neq",  swneq ),
+
+        SYMNEW("$INS", "shr",  swshr ),
+        SYMNEW("$INS", "shl",  swshl )
 
 
     };
@@ -1246,7 +1256,7 @@ int main(int argc, char** argv)             {
                     ldins(l->loc);
 
                 }; mammi->next++;
-            }; CALOUT(E, "%s exit with code <0x%" PRIX64 ">\n"             ,
+            }; CALOUT(E, "%s exit with code <0x%016" PRIX64 ">\n"          ,
                       mammi->entry, mammi->lvalues[mammi->lvaltop]&szmask_a);
 
 //   ---     ---     ---     ---     ---
