@@ -334,43 +334,43 @@ void lmexit(void)                           {
 void lmadd(void)                            { TWO_FET_OP(0b01, 0);
 
     MEMUNIT result                   =      (value_a+value_b)&szmask_a;
-    ((MEMUNIT*) addr_a)[offsets[1]] &=~     szmask_a << (offsets[0]*8);
+    ((MEMUNIT*) addr_a)[offsets[1]] &=~     (szmask_a << (offsets[0]*8));
     ((MEMUNIT*) addr_a)[offsets[1]] |=      result   << (offsets[0]*8);                     };
 
 void lmsub(void)                            { TWO_FET_OP(0b01, 0);
 
     MEMUNIT result                   =      (value_a-value_b)&szmask_a;
-    ((MEMUNIT*) addr_a)[offsets[1]] &=~     szmask_a << (offsets[0]*8);
+    ((MEMUNIT*) addr_a)[offsets[1]] &=~     (szmask_a << (offsets[0]*8));
     ((MEMUNIT*) addr_a)[offsets[1]] |=      result   << (offsets[0]*8);                     };
 
 void lminc(void)                            { ONE_FET_OP(0b01);
 
     MEMUNIT result                  =       (value+1)&szmask_a;
-    ((MEMUNIT*) addr)[offsets[1]]  &=~      szmask_a << (offsets[0]*8);
+    ((MEMUNIT*) addr)[offsets[1]]  &=~      (szmask_a << (offsets[0]*8));
     ((MEMUNIT*) addr)[offsets[1]]  |=       result   << (offsets[0]*8);                     };
 
 void lmdec(void)                            { ONE_FET_OP(0b01);
 
     MEMUNIT result                  =       (value-1)&szmask_a;
-    ((MEMUNIT*) addr)[offsets[1]]  &=~      szmask_a << (offsets[0]*8);
+    ((MEMUNIT*) addr)[offsets[1]]  &=~      (szmask_a << (offsets[0]*8));
     ((MEMUNIT*) addr)[offsets[1]]  |=       result   << (offsets[0]*8);                     };
 
 void lmmul (void)                           { TWO_FET_OP(0b01, 0);
 
     MEMUNIT result                   =      (value_a*value_b)&szmask_a;
-    ((MEMUNIT*) addr_a)[offsets[1]] &=~     szmask_a << (offsets[0]*8);
+    ((MEMUNIT*) addr_a)[offsets[1]] &=~     (szmask_a << (offsets[0]*8));
     ((MEMUNIT*) addr_a)[offsets[1]] |=      result   << (offsets[0]*8);                     };
 
 void lmdiv (void)                           { TWO_FET_OP(0b01, 0);
 
     MEMUNIT result                   =      (value_a/value_b)&szmask_a;
-    ((MEMUNIT*) addr_a)[offsets[1]] &=~     szmask_a << (offsets[0]*8);
+    ((MEMUNIT*) addr_a)[offsets[1]] &=~     (szmask_a << (offsets[0]*8));
     ((MEMUNIT*) addr_a)[offsets[1]] |=      result   << (offsets[0]*8);                     };
 
 void lmmod (void)                           { TWO_FET_OP(0b01, 0);
 
     MEMUNIT result                   =      (value_a%value_b)&szmask_a;
-    ((MEMUNIT*) addr_a)[offsets[1]] &=~     szmask_a << (offsets[0]*8);
+    ((MEMUNIT*) addr_a)[offsets[1]] &=~     (szmask_a << (offsets[0]*8));
     ((MEMUNIT*) addr_a)[offsets[1]] |=      result   << (offsets[0]*8);                     };
 
 //   ---     ---     ---     ---     ---
@@ -378,37 +378,37 @@ void lmmod (void)                           { TWO_FET_OP(0b01, 0);
 void lmand (void)                           { TWO_FET_OP(0b01, 0);
 
     MEMUNIT result                   =      (value_a&value_b)&szmask_a;
-    ((MEMUNIT*) addr_a)[offsets[1]] &=~     szmask_a << (offsets[0]*8);
+    ((MEMUNIT*) addr_a)[offsets[1]] &=~     (szmask_a << (offsets[0]*8));
     ((MEMUNIT*) addr_a)[offsets[1]] |=      result   << (offsets[0]*8);                     };
 
 void lmor  (void)                           { TWO_FET_OP(0b01, 0);
 
     MEMUNIT result                   =      (value_a|value_b)&szmask_a;
-    ((MEMUNIT*) addr_a)[offsets[1]] &=~     szmask_a << (offsets[0]*8);
+    ((MEMUNIT*) addr_a)[offsets[1]] &=~     (szmask_a << (offsets[0]*8));
     ((MEMUNIT*) addr_a)[offsets[1]] |=      result   << (offsets[0]*8);                     };
 
 void lmxor (void)                           { TWO_FET_OP(0b01, 0);
 
     MEMUNIT result                   =      (value_a^value_b)&szmask_a;
-    ((MEMUNIT*) addr_a)[offsets[1]] &=~     szmask_a << (offsets[0]*8);
+    ((MEMUNIT*) addr_a)[offsets[1]] &=~     (szmask_a << (offsets[0]*8));
     ((MEMUNIT*) addr_a)[offsets[1]] |=      result   << (offsets[0]*8);                     };
 
 void lmnor (void)                           { TWO_FET_OP(0b01, 0);
 
     MEMUNIT result                   =      (!(value_a|value_b))&szmask_a;
-    ((MEMUNIT*) addr_a)[offsets[1]] &=~     szmask_a << (offsets[0]*8);
+    ((MEMUNIT*) addr_a)[offsets[1]] &=~     (szmask_a << (offsets[0]*8));
     ((MEMUNIT*) addr_a)[offsets[1]] |=      result   << (offsets[0]*8);                     };
 
 void lmnand(void)                           { TWO_FET_OP(0b01, 0);
 
     MEMUNIT result                   =      (!(value_a&value_b))&szmask_a;
-    ((MEMUNIT*) addr_a)[offsets[1]] &=~     szmask_a << (offsets[0]*8);
+    ((MEMUNIT*) addr_a)[offsets[1]] &=~     (szmask_a << (offsets[0]*8));
     ((MEMUNIT*) addr_a)[offsets[1]] |=      result   << (offsets[0]*8);                     };
 
 void lmxnor(void)                           { TWO_FET_OP(0b01, 0);
 
     MEMUNIT result                   =      (!(value_a^value_b))&szmask_a;
-    ((MEMUNIT*) addr_a)[offsets[1]] &=~     szmask_a << (offsets[0]*8);
+    ((MEMUNIT*) addr_a)[offsets[1]] &=~     (szmask_a << (offsets[0]*8));
     ((MEMUNIT*) addr_a)[offsets[1]] |=      result   << (offsets[0]*8);                     };
 
 //   ---     ---     ---     ---     ---
@@ -416,31 +416,31 @@ void lmxnor(void)                           { TWO_FET_OP(0b01, 0);
 void lmtil (void)                           { ONE_FET_OP(0b01);
 
     MEMUNIT result                 =        (~value)&szmask_a;
-    ((MEMUNIT*) addr)[offsets[1]] &=~       szmask_a << (offsets[0]*8);
+    ((MEMUNIT*) addr)[offsets[1]] &=~       (szmask_a << (offsets[0]*8));
     ((MEMUNIT*) addr)[offsets[1]] |=        result   << (offsets[0]*8);                     };
 
 void lmnot (void)                           { ONE_FET_OP(0b01);
 
     MEMUNIT result                 =        (!value)&szmask_a;
-    ((MEMUNIT*) addr)[offsets[1]] &=~       szmask_a << (offsets[0]*8);
+    ((MEMUNIT*) addr)[offsets[1]] &=~       (szmask_a << (offsets[0]*8));
     ((MEMUNIT*) addr)[offsets[1]] |=        result   << (offsets[0]*8);                     };
 
 void lmnonz(void)                           { ONE_FET_OP(0b01);
 
     MEMUNIT result                 =        (value!=0)&szmask_a;
-    ((MEMUNIT*) addr)[offsets[1]] &=~       szmask_a << (offsets[0]*8);
+    ((MEMUNIT*) addr)[offsets[1]] &=~       (szmask_a << (offsets[0]*8));
     ((MEMUNIT*) addr)[offsets[1]] |=        result   << (offsets[0]*8);                     };
 
 void lmeq  (void)                           { TWO_FET_OP(0b01, 0);
 
     MEMUNIT result                   =      (value_a==value_b)&szmask_a;
-    ((MEMUNIT*) addr_a)[offsets[1]] &=~     szmask_a << (offsets[0]*8);
+    ((MEMUNIT*) addr_a)[offsets[1]] &=~     (szmask_a << (offsets[0]*8));
     ((MEMUNIT*) addr_a)[offsets[1]] |=      result   << (offsets[0]*8);                     };
 
 void lmneq (void)                           { TWO_FET_OP(0b01, 0);
 
     MEMUNIT result                   =      (value_a!=value_b)&szmask_a;
-    ((MEMUNIT*) addr_a)[offsets[1]] &=~     szmask_a << (offsets[0]*8);
+    ((MEMUNIT*) addr_a)[offsets[1]] &=~     (szmask_a << (offsets[0]*8));
     ((MEMUNIT*) addr_a)[offsets[1]] |=      result   << (offsets[0]*8);                     };
 
 //   ---     ---     ---     ---     ---
@@ -458,13 +458,13 @@ void lmshr (void)                           { TWO_FET_OP(0b01, 0);
         };
     };
 
-    ((MEMUNIT*) addr_a)[offsets[1]] &=~     szmask_a << (offsets[0]*8);
+    ((MEMUNIT*) addr_a)[offsets[1]] &=~     (szmask_a << (offsets[0]*8));
     ((MEMUNIT*) addr_a)[offsets[1]] |=      result   << (offsets[0]*8);                     };
 
 void lmshl (void)                           { TWO_FET_OP(0b01, 0);
 
     MEMUNIT result                   =      (value_a<<value_b)&szmask_a;
-    ((MEMUNIT*) addr_a)[offsets[1]] &=~     szmask_a << (offsets[0]*8);
+    ((MEMUNIT*) addr_a)[offsets[1]] &=~     (szmask_a << (offsets[0]*8));
     ((MEMUNIT*) addr_a)[offsets[1]] |=      result   << (offsets[0]*8);                     };
 
 //   ---     ---     ---     ---     ---

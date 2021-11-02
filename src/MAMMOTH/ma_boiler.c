@@ -590,7 +590,6 @@ void CALCUS_OPSWITCH(void)                  {
     OPSWITCH_MINUSX:
     if(rd_flags&OP_MINUS) {
         (*r)=-(*r);
-        rd_flags&=~OP_MINUS;
 
     }; goto END;                                                                            };
 

@@ -11,16 +11,16 @@ proc main;
   mov   c,x:+[y];
   eif   [c],end;
 
-  cpy   y+8,'a'<=[c];
-  and   y+8,'z'>=[c];
+  cpy   y+1,'a'<=[c];
+  and   y+1,'z'>=[c];
 
-  mul   y+8,0x20;
-  sub   c,[y+8];
+  mul   y+1,0x20;
+  sub   c,[y+1];
 
   wap   x+:[y],c;
 
   inc   y;
-  jif   main,255>=[y];
+  jif   main,13>[y];
 
 proc end;
   wed   long;

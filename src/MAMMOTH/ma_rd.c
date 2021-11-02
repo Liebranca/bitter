@@ -1031,6 +1031,13 @@ void RDNXT(void)                            {
         case 0x3A:                          // :    colon
             goto APTOK;
 
+//   ---     ---     ---     ---     ---    strings!
+
+        case 0x27:                          // '    squot
+        case 0x22:                          // "    dquot
+            mammi->state |= MAMMIT_SF_PSTR;
+            goto FORCE_INSERT;
+
 //   ---     ---     ---     ---     ---    // @(sec) operators
                                             // used for memlng hackery AND calcus
 
@@ -1054,13 +1061,6 @@ void RDNXT(void)                            {
                 goto FORCE_INSERT;
 
             };
-
-//   ---     ---     ---     ---     ---    strings!
-
-        case 0x27:                          // '    squot
-        case 0x22:                          // "    dquot
-            mammi->state |= MAMMIT_SF_PSTR;
-            goto FORCE_INSERT;
 
 //   ---     ---     ---     ---     ---    non @(sec) operators
 
