@@ -100,6 +100,11 @@ void TRNVAL(uint len)                       { if(!len) { return; }
             rd_units+=2;
 
         };
+
+        if(rd_ctok) {
+            rd_ctok->value=*rd_result;
+
+        };
     }
 
 //   ---     ---     ---     ---     ---
@@ -593,6 +598,9 @@ void NTNAMES(void)                          {
         SYMNEW("TYPE", "word",   REGWRD),   // unit/2
         SYMNEW("TYPE", "long",   REGLNG),   // unit
 
+        SYMNEW("TYPE", "str",    REGSTR),   // string
+        SYMNEW("TYPE", "vec",    REGVEC),   // vector
+
         SYMNEW("TYPE", "float",  REGFLT),   // floats
 
         SYMNEW("FLAG", "signed", REGSGN),   // signed
@@ -666,7 +674,7 @@ void NTNAMES(void)                          {
 
         SYMNEW("$INS", "til",  swtil ),
         SYMNEW("$INS", "not",  swnot ),
-        SYMNEW("$INS", "is",   swis  ),
+        SYMNEW("$INS", "nonz", swnonz),
         SYMNEW("$INS", "eq",   sweq  ),
         SYMNEW("$INS", "neq",  swneq ),
 
@@ -1021,11 +1029,7 @@ void RDNXT(void)                            {
 //   ---     ---     ---     ---     ---    OPERATORS L
 
         case 0x3A:                          // :    colon
-
-            if(mammi->state&MAMMIT_SF_PSEC) {
-                goto APTOK;
-
-            }; goto OP_NONSEC;
+            goto APTOK;
 
 //   ---     ---     ---     ---     ---    // @(sec) operators
                                             // used for memlng hackery AND calcus
@@ -1256,8 +1260,8 @@ int main(int argc, char** argv)             {
                     ldins(l->loc);
 
                 }; mammi->next++;
-            }; CALOUT(E, "%s exit with code <0x%016" PRIX64 ">\n"          ,
-                      mammi->entry, mammi->lvalues[mammi->lvaltop]&szmask_a);
+            }; CALOUT(E, "%s exit with code <%s>\n",
+                      mammi->entry, (uchar*) (mammi->lvalues[mammi->lvaltop]) );
 
 //   ---     ---     ---     ---     ---
 

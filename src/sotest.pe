@@ -3,9 +3,25 @@ $$$$$$$$$$$$$$$$
 entry main;
 
 reg vars;
-  wide  x 0xFEFF;
+  char  x "hello, world!";
+  char  y 0x00;
+  char  c 0x00;
 
 proc main;
-  wed   signed;
-  shr   x,8;
-  exit  [x];
+  mov   c,x:+[y];
+  eif   [c],end;
+
+  cpy   y+8,'a'<=[c];
+  and   y+8,'z'>=[c];
+
+  mul   y+8,0x20;
+  sub   c,[y+8];
+
+  wap   x+:[y],c;
+
+  inc   y;
+  jif   main,255>=[y];
+
+proc end;
+  wed   long;
+  exit  x;

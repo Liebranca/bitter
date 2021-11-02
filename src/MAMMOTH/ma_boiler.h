@@ -45,6 +45,10 @@ void   REGCHR   (void               );      // however, i felt like being lazy
 void   REGWID   (void               );
 void   REGWRD   (void               );
 void   REGLNG   (void               );
+
+void   REGSTR   (void               );
+void   REGVEC   (void               );
+
 void   REGFLT   (void               );
 
 void   REGSGN   (void               );

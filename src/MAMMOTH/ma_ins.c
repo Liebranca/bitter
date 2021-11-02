@@ -52,7 +52,7 @@ static NIHIL lm_ins_arr[] = {               // table of low-level instructions
 
     &lmtil,
     &lmnot,
-    &lmis,
+    &lmnonz,
     &lmeq,
     &lmneq,
 
@@ -81,39 +81,35 @@ typedef struct INS_SIZES {
     MEMUNIT mask_a;
     MEMUNIT mask_b;
 
-} INSZ;
+} INSZ; static INSZ ins_sz={0};
 
-INSZ svinsz(uint cast_to) {
+void svinsz(uint cast_to) {
 
-    INSZ i   = {0};
+    ins_sz.cast   = rd_cast;
+    ins_sz.cbyte  = rd_cbyte;
 
-    i.cast   = rd_cast;
-    i.cbyte  = rd_cbyte;
+    ins_sz.size   = rd_size;
+    ins_sz.elems  = rd_elems;
+    ins_sz.units  = rd_units;
+    ins_sz.step   = rd_step;
 
-    i.size   = rd_size;
-    i.elems  = rd_elems;
-    i.units  = rd_units;
-    i.step   = rd_step;
+    ins_sz.mask_a = szmask_a;
+    ins_sz.mask_b = szmask_b;
 
-    i.mask_a = szmask_a;
-    i.mask_b = szmask_b;
+    rd_cast       = cast_to;                                                                };
 
-    rd_cast=cast_to;
+void ldinsz(void) {
 
-    return i;                                                                               };
+    rd_cast  = ins_sz.cast;
+    rd_cbyte = ins_sz.cbyte;
 
-void ldinsz(INSZ* i) {
+    rd_size  = ins_sz.size;
+    rd_elems = ins_sz.elems;
+    rd_units = ins_sz.units;
+    rd_step  = ins_sz.step;
 
-    rd_cast  = i->cast;
-    rd_cbyte = i->cbyte;
-
-    rd_size  = i->size;
-    rd_elems = i->elems;
-    rd_units = i->units;
-    rd_step  = i->step;
-
-    szmask_a = i->mask_a;
-    szmask_b = i->mask_b;                                                                    };
+    szmask_a = ins_sz.mask_a;
+    szmask_b = ins_sz.mask_b;                                                               };
 
 //   ---     ---     ---     ---     ---
 
@@ -144,7 +140,6 @@ int lmfet(uintptr_t* dst        ,
 
                                             // cleanup
     RSTPTRS                                 (                                   );
-    CLMEM2                                  (rd_result, UNITSZ*ins->size        );
 
                                             // apply typing to the read
     TPADDR                                  (rd_cast, -1                        );
@@ -183,12 +178,10 @@ int lmfet(uintptr_t* dst        ,
     uint       udr           = 0;           /* offset into ins->data           */            \
     uint       offsets[2];                  /* [0..2] upos, cbyte              */            \
                                                                                              \
-    INSZ       is;                                                                           \
-                                                                                             \
 /*   ---     ---     ---     ---     ---  */                                                 \
                                                                                              \
     if(ac&2) {                                                                               \
-        is=svinsz(0x06);                                                                     \
+        svinsz(0x06);                                                                        \
                                                                                              \
     };                                                                                       \
                                                                                              \
@@ -198,7 +191,7 @@ int lmfet(uintptr_t* dst        ,
     IF_CONST_ALLOWED(ac, value, addr, offsets[0], offsets[1], szmask_a)                      \
                                                                                              \
     if(ac&2) {                                                                               \
-        ldinsz(&is);                                                                         \
+        ldinsz();                                                                            \
                                                                                              \
     }
 
@@ -213,23 +206,20 @@ int lmfet(uintptr_t* dst        ,
     uint       offsets[4];                  /* [0..2] upos_a, cbyte_a          */            \
                                             /* [2..4] upos_b, cbyte_b          */            \
                                                                                              \
-    INSZ       is;                                                                           \
-                                                                                             \
 /*   ---     ---     ---     ---     ---  */                                                 \
                                                                                              \
     if(aca&2) {                                                                              \
-        is=svinsz(0x06);                                                                     \
+        svinsz(0x06);                                                                        \
                                                                                              \
     };                                                                                       \
                                                                                              \
     lmfet(&addr_a, &udr, offsets, aca);                                                      \
                                                                                              \
-                                                                                             \
     MEMUNIT value_a;                                                                         \
     IF_CONST_ALLOWED(aca, value_a, addr_a, offsets[0], offsets[1], szmask_a);                \
                                                                                              \
     if(aca&2) {                                                                              \
-        ldinsz(&is);                                                                         \
+        ldinsz();                                                                            \
                                                                                              \
     };                                                                                       \
                                                                                              \
@@ -238,7 +228,7 @@ int lmfet(uintptr_t* dst        ,
 /*   ---     ---     ---     ---     ---                                       */            \
                                                                                              \
     if(acb&2) {                                                                              \
-        is=svinsz(0x06);                                                                     \
+        svinsz(0x06);                                                                        \
                                                                                              \
     };                                                                                       \
                                                                                              \
@@ -248,12 +238,11 @@ int lmfet(uintptr_t* dst        ,
         szmask_a             = szmask_b;                                                     \
         szmask_b             = tmp;                                                         }\
                                                                                              \
-                                                                                             \
     MEMUNIT value_b;                                                                         \
     IF_CONST_ALLOWED(acb, value_b, addr_b, offsets[2], offsets[3], szmask_b);                \
                                                                                              \
     if(acb&2) {                                                                              \
-        ldinsz(&is);                                                                         \
+        ldinsz();                                                                            \
                                                                                              \
     };                                                                                       \
 
@@ -322,7 +311,7 @@ void lmjif(void)                            {
 
 void lmeif(void)                            {
 
-    TWO_FET_OP(0b10,0);
+    TWO_FET_OP(0,0b10);
 
     if(!value_a) {
         uint  loc = ADDRTOLOC(value_b);
@@ -436,7 +425,7 @@ void lmnot (void)                           { ONE_FET_OP(0b01);
     ((MEMUNIT*) addr)[offsets[1]] &=~       szmask_a << (offsets[0]*8);
     ((MEMUNIT*) addr)[offsets[1]] |=        result   << (offsets[0]*8);                     };
 
-void lmis  (void)                           { ONE_FET_OP(0b01);
+void lmnonz(void)                           { ONE_FET_OP(0b01);
 
     MEMUNIT result                 =        (value!=0)&szmask_a;
     ((MEMUNIT*) addr)[offsets[1]] &=~       szmask_a << (offsets[0]*8);
@@ -460,7 +449,7 @@ void lmshr (void)                           { TWO_FET_OP(0b01, 0);
 
     MEMUNIT result                   =      (value_a>>value_b)&szmask_a;
 
-    if(typedata.flags&1) {                  // corner case: handle signed shift
+    if(typedata.flags&1) {                  // handle signed
 
         if( (value_a&szmask_a) > (szmask_a/2)) {
 
@@ -488,6 +477,8 @@ void lmasl(uint* udr)                       {
     uchar c = 0x00;                         // for reading one operator at a time
 
     uchar force_solve = 0;                  // quick exit flag
+
+    mammi->ctrl^=mammi->ctrl;
 
     EVAL_EXP: if( ((*udr)>=ins->size) \
               ||  (force_solve      ) )     { goto RESULT; }
@@ -581,7 +572,7 @@ void swxnor(void)                           { ins_code = 0x14; ins_argc = 2;    
 
 void swtil (void)                           { ins_code = 0x15; ins_argc = 1;                };
 void swnot (void)                           { ins_code = 0x16; ins_argc = 1;                };
-void swis  (void)                           { ins_code = 0x17; ins_argc = 1;                };
+void swnonz(void)                           { ins_code = 0x17; ins_argc = 1;                };
 void sweq  (void)                           { ins_code = 0x18; ins_argc = 2;                };
 void swneq (void)                           { ins_code = 0x19; ins_argc = 2;                };
 

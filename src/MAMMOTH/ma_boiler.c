@@ -116,6 +116,11 @@ void REGWID(void)                           { rd_cast = 0x04;                   
 void REGWRD(void)                           { rd_cast = 0x05;                               };
 void REGLNG(void)                           { rd_cast = 0x06;                               };
 
+//   ---     ---     ---     ---     ---    arrays
+
+void REGSTR(void)                           {                                               };
+void REGVEC(void)                           {                                               };
+
 //   ---     ---     ---     ---     ---    float
 
 void REGFLT(void)                           { rd_cast = 0x0B;                               };
@@ -572,25 +577,22 @@ void CALCUS_OPSWITCH(void)                  {
     default:
         (*r)+=(*v); break;
 
-    }; (*v)=0; rd_flags^=rd_flags;
+    }; END:
 
-  if(!(mammi->state&MAMMIT_SF_PFET)) {
-        (*r)=(*r)&szmask_a;
+    (*v)=0; rd_flags^=rd_flags;
+    if(!(mammi->state&MAMMIT_SF_PFET)) {
+        ((*r)&szmask_a)<<(rd_cbyte*8);
 
     }; return;
 
 //   ---     ---     ---     ---     ---
 
     OPSWITCH_MINUSX:
-        if(rd_flags&OP_MINUS) {
-            (*r)=-(*r);
-            rd_flags&=~OP_MINUS;
-        };
+    if(rd_flags&OP_MINUS) {
+        (*r)=-(*r);
+        rd_flags&=~OP_MINUS;
 
-  if(!(mammi->state&MAMMIT_SF_PFET)) {
-        (*r)=(*r)&szmask_a;
-
-    };                                                                                      };
+    }; goto END;                                                                            };
 
 //   ---     ---     ---     ---     ---
 
@@ -855,12 +857,12 @@ uint POPOPS(void)                           {
         case 0x3A:
 
             if(mammi->state&MAMMIT_SF_PFET) {
-                MAMMIT_LVLB_PRV;
+                /*MAMMIT_LVLB_PRV;
                 CALCUS_COLLAPSE();
                 MAMMIT_LVLB_PRV;
                 CALCUS_COLLAPSE();
 
-                goto POP_OPSTOP;
+                goto POP_OPSTOP;*/
 
             }; MAMMIT_LVLB_NXT;
             goto POP_OPSTOP;
@@ -900,7 +902,7 @@ uint POPOPS(void)                           {
             goto POP_OPSTOP;
 
         case 0x90:
-            rd_flags |= OP_RSHFT;
+            rd_flags |= OP_EGT;
             MAMMIT_LVLB_NXT;
 
             goto POP_OPSTOP;
