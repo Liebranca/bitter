@@ -457,7 +457,11 @@ void CALCUS_OPSWITCH(void)                  {
     MEMUNIT* r = rd_lhand;
     MEMUNIT* v = rd_value;
 
-    switch(rd_flags&0xFFFFFFFFFFFFBFFFLL) {
+    if(rd_flags&OP_COLON) {
+        rd_flags&=~OP_COLON;
+        MAMMIT_LVLB_NXT; return;
+
+    }; switch(rd_flags&0xFFFFFFFFFFFF3FFFLL) {
 
     case OP_ESUBS:
         mammi->state|=MAMMIT_SF_PFET;
@@ -633,25 +637,29 @@ void SEPOPS(ulong fset,
 
     while(mammi->lvlb) {
 
-        CALCUS_COLLAPSE();
-        MAMMIT_LVLB_PRV;
-
         if(rd_flags&fchk) {
             break;
 
         };
 
-    }; CALCUS_COLLAPSE();
+        CALCUS_COLLAPSE();
+        MAMMIT_LVLB_PRV;
+
+    }; if(gnxt&2) { CALCUS_COLLAPSE(); }
     rd_flags |= fset;
 
-    if(gnxt) { MAMMIT_LVLB_NXT; };                                                          };
+    if(gnxt&1) { MAMMIT_LVLB_NXT; };                                                        };
 
 //   ---     ---     ---     ---     ---
 
 uint POPOPS(void)                           {
 
-    uint ctok_cnt = 0;
-    uint gnxt     = 0;
+    uint  ctok_cnt = 0;
+    uint  gnxt     = 0;
+
+    ulong SEPS_A   = OP_COLON;
+    ulong SEPS_B   = OP_COLON | OP_DAMPR | OP_DPIPE;
+    ulong SEPS_C   = OP_COLON | OP_ECOOL | OP_EBANG | OP_DAMPR | OP_DPIPE;
 
     TOP: gnxt ^= gnxt;                      // if operator chars in token, eval and pop them
 
@@ -664,7 +672,7 @@ uint POPOPS(void)                           {
         case 0x26: rd_flags |= OP_AMPER;
             gnxt=1; goto POP_OPSTOP;
 
-        case 0x80: SEPOPS(OP_DAMPR, OP_DAMPR, 1);
+        case 0x80: SEPOPS(OP_DAMPR | OP_COLON, SEPS_B, 0b11);
             gnxt=0; goto POP_OPSTOP;
 
         case 0x8A: rd_flags |= OP_EAMPR;
@@ -675,8 +683,8 @@ uint POPOPS(void)                           {
         case 0x7C: rd_flags |= OP_PIPE;
             gnxt=1; goto POP_OPSTOP;
 
-        case 0x86: rd_flags |= OP_DPIPE;
-            gnxt=1; goto POP_OPSTOP;
+        case 0x86: SEPOPS(OP_DPIPE | OP_COLON, SEPS_B, 0b11);
+            gnxt=0; goto POP_OPSTOP;
 
         case 0x92: rd_flags |= OP_EPIPE;
             gnxt=1; goto POP_OPSTOP;
@@ -754,8 +762,8 @@ uint POPOPS(void)                           {
 
             gnxt=1; goto POP_OPSTOP;
 
-        case 0x87: rd_flags |= OP_EBANG;
-            gnxt=1; goto POP_OPSTOP;
+        case 0x87: SEPOPS(OP_EBANG, SEPS_C, 0b11);
+            gnxt=0; goto POP_OPSTOP;
 
         case 0x3F: MAMMIT_LVLB_NXT;
             rd_flags  = mammi->lvlb_stack[mammi->lvlb-1]&OP_MINUS;
@@ -779,8 +787,8 @@ uint POPOPS(void)                           {
         case 0x3D: rd_flags |= OP_EQUAL;
             gnxt=1; goto POP_OPSTOP;
 
-        case 0x84: rd_flags |= OP_ECOOL;
-            gnxt=1; goto POP_OPSTOP;
+        case 0x84: SEPOPS(OP_ECOOL, SEPS_C, 0b11);
+            gnxt=0; goto POP_OPSTOP;
 
 //   ---     ---     ---     ---     ---
 
@@ -809,7 +817,7 @@ uint POPOPS(void)                           {
 
             gnxt=1; goto POP_OPSTOP;goto POP_OPSTOP;
 
-        case 0x3A: SEPOPS(OP_COLON, OP_COLON, 1);
+        case 0x3A: SEPOPS(OP_COLON, OP_COLON, 0b11);
             gnxt=0; goto POP_OPSTOP;
 
 //   ---     ---     ---     ---     ---
@@ -867,7 +875,7 @@ uint POPOPS(void)                           {
         case 0x5D: MAMMIT_LVLB_NXT;
             rd_flags |= OP_ESUBS;
 
-            SEPOPS(0, OP_BSUBS, 0);
+            SEPOPS(0, OP_BSUBS, 0b10);
 
             goto POP_TESTOP;
 

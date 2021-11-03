@@ -1044,6 +1044,7 @@ void RDNXT(void)                            {
             };
 
         case 0x84:                          // ==   ecool
+        case 0x87:                          // !=   ebang
 
         case 0x80:                          // &&   dampr
         case 0x86:                          // ||   dpipe
@@ -1106,7 +1107,6 @@ void RDNXT(void)                            {
         case 0x40:                          // @    at
         case 0x3F:                          // ?    quest
         case 0x21:                          // !    bang
-        case 0x87:                          // !=   ebang
 
         case 0x5C:                          // \    escapus
         case 0x5B:                          // [    l_subscriptus

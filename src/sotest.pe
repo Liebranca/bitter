@@ -8,7 +8,7 @@ reg vars;
 
 proc main;
 
-  cpy   y, 'a'<=[x] && 'z'>=[x];
+  cpy   y, 2*2==4 && 1+1!=3;
 
   /*mov   y,x:+[y+1];
   eif   [y],end;
