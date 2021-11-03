@@ -367,7 +367,7 @@ void RDEXP(void)                            {
     };
 
     rd_value        = rd_lhand+rd_step;     // put next *evaluated* token here
-    CLMEM2(rd_value, rd_size);
+    CLMEM2(rd_value, rd_step);
 
 //   ---     ---     ---     ---     ---
 
@@ -417,11 +417,7 @@ void RDEXP(void)                            {
         mammi->state&=~MAMMIT_SF_PSTR;
         goto EVAL_EXP;
 
-    };
-
-                                            // collapse arithmetic-wise
-    SOLVE:
-        CALCUS_COLLAPSE();
+    }; SOLVE: CALCUS_COLLAPSE();            // collapse arithmetic-wise
 
     goto EVAL_EXP;
 
@@ -530,6 +526,7 @@ void RDPRC(void)                            {
 
         RSTSEC                              (                                       );
         RDEXP                               (                                       );
+
                                              // calculate token count!
         leap        =                       (uint) ( ((uintptr_t) rd_ctok         ) \
                                                    - ((uintptr_t) (code->data+udr)) );
@@ -867,6 +864,18 @@ typedata.base[4]='\0';
 
 //   ---     ---     ---     ---     ---
 
+void pnonb(void)                            {
+
+    if(!(  0x01 <= rd_prv \
+        && 0x20 >= rd_prv ) ) {             // if previous is not *also* control char {1,32}
+
+        rd_tkp = 0; rd_tki++;               // reset position && advance slot
+        rd_tk  = tokens[rd_tki];            // push token
+
+    };                                                                                      };
+
+//   ---     ---     ---     ---     ---
+
 void RDNXT(void)                            {
 
     uchar op[16]; CLMEM2(op, 16);           // operator storage ;>
@@ -1015,16 +1024,8 @@ void RDNXT(void)                            {
 //   ---     ---     ---     ---     ---    BLANK 32
 
         case 0x20: APTOK:                   // for space and skipped (see above x2)
-
             if(!rd_tkp) { break; }
-
-            if(!(  0x01 <= rd_prv \
-                && 0x20 >= rd_prv ) ) {     // if previous is not *also* control char {1,32}
-
-                rd_tkp = 0; rd_tki++;       // reset position && advance slot
-                rd_tk  = tokens[rd_tki];    // push token
-
-            }; break;
+            pnonb(); break;                 // push non-blank tokens
 
 //   ---     ---     ---     ---     ---    OPERATORS L
 
@@ -1115,24 +1116,24 @@ void RDNXT(void)                            {
 //   ---     ---     ---     ---     ---    OPERATORS R
 
         case 0x29:                          // )    r_brackus
-        case 0x5D:                          // ]    r_subscriptus
-
             mammi->state  &=~MAMMIT_SF_PSEC;
             rd_tk[rd_tkp]  = rd_cur; rd_tkp++;
+            goto APTOK;
+
+        case 0x5D:                          // ]    r_subscriptus
+
+            pnonb();                        // push if non blank
+
+            rd_tk[rd_tkp]  = rd_cur; rd_tkp++;
+            mammi->state  &=~MAMMIT_SF_PSEC;
+
             goto APTOK;
 
 //   ---     ---     ---     ---     ---    TERMINATORS
 
         case 0x2C:                          // ,    comma
 
-            // APTOK copy-paste
-            if(!(  0x01 <= rd_prv \
-                && 0x20 >= rd_prv ) ) {     // if previous is not *also* control char {1,32}
-
-                rd_tkp = 0; rd_tki++;       // reset position && advance slot
-                rd_tk  = tokens[rd_tki];    // push token
-
-            };
+            pnonb();                        // push if non blank
 
             rd_tk[rd_tkp] = rd_cur;         // set comma
             rd_tkp++;

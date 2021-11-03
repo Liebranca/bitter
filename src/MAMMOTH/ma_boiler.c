@@ -604,13 +604,15 @@ void CALCUS_COLLAPSE(void)                  {
         case 0x05:
         case 0x06: {
 
-            //CALOUT(E, "0x%016" PRIX64 " %016" PRIX64 " %016" PRIX64 " -> ",
-            //          *rd_lhand, rd_flags, *rd_value                      );
+            //CALOUT(E, "lvlb %u | 0x%016" PRIX64 " %016" PRIX64 " %016" PRIX64 " -> ",
+            //          mammi->lvlb, *rd_lhand, rd_flags, *rd_value                   );
 
             *rd_value  = (*rd_value)<<(rd_cbyte*8);
-            CALCUS_OPSWITCH();;
+            CALCUS_OPSWITCH();
 
-            //CALOUT(E, "%016" PRIX64 "\n", *rd_lhand); break;
+            //CALOUT(E, "%016" PRIX64 "\n", *rd_lhand);
+
+            break;
         }
 
 //   ---     ---     ---     ---     ---
@@ -831,6 +833,7 @@ uint POPOPS(void)                           {
             goto POP_OPSTOP;
 
         case 0x5B:
+            MAMMIT_LVLB_NXT;
             rd_flags |= OP_BSUBS;
             MAMMIT_LVLB_NXT;
 
@@ -940,7 +943,12 @@ uint POPOPS(void)                           {
         case 0x5D:
             MAMMIT_LVLB_NXT;
             rd_flags |= OP_ESUBS;
-            CALCUS_COLLAPSE();
+
+            while(!(rd_flags&OP_BSUBS)) {
+                CALCUS_COLLAPSE();
+                MAMMIT_LVLB_PRV;
+
+            }; CALCUS_COLLAPSE();
 
             goto POP_TESTOP;
 

@@ -483,10 +483,13 @@ void lmasl(uint* udr)                       {
     EVAL_EXP: if( ((*udr)>=ins->size) \
               ||  (force_solve      ) )     { goto RESULT; }
 
+    rd_value  = rd_lhand+rd_step;
+    CLMEM2(rd_value, rd_step);
+
     CLMEM2(buff, UNITSZ*2);
 
-    t       = (CTOK*) (ins->data+(*udr));
-    rd_rawv = buff+0;
+    t         = (CTOK*) (ins->data+(*udr));
+    rd_rawv   = buff+0;
 
 //   ---     ---     ---     ---     ---
 
@@ -509,7 +512,7 @@ void lmasl(uint* udr)                       {
         } rd_rawv[w] = c; w++;
 
                                             // now pop 'em to get evalstate
-    }; POPOPS                               (                             );
+    }; rd_rawv[w]=0x00; POPOPS              (                             );
 
 //   ---     ---     ---     ---     ---
 
@@ -518,12 +521,8 @@ void lmasl(uint* udr)                       {
 
     } elif(t->ttype==CALCUS_FETCH) {
         mammi->state |= MAMMIT_SF_PFET;
-        *rd_value     = t->value;
 
-    } else {                                // else it's a constant
-        *rd_value     = t->value;
-
-    };
+    }; *rd_value = t->value;
 
 //   ---     ---     ---     ---     ---    // compress expanded tokens into final value
 

@@ -8,7 +8,9 @@ reg vars;
   char  c 0x00;
 
 proc main;
-  mov   c,x:+[y];
+  cpy y,[x]-1;
+
+/*  mov   c,x:+[y];
   eif   [c],end;
 
   cpy   y+1,'a'<=[c];
@@ -20,8 +22,8 @@ proc main;
   wap   x+:[y],c;
 
   inc   y;
-  jif   main,13>[y];
+  jif   main,[y]<13;*/
 
 proc end;
   wed   long;
-  exit  x;
+  exit  y;
