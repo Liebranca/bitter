@@ -864,6 +864,14 @@ typedata.base[4]='\0';
 
 //   ---     ---     ---     ---     ---
 
+#define oppy_push                           \
+    /* prefix token with operator(s) */     \
+    if(opi) { uint y=0; while(op[y]) {      \
+        rd_tk[rd_tkp]=op[y]; rd_tkp++;      \
+        op[y]=0x00; y++;                    \
+                                            \
+    } opi=0; }
+
 void pnonb(void)                            {
 
     if(!(  0x01 <= rd_prv \
@@ -1027,9 +1035,22 @@ void RDNXT(void)                            {
             if(!rd_tkp) { break; }
             pnonb(); break;                 // push non-blank tokens
 
-//   ---     ---     ---     ---     ---    OPERATORS L
+//   ---     ---     ---     ---     ---    SEPARATORS
 
         case 0x3A:                          // :    colon
+            if(mammi->state&MAMMIT_SF_PSEC) {
+                goto APTOK;
+
+            };
+
+        case 0x84:                          // ==   ecool
+
+        case 0x80:                          // &&   dampr
+        case 0x86:                          // ||   dpipe
+
+            oppy_push; pnonb();
+
+            rd_tk[rd_tkp]  = rd_cur; rd_tkp++;
             goto APTOK;
 
 //   ---     ---     ---     ---     ---    strings!
@@ -1100,10 +1121,6 @@ void RDNXT(void)                            {
 
         case 0x8F:                          // <=   elt
         case 0x90:                          // >=   egt
-        case 0x84:                          // ==   ecool
-
-        case 0x80:                          // &&   dampr
-        case 0x86:                          // ||   dpipe
 
         case 0x93:                          // ->   arrow
         case 0x94:                          // <-   brrow
@@ -1122,6 +1139,7 @@ void RDNXT(void)                            {
 
         case 0x5D:                          // ]    r_subscriptus
 
+            oppy_push;
             pnonb();                        // push if non blank
 
             rd_tk[rd_tkp]  = rd_cur; rd_tkp++;
@@ -1177,14 +1195,7 @@ void RDNXT(void)                            {
 
 //   ---     ---     ---     ---     ---    CHARACTERS
 
-        default:                            // 'cat' char to cur token
-
-            // prefix token with operator(s)
-            if(opi) { uint y=0; while(op[y]) {
-                rd_tk[rd_tkp]=op[y]; rd_tkp++;
-                op[y]=0x00; y++;
-
-            } opi=0; };
+        default: oppy_push;                 // 'cat' char to cur token
 
             FORCE_INSERT:
                 rd_tk[rd_tkp]=rd_cur; rd_tkp++; break;

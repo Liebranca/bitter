@@ -5,25 +5,23 @@ entry main;
 reg vars;
   char  x "hello, world!";
   char  y 0x00;
-  char  c 0x00;
 
 proc main;
-  cpy y,[x]-1;
 
-/*  mov   c,x:+[y];
-  eif   [c],end;
+  cpy   y, 'a'<=[x] && 'z'>=[x];
 
-  cpy   y+1,'a'<=[c];
-  and   y+1,'z'>=[c];
+  /*mov   y,x:+[y+1];
+  eif   [y],end;
 
-  mul   y+1,0x20;
-  sub   c,[y+1];
+  cpy   y+2,'a'<=[y];
+  and   y+2,'z'>=[y];
 
-  wap   x+:[y],c;
+  sub   y,0x20*[y+2];
+  wap   x+[y+1],y;
 
-  inc   y;
-  jif   main,[y]<13;*/
+  inc   y+1;
+  jif   main,[y+1]<:y-x;*/
 
 proc end;
   wed   long;
-  exit  y;
+  exit  x;
