@@ -670,10 +670,9 @@ void NTNAMES(void)                          {
         SYMNEW("$INS", "xnor", swxnor),
 
         SYMNEW("$INS", "til",  swtil ),
+        SYMNEW("$INS", "cl",   swcl  ),
+        SYMNEW("$INS", "flip", swflip),
         SYMNEW("$INS", "not",  swnot ),
-        SYMNEW("$INS", "nonz", swnonz),
-        SYMNEW("$INS", "eq",   sweq  ),
-        SYMNEW("$INS", "neq",  swneq ),
 
         SYMNEW("$INS", "shr",  swshr ),
         SYMNEW("$INS", "shl",  swshl )

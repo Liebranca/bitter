@@ -4,11 +4,11 @@ entry main;
 
 reg vars;
   char  x "hello, world!";
-  char  y 0x00;
+  char  y 0b1010;
 
 proc main;
 
-  cpy   y, 2*2==4 && 1+1!=3;
+  xnor  y,0b1100;
 
   /*mov   y,x:+[y+1];
   eif   [y],end;

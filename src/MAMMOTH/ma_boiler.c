@@ -608,13 +608,13 @@ void CALCUS_COLLAPSE(void)                  {
         case 0x05:
         case 0x06: {
 
-            CALOUT(E, "lvlb %u | 0x%016" PRIX64 " %016" PRIX64 " %016" PRIX64 " -> ",
-                      mammi->lvlb, *rd_lhand, rd_flags, *rd_value                   );
+            //CALOUT(E, "lvlb %u | 0x%016" PRIX64 " %016" PRIX64 " %016" PRIX64 " -> ",
+            //          mammi->lvlb, *rd_lhand, rd_flags, *rd_value                   );
 
             *rd_value  = (*rd_value)<<(rd_cbyte*8);
             CALCUS_OPSWITCH();
 
-            CALOUT(E, "%016" PRIX64 "\n", *rd_lhand);
+            //CALOUT(E, "%016" PRIX64 "\n", *rd_lhand);
 
             break;
         }

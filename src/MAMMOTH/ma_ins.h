@@ -40,10 +40,9 @@ void lmnand(void         );                 // a=!(a&b)
 void lmxnor(void         );                 // a=!(a^b)
 
 void lmtil (void         );                 // a=~a
-void lmnot (void         );                 // a=!a
-void lmnonz(void         );                 // a=a!=0
-void lmeq  (void         );                 // a=a==b
-void lmneq (void         );                 // a=a!=b
+void lmcl  (void         );                 // empty a; a^=a
+void lmflip(void         );                 // when b&n, a&=~n if a&n; a|=n if !(a&n)
+void lmnot (void         );                 // a=!a; flags &=~a==0
 
 void lmshr (void         );                 // a>>b
 void lmshl (void         );                 // a<<b
@@ -76,13 +75,12 @@ void swor  (void         );
 void swxor (void         );
 void swnor (void         );
 void swnand(void         );
-
 void swxnor(void         );
+
 void swtil (void         );
+void swcl  (void         );
+void swflip(void         );
 void swnot (void         );
-void swnonz(void         );
-void sweq  (void         );
-void swneq (void         );
 
 void swshr (void         );
 void swshl (void         );
