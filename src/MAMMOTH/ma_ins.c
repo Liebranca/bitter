@@ -52,11 +52,13 @@ static NIHIL lm_ins_arr[] = {               // table of low-level instructions
 
     &lmtil,
     &lmcl,
-    &lmflip,
+    &lmclm,
     &lmnot,
 
     &lmshr,
-    &lmshl
+    &lmshl,
+
+    &lmlis
 
 };
 
@@ -310,10 +312,10 @@ void lmjif(void)                            {
 
 void lmeif(void)                            {
 
-    TWO_FET_OP(0,0b10);
+    TWO_FET_OP(0b10,0);
 
-    if(!value_a) {
-        uint  loc = ADDRTOLOC(value_b);
+    if(!value_b) {
+        uint  loc = ADDRTOLOC(value_a);
         mammi->next=loc;
 
     };                                                                                      };
@@ -422,16 +424,9 @@ void lmcl  (void)                           { ONE_FET_OP(0b01);
 
     ((MEMUNIT*) addr)[offsets[1]] &=~       (szmask_a << (offsets[0]*8));                   };
 
-void lmflip(void)                           { TWO_FET_OP(0b01, 0);
+void lmclm (void)                           { TWO_FET_OP(0b01, 0);
 
-    for(uint n=0;n<(rd_size*8);n++) {
-
-        ulong bit=1<<n; if(value_b&bit) {
-            if(value_a&bit) { value_a &=~bit; }
-            else            { value_a |= bit; };
-
-        };
-    }; MEMUNIT result                =      value_a&szmask_a;
+    MEMUNIT result                   =      (value_a&(~value_b))&szmask_a;
 
     ((MEMUNIT*) addr_a)[offsets[1]] &=~     (szmask_a << (offsets[0]*8));
     ((MEMUNIT*) addr_a)[offsets[1]] |=      result    << (offsets[0]*8);                    };
@@ -466,6 +461,14 @@ void lmshl (void)                           { TWO_FET_OP(0b01, 0);
     MEMUNIT result                   =      (value_a<<value_b)&szmask_a;
     ((MEMUNIT*) addr_a)[offsets[1]] &=~     (szmask_a << (offsets[0]*8));
     ((MEMUNIT*) addr_a)[offsets[1]] |=      result    << (offsets[0]*8);                    };
+
+//   ---     ---     ---     ---     ---
+
+void lmlis (void)                           {
+
+    ;
+
+};
 
 //   ---     ---     ---     ---     ---
 
@@ -571,13 +574,13 @@ void swxnor(void)                           { ins_code = 0x14; ins_argc = 2;    
 
 void swtil (void)                           { ins_code = 0x15; ins_argc = 1;                };
 void swcl  (void)                           { ins_code = 0x16; ins_argc = 1;                };
-void swflip(void)                           { ins_code = 0x17; ins_argc = 2;                };
-
+void swclm (void)                           { ins_code = 0x17; ins_argc = 2;                };
 void swnot (void)                           { ins_code = 0x18; ins_argc = 1;                };
-
 
 void swshr (void)                           { ins_code = 0x19; ins_argc = 2;                };
 void swshl (void)                           { ins_code = 0x1A; ins_argc = 2;                };
+
+void swlis (void)                           { ins_code = 0x1B; ins_argc = 2;                };
 
 //   ---     ---     ---     ---     ---
 

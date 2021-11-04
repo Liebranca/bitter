@@ -56,7 +56,7 @@ void   REGUSG   (void               );
 
 //   ---     ---     ---     ---     ---
 
-void   UPKTYPE (uchar* typeval );           // setup typedata for read decl
+void   UPKTYPE (void           );           // setup typedata for read decl
 
 SYMBOL SYMNEW  (uchar* fam     ,
                 uchar* key     ,

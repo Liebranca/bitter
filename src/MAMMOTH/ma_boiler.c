@@ -118,21 +118,21 @@ void REGLNG(void)                           { rd_cast = 0x06;                   
 
 //   ---     ---     ---     ---     ---    arrays
 
-void REGSTR(void)                           {                                               };
+void REGSTR(void)                           { typedata.strsz=1;                             };
 void REGVEC(void)                           {                                               };
 
 //   ---     ---     ---     ---     ---    float
 
-void REGFLT(void)                           { rd_cast = 0x0B;                               };
+void REGFLT(void)                           { rd_cast = 0x0F;                               };
 
 //   ---     ---     ---     ---     ---    flags
 
-void REGSGN(void)                           { typedata.flags |= 1;                          };
-void REGUSG(void)                           { typedata.flags &=~1;                          };
+void REGSGN(void)                           { typedata.flags |= 0x04;                       };
+void REGUSG(void)                           { typedata.flags &=~0x04;                       };
 
 //   ---     ---     ---     ---     ---
 
-void UPKTYPE(uchar* typeval)                {
+void UPKTYPE(void)                          {
 
     CLMEM2(                                 // clean-up leftovers from previous use
         (void*) &typedata,
@@ -140,57 +140,51 @@ void UPKTYPE(uchar* typeval)                {
 
     );
 
-    uchar* base = typedata.base+0;          // point to our static block of chars
-    uint   len  = strlen(typeval);          // length of original string
+    uchar  len  = strlen(rd_rawv);          // length of original string
 
-    ushort i    = 0;                        // offset into original string
-    ushort j    = 0;                        // offset into __target__ string
-
-    uchar  c    = 0x00;                     // character currently being pointed at
+    uchar  i    = 0;                        // offset into string
+    uchar  j    = 0;                        // skip prefix part
+    uchar  c    = 0x00;                     // current char
 
 //   ---     ---     ---     ---     ---
 
     TOP:                                    // read through original string and decompose
-
-        c=typeval[i];                       // get next char
-
-        if((c >= 0x30) && (0x39 >= c)) {    // if char is number
-            typedata.arrsize*=10;           // left-shift
-            typedata.arrsize+=c-0x30;       // add unit
-            goto BOT;                       // skip to end
-
-        }; if(j || i>2) { goto MID; };      // skip if char > original[0-2]
+        c=rd_rawv[i];                       // but first, get next char
 
 //   ---     ---     ---     ---     ---
 
-    switch(c) {
+    if(i<2 || j) { switch(c) {
 
         case 0x7A:                          // z, zzzzstatic (lots o' volts)
-            typedata.flags|=0x01; goto BOT;
+            typedata.flags|=0x01;
+            rd_rawv++; goto BOT;
+
         case 0x71:                          // q, qqqqconstant
-            typedata.flags|=0x02; goto BOT;
+            typedata.flags|=0x02;
+            rd_rawv++; goto BOT;
+
         case 0x75:                          // u, uuuuunsigned
-            typedata.flags|=0x04; goto BOT;
+            typedata.flags|=0x04;
+            rd_rawv++; goto BOT;
 
         default:
             break;
 
-    };
+    }}; if(c==0x2A) {
+        typedata.flags |= 0x08;             // it's a pointer!
+        rd_rawv[i]      = 0x00;             // pop
+
+    }  elif((c >= 0x30) && (0x39 >= c)) {   // char is number
+        typedata.strsz *= 10;               // left-shift
+        typedata.strsz += c-0x30;           // add unit
+        rd_rawv[i]      = 0x00;             // pop
+
+    }; j=1;
 
 //   ---     ---     ---     ---     ---
 
-    MID:
-
-    switch(c) {
-
-        case 0x2A:                          // ptr to ptr to ptr to ptr to ptpr to what
-            typedata.indlvl++; break;
-
-        default:                            // everything else goes
-            base[j]=c; j++; break;
-
-    }; BOT: i++; if(i<len) { goto TOP; }
-    typedata.arrsize=(typedata.arrsize<2) ? 2 : typedata.arrsize;                           };
+    BOT: i++; if(i<len) { goto TOP; }
+    typedata.strsz=(typedata.strsz<2) ? 2 : 1+typedata.strsz;                               };
 
 //   ---     ---     ---     ---     ---
 
@@ -267,7 +261,6 @@ void TPADDR(uchar type, uint elems)         {
     };
 
     rd_elems        = elems;
-
     rd_step         = rd_size/UNITSZ;
 
 //   ---     ---     ---     ---     ---
@@ -912,6 +905,8 @@ void JMPT_INSERT(void*  x   ,
 
     l->loc   = mammi->jmpt_i;
     l->p_loc = 0;
+
+    l->meta  = typedata;
 
 //   ---     ---     ---     ---     ---    find parent
 

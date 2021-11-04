@@ -49,17 +49,10 @@ extern "C" {
 
 typedef struct MAMM_TYPEVAL_DATA {          // to simplify reading wacky types
 
-    uchar base[MAMMIT_TK_WIDTH];            // type-name
-
-    union {
-        struct {
-            uchar indlvl;                   // indirection level (ptr depth!)
-            uchar arrsize;                  // >1 equals pow(2, arrsize), else 1
-            uchar flags;                    // static, const, unsigned...
-            uchar pad;                      // idk what to do with the last byte
-
-        };  uint  F;
-    };
+    uint   flags;                           // static, const, unsigned, addr...
+    uint   strsz;                           // size, or rather capacity
+    uint   strus;                           // non-terminator charcount
+    uint   strtp;                           // type-id of chars
 
 } TYPEDATA; extern TYPEDATA typedata;
 
@@ -76,10 +69,12 @@ typedef struct MAMM_SYNTX_SYMBOL {          // used for string to funcall mambo
 
 typedef struct MAMM_SYNTX_LABEL  {          // an alias for an address
 
-    ID      id;                             // polyheader, makes this block hashable
+    ID       id;                            // polyheader, makes this block hashable
 
-    MEMUNIT loc;                            // location of self within table
-    MEMUNIT p_loc;                          // location of parent
+    MEMUNIT  loc;                           // location of self within table
+    MEMUNIT  p_loc;                         // location of parent
+
+    TYPEDATA meta;                          // it's data about other data!
 
 } LABEL;
 
@@ -175,6 +170,7 @@ typedef struct MAMM_CODE {                  // operations as data
     uint    loc;                            // offset to instruction header
     uint    size;                           // volume of data, measured in memunits
 
+    MEMUNIT pad;                            // ill figure out what to do with this later
     MEMUNIT data[];                         // bunch of bits read by instruction
 
 } CODE;

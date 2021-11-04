@@ -32,7 +32,7 @@ void TRNVAL(uint len)                       { if(!len) { return; }
     uint vlen     = len-1;
 
                                             // set is float
-    rd_flags     |=                         (strstr(typedata.base, "float") != NULL)*OP_RADIX;
+    rd_flags     |=                         (rd_cast==0x0F)*OP_RADIX;
 
     if(rd_ctok) {
         rd_ctok->ttype = CALCUS_CONST;
@@ -113,7 +113,7 @@ void TRNVAL(uint len)                       { if(!len) { return; }
 
                                             // catch incorrect data size
         RD_ASFLTP: MAMMCTCH                 (NOOVERSZ(rd_size, sizeof(float)     ),
-                                             evil, MAMMIT_EV_VSIZ, typedata.base );
+                                             evil, MAMMIT_EV_VSIZ, ""            );
 
         rd_flags   |= OP_RADIX;
 
@@ -433,7 +433,7 @@ void RDEXP(void)                            {
 
 void REGTP(void)                            {
 
-    uchar* type       = typedata.base;      // fetch
+    uchar* type       = rd_rawv;            // fetch
     rd_tkx++;                               // move to next
 
     uchar* name       = tokens[rd_tkx];     // fetch, stay put
@@ -454,17 +454,10 @@ void REGTP(void)                            {
 
 //   ---     ---     ---     ---     ---
 
-        case 0x03:
-        case 0x07: rd_size=sizeof(uchar ); break;
-
-        case 0x04:
-        case 0x08: rd_size=sizeof(ushort); break;
-
-        case 0x05:
-        case 0x09: rd_size=sizeof(uint  ); break;
-
-        case 0x06:
-        case 0x0A: rd_size=sizeof(ulong ); break;
+        case 0x03: rd_size=sizeof(uchar ); break;
+        case 0x04: rd_size=sizeof(ushort); break;
+        case 0x05: rd_size=sizeof(uint  ); break;
+        case 0x06: rd_size=sizeof(ulong ); break;
 
 //   ---     ---     ---     ---     ---
 
@@ -475,7 +468,7 @@ void REGTP(void)                            {
 //   ---     ---     ---     ---     ---
 
                                             // make it a pow2%UNITSZ
-    rd_elems          = GTUNITCNT           (rd_size, typedata.arrsize                  );
+    rd_elems          = GTUNITCNT           (rd_size, typedata.strsz                    );
 
     rd_cbyte          = 0;
     rd_step           = rd_size/UNITSZ;
@@ -671,11 +664,13 @@ void NTNAMES(void)                          {
 
         SYMNEW("$INS", "til",  swtil ),
         SYMNEW("$INS", "cl",   swcl  ),
-        SYMNEW("$INS", "flip", swflip),
+        SYMNEW("$INS", "clm",  swclm ),
         SYMNEW("$INS", "not",  swnot ),
 
         SYMNEW("$INS", "shr",  swshr ),
-        SYMNEW("$INS", "shl",  swshl )
+        SYMNEW("$INS", "shl",  swshl ),
+
+        SYMNEW("$INS", "lis",  swlis )
 
 
     };
@@ -786,48 +781,17 @@ void CHKTKNS(void)                          {
 
 //   ---     ---     ---     ---     ---
 
-            uchar key[MAMMIT_TK_WIDTH];     // fetch this from table
+            rd_rawv=tokens[rd_tkx];
 
-            uint  len=strlen(
-                    tokens[rd_tkx]
+            if(!strcmp(seq_k, "TYPE")) {    // corner case: type flags, arrays, pointers
+                UPKTYPE();                  // decompose type descriptor
 
-            );                              // just so I don't have to do {cpy} while(*t++)
-
-//   ---     ---     ---     ---     ---
-
-typedata.arrsize=2;     //type agnostic test
-typedata.base[0]='c';
-typedata.base[1]='h';
-typedata.base[2]='a';
-typedata.base[3]='r';
-typedata.base[4]='\0';
-
-            /*if(!strcmp(seq_k, "TYPE")) {    // corner case: type flags, arrays, pointers
-
-                UPKTYPE(tokens[rd_tkx]);    // decompose type descriptor
-
-                uint x;                     // like a fashion designer, take measures ;>
-                len = strlen                (typedata.base                             );
-
-                for(x=0; x<len; x++) {      // now copy
-                    key[x]=typedata.base[x];// key == base typename
-
-                }; key[x]=0x00;             // put the nullterm there...
-            }*/
-
-//   ---     ---     ---     ---     ---
-
-            uint x;
-            for(x=0; x<len; x++) {          // now copy
-                key[x]=tokens[rd_tkx][x];   // key == base typename
-
-            }; key[x]=0x00;                 // put the nullterm there...
-
+            };
 
 //   ---     ---     ---     ---     ---
 
                                             // fetch from global table __by_key__ (slowest)
-            STR_HASHGET                     (GNAMES_HASH, key, nulmy, 0                );
+            STR_HASHGET                     (GNAMES_HASH, rd_rawv, nulmy, 0            );
 
             valid = nulmy!=NULL;            // success on fetch means we might have to
             if(valid) {                     // modify mammit state based on symbols read
@@ -838,10 +802,7 @@ typedata.base[4]='\0';
 
 //   ---     ---     ---     ---     ---
 
-        if(valid) {                         // debugger's falacy:
-                                            // "if it prints something, it does something!"
-            /*CALOUT                          (K, "%u: %s %s\n",                         \
-                                             rd_tkx, seq_k, tokens[rd_tkx]             );*/
+        if(valid) {
 
             if(sym) { if(sym->onrd) {       // this is why I want if x then y syntax
                 sym->onrd();
@@ -852,12 +813,11 @@ typedata.base[4]='\0';
 
                 };
             }};
-
         }
 
-        else {                              // very much the same as above
-            /*CALOUT                          (K, "%u: INVALID %s: '%s'\n",              \
-                                             rd_tkx, seq_k, tokens[rd_tkx]             );*/
+        else {
+            CALOUT                          (K, "%u: INVALID %s: '%s'\n",              \
+                                             rd_tkx, seq_k, rd_rawv                    );
 
     }};                                                                                     };
 

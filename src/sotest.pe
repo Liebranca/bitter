@@ -3,25 +3,24 @@ $$$$$$$$$$$$$$$$
 entry main;
 
 reg vars;
-  char  x "hello, world!";
-  char  y 0b1010;
+  char2 x "hello, world!";
+  char  y 0x00;
 
 proc main;
+  wed   char;
+  cpy   y,y-x;
+  cpy   y+1,[y];
 
-  xnor  y,0b1100;
+proc loop;
+  wed   char;
+  cpy   y+2,[x+[y]-1];
 
-  /*mov   y,x:+[y+1];
-  eif   [y],end;
+  sub   y+1,![y+2];
+  dec   y;
 
-  cpy   y+2,'a'<=[y];
-  and   y+2,'z'>=[y];
-
-  sub   y,0x20*[y+2];
-  wap   x+[y+1],y;
-
-  inc   y+1;
-  jif   main,[y+1]<:y-x;*/
+  jif   end,?[y+2];
+  jif   loop,[y]<0xFF;
 
 proc end;
   wed   long;
-  exit  x;
+  exit  y+2;

@@ -41,11 +41,13 @@ void lmxnor(void         );                 // a=!(a^b)
 
 void lmtil (void         );                 // a=~a
 void lmcl  (void         );                 // empty a; a^=a
-void lmflip(void         );                 // when b&n, a&=~n if a&n; a|=n if !(a&n)
+void lmclm (void         );                 // a&=~b
 void lmnot (void         );                 // a=!a; flags &=~a==0
 
 void lmshr (void         );                 // a>>b
 void lmshl (void         );                 // a<<b
+
+void lmlis (void         );                 // local vars && aliases
 
 void lmasl (uint* udr    );                 // arithmetics solver
 
@@ -79,11 +81,13 @@ void swxnor(void         );
 
 void swtil (void         );
 void swcl  (void         );
-void swflip(void         );
+void swclm (void         );
 void swnot (void         );
 
 void swshr (void         );
 void swshl (void         );
+
+void swlis (void         );
 
 //   ---     ---     ---     ---     ---
 
