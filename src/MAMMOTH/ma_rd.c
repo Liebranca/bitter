@@ -94,12 +94,10 @@ void TRNVAL(uint len)                       { if(!len) { return; }
         mammi->state |= MAMMIT_SF_PSTR;
         uint slen     = TRSTRVAL(rd_rawv+1, rd_result);
 
+        while(rd_units < 1+(slen/(UNITSZ))) {
+            rd_units*=2; typedata.strsz++;
 
-        while(slen>(UNITSZ*2)) {
-            slen-=UNITSZ*2;
-            rd_units+=2;
-
-        };
+        }; typedata.strus+=slen;
 
         if(rd_ctok) {
             rd_ctok->value=*rd_result;
@@ -464,6 +462,7 @@ void REGTP(void)                            {
         default  : rd_size=sizeof(float ); break;
 
     }; szmask_a       = SIZMASK(rd_size);
+    typedata.strtp    = rd_cast;
 
 //   ---     ---     ---     ---     ---
 

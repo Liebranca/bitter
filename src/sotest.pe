@@ -5,6 +5,7 @@ entry main;
 reg vars;
   char2 x "hello, world!";
   char  y 0x00;
+  char  z y-x;
 
 proc main;
   wed   char;

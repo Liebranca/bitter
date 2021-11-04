@@ -523,7 +523,15 @@ void lmasl(uint* udr)                       {
         force_solve=1; goto RESULT;
 
     } elif(t->ttype==CALCUS_FETCH) {
-        mammi->state |= MAMMIT_SF_PFET;
+
+        uint loc=ADDRTOLOC(t->value);
+        if(loc!=FATAL) {
+            LABEL* l=mammi->jmpt_h+loc;
+
+            CALOUT(E, "name %s | strsz %u | strus %u\n",
+            l->id.key, l->meta.strsz, l->meta.strus);
+
+        }; mammi->state |= MAMMIT_SF_PFET;
 
     }; *rd_value = t->value;
 
