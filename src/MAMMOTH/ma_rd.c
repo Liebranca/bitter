@@ -514,12 +514,16 @@ void RDPRC(void)                            {
     uchar  buff[ZJC_IDK_WIDTH];             // identifier storage
     buff[0]         = 0;
 
+    CTOK*  lis_val  = NULL;
+
 //   ---     ---     ---     ---     ---
 
     for(uint x=0; x<ins_argc; x++) {        // set ptr, cleanup, eval expression
 
-        rd_ctok     =                       (CTOK*) (code->data+udr                 );
-        rd_cbyte   ^= rd_cbyte;
+        if(!lis_val) {
+            rd_ctok  =                      (CTOK*) (code->data+udr                 );
+
+        }; rd_cbyte ^= rd_cbyte;
 
         if(!x && code->loc==0x1B) {
 
@@ -527,21 +531,34 @@ void RDPRC(void)                            {
             rd_rawv  = tokens[rd_tkx];      // fetch
             udr     += sizeof(CTOK)/UNITSZ; // reserve units
 
-                                            // relocate and copy alias to line identifier
-            rd_ctok  =                      (CTOK*) (code->data+udr                 );
+                                            // set alias as line identifier
             strcpy                          (buff, rd_rawv                          );
+            rd_tkx++; x++;
+
+            lis_val = rd_ctok;
+            rd_ctok = NULL;
 
         };
 
+//   ---     ---     ---     ---     ---
+
+                                            // cleanup, read input
         RSTSEC                              (                                       );
         RDEXP                               (                                       );
 
-                                             // calculate token count!
-        leap        =                       (uint) ( ((uintptr_t) rd_ctok         ) \
-                                                   - ((uintptr_t) (code->data+udr)) );
+        if(!buff[0]) {
+                                            // calculate token count!
+            leap     =                       (uint) ( ((uintptr_t) rd_ctok         ) \
+                                                    - ((uintptr_t) (code->data+udr)) );
 
-        udr        += leap/UNITSZ;
+            udr     += leap/UNITSZ;
 
+//   ---     ---     ---     ---     ---
+
+        } else {
+            lis_val->value = *rd_lhand;
+
+        };
     };
 
 //   ---     ---     ---     ---     ---    make instruction identifier

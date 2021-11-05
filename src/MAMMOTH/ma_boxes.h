@@ -171,7 +171,6 @@ typedef struct MAMM_CODE {                  // operations as data
     uint    loc;                            // offset to instruction header
     uint    size;                           // volume of data, measured in memunits
 
-    MEMUNIT pad;                            // ill figure out what to do with this later
     MEMUNIT data[];                         // bunch of bits read by instruction
 
 } CODE;

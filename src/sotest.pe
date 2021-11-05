@@ -4,13 +4,12 @@ entry main;
 
 reg vars;
   char  s   0x00;
-  char  len len-s;
 
 proc mid;
-  wed   long;
-  lis   line,0xFF;
+  lis   line,s;
 
-  cpy   s,"HELLOMAN";
+  wed   long;
+  cpy   line,"HELLO";
   jmp   end;
 
 proc main;

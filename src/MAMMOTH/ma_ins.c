@@ -126,8 +126,6 @@ void ldins (uint loc)                       { ins = (CODE*) (mammi->jmpt[loc]); 
 
 void lmoff(uint* off)                       {
 
-    off[0]          *= rd_size;
-
     off[1]           =                       off[0] / UNITSZ;
     off[0]          -=                       off[1] * UNITSZ;
     off[1]           = FETMASK              (rd_units, off[1]);                             }
@@ -519,6 +517,8 @@ void lmasl(uint* udr)                       {
 
 //   ---     ---     ---     ---     ---
 
+    *rd_value = t->value;
+
     if(t->ttype==CALCUS_SEPAR) {
         force_solve=1; goto RESULT;
 
@@ -528,12 +528,16 @@ void lmasl(uint* udr)                       {
         if(loc!=FATAL) {
             LABEL* l=mammi->jmpt_h+loc;
 
-            /*CALOUT(E, "name %s | strsz %u | strus %u\n",
-            l->id.key, l->meta.strsz, l->meta.strus);*/
+            if( (*((uint*)(l->id.type))) == 0x2A534E49) {
+                CODE* v = (CODE*) (mammi->jmpt[l->loc]);
+                if(v->loc==0x1B && !(ins->loc >= 0x04 && ins->loc <= 0x06)) {
+                    *rd_value=v->data[3];
 
+                };
+            };
         }; mammi->state |= MAMMIT_SF_PFET;
 
-    }; *rd_value = t->value;
+    };
 
 //   ---     ---     ---     ---     ---    // compress expanded tokens into final value
 
