@@ -84,6 +84,7 @@ typedef struct MAMM_SYNTX_LABEL  {          // an alias for an address
 #define CALCUS_FETCH 0xFE7C4B01
 #define CALCUS_SEPAR 0x5E9A9A7E
 #define CALCUS_NIHIL 0x5001C1DE
+#define CALCUS_LOCAL 0x1210CA12
 
 typedef struct MAMM_CALCUS_TOKEN {          // breaks down expressions into maleable data
 

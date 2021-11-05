@@ -528,8 +528,8 @@ void lmasl(uint* udr)                       {
         if(loc!=FATAL) {
             LABEL* l=mammi->jmpt_h+loc;
 
-            CALOUT(E, "name %s | strsz %u | strus %u\n",
-            l->id.key, l->meta.strsz, l->meta.strus);
+            /*CALOUT(E, "name %s | strsz %u | strus %u\n",
+            l->id.key, l->meta.strsz, l->meta.strus);*/
 
         }; mammi->state |= MAMMIT_SF_PFET;
 

@@ -157,6 +157,7 @@ void TRNVAL(uint len)                       { if(!len) { return; }
                 rd_ctok->value = *rd_value;
 
             };
+
         } elif(mammi->pass) {
             CALOUT(E, "Can't fetch key %s\n", rd_rawv);
 
@@ -509,12 +510,28 @@ void RDPRC(void)                            {
     code->loc       = ins_code;             // save id of current instruction
     lngptr          = 0;                    // stack rewind
 
+    uchar* cntx_key = "";                   // name of current context
+    uchar  buff[ZJC_IDK_WIDTH];             // identifier storage
+    buff[0]         = 0;
+
 //   ---     ---     ---     ---     ---
 
     for(uint x=0; x<ins_argc; x++) {        // set ptr, cleanup, eval expression
 
         rd_ctok     =                       (CTOK*) (code->data+udr                 );
         rd_cbyte   ^= rd_cbyte;
+
+        if(!x && code->loc==0x1B) {
+
+            rd_tkx++;                       // move to next token
+            rd_rawv  = tokens[rd_tkx];      // fetch
+            udr     += sizeof(CTOK)/UNITSZ; // reserve units
+
+                                            // relocate and copy alias to line identifier
+            rd_ctok  =                      (CTOK*) (code->data+udr                 );
+            strcpy                          (buff, rd_rawv                          );
+
+        };
 
         RSTSEC                              (                                       );
         RDEXP                               (                                       );
@@ -529,19 +546,19 @@ void RDPRC(void)                            {
 
 //   ---     ---     ---     ---     ---    make instruction identifier
 
-    uchar  buff[ZJC_IDK_WIDTH];
-    uchar* cntx_key = "";
+    if(!buff[0]) {
 
-    uintptr_t paddr=(uintptr_t) cur_cntx;
-    for(int y=(int)mammi->jmpt_i;
-        y > -1; y--          ) {
+        uintptr_t paddr=(uintptr_t) cur_cntx;
+        for(int y=(int)mammi->jmpt_i;
+            y > -1; y--          ) {
 
-        LABEL* pl = (mammi->jmpt_h+y);
-        if(mammi->jmpt[pl->loc]==paddr) {
-            cntx_key=pl->id.key; break;
+            LABEL* pl = (mammi->jmpt_h+y);
+            if(mammi->jmpt[pl->loc]==paddr) {
+                cntx_key=pl->id.key; break;
 
-        };
-    }; snprintf(buff, ZJC_IDK_WIDTH, "%s%u", cntx_key, cur_cntx->elems);
+            };
+        }; snprintf(buff, ZJC_IDK_WIDTH, "%s%u", cntx_key, cur_cntx->elems);
+    };
 
 //   ---     ---     ---     ---     ---
 
