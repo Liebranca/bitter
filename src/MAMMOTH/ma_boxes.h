@@ -73,7 +73,6 @@ typedef struct MAMM_SYNTX_MACRO {           // alias for name/token
 
     ID      id;                             // identifier for alias
     MEMUNIT value;
-    //uchar name[MAMMIT_TK_WIDTH];            // name to substitute alias with
 
 } MACRO;
 
@@ -103,7 +102,7 @@ typedef struct MAMM_CALCUS_TOKEN {          // breaks down expressions into male
     union {
         struct {
            uint     ttype;                  // token type
-           uint     vtype;                  // value type 
+           uint     vsize;                  // value size; only used for vsa
 
         }; MEMUNIT  prefix;                 // describes the block
     };

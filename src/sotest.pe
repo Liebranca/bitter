@@ -5,7 +5,7 @@ reg vars;
 
 proc main;
   wed   long;
-  cpy   s,"$$$$$$$$$$$$$$$$";
+  lis   "FUK",s;
 
   wed   long;
   exit  s;

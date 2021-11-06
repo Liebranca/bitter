@@ -95,7 +95,7 @@ void TRNVAL(uint len)                       { if(!len) { return; }
         mammi->state   |= MAMMIT_SF_PSTR;
         uint slen       = TRSTRVAL(rd_rawv+1, rd_result);
 
-        while(rd_units < 1+(slen/(UNITSZ))) {
+        while(rd_units < 1+((slen+sizeof(typedata.strus))/(UNITSZ))) {
             rd_units*=2; typedata.strsz++;
 
         }; typedata.strus=slen;
@@ -103,6 +103,7 @@ void TRNVAL(uint len)                       { if(!len) { return; }
         if(rd_ctok) {
             rd_ctok->value=*rd_result;
             rd_ctok->ttype=CALCUS_CHSTR;
+            rd_ctok->vsize=slen;
 
         };
     }
@@ -440,11 +441,10 @@ void RDEXP(void)                            {
 
         if(rd_ctok) {
             MEMUNIT* ctok_s = &(rd_ctok->value);
-            for(uint x=0; x<(rd_units/2); x++) {
-CALOUT(E, "0x%" PRIXPTR "\n", ctok_s+x);
+            for(uint x=0; x<rd_units; x++) {
                 ctok_s[x]=rd_result[x];
 
-            }; uint step=(rd_units/2)/sizeof(CTOK);
+            }; uint step=rd_units/sizeof(CTOK);
             if(!step) { step = 1; } rd_ctok+=step;
 
         }; mammi->state&=~MAMMIT_SF_PSTR;
@@ -536,15 +536,13 @@ void REGTP(void)                            {
 
 void RDLIS(void)                            {
 
-    rd_tkx++;                               // skip symbol
-
-    uchar*  name = tokens[rd_tkx];          // fetch id token
+    uchar*  name = (tokens[rd_tkx+1])+1;    // fetch id token
     uchar*  type = "LIS*";
 
-//   ---     ---     ---     ---     ---
+    for(uint x=0; x<ins_argc; x++) {
+        RSTSEC(); RDEXP();                      // cleanup && solve expression
 
-    rd_tkx++;                               // skip the comma
-    RSTSEC(); RDEXP();                      // cleanup && solve expression
+    };
 
 //   ---     ---     ---     ---     ---
 
@@ -565,6 +563,8 @@ void RDLIS(void)                            {
 
     }; m->value = *rd_result;
     HASHSET(MNAMES_HASH, byref(m->id));                                                     };
+
+//   ---     ---     ---     ---     ---
 
 void RDPRC(void)                            {
 
@@ -588,12 +588,21 @@ void RDPRC(void)                            {
     for(uint x=0; x<ins_argc; x++) {        // set ptr, cleanup, eval expression
 
 
-        rd_ctok   =                        (CTOK*) (code->data+udr                 );
+        rd_ctok   =                         (CTOK*) (code->data+udr                 );
         rd_cbyte ^= rd_cbyte;
 
-        if(!x && code->loc==0x1B) {
-            rd_ctok=NULL;
-            RDLIS(); return;
+//   ---     ---     ---     ---     ---
+
+        if(!x && code->loc==0x1B) {         // aliasing is a special case
+
+            CTOK* ntok = rd_ctok;
+
+            RDLIS                           (                                       );
+
+            udr  += 1+(ntok->vsize);
+            udr  += (rd_tki-2)*4;
+
+            break;
 
         };
 
@@ -604,10 +613,10 @@ void RDPRC(void)                            {
         RDEXP                               (                                       );
 
                                             // calculate token count!
-        leap     =                          (uint) ( ((uintptr_t) rd_ctok         ) \
-                                            - ((uintptr_t) (code->data+udr)) );
+        leap      =                         (uint) ( ((uintptr_t) rd_ctok        )  \
+                                                   - ((uintptr_t) (code->data+udr)) );
 
-        udr     += (leap/UNITSZ)+((rd_units-2)*!(!(typedata.flags&0x10)));
+        udr      += (leap/UNITSZ)+((rd_units-2)*!(!(typedata.flags&0x10)));
 
     };
 
