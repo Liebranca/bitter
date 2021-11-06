@@ -194,6 +194,33 @@ int lmfet(uintptr_t* dst        ,
                                                                                              \
     }
 
+#define MNY_FET_OP                                                                           \
+    uintptr_t  addr          = 0;           /* sole operand                    */            \
+    uint       udr           = 0;           /* offset into ins->data           */            \
+    uint       offsets[2];                  /* [0..2] upos, cbyte              */            \
+    MEMUNIT    value;                                                                        \
+                                                                                             \
+
+#define FET_NXT(ac)                                                                          \
+    addr       ^= addr;                                                                      \
+    value      ^= value;                                                                     \
+    offsets[0] ^= offsets[0];                                                                \
+    offsets[1] ^= offsets[1];                                                                \
+                                                                                             \
+    if(ac&2) {                                                                               \
+        svinsz(0x06);                                                                        \
+                                                                                             \
+    };                                                                                       \
+                                                                                             \
+    lmfet(&addr, &udr, offsets, ac);                                                         \
+                                                                                             \
+    IF_CONST_ALLOWED(ac, value, addr, offsets[0], offsets[1], szmask_a)                      \
+                                                                                             \
+    if(ac&2) {                                                                               \
+        ldinsz();                                                                            \
+                                                                                             \
+    }
+
 //   ---     ---     ---     ---     ---
 
 #define TWO_FET_OP(aca, acb)                                                                 \
@@ -462,11 +489,28 @@ void lmshl (void)                           { TWO_FET_OP(0b01, 0);
 
 //   ---     ---     ---     ---     ---
 
-void lmlis (void)                           {
+void lmlis (void)                           { MNY_FET_OP;
 
-    ;
+    FET_NXT(0);
+    CTOK* t = (CTOK*) *rd_result;
 
-};
+    FET_NXT(0); MEMUNIT* s = (MEMUNIT*) &(t->value);
+    for(uint x=0; x<1+(t->vsize/UNITSZ); x++) {
+        rd_result[x]=s[x];
+
+    };
+
+//   ---     ---     ---     ---     ---
+
+    MACRO* m     = NULL;
+    void*  nulmy = NULL;
+
+    STR_HASHGET(MNAMES_HASH, (uchar*) rd_result, nulmy, 0);
+    if(nulmy!=NULL) {
+        m = (MACRO*) nulmy;
+
+    }; m->value = value;
+    HASHSET(MNAMES_HASH, byref(m->id));                                                     };
 
 //   ---     ---     ---     ---     ---
 
@@ -522,26 +566,34 @@ void lmasl(uint* udr)                       {
     if(t->ttype==CALCUS_SEPAR) {
         force_solve=1; goto RESULT;
 
+    } elif(t->ttype==CALCUS_CHSTR) {
+
+        mammi->state     |= MAMMIT_SF_PSTR;
+        uint slen         = 1+(t->vsize/UNITSZ);
+        *rd_result        = (uintptr_t) t;
+
+        while(slen%(sizeof(CTOK)/UNITSZ)) {
+            slen++;
+
+        }; *udr          += slen+sizeof(CTOK)/UNITSZ;
+
+        goto EVAL_EXP;
+
     } elif(t->ttype==CALCUS_FETCH) {
-
-        uint loc=ADDRTOLOC(t->value);
-        if(loc!=FATAL) {
-            LABEL* l=mammi->jmpt_h+loc;
-
-            if( (*((uint*)(l->id.type))) == 0x2A534E49) {
-                CODE* v = (CODE*) (mammi->jmpt[l->loc]);
-                if(v->loc==0x1B && !(ins->loc >= 0x04 && ins->loc <= 0x06)) {
-                    *rd_value=v->data[3];
-
-                };
-            };
-        }; mammi->state |= MAMMIT_SF_PFET;
+        mammi->state |= MAMMIT_SF_PFET;
 
     };
 
 //   ---     ---     ---     ---     ---    // compress expanded tokens into final value
 
     (*udr)+=sizeof(CTOK)/UNITSZ;
+
+    if(mammi->state&MAMMIT_SF_PSTR) {
+        mammi->state &=~MAMMIT_SF_PSTR;
+        goto EVAL_EXP;
+
+    };
+
     SOLVE: CALCUS_COLLAPSE();
 
     goto EVAL_EXP;

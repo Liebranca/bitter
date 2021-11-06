@@ -1,11 +1,14 @@
 $$$$$$$$$$$$$$$$
 
+entry main;
+
 reg vars;
   char  s ,(=);
 
 proc main;
   wed   long;
-  lis   "FUK",s;
+  cpy   s,"HELLO, WORLD!";
+  lis   "$$$$$$$$$$$$$$$$",s+2;
 
   wed   long;
   exit  s;
