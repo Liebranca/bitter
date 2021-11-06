@@ -281,7 +281,7 @@ void lmwap(void)                            {
 void lmwed(void)                            {
 
     ONE_FET_OP(0b10);
-    SYMBOL* sym = mammi->slots+value;
+    SYMBOL* sym = mammi->gvalues+value;
 
     if( (*((uint*) sym->id.type)==0x45505954)
     ||  (*((uint*) sym->id.type)==0x47414C46) ) {
@@ -604,6 +604,7 @@ void stentry(void)                          {
     for(; x<strlen(s); x++) {
         mammi->entry[x]=s[x];
 
-    }; mammi->entry[x]=0x00;                                                                };
+    }; mammi->entry[x]=0x00;
+CALOUT(E, "ENTRY %s\n", mammi->entry);                                                                };
 
 //   ---     ---     ---     ---     ---

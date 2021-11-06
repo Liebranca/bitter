@@ -22,8 +22,10 @@
 TYPEDATA typedata    = {0};
 
 MAMMIT*  mammi       = NULL;
+
 HASH*    GNAMES_HASH = NULL;                // globals and built-ins
 HASH*    LNAMES_HASH = NULL;                // user-defined symbols
+HASH*    MNAMES_HASH = NULL;                // aliases/macros
 
 //   ---     ---     ---     ---     ---
 

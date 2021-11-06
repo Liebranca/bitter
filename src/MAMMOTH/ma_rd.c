@@ -137,8 +137,8 @@ void TRNVAL(uint len)                       { if(!len) { return; }
 //   ---     ---     ---     ---     ---
 
         } else {                            // convert symbol to index
-            *rd_value      = ( ((uintptr_t) nulmy       ) \
-                             - ((uintptr_t) mammi->slots) ) / sizeof(SYMBOL);
+            *rd_value      = ( ((uintptr_t) nulmy         ) \
+                             - ((uintptr_t) mammi->gvalues) ) / sizeof(SYMBOL);
 
             if(rd_ctok) {
                 rd_ctok->ttype = CALCUS_NIHIL;
@@ -158,8 +158,22 @@ void TRNVAL(uint len)                       { if(!len) { return; }
 
             };
 
-        } elif(mammi->pass) {
-            CALOUT(E, "Can't fetch key %s\n", rd_rawv);
+        } else {
+            STR_HASHGET                     (MNAMES_HASH, rd_rawv, nulmy, 0      );
+            if(nulmy!=NULL) {
+                MACRO* m  = (MACRO*) nulmy;
+                *rd_value = m->value;
+
+                if(rd_ctok) {
+                    rd_ctok->ttype = CALCUS_FETCH;
+                    rd_ctok->value = *rd_value;
+
+                };
+
+            } elif(mammi->pass) {
+                CALOUT(E, "Can't fetch key %s\n", rd_rawv);
+
+            };
 
         };
     };
@@ -500,6 +514,38 @@ void REGTP(void)                            {
 
 //   ---     ---     ---     ---     ---
 
+void RDLIS(void)                            {
+
+    rd_tkx++;                               // skip symbol
+
+    uchar*  name = tokens[rd_tkx];          // fetch id token
+    uchar*  type = "LIS*";
+
+//   ---     ---     ---     ---     ---
+
+    rd_tkx++;                               // skip the comma
+    RSTSEC(); RDEXP();                      // cleanup && solve expression
+
+//   ---     ---     ---     ---     ---
+
+    MACRO* m     = NULL;
+    void*  nulmy = NULL;
+
+    STR_HASHGET(MNAMES_HASH, name, nulmy, 0);
+    if(nulmy!=NULL) {
+        m = (MACRO*) nulmy;
+
+    } else {                                // get next available slot
+        uint idex;
+
+        STACKPOP(byref(mammi->mvalstk), idex);
+
+        m     = mammi->mvalues+idex;
+        m->id = IDNEW(type, name);
+
+    }; m->value = *rd_result;
+    HASHSET(MNAMES_HASH, byref(m->id));                                                     };
+
 void RDPRC(void)                            {
 
     CODE*     code  = (CODE*) CURLVAL;      // 'pop' from stack
@@ -526,17 +572,8 @@ void RDPRC(void)                            {
         }; rd_cbyte ^= rd_cbyte;
 
         if(!x && code->loc==0x1B) {
-
-            rd_tkx++;                       // move to next token
-            rd_rawv  = tokens[rd_tkx];      // fetch
-            udr     += sizeof(CTOK)/UNITSZ; // reserve units
-
-                                            // set alias as line identifier
-            strcpy                          (buff, rd_rawv                          );
-            rd_tkx++; x++;
-
-            lis_val = rd_ctok;
-            rd_ctok = NULL;
+            rd_ctok=NULL;
+            RDLIS(); return;
 
         };
 
@@ -590,14 +627,15 @@ void NTNAMES(void)                          {
                                             // interpreter nit
     ID id = IDNEW                           ("MAMM", "I"                               );
     MEMGET                                  (MAMMIT, mammi, 0, &id                     );
-    MKSTK                                   (byref(mammi->slstack), NAMESZ             );
+    MKSTK                                   (byref(mammi->mvalstk), NAMESZ             );
 
     for(int x=NAMESZ-1; x>0; x--) {         // fill stack with indices
-        STACKPUSH(byref(mammi->slstack), x);
+        STACKPUSH(byref(mammi->mvalstk), x);
 
                                             // nit the hashes
-    }; GNAMES_HASH    = MKHASH              (7, "gnames_hash"                          );
-       LNAMES_HASH    = MKHASH              (5, "lnames_hash"                          );
+    }; GNAMES_HASH    = MKHASH              (5, "GNAMES"                               );
+       LNAMES_HASH    = MKHASH              (5, "LNAMES"                               );
+       MNAMES_HASH    = MKHASH              (5, "MNAMES"                               );
 
 //   ---     ---     ---     ---     ---
 
@@ -609,8 +647,9 @@ void NTNAMES(void)                          {
 //   ---     ---     ---     ---     ---
 
 
-    SYMBOL base_dtypes[]={                  // note how each type has it's own lazy call ;>
+    SYMBOL symbols[]={                      // table of builtins
 
+                                            // types/typeflags
         SYMNEW("TYPE", "void",   REGVOI),   // funptr or rawptr
 
         SYMNEW("TYPE", "stark",  REGTRK),   // funptr
@@ -627,117 +666,78 @@ void NTNAMES(void)                          {
         SYMNEW("TYPE", "float",  REGFLT),   // floats
 
         SYMNEW("FLAG", "signed", REGSGN),   // signed
-        SYMNEW("FLAG", "unsig",  REGUSG)    // unsigned
+        SYMNEW("FLAG", "unsig",  REGUSG),   // unsigned
 
-    };
+//   ---     ---     ---     ---     ---    // block types/contexts
 
-    for(uint x=0, y=0; x<ARRSIZE(base_dtypes); x++) {
+        SYMNEW("CNTX", "reg",   REGMA  ),
+        SYMNEW("CNTX", "hed",   NULL   ),
+        SYMNEW("CNTX", "src",   NULL   ),
 
-                                            // insert basic types into table
-        STACKPOP                            (byref(mammi->slstack), y                  );
+        SYMNEW("CNTX", "defn",  NULL   ),
+        SYMNEW("CNTX", "decl",  NULL   ),
+        SYMNEW("CNTX", "clan",  NULL   ),
+        SYMNEW("CNTX", "proc",  PROCMA ),
 
-        mammi->slots[y] = base_dtypes[x];   // copy data to array and insert in lkp table
-        HASHSET                             (GNAMES_HASH, byref(mammi->slots[y].id)    );
+//   ---     ---     ---     ---     ---    // instructions
 
-    };
+        SYMNEW("$INS", "cpy",   swcpy  ),
+        SYMNEW("$INS", "mov",   swmov  ),
+        SYMNEW("$INS", "wap",   swwap  ),
+        SYMNEW("$INS", "wed",   swwed  ),
 
-//   ---     ---     ---     ---     ---
-
-    SYMBOL contexts[]={                     // names of valid block-types
-
-        SYMNEW("CNTX", "reg",  REGMA ),
-        SYMNEW("CNTX", "hed",  NULL  ),
-        SYMNEW("CNTX", "src",  NULL  ),
-
-        SYMNEW("CNTX", "defn", NULL  ),
-        SYMNEW("CNTX", "decl", NULL  ),
-        SYMNEW("CNTX", "clan", NULL  ),
-        SYMNEW("CNTX", "proc", PROCMA)
-
-    };
-
-    for(uint x=0, y=0; x<ARRSIZE(contexts); x++) {
-
-        STACKPOP                            (byref(mammi->slstack), y                  );
-        mammi->slots[y] = contexts[x];
-
-        HASHSET                             (GNAMES_HASH, byref(mammi->slots[y].id)    );
-
-    };
+        SYMNEW("$INS", "jmp",   swjmp  ),
+        SYMNEW("$INS", "jif",   swjif  ),
+        SYMNEW("$INS", "eif",   sweif  ),
+        SYMNEW("$INS", "exit",  swexit ),
 
 //   ---     ---     ---     ---     ---
 
-    SYMBOL instructions[]={                 // symbols describing some operation
+        SYMNEW("$INS", "add",   swadd  ),
+        SYMNEW("$INS", "sub",   swsub  ),
+        SYMNEW("$INS", "inc",   swinc  ),
+        SYMNEW("$INS", "dec",   swdec  ),
 
-        SYMNEW("$INS", "cpy",  swcpy ),
-        SYMNEW("$INS", "mov",  swmov ),
-        SYMNEW("$INS", "wap",  swwap ),
-        SYMNEW("$INS", "wed",  swwed ),
-
-        SYMNEW("$INS", "jmp",  swjmp ),
-        SYMNEW("$INS", "jif",  swjif ),
-        SYMNEW("$INS", "eif",  sweif ),
-        SYMNEW("$INS", "exit", swexit),
-
-        SYMNEW("$INS", "add",  swadd ),
-        SYMNEW("$INS", "sub",  swsub ),
-        SYMNEW("$INS", "inc",  swinc ),
-        SYMNEW("$INS", "dec",  swdec ),
-
-        SYMNEW("$INS", "mul",  swmul ),
-        SYMNEW("$INS", "div",  swdiv ),
-        SYMNEW("$INS", "mod",  swmod ),
-
-        SYMNEW("$INS", "and",  swand ),
-        SYMNEW("$INS", "or" ,  swor  ),
-        SYMNEW("$INS", "xor",  swxor ),
-        SYMNEW("$INS", "nor",  swnor ),
-        SYMNEW("$INS", "nand", swnand),
-        SYMNEW("$INS", "xnor", swxnor),
-
-        SYMNEW("$INS", "til",  swtil ),
-        SYMNEW("$INS", "cl",   swcl  ),
-        SYMNEW("$INS", "clm",  swclm ),
-        SYMNEW("$INS", "not",  swnot ),
-
-        SYMNEW("$INS", "shr",  swshr ),
-        SYMNEW("$INS", "shl",  swshl ),
-
-        SYMNEW("$INS", "lis",  swlis )
-
-
-    };
-
-    for(uint x=0, y=0; x<ARRSIZE(instructions); x++) {
-
-                                            // get next slot idex
-        STACKPOP                            (byref(mammi->slstack), y                  );
-        mammi->slots[y] = instructions[x];
-
-        HASHSET                             (GNAMES_HASH, byref(mammi->slots[y].id)    );
-
-    };
+        SYMNEW("$INS", "mul",   swmul  ),
+        SYMNEW("$INS", "div",   swdiv  ),
+        SYMNEW("$INS", "mod",   swmod  ),
 
 //   ---     ---     ---     ---     ---
 
-    SYMBOL directives[]={                   // instructions to the interpreter
+        SYMNEW("$INS", "and",   swand  ),
+        SYMNEW("$INS", "or" ,   swor   ),
+        SYMNEW("$INS", "xor",   swxor  ),
+        SYMNEW("$INS", "nor",   swnor  ),
+        SYMNEW("$INS", "nand",  swnand ),
+        SYMNEW("$INS", "xnor",  swxnor ),
+
+//   ---     ---     ---     ---     ---
+
+        SYMNEW("$INS", "til",   swtil  ),
+        SYMNEW("$INS", "cl",    swcl   ),
+        SYMNEW("$INS", "clm",   swclm  ),
+        SYMNEW("$INS", "not",   swnot  ),
+        SYMNEW("$INS", "shr",   swshr  ),
+        SYMNEW("$INS", "shl",   swshl  ),
+
+//   ---     ---     ---     ---     ---
+
+        SYMNEW("$INS", "lis",   swlis  ),
+
+//   ---     ---     ---     ---     ---    // directives
 
         SYMNEW("DRTV", "entry", stentry)
 
     };
 
-    for(uint x=0, y=0; x<ARRSIZE(directives); x++) {
+    for(uint x=0; x<ARRSIZE(symbols); x++) {
 
-        STACKPOP                            (byref(mammi->slstack), y                  );
-        mammi->slots[y] = directives[x];
+        mammi->gvalues[x] = symbols[x];     // copy data to array and insert in lkp table
+        HASHSET                             (GNAMES_HASH, byref(mammi->gvalues[x].id));
 
-        HASHSET                             (GNAMES_HASH, byref(mammi->slots[y].id)    );
+    };                                                                                      };
 
-    };
-
-                                                                                      };
-
-void DLNAMES(void)                          { DLMEM(LNAMES_HASH);                           \
+void DLNAMES(void)                          { DLMEM(MNAMES_HASH); DLMEM(LNAMES_HASH);       \
                                               DLMEM(GNAMES_HASH); DLMEM(mammi);             };
 
 //   ---     ---     ---     ---     ---

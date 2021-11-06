@@ -67,9 +67,21 @@ typedef struct MAMM_SYNTX_SYMBOL {          // used for string to funcall mambo
 
 } SYMBOL;
 
-typedef struct MAMM_SYNTX_LABEL  {          // an alias for an address
+//   ---     ---     ---     ---     ---
 
-    ID       id;                            // polyheader, makes this block hashable
+typedef struct MAMM_SYNTX_MACRO {           // alias for name/token
+
+    ID      id;                             // identifier for alias
+    MEMUNIT value;
+    //uchar name[MAMMIT_TK_WIDTH];            // name to substitute alias with
+
+} MACRO;
+
+//   ---     ---     ---     ---     ---
+
+typedef struct MAMM_SYNTX_LABEL  {          // alias for value
+
+    ID       id;                            // polyheader
 
     MEMUNIT  loc;                           // location of self within table
     MEMUNIT  p_loc;                         // location of parent
@@ -84,7 +96,6 @@ typedef struct MAMM_SYNTX_LABEL  {          // an alias for an address
 #define CALCUS_FETCH 0xFE7C4B01
 #define CALCUS_SEPAR 0x5E9A9A7E
 #define CALCUS_NIHIL 0x5001C1DE
-#define CALCUS_LOCAL 0x1210CA12
 
 typedef struct MAMM_CALCUS_TOKEN {          // breaks down expressions into maleable data
 
@@ -140,9 +151,12 @@ typedef struct MAMM_INTERPRETER {           // smach for pe-text input
     uint      lvaltop;                      // next offset @lvalues that's free
     MEMUNIT   lvalues   [NAMESZ       ];    // yer vars arrrr
 
-    SYMBOL    slots     [NAMESZ       ];    // array of built-ins
-    STK       slstack;                      // stack of (free)indices into built-ins array
-    uint      slstack_i [NAMESZ       ];    // stack space
+    SYMBOL    gvalues   [NAMESZ       ];    // array of built-ins
+
+    MACRO     mvalues   [NAMESZ       ];    // textual substitution
+
+    STK       mvalstk;                      // free indices into mvalues
+    uint      mvalstk_i [NAMESZ       ];    // ^memory for stack
 
     uint      jmpt_i;                       // top of jump table
     LABEL     jmpt_h    [NAMESZ       ];    // descriptors for contents of table
@@ -225,6 +239,7 @@ extern BLK      sec_end;
 
 extern HASH*    GNAMES_HASH;
 extern HASH*    LNAMES_HASH;
+extern HASH*    MNAMES_HASH;
 
 extern MEM*     memlng;
 extern uint     lngptr;

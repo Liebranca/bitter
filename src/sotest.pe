@@ -3,19 +3,16 @@ $$$$$$$$$$$$$$$$
 entry main;
 
 reg vars;
-  char  s   0x00;
-
-proc mid;
-  lis   line,s;
-
-  wed   long;
-  cpy   line,"HELLO";
-  jmp   end;
+  char  s ,(=);
 
 proc main;
-  wed   word;
-  jmp   line;
+  wed   long;
+  cpy   s,"HELLO";
 
-proc end;
+  wed   char;
+  lis   alias,s+1;
+  lis   alias,s+0;
+  cpy   alias,'C';
+
   wed   long;
   exit  s;
