@@ -91,16 +91,18 @@ void TRNVAL(uint len)                       { if(!len) { return; }
     elif( rd_rawv[0]==0x22 \
     ||    rd_rawv[0]==0x27 )                {
 
-        mammi->state |= MAMMIT_SF_PSTR;
-        uint slen     = TRSTRVAL(rd_rawv+1, rd_result);
+        typedata.flags |= 0x10;
+        mammi->state   |= MAMMIT_SF_PSTR;
+        uint slen       = TRSTRVAL(rd_rawv+1, rd_result);
 
         while(rd_units < 1+(slen/(UNITSZ))) {
             rd_units*=2; typedata.strsz++;
 
-        }; typedata.strus+=slen;
+        }; typedata.strus=slen;
 
         if(rd_ctok) {
             rd_ctok->value=*rd_result;
+            rd_ctok->ttype=CALCUS_CHSTR;
 
         };
     }
@@ -213,7 +215,15 @@ void TRNVAL(uint len)                       { if(!len) { return; }
 
 //   ---     ---     ---     ---     ---
 
-void MAEXPS(void)                           { TRNVAL(POPOPS()); if(rd_ctok) { rd_ctok++; }  };
+void MAEXPS(void)                           {
+
+    TRNVAL(POPOPS());
+
+    if(  (rd_ctok            ) \
+    &&  !(typedata.flags&0x10) ) {
+        rd_ctok++;
+
+    };                                                                                      };
 
 //   ---     ---     ---     ---     ---
 
@@ -427,7 +437,17 @@ void RDEXP(void)                            {
 //   ---     ---     ---     ---     ---
 
     if(mammi->state&MAMMIT_SF_PSTR) {
-        mammi->state&=~MAMMIT_SF_PSTR;
+
+        if(rd_ctok) {
+            MEMUNIT* ctok_s = &(rd_ctok->value);
+            for(uint x=0; x<(rd_units/2); x++) {
+CALOUT(E, "0x%" PRIXPTR "\n", ctok_s+x);
+                ctok_s[x]=rd_result[x];
+
+            }; uint step=(rd_units/2)/sizeof(CTOK);
+            if(!step) { step = 1; } rd_ctok+=step;
+
+        }; mammi->state&=~MAMMIT_SF_PSTR;
         goto EVAL_EXP;
 
     }; SOLVE: CALCUS_COLLAPSE();            // collapse arithmetic-wise
@@ -560,16 +580,16 @@ void RDPRC(void)                            {
     uchar  buff[ZJC_IDK_WIDTH];             // identifier storage
     buff[0]         = 0;
 
-    CTOK*  lis_val  = NULL;
+    typedata.flags ^= typedata.flags;
+    rd_units        = 2;
 
 //   ---     ---     ---     ---     ---
 
     for(uint x=0; x<ins_argc; x++) {        // set ptr, cleanup, eval expression
 
-        if(!lis_val) {
-            rd_ctok  =                      (CTOK*) (code->data+udr                 );
 
-        }; rd_cbyte ^= rd_cbyte;
+        rd_ctok   =                        (CTOK*) (code->data+udr                 );
+        rd_cbyte ^= rd_cbyte;
 
         if(!x && code->loc==0x1B) {
             rd_ctok=NULL;
@@ -583,36 +603,26 @@ void RDPRC(void)                            {
         RSTSEC                              (                                       );
         RDEXP                               (                                       );
 
-        if(!buff[0]) {
                                             // calculate token count!
-            leap     =                       (uint) ( ((uintptr_t) rd_ctok         ) \
-                                                    - ((uintptr_t) (code->data+udr)) );
+        leap     =                          (uint) ( ((uintptr_t) rd_ctok         ) \
+                                            - ((uintptr_t) (code->data+udr)) );
 
-            udr     += leap/UNITSZ;
+        udr     += (leap/UNITSZ)+((rd_units-2)*!(!(typedata.flags&0x10)));
 
-//   ---     ---     ---     ---     ---
-
-        } else {
-            lis_val->value = *rd_lhand;
-
-        };
     };
 
 //   ---     ---     ---     ---     ---    make instruction identifier
 
-    if(!buff[0]) {
+    uintptr_t paddr=(uintptr_t) cur_cntx;
+    for(int y=(int)mammi->jmpt_i;
+        y > -1; y--          ) {
 
-        uintptr_t paddr=(uintptr_t) cur_cntx;
-        for(int y=(int)mammi->jmpt_i;
-            y > -1; y--          ) {
+        LABEL* pl = (mammi->jmpt_h+y);
+        if(mammi->jmpt[pl->loc]==paddr) {
+            cntx_key=pl->id.key; break;
 
-            LABEL* pl = (mammi->jmpt_h+y);
-            if(mammi->jmpt[pl->loc]==paddr) {
-                cntx_key=pl->id.key; break;
-
-            };
-        }; snprintf(buff, ZJC_IDK_WIDTH, "%s%u", cntx_key, cur_cntx->elems);
-    };
+        };
+    }; snprintf(buff, ZJC_IDK_WIDTH, "%s%u", cntx_key, cur_cntx->elems);
 
 //   ---     ---     ---     ---     ---
 

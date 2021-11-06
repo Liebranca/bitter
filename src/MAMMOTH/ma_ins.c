@@ -604,7 +604,6 @@ void stentry(void)                          {
     for(; x<strlen(s); x++) {
         mammi->entry[x]=s[x];
 
-    }; mammi->entry[x]=0x00;
-CALOUT(E, "ENTRY %s\n", mammi->entry);                                                                };
+    }; mammi->entry[x]=0x00;                                                                };
 
 //   ---     ---     ---     ---     ---

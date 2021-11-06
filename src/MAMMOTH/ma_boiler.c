@@ -118,7 +118,7 @@ void REGLNG(void)                           { rd_cast = 0x06;                   
 
 //   ---     ---     ---     ---     ---    arrays
 
-void REGSTR(void)                           { typedata.strsz=1;                             };
+void REGSTR(void)                           { typedata.strsz=1; typedata.flags |= 0x10;     };
 void REGVEC(void)                           {                                               };
 
 //   ---     ---     ---     ---     ---    float

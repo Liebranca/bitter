@@ -1,18 +1,11 @@
 $$$$$$$$$$$$$$$$
 
-entry main;
-
 reg vars;
   char  s ,(=);
 
 proc main;
   wed   long;
-  cpy   s,"HELLO";
-
-  wed   char;
-  lis   alias,s+1;
-  lis   alias,s+0;
-  cpy   alias,'C';
+  cpy   s,"$$$$$$$$$$$$$$$$";
 
   wed   long;
   exit  s;
