@@ -3,15 +3,12 @@ $$$$$$$$$$$$$$$$
 entry main;
 
 reg vars;
-  char  s ,(=);
+  char  buff "COPYPASTEME";
+  char  s;
+
 
 proc main;
-
   wed   str;
-  cpy   s,"HELLO, WORLD!";
-  lis   "s2",s+2;
+  cpy   s,buff;
 
-  cpy   s2,"SHO";
-
-  wed   long;
   exit  s;

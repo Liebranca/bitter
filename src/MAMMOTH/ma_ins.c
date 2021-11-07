@@ -67,6 +67,8 @@ static CODE* ins          = NULL;           // current instruction
 static uint  costk[16];                     // stack of code locations
 static uint  costk_top    = 0;              // top of stack
 
+static uint  fetflg       = 0x00;
+
 //   ---     ---     ---     ---     ---
 
 typedef struct INS_SIZES {
@@ -280,38 +282,86 @@ void lmcpy(void)                            {
 
     if(typedata.flags&0x10) {               // corner case: strcpy
 
-        CTOK*    t    = (CTOK*) ((uintptr_t) value_b);
+        uint     len;                       // bytes to read from source/copy to destination
+        uchar*   s=NULL;                    // the source string itself
 
-        uint     len  = t->vsize;
-        uchar*   s    = (uchar*) &(t->value);
+//   ---     ---     ---     ---     ---
+
+        if(fetflg&0x10) {                   // this bit means it's a string fetch from a var
+
+            uint loc = ADDRTOLOC(value_b);  // get location of address within jump table
+            if(loc!=FATAL) {
+
+                // the label contains decl typedata for the var
+                // TODO: update label metadata
+                LABEL* l = mammi->jmpt_h+loc;
+                len      = l->meta.strus;
+                s        = (uchar*) ((uintptr_t) value_b);
+
+            } else {
+                CALOUT(E, "BAD PTR: %s can't find addr <0x%" PRIXPTR ">\n",
+                __func__, value_b); return;
+
+            }; fetflg^=0x10;
+
+//   ---     ---     ---     ---     ---
+
+        } else {                            // it's a calcus string constant
+                                            // ie a long value hardcoded into the instruction
+
+            CTOK* t = (CTOK*) ((uintptr_t) value_b);
+
+            len     = t->vsize;
+            s       = (uchar*) &(t->value);
+
+        };
+
+//   ---     ---     ---     ---     ---
+
+        if(!s) {
+            CALOUT(E, "BAD PTR: %s could not fetch srcstr from addr <0x%" PRIXPTR ">\n",
+            __func__, value_b);
+
+        };
 
         MEMUNIT  mask = 0x00LL;
         MEMUNIT  sstr = 0x00LL;
 
         MEMUNIT* dst  = ((MEMUNIT*) addr_a)+offsets[1];
 
+//   ---     ---     ---     ---     ---
+
         for(uint x=0; x<len; x++) {
 
+            // move char to byte offset
             MEMUNIT c  = ((MEMUNIT) s[x]) << (offsets[0]*8);
 
+            // add byte offset to mask
+            // append shifted char to substr
             mask      |= (0xFFLL << (offsets[0]*8));
             sstr      |= c;
 
-            offsets[0]++;
+            offsets[0]++;                   // go to next byte
 
             if(offsets[0] && !(offsets[0]%UNITSZ)) {
-                *dst &=~ mask; mask^=mask;
-                *dst |=  sstr; sstr^=sstr;
+
+                *dst &=~ mask; mask^=mask;  // clear out jic and flip substr bits
+                *dst |=  sstr; sstr^=sstr;  // clear mask and substr, go to next unit
+
                 offsets[0]^=offsets[0]; dst++;
 
             };
 
-        } if(mask) {
+//   ---     ---     ---     ---     ---
+
+        } if(mask) {                        // copy leftovers
             *dst &=~ mask;
             *dst |=  sstr;
 
         }; return;
     };
+
+//   ---     ---     ---     ---     ---
 
                                             // clean masked section jic and set
     ((MEMUNIT*) addr_a)[offsets[1]] &=~     (szmask_b     << (offsets[0]*8));
@@ -559,6 +609,7 @@ void lmasl(uint* udr)                       {
     uchar force_solve = 0;                  // quick exit flag
 
     mammi->ctrl^=mammi->ctrl;
+    fetflg     ^=fetflg;
 
     EVAL_EXP: if( ((*udr)>=ins->size) \
               ||  (force_solve      ) )     { goto RESULT; }
@@ -616,6 +667,7 @@ void lmasl(uint* udr)                       {
 
     } elif(t->ttype==CALCUS_FETCH) {
         mammi->state |= MAMMIT_SF_PFET;
+        fetflg       |= typedata.flags&0x10;
 
     };
 
