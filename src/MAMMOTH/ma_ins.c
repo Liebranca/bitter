@@ -278,6 +278,41 @@ void lmcpy(void)                            {
 
     TWO_FET_OP(0b01, 0);
 
+    if(typedata.flags&0x10) {               // corner case: strcpy
+
+        CTOK*    t    = (CTOK*) ((uintptr_t) value_b);
+
+        uint     len  = t->vsize;
+        uchar*   s    = (uchar*) &(t->value);
+
+        MEMUNIT  mask = 0x00LL;
+        MEMUNIT  sstr = 0x00LL;
+
+        MEMUNIT* dst  = ((MEMUNIT*) addr_a)+offsets[1];
+
+        for(uint x=0; x<len; x++) {
+
+            MEMUNIT c  = ((MEMUNIT) s[x]) << (offsets[0]*8);
+
+            mask      |= (0xFFLL << (offsets[0]*8));
+            sstr      |= c;
+
+            offsets[0]++;
+
+            if(offsets[0] && !(offsets[0]%UNITSZ)) {
+                *dst &=~ mask; mask^=mask;
+                *dst |=  sstr; sstr^=sstr;
+                offsets[0]^=offsets[0]; dst++;
+
+            };
+
+        } if(mask) {
+            *dst &=~ mask;
+            *dst |=  sstr;
+
+        }; return;
+    };
+
                                             // clean masked section jic and set
     ((MEMUNIT*) addr_a)[offsets[1]] &=~     (szmask_b     << (offsets[0]*8));
     ((MEMUNIT*) addr_a)[offsets[1]] |=      value_b       << (offsets[0]*8);                };

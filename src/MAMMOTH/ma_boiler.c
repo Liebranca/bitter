@@ -103,27 +103,33 @@ int NOOVERSZ(uint sz, uint f)               { if(sz%f) { return ERROR; }; return
 // AND yet more branches per call, mind you
 // so no thanks, this mess will do
 
+//   ---     ---     ---     ---     ---    misc hooks
+
+void NONSTR(void)                           { typedata.flags &=~0x10;                       };
+
 //   ---     ---     ---     ---     ---    void, nihil, stark
 
-void REGVOI(void)                           { rd_cast = 0x00;                               };
-void REGNHL(void)                           { rd_cast = 0x01;                               };
-void REGTRK(void)                           { rd_cast = 0x02;                               };
+void REGVOI(void)                           { rd_cast = 0x00; NONSTR();                     };
+void REGNHL(void)                           { rd_cast = 0x01; NONSTR();                     };
+void REGTRK(void)                           { rd_cast = 0x02; NONSTR();                     };
 
 //   ---     ---     ---     ---     ---    char
 
-void REGCHR(void)                           { rd_cast = 0x03;                               };
-void REGWID(void)                           { rd_cast = 0x04;                               };
-void REGWRD(void)                           { rd_cast = 0x05;                               };
-void REGLNG(void)                           { rd_cast = 0x06;                               };
+void REGCHR(void)                           { rd_cast = 0x03; NONSTR();                     };
+void REGWID(void)                           { rd_cast = 0x04; NONSTR();                     };
+void REGWRD(void)                           { rd_cast = 0x05; NONSTR();                     };
+void REGLNG(void)                           { rd_cast = 0x06; NONSTR();                     };
 
 //   ---     ---     ---     ---     ---    arrays
 
-void REGSTR(void)                           { typedata.strsz=1; typedata.flags |= 0x10;     };
-void REGVEC(void)                           {                                               };
+void REGSTR(void)                           { rd_cast = 0x06;
+                                              typedata.strsz=1; typedata.flags |= 0x10;     };
+
+void REGVEC(void)                           { NONSTR();                                     };
 
 //   ---     ---     ---     ---     ---    float
 
-void REGFLT(void)                           { rd_cast = 0x0F;                               };
+void REGFLT(void)                           { rd_cast = 0x0F; NONSTR();                     };
 
 //   ---     ---     ---     ---     ---    flags
 

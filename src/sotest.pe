@@ -6,9 +6,12 @@ reg vars;
   char  s ,(=);
 
 proc main;
-  wed   long;
+
+  wed   str;
   cpy   s,"HELLO, WORLD!";
-  lis   "$$$$$$$$$$$$$$$$",s+2;
+  lis   "s2",s+2;
+
+  cpy   s2,"SHO";
 
   wed   long;
   exit  s;
