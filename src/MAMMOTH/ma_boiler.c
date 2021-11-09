@@ -21,6 +21,10 @@
 
 //   ---     ---     ---     ---     ---
 
+static uintptr_t addr_table[16][(NAMESZ/16)+1] = {0};
+
+//   ---     ---     ---     ---     ---
+
 uint GTUNITCNT(uint size, uint mag)         {
 
     while(size > UNITSZ) {
@@ -55,12 +59,76 @@ uint GTARRSZ(uint loc)                      { uintptr_t a = mammi->jmpt[loc+0]; 
                                               uintptr_t b = mammi->jmpt[loc+1];             \
                                               return (b-a)/UNITSZ;                          };
 
-uint ADDRTOLOC(uintptr_t addr)              {
-    for(uint x=0; x<mammi->jmpt_i; x++) {
-        if(addr==mammi->jmpt[x]) {
-            return x;
+//   ---     ---     ---     ---     ---
 
+uintptr_t uiptr_gtmax(uintptr_t a,
+                      uintptr_t b)          { if(a<b) { return b; } return a;               };
+
+uintptr_t uiptr_gtmin(uintptr_t a,
+                      uintptr_t b)          { if(a>b) { return b; } return a;               };
+
+uintptr_t uiptr_submin(uintptr_t a,
+                       uintptr_t b)         { return uiptr_gtmax(a, b) - uiptr_gtmin(a, b); };
+
+uintptr_t JMPTCLSR(uintptr_t addr) {
+
+    TOP:
+
+    uchar     ffam     = (addr&0xF0)>>4;
+    uchar     fam      = (addr&0xF0)>>4;
+
+    uintptr_t size     = addr_table[fam][(NAMESZ/16)];
+
+    uintptr_t step     = (size)/2;
+    uintptr_t next     = (size)/2;
+    uintptr_t near     = 0x00;
+
+    uintptr_t old_dist = -1;
+
+//   ---     ---     ---     ---     ---
+
+    for(uintptr_t x=0; x<size; x++) {
+
+        uintptr_t cur  = addr_table[fam][next];
+        uintptr_t dist = uiptr_submin(addr, cur);
+
+//   ---     ---     ---     ---     ---
+
+        if(dist) {
+
+            step /= 2;
+            if(cur<addr) {
+                if(dist<old_dist) {
+                    old_dist = dist;
+                    near     = cur;
+
+                }; next-=step; continue;
+
+            }; next+=step; continue;
+
+//   ---     ---     ---     ---     ---
+
+        }; near = cur; break;
+    };
+
+    return near;                                                                            };
+
+//   ---     ---     ---     ---     ---
+
+uint ADDRTOLOC(uintptr_t addr)              {
+
+    for(uint y=0; y<16; y++) {
+
+        uintptr_t near = JMPTCLSR(addr-(y<<4));
+        if(!near) { continue; }
+
+        for(uint x=0; x<mammi->jmpt_i; x++) {
+            if(near==mammi->jmpt[x]) {
+                return x;
+
+            };
         };
+
     }; return (uint) FATAL;                                                                 };
 
 //   ---     ---     ---     ---     ---
@@ -933,8 +1001,13 @@ void JMPT_INSERT(void*  x   ,
 
     HASHSET(LNAMES_HASH, byref(l->id));
 
-    mammi->jmpt[mammi->jmpt_i+0]=(uintptr_t) x;
-    mammi->jmpt[mammi->jmpt_i+1]=(uintptr_t) (x+(size*UNITSZ));
+    mammi->jmpt[mammi->jmpt_i+0] = (uintptr_t) x;
+    mammi->jmpt[mammi->jmpt_i+1] = (uintptr_t) (x+(size*UNITSZ));
+
+    uchar     fam                = (((uintptr_t) x)&0xF0)>>4;
+    uintptr_t idex               = addr_table[fam][(NAMESZ/16)]++;
+
+    addr_table[fam][idex]        = (uintptr_t) x;
 
     mammi->jmpt_i++;                                                                        };
 

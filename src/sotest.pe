@@ -3,12 +3,12 @@ $$$$$$$$$$$$$$$$
 entry main;
 
 reg vars;
-  char  buff "COPYPASTEME";
+  char  buff "$$$$$$$$$$$$$$$$COPY";
   char  s;
 
 
 proc main;
   wed   str;
-  cpy   s,buff;
+  cpy   s,buff+16;
 
   exit  s;

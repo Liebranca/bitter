@@ -289,7 +289,9 @@ void lmcpy(void)                            {
 
         if(fetflg&0x10) {                   // this bit means it's a string fetch from a var
 
-            uint loc = ADDRTOLOC(value_b);  // get location of address within jump table
+            uint loc = ADDRTOLOC(value_b);  // get nearest 16-aligned address in table
+                                            // get location of that within jump table
+
             if(loc!=FATAL) {
 
                 // the label contains decl typedata for the var
