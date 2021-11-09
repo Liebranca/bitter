@@ -3,12 +3,12 @@ $$$$$$$$$$$$$$$$
 entry main;
 
 reg vars;
-  char  buff "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$A";
-  char  s;
+  char  buff "LONGSTR\0";
+  char  s "LONGLONGSTR";
 
 
 proc main;
   wed   str;
-  cpy   s,buff;
+  cpy   s, buff;
 
   exit  s;

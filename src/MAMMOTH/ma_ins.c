@@ -289,6 +289,7 @@ void lmcpy(void)                            {
 
         if(fetflg&0x10) {                   // this bit means it's a string fetch from a var
 
+            fetflg  ^= 0x10;
             uint loc = ADDRTOLOC(value_b);  // get nearest 16-aligned address in table
                                             // get location of that within jump table
 
@@ -307,7 +308,7 @@ void lmcpy(void)                            {
                 CALOUT(E, "BAD PTR: %s can't find addr <0x%" PRIXPTR ">\n",
                 __func__, value_b); return;
 
-            }; fetflg^=0x10;
+            };
 
 //   ---     ---     ---     ---     ---
 
@@ -327,6 +328,12 @@ void lmcpy(void)                            {
             CALOUT(E, "BAD PTR: %s could not fetch srcstr from addr <0x%" PRIXPTR ">\n",
             __func__, value_b);
 
+        }; uchar term = 0;
+
+        if(len>1) {
+            term      = (s[len-1] | (s[len-2]<<8)) == 0x5C30;
+            len      -= term*2;
+
         };
 
         MEMUNIT  mask = 0x00LL;
@@ -337,6 +344,7 @@ void lmcpy(void)                            {
 //   ---     ---     ---     ---     ---
 
         uint  mxchars;
+        uint  old_len;
         uint* dst_len; {
 
             uint loc = ADDRTOLOC(addr_a);   // get nearest
@@ -344,17 +352,25 @@ void lmcpy(void)                            {
             if(loc!=FATAL) {
                 LABEL* l = mammi->jmpt_h+loc;
                 dst_len  = &(l->meta.strus);
+                old_len  = *dst_len;
 
                 mxchars  = GTUNITCNT(1, l->meta.strsz);
-
                 uint pos = (((uintptr_t) dst)+offsets[0]) - mammi->jmpt[loc];
+
+//   ---     ---     ---     ---     ---
+
                 if((len+pos)>mxchars) {
                     len=mxchars-pos;
 
-                }; if((len+pos)>(*dst_len)) {
+                };
+
+                if( ((len+pos)>(*dst_len)            ) \
+                ||  ((term) && ((len+pos)<(*dst_len))) ) {
                     *dst_len=len+pos;
 
                 };
+
+//   ---     ---     ---     ---     ---
 
             } else {
                 CALOUT(E, "BAD PTR: %s can't find addr <0x%" PRIXPTR ">\n",
@@ -393,6 +409,24 @@ void lmcpy(void)                            {
             *dst &=~ mask;
             *dst |=  sstr;
 
+        } if(term) {
+
+            mask ^=  mask;
+
+            for(uint x=len; x<old_len; x++) {
+                mask |= (0xFFLL << (offsets[0]*8));
+                offsets[0]++;
+
+                if(offsets[0] && !(offsets[0]%UNITSZ)) {
+                    *dst &=~ mask; mask^=mask;
+                    offsets[0]^=offsets[0]; dst++;
+
+                };
+
+            } if(mask) {
+                *dst &=~ mask;
+
+            };
         }; return;
     };
 
