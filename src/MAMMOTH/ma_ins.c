@@ -297,8 +297,11 @@ void lmcpy(void)                            {
                 // the label contains decl typedata for the var
                 // TODO: update label metadata
                 LABEL* l = mammi->jmpt_h+loc;
-                len      = l->meta.strus;
+
                 s        = (uchar*) ((uintptr_t) value_b);
+                uint pos = (((uintptr_t) value_b)+offsets[0]) - mammi->jmpt[loc];
+
+                len      = l->meta.strus-pos;
 
             } else {
                 CALOUT(E, "BAD PTR: %s can't find addr <0x%" PRIXPTR ">\n",
@@ -330,6 +333,36 @@ void lmcpy(void)                            {
         MEMUNIT  sstr = 0x00LL;
 
         MEMUNIT* dst  = ((MEMUNIT*) addr_a)+offsets[1];
+
+//   ---     ---     ---     ---     ---
+
+        uint  mxchars;
+        uint* dst_len; {
+
+            uint loc = ADDRTOLOC(addr_a);   // get nearest
+
+            if(loc!=FATAL) {
+                LABEL* l = mammi->jmpt_h+loc;
+                dst_len  = &(l->meta.strus);
+
+                mxchars  = GTUNITCNT(1, l->meta.strsz);
+
+                uint pos = (((uintptr_t) dst)+offsets[0]) - mammi->jmpt[loc];
+                if((len+pos)>mxchars) {
+                    len=mxchars-pos;
+
+                }; if((len+pos)>(*dst_len)) {
+                    *dst_len=len+pos;
+
+                };
+
+            } else {
+                CALOUT(E, "BAD PTR: %s can't find addr <0x%" PRIXPTR ">\n",
+                __func__, addr_a); return;
+
+            };
+
+        }; CALOUT(E, "%u/%u\n", *dst_len, mxchars);
 
 //   ---     ---     ---     ---     ---
 

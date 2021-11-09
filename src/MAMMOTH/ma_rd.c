@@ -506,6 +506,7 @@ void REGTP(void)                            {
 
                                             // make it a pow2%UNITSZ
     rd_elems          = GTUNITCNT           (rd_size, typedata.strsz                    );
+    typedata.strus    = rd_elems*rd_size;
 
     rd_cbyte          = 0;
     rd_step           = rd_size/UNITSZ;
@@ -513,7 +514,7 @@ void REGTP(void)                            {
     if(!rd_step) {
         rd_step       = 1;
 
-    }; rd_units       = (rd_elems*rd_size)/UNITSZ;
+    }; rd_units       = (typedata.strus)/UNITSZ;
 
     if(!rd_units) {
         rd_units      = 1;
