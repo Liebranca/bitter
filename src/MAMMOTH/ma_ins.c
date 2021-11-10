@@ -272,7 +272,7 @@ int lmfet(uintptr_t* dst        ,
     if(acb&2) {                                                                              \
         ldinsz();                                                                            \
                                                                                              \
-    };                                                                                       \
+    }
 
 //   ---     ---     ---     ---     ---
 
@@ -301,7 +301,7 @@ void lmcpy(void)                            {
                 s        = (uchar*) ((uintptr_t) value_b);
                 uint pos = (((uintptr_t) value_b)+offsets[0]) - mammi->jmpt[loc];
 
-                len      = l->meta.strus-pos;
+                len      = l->meta.strus-(pos*(l->meta.strus!=0));
 
             } else {
                 CALOUT(E, "BAD PTR: %s can't find addr <0x%" PRIXPTR ">\n",
@@ -460,7 +460,7 @@ void lmmov(void)                            {
                 LABEL* l      = mammi->jmpt_h+loc;
 
                 s             = ((uchar*) (src));
-                uint pos      = ((addr_b)+offsets[0]) - mammi->jmpt[loc];
+                uint pos      = ((addr_b)+offsets[3]) - mammi->jmpt[loc];
 
                 len           = l->meta.strus;
 
@@ -473,12 +473,12 @@ void lmmov(void)                            {
 
                 s            += offsets[2];
 
-                len          -= (term*2)+pos;
-                l->meta.strus = pos;
+                len          -= ((term*2)+pos)*(len!=0);
+                l->meta.strus = pos*(len!=0);
 
             } else {
                 CALOUT(E, "BAD PTR: %s can't find addr <0x%" PRIXPTR ">\n",
-                __func__, value_b); return;
+                __func__, addr_b); return;
 
             };
 
@@ -493,7 +493,7 @@ void lmmov(void)                            {
 
         if(!s) {
             CALOUT(E, "BAD PTR: %s could not fetch srcstr from addr <0x%" PRIXPTR ">\n",
-            __func__, value_b);
+            __func__, src);
 
         };
 
@@ -545,15 +545,11 @@ void lmmov(void)                            {
 
         for(uint x=0; x<len; x++) {
 
-            // move char to byte offset
             MEMUNIT c  = ((MEMUNIT) s[x]) << (offsets[0]*8);
-
-            // add byte offset to mask
-            // append shifted char to substr
             mask      |= (0xFFLL << (offsets[0]*8));
             sstr      |= c;
 
-            offsets[0]++;                   // go to next byte
+            offsets[0]++;
 
             if(offsets[0] && !(offsets[0]%UNITSZ)) {
 
@@ -605,6 +601,177 @@ void lmmov(void)                            {
 void lmwap(void)                            {
 
     TWO_FET_OP(0b01, 0b01);
+
+    if(typedata.flags&0x10) {               // corner case: strwap
+                                            // really nothing like strcpy...
+
+        uint*    src_len;
+        uint     src_pos;
+        uint     src_mxchars;
+
+        uchar*   src_s = NULL;
+        MEMUNIT* src   = ((MEMUNIT*) addr_b)+offsets[3];
+
+//   ---     ---     ---     ---     ---
+
+        if(fetflg&0x10) {
+
+            fetflg  ^= 0x10;
+            uint loc = ADDRTOLOC(addr_b);
+
+            if(loc!=FATAL) {
+
+                LABEL* l      = mammi->jmpt_h+loc;
+
+                src_s         = ((uchar*) src)+offsets[2];
+                src_pos       = ((addr_b)+offsets[2]) - mammi->jmpt[loc];
+                src_len       = &(l->meta.strus);
+
+                src_mxchars   = GTUNITCNT(1, l->meta.strsz);
+
+            } else {
+                CALOUT(E, "BAD PTR: %s can't find addr <0x%" PRIXPTR ">\n",
+                __func__, addr_b); return;
+
+            };
+
+//   ---     ---     ---     ---     ---
+
+        } else {
+            CALOUT(E, "BAD PTR: %s source must be a valid addr\n", __func__); return;
+
+        };
+
+//   ---     ---     ---     ---     ---
+
+        if(!src_s) {
+            CALOUT(E, "BAD PTR: %s could not fetch srcstr from addr <0x%" PRIXPTR ">\n",
+            __func__, src);
+
+        };
+
+        MEMUNIT  mask = 0x00LL;
+        MEMUNIT  sstr = 0x00LL;
+
+        MEMUNIT* dst  = ((MEMUNIT*) addr_a)+offsets[1];
+
+//   ---     ---     ---     ---     ---
+
+        uint   src_slen = 0;                // num of chars to copy from src to dst
+        uint   dst_slen = 0;                // ^viceversa
+
+        uchar* dst_s    = NULL;
+
+        uint   dst_mxchars;
+        uint   dst_pos;
+        uint*  dst_len; {
+
+            uint loc = ADDRTOLOC(addr_a);
+
+            if(loc!=FATAL) {
+
+                LABEL* l    = mammi->jmpt_h+loc;
+                dst_len     = &(l->meta.strus);
+
+                dst_mxchars = GTUNITCNT(1, l->meta.strsz);
+                dst_pos     = (((uintptr_t) dst)+offsets[0]) - mammi->jmpt[loc];
+
+//   ---     ---     ---     ---     ---
+
+                src_slen    = ( (*src_len) - (src_pos*(*src_len!=0)) );
+                dst_slen    = ( (*dst_len) - (dst_pos*(*dst_len!=0)) );
+
+                if((src_slen+dst_pos)>dst_mxchars) {
+                    src_slen=dst_mxchars-dst_pos;
+
+                };
+
+                if(((dst_slen+src_pos)>src_mxchars)) {
+                    dst_slen=src_mxchars-src_pos;
+
+                };
+
+                *src_len=src_pos+dst_slen;
+                *dst_len=dst_pos+src_slen;
+
+//   ---     ---     ---     ---     ---
+
+            } else {
+                CALOUT(E, "BAD PTR: %s can't find addr <0x%" PRIXPTR ">\n",
+                __func__, addr_a); return;
+
+            };
+
+        };
+
+//   ---     ---     ---     ---     ---    // src to dst
+
+        // lazy use of calcus stack for temporal string stor ^^
+        RSTPTRS(); MEMUNIT* dst_tmp = rd_result;
+        uint usteps=0;
+
+        for(uint x=0; x<src_slen; x++) {
+
+            MEMUNIT c  = ((MEMUNIT) src_s[x]) << (offsets[0]*8);
+            mask      |= (0xFFLL << (offsets[0]*8));
+            sstr      |= c;
+
+            offsets[0]++;
+
+            if(offsets[0] && !(offsets[0]%UNITSZ)) {
+
+                *dst_tmp |= (*dst) & mask;  // copy dst before copying
+
+                *dst     &=~ mask; mask^=mask;
+                *dst     |=  sstr; sstr^=sstr;
+
+                offsets[0]^=offsets[0]; dst++;
+                dst_tmp++; usteps++;
+
+            };
+
+//   ---     ---     ---     ---     ---
+
+        } if(mask) {                        // copy leftovers
+            *dst_tmp |= (*dst) & mask;
+            *dst     &=~ mask;
+            *dst     |=  sstr;
+
+        };
+
+//   ---     ---     ---     ---     ---    // repeat process for dst to src
+
+        mask  ^= mask;
+        sstr  ^= sstr;
+
+        dst_s  = (uchar*) (dst_tmp-usteps);
+
+        for(uint x=0; x<dst_slen; x++) {
+
+            MEMUNIT c  = ((MEMUNIT) dst_s[x]) << (offsets[2]*8);
+            mask      |= (0xFFLL << (offsets[2]*8));
+            sstr      |= c;
+
+            offsets[2]++;
+
+            if(offsets[2] && !(offsets[2]%UNITSZ)) {
+                *src     &=~ mask; mask^=mask;
+                *src     |=  sstr; sstr^=sstr;
+
+                offsets[2]^=offsets[2]; src++;
+
+            };
+
+//   ---     ---     ---     ---     ---
+
+        } if(mask) {                        // copy leftovers
+            *src     &=~ mask;
+            *src     |=  sstr;
+
+        }; return;
+    };
+
+//   ---     ---     ---     ---     ---
 
                                             // ^same as cpy, but b = a
     ((MEMUNIT*)addr_b)[offsets[3]] &=~      (szmask_a     << (offsets[2]*8));
