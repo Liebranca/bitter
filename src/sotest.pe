@@ -9,6 +9,6 @@ reg vars;
 
 proc main;
   wed   str;
-  cpy   s, buff;
+  mov   s, buff+2;
 
   exit  s;
