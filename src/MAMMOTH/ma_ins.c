@@ -283,7 +283,9 @@ void lmcpy(void)                            {
     if(typedata.flags&0x10) {               // corner case: strcpy
 
         uint     len;                       // bytes to read from source/copy to destination
-        uchar*   s=NULL;                    // the source string itself
+
+        uchar*   s   = NULL;                // the source string itself
+        MEMUNIT* src = NULL;
 
 //   ---     ---     ---     ---     ---
 
@@ -299,6 +301,8 @@ void lmcpy(void)                            {
                 LABEL* l = mammi->jmpt_h+loc;
 
                 s        = (uchar*) ((uintptr_t) value_b);
+                src      = mammi->jmpt+loc;
+
                 uint pos = (((uintptr_t) value_b)+offsets[0]) - mammi->jmpt[loc];
 
                 len      = l->meta.strus-(pos*(l->meta.strus!=0));
@@ -357,6 +361,11 @@ void lmcpy(void)                            {
                 uint pos = (((uintptr_t) dst)+offsets[0]) - mammi->jmpt[loc];
 
 //   ---     ---     ---     ---     ---
+
+                if((mammi->jmpt+loc)==src) {
+                    len=addrdist( ((uchar*) dst)+offsets[0], s);
+
+                };
 
                 if((len+pos)>mxchars) {
                     len=mxchars-pos;
@@ -476,6 +485,8 @@ void lmmov(void)                            {
                 len          -= ((term*2)+pos)*(len!=0);
                 l->meta.strus = pos*(len!=0);
 
+                src           = mammi->jmpt+loc;
+
             } else {
                 CALOUT(E, "BAD PTR: %s can't find addr <0x%" PRIXPTR ">\n",
                 __func__, addr_b); return;
@@ -497,10 +508,11 @@ void lmmov(void)                            {
 
         };
 
-        MEMUNIT  mask = 0x00LL;
-        MEMUNIT  sstr = 0x00LL;
+        MEMUNIT  mask_a = 0x00LL;
+        MEMUNIT  mask_b = 0x00LL;
+        MEMUNIT  sstr   = 0x00LL;
 
-        MEMUNIT* dst  = ((MEMUNIT*) addr_a)+offsets[1];
+        MEMUNIT* dst    = ((MEMUNIT*) addr_a)+offsets[1];
 
 //   ---     ---     ---     ---     ---
 
@@ -519,6 +531,11 @@ void lmmov(void)                            {
                 uint pos = (((uintptr_t) dst)+offsets[0]) - mammi->jmpt[loc];
 
 //   ---     ---     ---     ---     ---
+
+                if((mammi->jmpt+loc)==src) {
+                    len=addrdist( ((uchar*) dst)+offsets[0], s);
+
+                };
 
                 if((len+pos)>mxchars) {
                     len=mxchars-pos;
@@ -543,47 +560,58 @@ void lmmov(void)                            {
 
 //   ---     ---     ---     ---     ---
 
+        src = ((MEMUNIT*) addr_b)+offsets[3];
+
         for(uint x=0; x<len; x++) {
 
             MEMUNIT c  = ((MEMUNIT) s[x]) << (offsets[0]*8);
-            mask      |= (0xFFLL << (offsets[0]*8));
+
+            mask_a    |= (0xFFLL << (offsets[0]*8));
+            mask_b    |= (0xFFLL << (offsets[2]*8));
+
             sstr      |= c;
 
             offsets[0]++;
+            offsets[2]++;
 
             if(offsets[0] && !(offsets[0]%UNITSZ)) {
 
-                *dst &=~ mask;
-                *dst |=  sstr; sstr^=sstr;
-                *src &=~ mask; mask^=mask;  // clear out source, then clear mask
+                *dst &=~ mask_a; mask_a ^= mask_a;
+                *dst |=  sstr;   sstr   ^= sstr;
+
+                // clear out source
+                *src &=~ mask_b; mask_b ^= mask_b;
 
                 offsets[0]^=offsets[0]; dst++;
+                offsets[2]^=offsets[2]; src++;
 
             };
 
 //   ---     ---     ---     ---     ---
 
-        } if(mask) {                        // copy leftovers
-            *src &=~ mask;
-            *dst &=~ mask;
+        } if(mask_a) {                      // copy leftovers
+            *src &=~ mask_b;
+            *dst &=~ mask_a;
             *dst |=  sstr;
+
+//   ---     ---     ---     ---     ---
 
         } if(term) {
 
-            mask ^=  mask;
+            mask_a ^=  mask_a;
 
             for(uint x=len; x<old_len; x++) {
-                mask |= (0xFFLL << (offsets[0]*8));
+                mask_a |= (0xFFLL << (offsets[0]*8));
                 offsets[0]++;
 
                 if(offsets[0] && !(offsets[0]%UNITSZ)) {
-                    *dst &=~ mask; mask^=mask;
+                    *dst &=~ mask_a; mask_a^=mask_a;
                     offsets[0]^=offsets[0]; dst++;
 
                 };
 
-            } if(mask) {
-                *dst &=~ mask;
+            } if(mask_a) {
+                *dst &=~ mask_a;
 
             };
         }; return;
@@ -628,6 +656,8 @@ void lmwap(void)                            {
                 src_len       = &(l->meta.strus);
 
                 src_mxchars   = GTUNITCNT(1, l->meta.strsz);
+
+                src           = mammi->jmpt+loc;
 
             } else {
                 CALOUT(E, "BAD PTR: %s can't find addr <0x%" PRIXPTR ">\n",
@@ -681,6 +711,13 @@ void lmwap(void)                            {
                 src_slen    = ( (*src_len) - (src_pos*(*src_len!=0)) );
                 dst_slen    = ( (*dst_len) - (dst_pos*(*dst_len!=0)) );
 
+                if((mammi->jmpt+loc)==src) {
+                    src_slen=addrdist( ((uchar*) dst)+offsets[0], src_s);
+                    dst_slen=src_slen;
+
+                };
+
+
                 if((src_slen+dst_pos)>dst_mxchars) {
                     src_slen=dst_mxchars-dst_pos;
 
@@ -708,7 +745,7 @@ void lmwap(void)                            {
 
         // lazy use of calcus stack for temporal string stor ^^
         RSTPTRS(); MEMUNIT* dst_tmp = rd_result;
-        uint usteps=0;
+        uint usteps=0; src=((MEMUNIT*) addr_b)+offsets[3];
 
         for(uint x=0; x<src_slen; x++) {
 

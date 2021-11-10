@@ -3,12 +3,12 @@ $$$$$$$$$$$$$$$$
 entry main;
 
 reg vars;
-  char  buff "$$$$%%%%$$$$%%%%";
-  char  s "AAAABBBBAAAABBBB";
-
+  char  buff "01234567";
+  char  s;
 
 proc main;
   wed   str;
-  cpy   s+8, buff+8;
+  mov   s,buff;
+  wap   s,s+4;
 
   exit  s;

@@ -70,6 +70,9 @@ uintptr_t uiptr_gtmin(uintptr_t a,
 uintptr_t uiptr_submin(uintptr_t a,
                        uintptr_t b)         { return uiptr_gtmax(a, b) - uiptr_gtmin(a, b); };
 
+uint addrdist(void* a, void* b)             { return (uint) uiptr_submin((uintptr_t) a,     \
+                                                                         (uintptr_t) b);    };
+
 uintptr_t JMPTCLSR(uintptr_t addr) {
 
     TOP:

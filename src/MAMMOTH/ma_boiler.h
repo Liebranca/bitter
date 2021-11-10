@@ -9,6 +9,8 @@ extern "C" {
 
 //   ---     ---     ---     ---     ---
 
+uint   addrdist (void* a, void* b   );      // distance between addresses
+
 uint   GTUNITCNT(uint size, uint mag);      // calculate arrsize%unitsz
 uint   GTARRSZ  (uint loc           );      // cur loc to next
 
