@@ -1097,6 +1097,9 @@ void lmasl(uint* udr)                       {
         mammi->state |= MAMMIT_SF_PFET;
         fetflg       |= typedata.flags&0x10;
 
+    } elif(t->ttype==CALCUS_MACRO) {
+        *rd_value = ((MACRO*) ((uintptr_t) t->value))->value;
+
     };
 
 //   ---     ---     ---     ---     ---    // compress expanded tokens into final value

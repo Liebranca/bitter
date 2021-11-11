@@ -168,8 +168,8 @@ void TRNVAL(uint len)                       { if(!len) { return; }
                 *rd_value = m->value;
 
                 if(rd_ctok) {
-                    rd_ctok->ttype = CALCUS_FETCH;
-                    rd_ctok->value = *rd_value;
+                    rd_ctok->ttype = CALCUS_MACRO;
+                    rd_ctok->value = (uintptr_t) m;
 
                 };
 

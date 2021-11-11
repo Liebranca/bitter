@@ -1,14 +1,23 @@
 $$$$$$$$$$$$$$$$
 
-entry main;
+entry init;
 
 reg vars;
-  char  buff "01234567";
-  char  s;
+  char s;
+  char y;
+
+proc init;
+  wed   long;
+  lis   "cnt", y+0;
+  cpy   cnt,0;
 
 proc main;
   wed   str;
-  mov   s,buff;
-  wap   s,s+4;
+  lis   "string",s+:[cnt]*8;
+  cpy   string,"$$$$$$$$";
 
+  inc   cnt;
+  jif   main,[cnt]<2;
+
+proc end;
   exit  s;
