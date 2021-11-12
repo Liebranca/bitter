@@ -755,6 +755,8 @@ void NTNAMES(void)                          {
 //   ---     ---     ---     ---     ---
 
         SYMNEW("$INS", "lis",   swlis  ),
+        SYMNEW("$INS", "sow",   swsow  ),
+        SYMNEW("$INS", "reap",  swreap ),
 
 //   ---     ---     ---     ---     ---    // directives
 
@@ -1298,14 +1300,16 @@ int main(int argc, char** argv)             {
                 }; mammi->next++;
             };
 
-            if(typedata.flags&0x10) {
-                CALOUT(E, "%s exit with code <%s>\n",
-                mammi->entry, (uchar*) (mammi->lvalues[mammi->lvaltop]) );
+            if(mammi->lvalues[mammi->lvaltop]) {
+                if(typedata.flags&0x10) {
+                    CALOUT(E, "%s exit with code <%s>\n",
+                    mammi->entry, (uchar*) (mammi->lvalues[mammi->lvaltop]) );
 
-            } else {
-                CALOUT(E, "%s exit with code <0x%" PRIXPTR ">\n",
-                mammi->entry, (mammi->lvalues[mammi->lvaltop]) );
+                } else {
+                    CALOUT(E, "%s exit with code <0x%" PRIXPTR ">\n",
+                    mammi->entry, (mammi->lvalues[mammi->lvaltop]) );
 
+                };
             };
 
 //   ---     ---     ---     ---     ---

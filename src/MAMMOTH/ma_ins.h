@@ -48,6 +48,8 @@ void lmshr (void         );                 // a>>b
 void lmshl (void         );                 // a<<b
 
 void lmlis (void         );                 // local vars && aliases
+void lmsow (void         );                 // write a to buffer
+void lmreap(void         );                 // use buffer and flush
 
 void lmasl (uint* udr    );                 // arithmetics solver
 
@@ -88,6 +90,8 @@ void swshr (void         );
 void swshl (void         );
 
 void swlis (void         );
+void swsow (void         );
+void swreap(void         );
 
 //   ---     ---     ---     ---     ---
 

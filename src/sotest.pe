@@ -1,23 +1,13 @@
 $$$$$$$$$$$$$$$$
 
-entry init;
+entry main;
 
 reg vars;
-  char s;
-  char y;
-
-proc init;
-  wed   long;
-  lis   "cnt", y+0;
-  cpy   cnt,0;
+  char  mess "Hello, world!";
 
 proc main;
   wed   str;
-  lis   "string",s+:[cnt]*8;
-  cpy   string,"$$$$$$$$";
+  sow   mess;
 
-  inc   cnt;
-  jif   main,[cnt]<2;
-
-proc end;
-  exit  s;
+  reap  1;
+  exit  0;

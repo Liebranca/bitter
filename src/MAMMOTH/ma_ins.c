@@ -58,7 +58,9 @@ static NIHIL lm_ins_arr[] = {               // table of low-level instructions
     &lmshr,
     &lmshl,
 
-    &lmlis
+    &lmlis,
+    &lmsow,
+    &lmreap
 
 };
 
@@ -1025,6 +1027,97 @@ void lmlis (void)                           { MNY_FET_OP;
     }; m->value = value;
     HASHSET(MNAMES_HASH, byref(m->id));                                                     };
 
+#define SOW_BUFF_ASZ 256
+
+static size_t  SOW_BUFF_APOS            = 0;
+static MEMUNIT SOW_BUFF_A[SOW_BUFF_ASZ] = {0};
+
+void lmsow (void)                           { ONE_FET_OP(0);
+
+    if(typedata.flags&0x10) {
+
+        uint     len;
+        uchar*   s   = NULL;
+
+//   ---     ---     ---     ---     ---
+
+        if(fetflg&0x10) {
+
+            fetflg  ^= 0x10;
+            uint loc = ADDRTOLOC(value);
+
+            if(loc!=FATAL) {
+
+                LABEL* l = mammi->jmpt_h+loc;
+                s        = (uchar*) ((uintptr_t) value);
+                uint pos = (((uintptr_t) value)+offsets[0]) - mammi->jmpt[loc];
+                len      = l->meta.strus-(pos*(l->meta.strus!=0));
+
+            } else {
+                CALOUT(E, "BAD PTR: %s can't find addr <0x%" PRIXPTR ">\n",
+                __func__, value); return;
+
+            };
+
+//   ---     ---     ---     ---     ---
+
+        } else {
+
+            CTOK* t = (CTOK*) ((uintptr_t) value);
+
+            len     = t->vsize;
+            s       = (uchar*) &(t->value);
+
+        };
+
+//   ---     ---     ---     ---     ---
+
+        if(!s) {
+            CALOUT(E, "BAD PTR: %s could not fetch srcstr from addr <0x%" PRIXPTR ">\n",
+            __func__, value);
+
+        };
+
+        /* TODO: terminators
+        uchar term = 0;
+
+        if(len>1) {
+            term      = (s[len-1] | (s[len-2]<<8)) == 0x5C30;
+            len      -= term*2;
+
+        };*/
+
+//   ---     ---     ---     ---     ---
+
+        len = 1+(len/UNITSZ);
+        if((len+SOW_BUFF_APOS)>SOW_BUFF_ASZ) {
+            // TODO: flush
+            len=SOW_BUFF_ASZ-SOW_BUFF_APOS;
+
+        };
+
+        for(uint x=0;x<len;x++) {
+            MEMUNIT c = *((MEMUNIT*) s);
+            SOW_BUFF_A[SOW_BUFF_APOS]=c;
+            SOW_BUFF_APOS++; s+=UNITSZ;
+
+        }; return;
+    };
+
+//   ---     ---     ---     ---     ---
+
+    SOW_BUFF_A[SOW_BUFF_APOS]=value;
+    SOW_BUFF_APOS++;                                                                        };
+
+void lmreap(void)                           {
+
+    // TODO: formatting...
+
+    printf("%s\n", (uchar*) SOW_BUFF_A);
+    CLMEM2(SOW_BUFF_A, SOW_BUFF_ASZ*UNITSZ);
+
+};
+
 //   ---     ---     ---     ---     ---
 
 void lmasl(uint* udr)                       {
@@ -1163,6 +1256,9 @@ void swshr (void)                           { ins_code = 0x19; ins_argc = 2;    
 void swshl (void)                           { ins_code = 0x1A; ins_argc = 2;                };
 
 void swlis (void)                           { ins_code = 0x1B; ins_argc = 2;                };
+
+void swsow (void)                           { ins_code = 0x1C; ins_argc = 1;                };
+void swreap(void)                           { ins_code = 0x1D; ins_argc = 1;                };
 
 //   ---     ---     ---     ---     ---
 
