@@ -101,17 +101,24 @@ void TRNVAL(uint len)                       { if(!len) { return; }
         }; typedata.strus  += slen;
 
         if(rd_ctok) {
-            rd_ctok->value  = *rd_result;
             rd_ctok->ttype  = CALCUS_CHSTR;
-            rd_ctok->vsize += slen;
 
-        }; for(uint x=0; x<((len-(1*(len!=0)))/rd_size)-(1*(len!=0)); x++) {
-            *( ((uchar*) rd_lhand)+rd_cbyte)=*( ((uchar*) rd_value)+rd_cbyte);
-            *( ((uchar*) rd_value)+rd_cbyte)=0;
-            BYTESTEP(0);
+        };
 
-        }; *( ((uchar*) rd_lhand)+rd_cbyte)=*( ((uchar*) rd_value)+rd_cbyte);
-           *( ((uchar*) rd_value)+rd_cbyte)=0;
+//   ---     ---     ---     ---     ---
+
+        for(uint x=0; x<((len-(1*(len!=0)))/rd_size)-(1*(len!=0)); x++) {
+            for(uint y=0; y<rd_size; y++) {
+                *( ((uchar*) rd_lhand)+rd_cbyte+y)=*( ((uchar*) rd_value)+rd_cbyte+y);
+                *( ((uchar*) rd_value)+rd_cbyte+y)=0;
+
+            }; BYTESTEP(0);
+
+        }; for(uint y=0; y<rd_size; y++) {
+                *( ((uchar*) rd_lhand)+rd_cbyte+y)=*( ((uchar*) rd_value)+rd_cbyte+y);
+                *( ((uchar*) rd_value)+rd_cbyte+y)=0;
+
+        };
     }
 
 //   ---     ---     ---     ---     ---
@@ -396,6 +403,7 @@ void RDEXP(void)                            {
 
     };
 
+    MEMUNIT* f_ptr  = rd_lhand;
     rd_value        = rd_lhand+rd_step;     // put next *evaluated* token here
     CLMEM2(rd_value, rd_step);
 
@@ -445,10 +453,12 @@ void RDEXP(void)                            {
     if(mammi->state&MAMMIT_SF_PSTR) {
 
         if(rd_ctok) {
-            uint slen = 1+(rd_ctok->vsize/UNITSZ);
+            rd_ctok->vsize  = typedata.strus;
+            uint slen       = 1+(rd_ctok->vsize/UNITSZ);
             MEMUNIT* ctok_s = &(rd_ctok->value);
+
             for(uint x=0; x<slen; x++) {
-                ctok_s[x]=rd_result[x];
+                ctok_s[x]=f_ptr[x];
 
             } while(slen%(sizeof(CTOK)/UNITSZ)) {
                 slen++;
@@ -612,6 +622,7 @@ void RDPRC(void)                            {
 
     for(uint x=0; x<ins_argc; x++) {        // set ptr, cleanup, eval expression
 
+        if(!(rd_tkx<rd_tki)) { break; }
 
         rd_ctok   =                         (CTOK*) (code->data+udr                 );
         rd_cbyte ^= rd_cbyte;

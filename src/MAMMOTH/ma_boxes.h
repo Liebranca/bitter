@@ -93,10 +93,10 @@ typedef struct MAMM_SYNTX_LABEL  {          // alias for value
 
 #define CALCUS_CONST 0xC0457A47
 #define CALCUS_FETCH 0xFE7C4B01
-#define CALCUS_MACRO 0x4AC90B01
+#define CALCUS_MACRO 0xE49A4DE9
 #define CALCUS_SEPAR 0x5E9A9A7E
 #define CALCUS_NIHIL 0x5001C1DE
-#define CALCUS_CHSTR 0xC4A95799
+#define CALCUS_CHSTR 0xC4A957A9
 
 typedef struct MAMM_CALCUS_TOKEN {          // breaks down expressions into maleable data
 

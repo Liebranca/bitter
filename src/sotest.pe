@@ -26,9 +26,9 @@ reg vars;
 
 proc main;
   wed   str;
-  sow   hello_red;
-  sow   hello_green;
-  sow   hello_blue;
+  sow   hello_red,hello_green,hello_blue;
+  sow   "Hello, world!",0x0A;
 
   reap  1;
+
   exit  0;

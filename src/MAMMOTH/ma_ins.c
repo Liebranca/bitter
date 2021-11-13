@@ -153,6 +153,7 @@ int lmfet(uintptr_t* dst        ,
 //   ---     ---     ---     ---     ---
 
     if(allow&1) {                           // enforce alignment
+
         off[0]=0;
         while((*rd_result)%16) {
             (*rd_result)--;
@@ -165,7 +166,7 @@ int lmfet(uintptr_t* dst        ,
         off[1]       ^= off[1];
         lmoff(off);
 
-    }; *dst           = *rd_result;
+    }; SKIP: *dst           = *rd_result;
     return DONE;                                                                            };
 
 //   ---     ---     ---     ---     ---
@@ -1035,9 +1036,12 @@ static MEMUNIT SOW_BUFF_A[SOW_BUFF_ASZ] = {0};
 static uint    REAP_CODE                = 0x00;
 static uint    REAP_FLAGS               = 0x00;
 
-void lmsow (void)                           { ONE_FET_OP(0b01);
+void lmsow (void)                           { MNY_FET_OP;
 
-    if(typedata.flags&0x10) {
+    TOP: FET_NXT(0);
+
+    if( typedata.flags&0x10 \
+    &&  !(fetflg&0x4000)    ) {
 
         uint     len;
         uchar*   s   = NULL;
@@ -1065,8 +1069,7 @@ void lmsow (void)                           { ONE_FET_OP(0b01);
 //   ---     ---     ---     ---     ---
 
         } else {
-
-            CTOK* t = (CTOK*) ((uintptr_t) value);
+            CTOK* t = (CTOK*) (((uintptr_t) addr));
 
             len     = t->vsize;
             s       = (uchar*) &(t->value);
@@ -1077,7 +1080,7 @@ void lmsow (void)                           { ONE_FET_OP(0b01);
 
         if(!s) {
             CALOUT(E, "BAD PTR: %s could not fetch srcstr from addr <0x%" PRIXPTR ">\n",
-            __func__, value);
+            __func__, addr);
 
         };
 
@@ -1102,13 +1105,15 @@ void lmsow (void)                           { ONE_FET_OP(0b01);
             SOW_BUFF_A[SOW_BUFF_APOS]=c;
             SOW_BUFF_APOS++; s+=UNITSZ;
 
-        }; return;
+        }; goto BOT;
     };
 
 //   ---     ---     ---     ---     ---
 
     SOW_BUFF_A[SOW_BUFF_APOS]=value;
-    SOW_BUFF_APOS++;                                                                        };
+    SOW_BUFF_APOS++;
+
+    BOT: if(udr<ins->size) { goto TOP; }                                                    };
 
 void lmreap(void)                           {
 
@@ -1203,6 +1208,9 @@ void lmasl(uint* udr)                       {
     } elif(t->ttype==CALCUS_MACRO) {
         *rd_value = ((MACRO*) ((uintptr_t) t->value))->value;
 
+    } elif(t->ttype==CALCUS_CONST) {
+        fetflg       |= (0x4000)*!(fetflg&0x10);
+
     };
 
 //   ---     ---     ---     ---     ---    // compress expanded tokens into final value
@@ -1267,7 +1275,7 @@ void swshl (void)                           { ins_code = 0x1A; ins_argc = 2;    
 
 void swlis (void)                           { ins_code = 0x1B; ins_argc = 2;                };
 
-void swsow (void)                           { ins_code = 0x1C; ins_argc = 1;                };
+void swsow (void)                           { ins_code = 0x1C; ins_argc =-1;                };
 void swreap(void)                           { ins_code = 0x1D; ins_argc = 1;                };
 
 //   ---     ---     ---     ---     ---
