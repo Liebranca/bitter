@@ -3,13 +3,32 @@ $$$$$$$$$$$$$$$$
 entry main;
 
 reg vars;
-  char2 mess "HELLO",0x0A,
-             "THERE",0x0A,
-             "BYE!" ,0x0A;
+  char3 hello_red
+    0x1B,"[38;2;255;0;0m",
+
+    "Hello, world!",
+
+    0x1B,"[0m",0x0A;
+
+  char3 hello_green
+    0x1B,"[38;2;0;255;0m",
+
+    "Hello, world!",
+
+    0x1B,"[0m",0x0A;
+
+  char3 hello_blue
+    0x1B,"[38;2;0;0;255m",
+
+    "Hello, world!",0x0A,
+
+    0x1B,"[0m";
 
 proc main;
   wed   str;
-  sow   mess;
+  sow   hello_red;
+  sow   hello_green;
+  sow   hello_blue;
 
   reap  1;
   exit  0;

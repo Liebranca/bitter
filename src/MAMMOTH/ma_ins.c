@@ -1117,7 +1117,8 @@ void lmreap(void)                           {
     if(!(REAP_FLAGS&0x01)) {                // invoked reap
         ONE_FET_OP(0); REAP_CODE = value;
 
-    }; printf("%s", (uchar*) SOW_BUFF_A);
+    }; fwrite(SOW_BUFF_A, UNITSZ, SOW_BUFF_APOS, stdout);
+       fflush(stdout                                   );
 
     CLEAN:
         SOW_BUFF_APOS ^= SOW_BUFF_APOS;
