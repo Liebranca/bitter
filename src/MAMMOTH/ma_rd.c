@@ -464,7 +464,7 @@ void RDEXP(void)                            {
                 slen++;
 
             }; rd_ctok+=1+(tokens[rd_tkx+1][0]!=0)+(slen/sizeof(CTOK));
-            rd_units=slen;
+            rd_units=slen; typedata.strus=0;
 
         }; mammi->state&=~MAMMIT_SF_PSTR;
         goto EVAL_EXP;

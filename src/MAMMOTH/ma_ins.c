@@ -1050,7 +1050,6 @@ void lmsow (void)                           { MNY_FET_OP;
 
         if(fetflg&0x10) {
 
-            fetflg  ^= 0x10;
             uint loc = ADDRTOLOC(addr);
 
             if(loc!=FATAL) {
@@ -1102,6 +1101,7 @@ void lmsow (void)                           { MNY_FET_OP;
 
         for(uint x=0;x<len;x++) {
             MEMUNIT c = *((MEMUNIT*) s);
+
             SOW_BUFF_A[SOW_BUFF_APOS]=c;
             SOW_BUFF_APOS++; s+=UNITSZ;
 
@@ -1113,7 +1113,11 @@ void lmsow (void)                           { MNY_FET_OP;
     SOW_BUFF_A[SOW_BUFF_APOS]=value;
     SOW_BUFF_APOS++;
 
-    BOT: if(udr<ins->size) { goto TOP; }                                                    };
+    BOT:
+        fetflg  ^= fetflg;
+        if(udr<ins->size) { goto TOP; }
+
+                                                                                            };
 
 void lmreap(void)                           {
 
@@ -1189,7 +1193,6 @@ void lmasl(uint* udr)                       {
         force_solve=1; goto RESULT;
 
     } elif(t->ttype==CALCUS_CHSTR) {
-
         mammi->state     |= MAMMIT_SF_PSTR;
         uint slen         = 1+(t->vsize/UNITSZ);
         *rd_result        = (uintptr_t) t;
@@ -1197,7 +1200,7 @@ void lmasl(uint* udr)                       {
         while(slen%(sizeof(CTOK)/UNITSZ)) {
             slen++;
 
-        }; *udr          += slen+sizeof(CTOK)/UNITSZ;
+        }; *udr          += slen;
 
         goto EVAL_EXP;
 
