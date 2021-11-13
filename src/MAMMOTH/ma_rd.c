@@ -105,7 +105,7 @@ void TRNVAL(uint len)                       { if(!len) { return; }
             rd_ctok->ttype=CALCUS_CHSTR;
             rd_ctok->vsize=slen;
 
-        };
+        }; for(uint x=0; x<((len-(1*(len!=0)))/rd_size)-(1*(len!=0)); x++) { BYTESTEP(0); }
     }
 
 //   ---     ---     ---     ---     ---
@@ -416,7 +416,7 @@ void RDEXP(void)                            {
         };
 
         if(ex_f<rd_tkx) {                   // advance if sec is not first token
-            BYTESTEP();
+            BYTESTEP(1);
 
             if(parsed>=rd_elems) {
                 rd_elems+=(UNITSZ*2)/rd_size;
@@ -463,7 +463,7 @@ void RDEXP(void)                            {
         MAMMIT_LVLB_PRV;                    // this doesn't account for unclosed () parens
         goto SOLVE;                         // so beware! PE$O will not care for that mistake
 
-    };                                                                                       };
+    };                                                                                      };
 
 //   ---     ---     ---     ---     ---
 
@@ -948,6 +948,18 @@ void RDNXT(void)                            {
 //   ---     ---     ---     ---     ---
 
         if(mammi->state&MAMMIT_SF_PSTR) {
+        switch(rd_wid) {
+
+            case 0x5C6E:                    // newline      \\n
+                rd_cur=0x0A; rd_pos++; break;
+
+            default:
+                break;
+
+            };
+
+//   ---     ---     ---     ---     ---
+
             if(rd_cur!=0x27 && rd_cur!=0x22) {
                 goto FORCE_INSERT;
 

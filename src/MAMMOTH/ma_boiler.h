@@ -20,7 +20,7 @@ uint   ADDRTOLOC(uintptr_t addr     );      // address to table loc
 void   CHKMEMLAY(void               );      // contiguousness test
 
 void   MOVBLK   (BLK* b, int dirn   );      // block byte && memunit shifts
-void   BYTESTEP (void               );      // advance rd_result by rd_size
+void   BYTESTEP (int clear          );      // advance rd_result by rd_size
 
 void   TPADDR   (uchar type         ,
                  uint  elems        );      // adjust read settings

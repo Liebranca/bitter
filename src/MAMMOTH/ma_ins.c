@@ -1032,7 +1032,10 @@ void lmlis (void)                           { MNY_FET_OP;
 static size_t  SOW_BUFF_APOS            = 0;
 static MEMUNIT SOW_BUFF_A[SOW_BUFF_ASZ] = {0};
 
-void lmsow (void)                           { ONE_FET_OP(0);
+static uint    REAP_CODE                = 0x00;
+static uint    REAP_FLAGS               = 0x00;
+
+void lmsow (void)                           { ONE_FET_OP(0b01);
 
     if(typedata.flags&0x10) {
 
@@ -1044,13 +1047,13 @@ void lmsow (void)                           { ONE_FET_OP(0);
         if(fetflg&0x10) {
 
             fetflg  ^= 0x10;
-            uint loc = ADDRTOLOC(value);
+            uint loc = ADDRTOLOC(addr);
 
             if(loc!=FATAL) {
 
                 LABEL* l = mammi->jmpt_h+loc;
-                s        = (uchar*) ((uintptr_t) value);
-                uint pos = (((uintptr_t) value)+offsets[0]) - mammi->jmpt[loc];
+                s        = (uchar*) ((uintptr_t) addr);
+                uint pos = (((uintptr_t) addr)+offsets[0]) - mammi->jmpt[loc];
                 len      = l->meta.strus-(pos*(l->meta.strus!=0));
 
             } else {
@@ -1078,8 +1081,7 @@ void lmsow (void)                           { ONE_FET_OP(0);
 
         };
 
-        /* TODO: terminators
-        uchar term = 0;
+        /*uchar term = 0;
 
         if(len>1) {
             term      = (s[len-1] | (s[len-2]<<8)) == 0x5C30;
@@ -1091,8 +1093,7 @@ void lmsow (void)                           { ONE_FET_OP(0);
 
         len = 1+(len/UNITSZ);
         if((len+SOW_BUFF_APOS)>SOW_BUFF_ASZ) {
-            // TODO: flush
-            len=SOW_BUFF_ASZ-SOW_BUFF_APOS;
+            REAP_FLAGS=0x01; lmreap();
 
         };
 
@@ -1111,10 +1112,18 @@ void lmsow (void)                           { ONE_FET_OP(0);
 
 void lmreap(void)                           {
 
-    // TODO: formatting...
+    /* TODO: formatting... */
 
-    printf("%s\n", (uchar*) SOW_BUFF_A);
-    CLMEM2(SOW_BUFF_A, SOW_BUFF_ASZ*UNITSZ);
+    if(!(REAP_FLAGS&0x01)) {                // invoked reap
+        ONE_FET_OP(0); REAP_CODE = value;
+
+    }; printf("%s", (uchar*) SOW_BUFF_A);
+
+    CLEAN:
+        SOW_BUFF_APOS ^= SOW_BUFF_APOS;
+        REAP_FLAGS    ^= REAP_FLAGS;
+
+        CLMEM2(SOW_BUFF_A, SOW_BUFF_ASZ*UNITSZ);
 
 };
 

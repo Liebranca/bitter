@@ -3,7 +3,7 @@ $$$$$$$$$$$$$$$$
 entry main;
 
 reg vars;
-  char  mess "Hello, world!";
+  wide  mess 0x2141,0x0A;
 
 proc main;
   wed   str;

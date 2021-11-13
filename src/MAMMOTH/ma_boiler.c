@@ -362,19 +362,23 @@ void TPADDR(uchar type, uint elems)         {
 
 //   ---     ---     ---     ---     ---
 
-void BYTESTEP(void)                         {
+void BYTESTEP(int clear)                    {
 
     rd_cbyte      += rd_size;
 
-    if(!(rd_cbyte%UNITSZ)) {
+    for(uint x=0;x<(rd_cbyte/UNITSZ);x++) {
         rd_result += rd_step;
         rd_lhand   = rd_result;
         rd_value   = rd_lhand+rd_step;
 
-        CLMEM2(rd_value, rd_size);
+        if(clear) { 
+            CLMEM2(rd_value, rd_size);
+
+        };
 
         lngptr    += rd_step;
-        rd_cbyte   = 0;
+        rd_cbyte  -= UNITSZ*(rd_cbyte>=UNITSZ);
+        if(rd_cbyte<UNITSZ) { break; }
 
     };                                                                                      };
 
