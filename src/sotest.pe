@@ -3,7 +3,9 @@ $$$$$$$$$$$$$$$$
 entry main;
 
 reg vars;
-  wide  mess 0x2141,0x0A;
+  char2 mess "HELLO",0x0A,
+             "THERE",0x0A,
+             "BYE!" ,0x0A;
 
 proc main;
   wed   str;

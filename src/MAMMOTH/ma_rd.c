@@ -93,19 +93,25 @@ void TRNVAL(uint len)                       { if(!len) { return; }
 
         typedata.flags |= 0x10;
         mammi->state   |= MAMMIT_SF_PSTR;
-        uint slen       = TRSTRVAL(rd_rawv+1, rd_result);
+        uint slen       = TRSTRVAL(rd_rawv+1, (MEMUNIT*) (((uchar*) rd_value)+rd_cbyte) );
 
         while(rd_units < 1+((slen+sizeof(typedata.strus))/(UNITSZ))) {
             rd_units*=2; typedata.strsz++;
 
-        }; typedata.strus=slen;
+        }; typedata.strus  += slen;
 
         if(rd_ctok) {
-            rd_ctok->value=*rd_result;
-            rd_ctok->ttype=CALCUS_CHSTR;
-            rd_ctok->vsize=slen;
+            rd_ctok->value  = *rd_result;
+            rd_ctok->ttype  = CALCUS_CHSTR;
+            rd_ctok->vsize += slen;
 
-        }; for(uint x=0; x<((len-(1*(len!=0)))/rd_size)-(1*(len!=0)); x++) { BYTESTEP(0); }
+        }; for(uint x=0; x<((len-(1*(len!=0)))/rd_size)-(1*(len!=0)); x++) {
+            *( ((uchar*) rd_lhand)+rd_cbyte)=*( ((uchar*) rd_value)+rd_cbyte);
+            *( ((uchar*) rd_value)+rd_cbyte)=0;
+            BYTESTEP(0);
+
+        }; *( ((uchar*) rd_lhand)+rd_cbyte)=*( ((uchar*) rd_value)+rd_cbyte);
+           *( ((uchar*) rd_value)+rd_cbyte)=0;
     }
 
 //   ---     ---     ---     ---     ---
@@ -453,11 +459,12 @@ void RDEXP(void)                            {
         }; mammi->state&=~MAMMIT_SF_PSTR;
         goto EVAL_EXP;
 
-    }; SOLVE: CALCUS_COLLAPSE();            // collapse arithmetic-wise
-
-    goto EVAL_EXP;
+    }; typedata.strus+=rd_size;
 
 //   ---     ---     ---     ---     ---
+
+    SOLVE: CALCUS_COLLAPSE();               // collapse arithmetic-wise
+    goto EVAL_EXP;
 
     RESULT: if(mammi->lvlb>0) {             // collapse expression if unresolved
         MAMMIT_LVLB_PRV;                    // this doesn't account for unclosed () parens
