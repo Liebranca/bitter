@@ -60,7 +60,10 @@ static NIHIL lm_ins_arr[] = {               // table of low-level instructions
 
     &lmlis,
     &lmsow,
-    &lmreap
+    &lmreap,
+
+    &lmcall,
+    &lmret
 
 };
 
@@ -1139,6 +1142,23 @@ void lmreap(void)                           {
 
 //   ---     ---     ---     ---     ---
 
+void lmcall(void)                           {
+
+    mammi->call_stack[mammi->callstk_i] = mammi->next;
+    mammi->callstk_i++;
+
+    ONE_FET_OP(0b10);
+
+    uint  loc   = ADDRTOLOC(value);
+    mammi->next = loc;                                                                      };
+
+void lmret (void)                           {
+
+    mammi->callstk_i--;
+    mammi->next = mammi->call_stack[mammi->callstk_i];                                      };
+
+//   ---     ---     ---     ---     ---
+
 void lmasl(uint* udr)                       {
 
     CTOK* t;                                // current token
@@ -1280,6 +1300,9 @@ void swlis (void)                           { ins_code = 0x1B; ins_argc = 2;    
 
 void swsow (void)                           { ins_code = 0x1C; ins_argc =-1;                };
 void swreap(void)                           { ins_code = 0x1D; ins_argc = 1;                };
+
+void swcall(void)                           { ins_code = 0x1E; ins_argc = 1;                };
+void swret (void)                           { ins_code = 0x1F; ins_argc = 0;                };
 
 //   ---     ---     ---     ---     ---
 

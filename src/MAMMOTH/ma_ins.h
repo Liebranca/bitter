@@ -51,6 +51,9 @@ void lmlis (void         );                 // local vars && aliases
 void lmsow (void         );                 // write a to buffer
 void lmreap(void         );                 // use buffer and flush
 
+void lmcall(void         );                 // jump to label (and go back on ret)
+void lmret (void         );                 // go back to last call
+
 void lmasl (uint* udr    );                 // arithmetics solver
 
 //   ---     ---     ---     ---     ---
@@ -92,6 +95,9 @@ void swshl (void         );
 void swlis (void         );
 void swsow (void         );
 void swreap(void         );
+
+void swcall(void         );
+void swret (void         );
 
 //   ---     ---     ---     ---     ---
 

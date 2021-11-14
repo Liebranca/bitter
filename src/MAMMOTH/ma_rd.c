@@ -776,6 +776,11 @@ void NTNAMES(void)                          {
         SYMNEW("$INS", "sow",   swsow  ),
         SYMNEW("$INS", "reap",  swreap ),
 
+//   ---     ---     ---     ---     ---
+
+        SYMNEW("$INS", "call",  swcall ),
+        SYMNEW("$INS", "ret",   swret  ),
+
 //   ---     ---     ---     ---     ---    // directives
 
         SYMNEW("DRTV", "entry", stentry)
@@ -932,8 +937,17 @@ void RDNXT(void)                            {
 
     uchar op[16]; CLMEM2(op, 16);           // operator storage ;>
 
-    uint  opi   = 0;                        // idex into opstor
-    uint  s_opi = 0;                        // special oppy idex
+    uint  opi      = 0;                     // idex into opstor
+    uint  s_opi    = 0;                     // special oppy idex
+
+    rd_cast        = 0x03;                  // reset typing to char
+    rd_size        = 1;
+    rd_elems       = 16;
+    rd_step        = 1;
+
+    typedata.strsz = 0x02;                  // assume blank str
+    typedata.strus = 0x00;
+    typedata.strtp = rd_cast;
 
     TOP:
 
@@ -1324,6 +1338,7 @@ int main(int argc, char** argv)             {
 
             while(mammi->next<mammi->jmpt_i) {
                 LABEL* l=mammi->jmpt_h+mammi->next;
+
                 if(*((uint*) l->id.type)==0x2A534E49) {
                     ldins(l->loc);
 

@@ -63,7 +63,7 @@ typedef struct MAMM_SYNTX_SYMBOL {          // used for string to funcall mambo
     ID      id;                             // polyheader, makes this block hashable
 
     NIHIL   onrd;                           // links block with a given funcall
-    MEMUNIT pad;                            // manual padding
+    MEMUNIT value;                          // for when you want a magic return ptr
 
 } SYMBOL;
 
@@ -145,17 +145,18 @@ typedef struct MAMM_INTERPRETER {           // smach for pe-text input
 
     uchar     lvla_stack[FRAMESZ      ];    // markers for recalling previous context
     MEMUNIT   lvlb_stack[FRAMESZ      ];    // ^idem, for prev evalstate of expression
+    MEMUNIT   call_stack[FRAMESZ      ];    // ^same, records jumped-from (go-back-to)
+
+    uint      callstk_i;                    // callstack top
 
     uintptr_t vaddr;                        // next fetch at
     uint      vtype;                        // next fetch typedata
 
     uint      lvaltop;                      // next offset @lvalues that's free
     MEMUNIT   lvalues   [NAMESZ       ];    // yer vars arrrr
-
     SYMBOL    gvalues   [NAMESZ       ];    // array of built-ins
 
     MACRO     mvalues   [NAMESZ       ];    // textual substitution
-
     STK       mvalstk;                      // free indices into mvalues
     uint      mvalstk_i [NAMESZ       ];    // ^memory for stack
 
