@@ -696,6 +696,28 @@ void NTNAMES(void)                          {
 
 //   ---     ---     ---     ---     ---
 
+    mammi->strm[0].ptr   = (void*) stdin;
+    mammi->strm[0].cur   = 0;
+    mammi->strm[0].sz    = 0;
+    mammi->strm[0].used  = 0;
+    mammi->strm[0].flg  |= MA_STRM_FILE;
+
+    mammi->strm[1].ptr   = (void*) stdout;
+    mammi->strm[1].cur   = 0;
+    mammi->strm[1].sz    = 0;
+    mammi->strm[1].used  = 0;
+
+    mammi->strm[1].flg  |= MA_STRM_FILE;
+
+    mammi->strm[2].ptr   = (void*) stderr;
+    mammi->strm[2].cur   = 0;
+    mammi->strm[2].sz    = 0;
+    mammi->strm[2].used  = 0;
+
+    mammi->strm[2].flg  |= MA_STRM_FILE;
+
+//   ---     ---     ---     ---     ---
+
 
     SYMBOL symbols[]={                      // table of builtins
 
@@ -773,8 +795,15 @@ void NTNAMES(void)                          {
 //   ---     ---     ---     ---     ---
 
         SYMNEW("$INS", "lis",   swlis  ),
+
+        SYMNEW("$INS", "buf",   swbuf  ),
+        SYMNEW("$INS", "ptr",   swptr  ),
+        SYMNEW("$INS", "mal",   swmal  ),
+        SYMNEW("$INS", "ral",   swral  ),
+        SYMNEW("$INS", "fre",   swfre  ),
         SYMNEW("$INS", "sow",   swsow  ),
         SYMNEW("$INS", "reap",  swreap ),
+        SYMNEW("$INS", "kin",   swkin  ),
 
 //   ---     ---     ---     ---     ---
 
@@ -794,8 +823,12 @@ void NTNAMES(void)                          {
 
     };                                                                                      };
 
-void DLNAMES(void)                          { DLMEM(MNAMES_HASH); DLMEM(LNAMES_HASH);       \
-                                              DLMEM(GNAMES_HASH); DLMEM(mammi);             };
+void DLNAMES(void)                          {
+
+    DLMEM  (MNAMES_HASH);
+    DLMEM  (LNAMES_HASH);
+    DLMEM  (GNAMES_HASH);
+    DLMEM  (mammi      );                                                                   };
 
 //   ---     ---     ---     ---     ---
 

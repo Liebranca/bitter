@@ -2,6 +2,7 @@
 #define __MA_BOXES_H__
 
 #include "KVRNEL/TYPES/zjc_hash.h"
+#include <stdio.h>
 #include <inttypes.h>
 
 #ifdef __cplusplus
@@ -128,6 +129,22 @@ typedef struct MAMM_CNTX {                  // a sentinel for block end/start
 
 //   ---     ---     ---     ---     ---
 
+#define MA_STRM_FILE 0x01
+
+typedef struct MAMM_STRM {                  // ram, disk... it's all storage
+
+    uint    cur;                            // current offset
+    uint    sz;                             // upper bound
+    uint    used;                           // utilized capacity
+    uint    flg;                            // usage flags
+
+    void*   ptr;                            // addres of block itself
+
+
+} STRM;
+
+//   ---     ---     ---     ---     ---
+
 typedef struct MAMM_INTERPRETER {           // smach for pe-text input
 
     MEM m;                                  // mem header
@@ -165,9 +182,13 @@ typedef struct MAMM_INTERPRETER {           // smach for pe-text input
     uintptr_t jmpt      [NAMESZ       ];    // offsets into lvalues
 
     uchar     entry     [ZJC_IDK_WIDTH];    // program entry point
-    MEMUNIT   next;                         // next line in program
+    MEMUNIT   next;                         // next line to be executed
 
     uint      pass;                         // pass number
+
+    size_t    strm_i;                       // current stream
+    STRM      strm      [FOPEN_MAX    ];    // opened streams
+
 
 } MAMMIT; extern MAMMIT* mammi;
 

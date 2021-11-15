@@ -4,9 +4,12 @@ entry main;
 
 proc  hello;
   wed   str;
-  sow   "Hello, world!",0x0A;
-  reap  1;
+  buf   1;
 
+  sow   "Hello, world!",0x0A;
+  reap  0;
+
+  kin;
   ret;
 
 proc  main;

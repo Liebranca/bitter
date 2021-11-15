@@ -48,8 +48,15 @@ void lmshr (void         );                 // a>>b
 void lmshl (void         );                 // a<<b
 
 void lmlis (void         );                 // local vars && aliases
-void lmsow (void         );                 // write a to buffer
-void lmreap(void         );                 // use buffer and flush
+
+void lmbuf (void         );                 // set current stream/buffer
+void lmptr (void         );                 // get stream/buff cur
+void lmmal (void         );                 // open stream/allocate
+void lmral (void         );                 // rename stream/reallocate
+void lmfre (void         );                 // close stream/deallocate
+void lmsow (void         );                 // write a to current stream/buffer
+void lmreap(void         );                 // do a on current stream/buffer
+void lmkin (void         );                 // keyboard input
 
 void lmcall(void         );                 // jump to label (and go back on ret)
 void lmret (void         );                 // go back to last call
@@ -93,8 +100,15 @@ void swshr (void         );
 void swshl (void         );
 
 void swlis (void         );
+
+void swbuf (void         );
+void swptr (void         );
+void swmal (void         );
+void swral (void         );
+void swfre (void         );
 void swsow (void         );
 void swreap(void         );
+void swkin (void         );
 
 void swcall(void         );
 void swret (void         );

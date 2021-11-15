@@ -22,6 +22,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <fcntl.h>
+#include <termios.h>
+
 //   ---     ---     ---     ---     ---
 
 static NIHIL lm_ins_arr[] = {               // table of low-level instructions
@@ -59,8 +62,15 @@ static NIHIL lm_ins_arr[] = {               // table of low-level instructions
     &lmshl,
 
     &lmlis,
+
+    &lmbuf,
+    &lmptr,
+    &lmmal,
+    &lmral,
+    &lmfre,
     &lmsow,
     &lmreap,
+    &lmkin,
 
     &lmcall,
     &lmret
@@ -1031,15 +1041,25 @@ void lmlis (void)                           { MNY_FET_OP;
     }; m->value = value;
     HASHSET(MNAMES_HASH, byref(m->id));                                                     };
 
-#define SOW_BUFF_ASZ 256
+#define SOW_BUFF_SZ  256
+#define SOW_BUFF_CNT 2
 
-static size_t  SOW_BUFF_APOS            = 0;
-static MEMUNIT SOW_BUFF_A[SOW_BUFF_ASZ] = {0};
+static size_t  SOW_BUFFS_POS[SOW_BUFF_CNT]              = {0};
+static MEMUNIT SOW_BUFFS    [SOW_BUFF_CNT][SOW_BUFF_SZ] = {0};
 
-static uint    REAP_CODE                = 0x00;
-static uint    REAP_FLAGS               = 0x00;
+static uint    REAP_CODE  = 0x00;
+static uint    REAP_FLAGS = 0x00;
 
-void lmsow (void)                           { MNY_FET_OP;
+MEMUNIT* lmbufcur(size_t i)                 { return SOW_BUFFS[i]+SOW_BUFFS_POS[i];         };
+
+void lmbuf (void)                           { ONE_FET_OP(0); mammi->strm_i=value;           };
+
+void lmptr (void)                           { ; };
+void lmmal (void)                           { ; };
+void lmral (void)                           { ; };
+void lmfre (void)                           { ; };
+
+void lmsow (void)                           { MNY_FET_OP; MEMUNIT* dst = lmbufcur(1);
 
     TOP: FET_NXT(0);
 
@@ -1097,24 +1117,24 @@ void lmsow (void)                           { MNY_FET_OP;
 //   ---     ---     ---     ---     ---
 
         len = 1+(len/UNITSZ);
-        if((len+SOW_BUFF_APOS)>SOW_BUFF_ASZ) {
+        if((len+SOW_BUFFS_POS[1])>SOW_BUFF_SZ) {
             REAP_FLAGS=0x01; lmreap();
 
         };
 
         for(uint x=0;x<len;x++) {
-            MEMUNIT c = *((MEMUNIT*) s);
+            MEMUNIT c    = *((MEMUNIT*) s);
+            *dst         = c;
 
-            SOW_BUFF_A[SOW_BUFF_APOS]=c;
-            SOW_BUFF_APOS++; s+=UNITSZ;
+            dst++; SOW_BUFFS_POS[1]++; s+=UNITSZ;
 
         }; goto BOT;
     };
 
 //   ---     ---     ---     ---     ---
 
-    SOW_BUFF_A[SOW_BUFF_APOS]=value;
-    SOW_BUFF_APOS++;
+    *dst=value;
+    SOW_BUFFS_POS[1]++;
 
     BOT:
         fetflg  ^= fetflg;
@@ -1129,14 +1149,119 @@ void lmreap(void)                           {
     if(!(REAP_FLAGS&0x01)) {                // invoked reap
         ONE_FET_OP(0); REAP_CODE = value;
 
-    }; fwrite(SOW_BUFF_A, UNITSZ, SOW_BUFF_APOS, stdout);
-       fflush(stdout                                   );
+    }; STRM* strm = mammi->strm+mammi->strm_i;
+
+//   ---     ---     ---     ---     ---
+
+    if(strm->flg&MA_STRM_FILE) {
+        FILE* f=(FILE*) strm->ptr;
+
+        if(!(REAP_CODE&0b11)) {
+            int wb          = fwrite(SOW_BUFFS[1], UNITSZ, SOW_BUFFS_POS[1], f);
+
+            if(strm->cur<strm->used) {
+                int dif     = strm->used-strm->cur;
+                strm->used += (wb-dif)*(wb>dif);
+
+            } else {
+                strm->used += wb;
+
+            }; strm->cur   += wb;
+
+            if(strm->used>strm->sz) {
+                strm->sz=strm->used;
+
+            };
+
+//   ---     ---     ---     ---     ---
+
+        } else {
+
+            if(REAP_CODE&0b01) { /* read  */; }
+            if(REAP_CODE&0b10) { fflush(f);   };
+        };
+    }
+
+//   ---     ---     ---     ---     ---
 
     CLEAN:
-        SOW_BUFF_APOS ^= SOW_BUFF_APOS;
-        REAP_FLAGS    ^= REAP_FLAGS;
 
-        CLMEM2(SOW_BUFF_A, SOW_BUFF_ASZ*UNITSZ);
+        if  (!(REAP_CODE&0b11) && SOW_BUFFS_POS[1]) {
+            CLMEM2(SOW_BUFFS[1], SOW_BUFFS_POS[1]*UNITSZ);
+            SOW_BUFFS_POS[1] ^= SOW_BUFFS_POS[1];
+
+        }
+
+        elif( (REAP_CODE&0b11) && SOW_BUFFS_POS[0]) {
+            CLMEM2(SOW_BUFFS[0], SOW_BUFFS_POS[0]*UNITSZ);
+            SOW_BUFFS_POS[0] ^= SOW_BUFFS_POS[0];
+
+        }; REAP_FLAGS ^= REAP_FLAGS;                                                        };
+
+// basis taken from:
+// https://cboard.cprogramming.com/c-programming/63166-kbhit-linux-post449301.html#post449301
+// some modifications done by lyeb ;>
+
+#include <unistd.h>
+
+int kbhit(void) {
+
+    struct termios term_new;
+    struct termios term_old;
+
+    int old_file;
+    int c;
+    int i=0;
+
+    char* dst = (char*) lmbufcur(0);
+    int cbyte = ((uintptr_t) dst)&0x0F;
+    while(cbyte>=8) { cbyte-=8; };
+    if(cbyte!=0) { SOW_BUFFS_POS[0]++; };
+
+    TOP:
+
+    tcgetattr(STDIN_FILENO, &term_old);
+    term_new = term_old;
+
+    term_new.c_lflag&=~(ICANON | ECHO);
+
+    tcsetattr(STDIN_FILENO, TCSANOW, &term_new);
+
+    old_file = fcntl(STDIN_FILENO, F_GETFL, 0);
+    fcntl(STDIN_FILENO, F_SETFL, old_file | O_NONBLOCK);
+
+    // just for testing
+    if(!i) { i=1;
+        CALOUT(E, "Type!\n");
+        sleep(1);
+
+    };
+
+    c=getchar();
+
+    tcsetattr(STDIN_FILENO, TCSANOW, &term_old);
+    fcntl(STDIN_FILENO, F_SETFL, old_file);
+
+    if(c!=EOF && SOW_BUFFS_POS[0]<SOW_BUFF_SZ) {
+        *dst=(char) c; cbyte++; dst++;
+
+        if(cbyte==8) {
+            cbyte^=cbyte;
+            SOW_BUFFS_POS[0]++;
+
+        }; goto TOP;
+
+    } else { return 0; }
+
+    if(cbyte!=0) { SOW_BUFFS_POS[0]++; };
+
+    return SOW_BUFFS_POS[0];                                                                };
+
+void lmkin (void)                           {
+
+    // keyboard input test
+    CALOUT(E, "Typed %u keys\n", kbhit());
+    CALOUT(E, "Typed %s\n", SOW_BUFFS[0]);
 
 };
 
@@ -1298,11 +1423,17 @@ void swshl (void)                           { ins_code = 0x1A; ins_argc = 2;    
 
 void swlis (void)                           { ins_code = 0x1B; ins_argc = 2;                };
 
-void swsow (void)                           { ins_code = 0x1C; ins_argc =-1;                };
-void swreap(void)                           { ins_code = 0x1D; ins_argc = 1;                };
+void swbuf (void)                           { ins_code = 0x1C; ins_argc = 1;                };
+void swptr (void)                           { ins_code = 0x1D; ins_argc = 1;                };
+void swmal (void)                           { ins_code = 0x1E; ins_argc = 1;                };
+void swral (void)                           { ins_code = 0x1F; ins_argc = 1;                };
+void swfre (void)                           { ins_code = 0x20; ins_argc = 0;                };
+void swsow (void)                           { ins_code = 0x21; ins_argc =-1;                };
+void swreap(void)                           { ins_code = 0x22; ins_argc = 1;                };
+void swkin (void)                           { ins_code = 0x23; ins_argc = 0;                };
 
-void swcall(void)                           { ins_code = 0x1E; ins_argc = 1;                };
-void swret (void)                           { ins_code = 0x1F; ins_argc = 0;                };
+void swcall(void)                           { ins_code = 0x24; ins_argc = 1;                };
+void swret (void)                           { ins_code = 0x25; ins_argc = 0;                };
 
 //   ---     ---     ---     ---     ---
 
