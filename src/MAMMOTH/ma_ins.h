@@ -58,6 +58,8 @@ void lmsow (void         );                 // write a to current stream/buffer
 void lmreap(void         );                 // do a on current stream/buffer
 void lmkin (void         );                 // keyboard input
 
+void lmtty (void         );                 // set tty flags
+
 void lmcall(void         );                 // jump to label (and go back on ret)
 void lmret (void         );                 // go back to last call
 
@@ -109,6 +111,8 @@ void swfre (void         );
 void swsow (void         );
 void swreap(void         );
 void swkin (void         );
+
+void swtty (void         );
 
 void swcall(void         );
 void swret (void         );

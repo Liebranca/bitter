@@ -700,6 +700,7 @@ void NTNAMES(void)                          {
     mammi->strm[0].cur   = 0;
     mammi->strm[0].sz    = 0;
     mammi->strm[0].used  = 0;
+
     mammi->strm[0].flg  |= MA_STRM_FILE;
 
     mammi->strm[1].ptr   = (void*) stdout;
@@ -806,6 +807,8 @@ void NTNAMES(void)                          {
         SYMNEW("$INS", "kin",   swkin  ),
 
 //   ---     ---     ---     ---     ---
+
+        SYMNEW("$INS", "tty",   swtty  ),
 
         SYMNEW("$INS", "call",  swcall ),
         SYMNEW("$INS", "ret",   swret  ),

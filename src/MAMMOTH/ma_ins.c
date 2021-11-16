@@ -24,6 +24,7 @@
 
 #include <fcntl.h>
 #include <termios.h>
+#include <unistd.h>
 
 //   ---     ---     ---     ---     ---
 
@@ -71,6 +72,8 @@ static NIHIL lm_ins_arr[] = {               // table of low-level instructions
     &lmsow,
     &lmreap,
     &lmkin,
+
+    &lmtty,
 
     &lmcall,
     &lmret
@@ -1198,72 +1201,138 @@ void lmreap(void)                           {
 
         }; REAP_FLAGS ^= REAP_FLAGS;                                                        };
 
-// basis taken from:
-// https://cboard.cprogramming.com/c-programming/63166-kbhit-linux-post449301.html#post449301
-// some modifications done by lyeb ;>
+int lmrdin(void)                            {
 
-#include <unistd.h>
+    STRM* strm = mammi->strm+0;
 
-int kbhit(void) {
+    FILE* f    = (FILE*) strm->ptr;
+    int   fno  = fileno(f);
 
-    struct termios term_new;
-    struct termios term_old;
+    if(!isatty(fno)) {
+        CALOUT(E, "STDIN not a TTY\n");
+        return FATAL;
 
-    int old_file;
-    int c;
-    int i=0;
+    };
+
+//   ---     ---     ---     ---     ---
 
     char* dst = (char*) lmbufcur(0);
     int cbyte = ((uintptr_t) dst)&0x0F;
     while(cbyte>=8) { cbyte-=8; };
     if(cbyte!=0) { SOW_BUFFS_POS[0]++; };
 
-    TOP:
+    fgets(dst, SOW_BUFF_SZ*UNITSZ, f);
 
-    tcgetattr(STDIN_FILENO, &term_old);
-    term_new = term_old;
+    int len  = strlen(dst);
 
-    term_new.c_lflag&=~(ICANON | ECHO);
+    if(dst[len-1]==0x0A) {
+        dst[len-1]==0x00;
+        len--;
 
-    tcsetattr(STDIN_FILENO, TCSANOW, &term_new);
+    }; return len;                                                                          };
 
-    old_file = fcntl(STDIN_FILENO, F_GETFL, 0);
-    fcntl(STDIN_FILENO, F_SETFL, old_file | O_NONBLOCK);
+void lmkin (void)                           { ONE_FET_OP(0);
 
-    // just for testing
-    if(!i) { i=1;
-        CALOUT(E, "Type!\n");
-        sleep(1);
+    uint* dst_len;
+    uint  pos;
+    uint  mxchars; {
+        uint loc = ADDRTOLOC(addr);
+        if(loc==FATAL) {
+            CALOUT(E, "Addr <0x%" PRIXPTR "> not valid\n", addr);
+            return;
+
+        };
+
+        LABEL*    l    = mammi->jmpt_h+loc;
+        uintptr_t base = mammi->jmpt[loc];
+
+        pos            = (uint) (addr-base);
+        mxchars        = GTUNITCNT(1,l->meta.strsz);
+        dst_len        = &(l->meta.strus);
+
+    }; if(pos>mxchars) {
+        pos=mxchars;
 
     };
 
-    c=getchar();
+//   ---     ---     ---     ---     ---
 
-    tcsetattr(STDIN_FILENO, TCSANOW, &term_old);
-    fcntl(STDIN_FILENO, F_SETFL, old_file);
+    uint src_len = lmrdin();
+    if(src_len==FATAL) {
+        CALOUT(E, "KIN operation aborted\n");
+        return;
 
-    if(c!=EOF && SOW_BUFFS_POS[0]<SOW_BUFF_SZ) {
-        *dst=(char) c; cbyte++; dst++;
+    };
 
-        if(cbyte==8) {
-            cbyte^=cbyte;
-            SOW_BUFFS_POS[0]++;
+    if((src_len+pos) > mxchars) {
+        src_len=mxchars-pos;
 
-        }; goto TOP;
+    };
 
-    } else { return 0; }
+    if( (src_len+pos) > (*dst_len) ) {
+        *dst_len=src_len+pos;
 
-    if(cbyte!=0) { SOW_BUFFS_POS[0]++; };
+    };
 
-    return SOW_BUFFS_POS[0];                                                                };
+//   ---     ---     ---     ---     ---
 
-void lmkin (void)                           {
+    uchar* dst = (uchar*) addr;
+    uchar* src = (uchar*) SOW_BUFFS[0];
 
-    // keyboard input test
-    CALOUT(E, "Typed %u keys\n", kbhit());
-    CALOUT(E, "Typed %s\n", SOW_BUFFS[0]);
+    for(uint x=0;x<src_len;x++) {
+        *dst=*src; dst++; src++;
 
-};
+    };                                                                                      };
+
+//   ---     ---     ---     ---     ---
+
+void lmtty(void)                            {
+
+    STRM* strm = mammi->strm+0;
+
+    FILE* f    = (FILE*) strm->ptr;
+    int   fno  = fileno(f);
+    int   fc;
+
+    if(!isatty(fno)) {
+        CALOUT(E, "STDIN not a TTY\n");
+        return;
+
+    };
+
+//   ---     ---     ---     ---     ---
+
+    TWO_FET_OP(0,0);
+
+    struct termios term;
+    tcgetattr(fno, &term);
+
+    uint en_canon = value_a&0b01;
+
+    if(en_canon) {
+        term.c_lflag |= ICANON;
+
+    } else {
+        term.c_lflag &=~ICANON;
+
+    };
+
+    uint en_echo  = value_a&0b10;
+
+    if(en_echo) {
+        term.c_lflag |= ECHO;
+
+    } else {
+        term.c_lflag &=~ECHO;
+
+    }; tcsetattr(fno, TCSANOW, &term);
+
+//   ---     ---     ---     ---     ---
+
+    uint en_nonblock = (value_b&0b1);
+
+    fc = fcntl(fno, F_GETFL, 0);
+    fcntl(fno, F_SETFL, fc | (O_NONBLOCK*en_nonblock));                                     };
 
 //   ---     ---     ---     ---     ---
 
@@ -1430,10 +1499,12 @@ void swral (void)                           { ins_code = 0x1F; ins_argc = 1;    
 void swfre (void)                           { ins_code = 0x20; ins_argc = 0;                };
 void swsow (void)                           { ins_code = 0x21; ins_argc =-1;                };
 void swreap(void)                           { ins_code = 0x22; ins_argc = 1;                };
-void swkin (void)                           { ins_code = 0x23; ins_argc = 0;                };
+void swkin (void)                           { ins_code = 0x23; ins_argc = 1;                };
 
-void swcall(void)                           { ins_code = 0x24; ins_argc = 1;                };
-void swret (void)                           { ins_code = 0x25; ins_argc = 0;                };
+void swtty (void)                           { ins_code = 0x24; ins_argc = 2;                };
+
+void swcall(void)                           { ins_code = 0x25; ins_argc = 1;                };
+void swret (void)                           { ins_code = 0x26; ins_argc = 0;                };
 
 //   ---     ---     ---     ---     ---
 
