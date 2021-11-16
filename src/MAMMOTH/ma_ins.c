@@ -1302,24 +1302,18 @@ void lmtty(void)                            {
 
 //   ---     ---     ---     ---     ---
 
-    TWO_FET_OP(0,0);
+    ONE_FET_OP(0);
 
     struct termios term;
     tcgetattr(fno, &term);
 
-    uint en_canon = value_a&0b01;
-
-    if(en_canon) {
+    if(value&0b001) {
         term.c_lflag |= ICANON;
 
     } else {
         term.c_lflag &=~ICANON;
 
-    };
-
-    uint en_echo  = value_a&0b10;
-
-    if(en_echo) {
+    } if(value&0b010) {
         term.c_lflag |= ECHO;
 
     } else {
@@ -1329,10 +1323,14 @@ void lmtty(void)                            {
 
 //   ---     ---     ---     ---     ---
 
-    uint en_nonblock = (value_b&0b1);
-
     fc = fcntl(fno, F_GETFL, 0);
-    fcntl(fno, F_SETFL, fc | (O_NONBLOCK*en_nonblock));                                     };
+    if(value&0b100) {
+        fc |= O_NONBLOCK;
+
+    } else {
+        fc &=~O_NONBLOCK;
+
+    }; fcntl(fno, F_SETFL, fc);                                                             };
 
 //   ---     ---     ---     ---     ---
 
@@ -1501,7 +1499,7 @@ void swsow (void)                           { ins_code = 0x21; ins_argc =-1;    
 void swreap(void)                           { ins_code = 0x22; ins_argc = 1;                };
 void swkin (void)                           { ins_code = 0x23; ins_argc = 1;                };
 
-void swtty (void)                           { ins_code = 0x24; ins_argc = 2;                };
+void swtty (void)                           { ins_code = 0x24; ins_argc = 1;                };
 
 void swcall(void)                           { ins_code = 0x25; ins_argc = 1;                };
 void swret (void)                           { ins_code = 0x26; ins_argc = 0;                };
