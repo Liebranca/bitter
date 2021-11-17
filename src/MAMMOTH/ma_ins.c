@@ -1307,16 +1307,12 @@ void lmtty(void)                            {
     struct termios term;
     tcgetattr(fno, &term);
 
-    if(value&0b001) {
+    if(value&0b01) {
         term.c_lflag |= ICANON;
-
-    } else {
-        term.c_lflag &=~ICANON;
-
-    } if(value&0b010) {
         term.c_lflag |= ECHO;
 
     } else {
+        term.c_lflag &=~ICANON;
         term.c_lflag &=~ECHO;
 
     }; tcsetattr(fno, TCSANOW, &term);
@@ -1324,7 +1320,7 @@ void lmtty(void)                            {
 //   ---     ---     ---     ---     ---
 
     fc = fcntl(fno, F_GETFL, 0);
-    if(value&0b100) {
+    if(value&0b10) {
         fc |= O_NONBLOCK;
 
     } else {

@@ -683,9 +683,9 @@ void NTNAMES(void)                          {
         STACKPUSH(byref(mammi->mvalstk), x);
 
                                             // nit the hashes
-    }; GNAMES_HASH    = MKHASH              (5, "GNAMES"                               );
-       LNAMES_HASH    = MKHASH              (5, "LNAMES"                               );
-       MNAMES_HASH    = MKHASH              (5, "MNAMES"                               );
+    }; GNAMES_HASH    = MKHASH              (6, "GNAMES"                               );
+       LNAMES_HASH    = MKHASH              (6, "LNAMES"                               );
+       MNAMES_HASH    = MKHASH              (6, "MNAMES"                               );
 
 //   ---     ---     ---     ---     ---
 
@@ -1323,7 +1323,13 @@ void CLPASS(void)                           {
 
 //   ---     ---     ---     ---     ---
 
+#include "ma_allo.h"
+
 int main(int argc, char** argv)             {
+
+    allo_test();
+
+    return 0;
 
     int   prmemlay = 0;
     int   from_bin = 0;
@@ -1356,8 +1362,7 @@ int main(int argc, char** argv)             {
 
 //   ---     ---     ---     ---     ---
 
-    CALOUT(E, "\e[38;2;128;255;128m\n$PEIN:\n%s\n\e[0m\e[38;2;255;128;128m$OUT:\n", rd_buff);
-    RDNXT(); CLPASS(); RDNXT(); CALOUT(E, "\e[0m\n");
+    RDNXT(); CLPASS(); RDNXT();
 
 //   ---     ---     ---     ---     ---
 
