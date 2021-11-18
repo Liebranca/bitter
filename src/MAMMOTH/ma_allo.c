@@ -46,7 +46,8 @@ typedef struct MAMM_FAST_ALLOC
 void ntallo(void)
 {
 
-  for(int x=0;x<QMS_SZ;x++) {
+  for(int x=0;x<QMS_SZ;x++)
+  {
     mfa.slots[x].id = FREE_BLOCK;
     mfa.slots[x].fl = 0;
     mfa.slots[x].cr = 0;

@@ -27,3 +27,5 @@ rprules.txt
 *.c~
 *.png
 data/font/*
+src/AVTOMAT/IDNT.c
+src/AVTOMAT/idntest.c
