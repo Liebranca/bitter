@@ -1,20 +1,16 @@
-#---------------------------o
-# AVTO-LINT                 |
-# formats my shit           |
-#---------------------------o
-# LIBRE SOFTWARE            |
-# Licensed under GNU GPL3   |
-# be a bro and inherit      |
-#---------------------------o
-# CONTRIBUTORS              |
-# lyeb,(=)                  |
-#---------------------------o
+#--------------------------o
+# AVTO-LINT                |
+# formats my shit          |
+#--------------------------o
+# LIBRE SOFTWARE           |
+# Licensed under GNU GPL3  |
+# be a bro and inherit     |
+#--------------------------o
+# CONTRIBUTORS             |
+# lyeb,(=)                 |
+#--------------------------o
 
 root    = "/".join((__file__.split("/"))[:-1]);
-bx_cap  = "//***************************\n";
-bx_fld  = "//                          *\n";
-
-llb     = [' ', ',', '(', ';' ];
 
 lvl     = 0;
 i_wid   = 2;
@@ -22,41 +18,57 @@ l_wid   = 56;
 l_mid   = 28;
 c_len   = (l_wid-l_mid)-3;
 
-com_fld = "// "+(' '*c_len)+"\n";
+llb     = [' ', ',', '(', ';' ];
+
+bx_cap  = "//"+('*'*(l_mid-2))+"\n";
+bx_fld  = "//"+('*'*(l_mid-2))+"*\n";
+com_fld = "// "+(' '*c_len)+'\n';
+cde_fld = " "+(' '*(l_wid));
+
+cde_fa  = cde_fld[:(l_mid)];
+cde_fb  = cde_fld[(l_mid):];
 
 #    ---     ---     ---     ---     ---
 
-def bx_fill(s):
+def __fill(s, base, pos=3):
 
-  pos=3; pad=0; space=len(bx_fld)-pos;bx=[];
+  ned     = 1+(int(len(s)/len(base)));
+  bx      = [];
+
+  l_start = pos;
+  pad     = 0;
+
+  space   = len(base)-pos;
+
   for c in s.lstrip():
 
-    if(pos==3):
-      bx.extend((c for c in bx_fld));
+    if(pos==l_start):
+      bx.extend(c for c in base);
 
     bx[pos+pad]=c; pos+=1;
     if(pos==space):
-      pos=3; pad+=len(bx_fld);
+      pos=l_start; pad+=len(base);
 
   return ''.join(c for c in bx);
 
+def bx_fill(s):
+  return __fill(s, bx_fld);
+
 def com_fill(s):
-
-  pos=3; pad=0; space=len(com_fld)-pos;bx=[];
-  for c in s.lstrip():
-
-    if(pos==3):
-      bx.extend((c for c in com_fld));
-
-    bx[pos+pad]=c; pos+=1;
-    if(pos==space):
-      pos=3; pad+=len(com_fld);
-
-  bx=''.join(bx);
+  bx=__fill(s, com_fld);
   bx=''.join((' '*l_mid)+sub \
             for sub in (bx.split('\n')[:-1]) );
 
   return bx;
+
+def cde_fill(s):
+  return __fill(s, cde_fld, 0);
+
+def cfa_fill(s):
+  return __fill(s, cde_fa,  0);
+
+def cfb_fill(s):
+  return __fill(s, cde_fb,  0);
 
 #    ---     ---     ---     ---     ---
 
@@ -176,32 +188,58 @@ with open(root+"/IDNT.c", "r") as src:
     if("//" in line):
       bits=line.split("//");
       com   = "".join(b for b in bits[1:]);
-      com_e = com_fill(com);
 
-      #if(not len(bits[0])):
-      print(com_e);
-      s=s+com_e;
-      s=s+"\n"; continue;
+#    ---     ---     ---     ---     ---
+
+      if(not len(bits[0])): #:YESCOM;>
+        s=s+com_fill(com);  #:NOCODE;>
+        continue;
+
+      bits[0]=bits[0].lstrip(' ').rstrip(' ');
+      bits[0]=bits[0].lstrip('\n').rstrip('\n');
 
       if((len(indent)+len(bits[0])<=l_mid)):
-        line=bits[0]; app_com=com_e;
 
-      else:
-        s=s+com_e+"\n";
+        app_com=com_fill(com.lstrip(' ').rstrip('\n'));
+
+        line=cfa_fill(bits[0]);
+
+        """
+        line=cde_fill(      #:YESCODE;>
+              bits[0]       \
+                            \
+             +(' '          \
+                            \
+             *(l_mid-len(   \
+                bits[0]     \
+              )             \
+                            \
+               -len(indent) \
+              ))            \
+             ) +app_com
+        """
+
+      else:                 #:FULINE;>
+        s=s+com_fill(com);
         line=bits[0];
 
 #    ---     ---     ---     ---     ---
 
-    line   = line.lstrip(' ').rstrip(' ');
-    line   = line.lstrip('\n').rstrip('\n');
+    else:                   #:NOCOM;>
+
+      line   = indent+line+app_com+"\n";
+      line   = cde_fill(line);
+
+#    ---     ---     ---     ---     ---
+
     if(not len(line)):
       continue;
 
     if(n_nl):
-      indent='\n'+indent;
+      indent=indent;
       n_nl=0;
 
-    line   = indent+line+app_com+"\n";
+    line   = (indent+line+app_com).rstrip('\n'); #+"\n";
 
 #    ---     ---     ---     ---     ---
 
@@ -229,5 +267,7 @@ with open(root+"/IDNT.c", "r") as src:
 
 with open(root+"/IDNT.c", "w+") as dst:
   dst.write(s);
+
+print(s);
 
 #os.system("indent -hnl -sob -di2 -bls -bad -bbo -bap -bbb -d2 -ci0 -lp -ip0 -i2 -c0 -lc56 -cd0 -cp0 -bli0 -cli0 -nsaf -nsai -nsaw -npsl -nfca -nfc1 -ntac -nsc -ntac -nv -pal -nut -l56 avtomat/idntd.c");
