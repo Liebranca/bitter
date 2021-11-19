@@ -21,9 +21,10 @@ c_len   = (l_wid-l_mid)-3;
 llb     = [' ', ',', '(', ';' ];
 
 bx_cap  = "//"+('*'*(l_mid-2))+"\n";
-bx_fld  = "//"+('*'*(l_mid-2))+"*\n";
+bx_fld  = "//"+(' '*(l_mid-3))+"*\n";
 com_fld = "// "+(' '*c_len)+'\n';
-cde_fld = " "+(' '*(l_wid));
+lcm_fld = "// "+(' '*l_wid)+'\n';
+cde_fld = " "+(' '*(l_wid))+'\n';
 
 cde_fa  = cde_fld[:(l_mid)];
 cde_fb  = cde_fld[(l_mid):];
@@ -40,9 +41,12 @@ def __fill(s, base, pos=3):
 
   space   = len(base)-pos;
 
-  for c in s.lstrip():
+  for c in s.lstrip().rstrip():
 
     if(pos==l_start):
+      if(c==' ' or c=='\n'):
+        continue;
+
       bx.extend(c for c in base);
 
     bx[pos+pad]=c; pos+=1;
@@ -51,15 +55,16 @@ def __fill(s, base, pos=3):
 
   return ''.join(c for c in bx);
 
+#    ---     ---     ---     ---     ---
+
 def bx_fill(s):
   return __fill(s, bx_fld);
 
 def com_fill(s):
-  bx=__fill(s, com_fld);
-  bx=''.join((' '*l_mid)+sub \
-            for sub in (bx.split('\n')[:-1]) );
+  return __fill(s, com_fld);
 
-  return bx;
+def lcm_fill(s):
+  return __fill(s, lcm_fld);
 
 def cde_fill(s):
   return __fill(s, cde_fld, 0);
@@ -91,9 +96,10 @@ def docbox(fname):
   atl=0;
   with open(root+"/"+fname, "r") as src:
     while(1):
+
       line=src.readline();
   
-      if(not len(line.rstrip('\n'))):
+      if(not len(line.rstrip().lstrip())):
         break;
 
       atl+=1;
@@ -163,111 +169,122 @@ import os;
 s     = "";
 n_nl  = 0;
 
+lines = [];
+
 with open(root+"/IDNT.c", "r") as src:
-  while(1):
+  lines=src.readlines();
 
-    line=src.readline();
+for line in lines:
 
-    if(not len(line)):
-      break;
+  line=line.lstrip(' ').rstrip('\n').rstrip(' ');
 
-    elif(line[0:2]=="//"):
-      s=s+line; n_nl=1; continue;
+  if(not len(line)):
+    s=s+'\n';
+    continue;
 
-    lvl_dw = len([br for br in line if br=='}']);
-    lvl_up = len([br for br in line if br=='{']);
+  if(line[0:2]=="//"):
+    s=s+line+('\n' if line[-1]!='\n' else '');
+    n_nl=1; continue;
 
-    if(lvl_up!=lvl_dw):
-      lvl -= lvl_dw;
+  lvl_dw = len([br for br in line if br=='}']);
+  lvl_up = len([br for br in line if br=='{']);
 
-    indent = " "*(i_wid*lvl);
+  if(lvl_up!=lvl_dw):
+    lvl -= lvl_dw;
 
-#    ---     ---     ---     ---     ---
-
-    app_com="";
-    if("//" in line):
-      bits=line.split("//");
-      com   = "".join(b for b in bits[1:]);
+  indent = " "*(i_wid*lvl);
 
 #    ---     ---     ---     ---     ---
 
-      if(not len(bits[0])): #:YESCOM;>
-        s=s+com_fill(com);  #:NOCODE;>
-        continue;
-
-      bits[0]=bits[0].lstrip(' ').rstrip(' ');
-      bits[0]=bits[0].lstrip('\n').rstrip('\n');
-
-      if((len(indent)+len(bits[0])<=l_mid)):
-
-        app_com=com_fill(com.lstrip(' ').rstrip('\n'));
-
-        line=cfa_fill(bits[0]);
-
-        """
-        line=cde_fill(      #:YESCODE;>
-              bits[0]       \
-                            \
-             +(' '          \
-                            \
-             *(l_mid-len(   \
-                bits[0]     \
-              )             \
-                            \
-               -len(indent) \
-              ))            \
-             ) +app_com
-        """
-
-      else:                 #:FULINE;>
-        s=s+com_fill(com);
-        line=bits[0];
+  app_com="";
+  if("//" in line):
+    bits  = line.split("//");
+    com   = "".join(b for b in bits[1:]);
+    com   = com.rstrip('\n').rstrip(' ');
+    com   = com.lstrip(' ');
 
 #    ---     ---     ---     ---     ---
 
-    else:                   #:NOCOM;>
-
-      line   = indent+line+app_com+"\n";
-      line   = cde_fill(line);
-
-#    ---     ---     ---     ---     ---
-
-    if(not len(line)):
+    if(not len(bits[0])):   #:YESCOM;>
+      s=s+com_fill(com);    #:NOCODE;>
       continue;
 
-    if(n_nl):
-      indent=indent;
-      n_nl=0;
+    bits[0]=bits[0].lstrip(' ').rstrip('\n');
+    bits[0]=bits[0].rstrip(' ');
 
-    line   = (indent+line+app_com).rstrip('\n'); #+"\n";
+    com=com_fill(com); i=0;
+    com=com.split('\n');
+
+    for sub in com:
+      sub=sub.lstrip(' ').rstrip(' ');
+      com[i]=com[i].rstrip(' ');
+
+      if(len(sub)):
+        com[i]=(' '*l_mid)+sub;
+
+      i+=1;
+
+    com=[sub for sub in com if len(sub)];
+
+    if(not len(com)):
+      line=bits[0];
+
+    elif((len(indent)+len(bits[0])<=l_mid)):
+      com[0]=com[0].lstrip(' ');
+      app_com=('\n'.join(com)+'\n');
+
+      line=line[:l_mid-len(indent)];
+      line=cfa_fill(bits[0]);
+      if("stack" in app_com):
+        print(line+app_com);
+
+    else:                   #:FULINE;>
+      s=s+('\n'.join(com)+'\n');
+      line=bits[0];
 
 #    ---     ---     ---     ---     ---
 
-    if(len(line)>l_wid):
-      for pos in range(l_wid,0,-1):
-        if(line[pos] in llb):
-
-          if(line[pos]==' '):
-            line = line[:pos]+'\n' \
-                 + indent+(line[pos:].lstrip(' '));
-
-          else:
-            line = line[:pos]+'\n'+indent+line[pos:];
-
-          break;
+  else:                     #:NOCOM;>
+    line   = cde_fill(line);
+    line   = line[:-1].rstrip(' ')+'\n';
 
 #    ---     ---     ---     ---     ---
 
-    if(lvl_up!=lvl_dw):
-      lvl += lvl_up;
+  if(not len(line)):
+    continue;
 
-    s      = s+line;
+  if(n_nl):
+    indent = '\n'+indent; n_nl=0;
+
+  line     = (indent+line+app_com);
+
+#    ---     ---     ---     ---     ---
+
+  #if(len(line)>l_wid):
+  #  for pos in range(l_wid,0,-1):
+  #    if(line[pos] in llb):
+  #
+  #      if(line[pos]==' '):
+  #        line = line[:pos]+'\n' \
+  #             + indent+(line[pos:].lstrip(' '));
+  #
+  #      else:
+  #        line = line[:pos]+'\n'+indent+line[pos:];
+  #
+  #      break;
+
+#    ---     ---     ---     ---     ---
+
+  if(lvl_up!=lvl_dw):
+    lvl += lvl_up;
+
+  s=s+line;
 
 #    ---     ---     ---     ---     ---
 
 with open(root+"/IDNT.c", "w+") as dst:
   dst.write(s);
 
-print(s);
+#print(s);
 
 #os.system("indent -hnl -sob -di2 -bls -bad -bbo -bap -bbb -d2 -ci0 -lp -ip0 -i2 -c0 -lc56 -cd0 -cp0 -bli0 -cli0 -nsaf -nsai -nsaw -npsl -nfca -nfc1 -ntac -nsc -ntac -nv -pal -nut -l56 avtomat/idntd.c");
