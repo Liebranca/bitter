@@ -18,7 +18,11 @@ l_wid   = 56;
 l_mid   = 28;
 c_len   = (l_wid-l_mid)-3;
 
-llb     = [' ', ',', '(', ';' ];
+llb     = [',', '(', ')', ';', '{', '}', '+' \
+           '-', '/', '&', '!', '|', '%', '^' \
+           '>', '<', '=',                    ];
+
+lbrk    = [' ', ',', '(', ')', ';', '{', '}' ];
 
 bx_cap  = "//"+('*'*(l_mid-2))+"\n";
 bx_fld  = "//"+(' '*(l_mid-3))+"*\n";
@@ -162,7 +166,7 @@ def docbox(fname):
 docbox("idntest.c");
 import os;
 
-#os.system("indent -nhnl -sob -di2 -bls -bad -bbo -bap -bbb -d2 -ci0 -lp -ip0 -i2 -c0 -lc56 -cd0 -cp0 -bli0 -cli0 -nsaf -nsai -nsaw -npsl -nfca -nfc1 -ntac -nsc -ntac -nv -pal -nut -l56 avtomat/IDNT.c -o avtomat/IDNT.c");
+os.system("indent -nhnl -sob -di2 -bad -bbo -bap -bbb -br -brf -brs -d2 -ci0 -lp -ip0 -i2 -c0 -lc56 -cd0 -cp0 -bli0 -cli0 -nsaf -nsai -nsaw -npsl -nfca -nfc1 -ntac -nsc -ntac -nv -pal -nut -l56 avtomat/IDNT.c -o avtomat/IDNT.c");
 
 #    ---     ---     ---     ---     ---
 
@@ -170,21 +174,34 @@ s     = "";
 n_nl  = 0;
 
 lines = [];
+cs_lv = 0;
+cs_nx = 0;
 
 with open(root+"/IDNT.c", "r") as src:
   lines=src.readlines();
 
 for line in lines:
 
-  line=line.lstrip(' ').rstrip('\n').rstrip(' ');
+  line=line.strip();
 
   if(not len(line)):
     s=s+'\n';
     continue;
 
-  if(line[0:2]=="//"):
+  if(line[0:8]=="//   ---" \
+
+  or line[0:3]=="//*"      \
+
+  or (line[0:2]=="//"      \
+    and line[-1]=="*")     ):
+
     s=s+line+('\n' if line[-1]!='\n' else '');
     n_nl=1; continue;
+
+#    ---     ---     ---     ---     ---
+
+  if(line[0:4]=="case"):
+    cs_nx=1;
 
   lvl_dw = len([br for br in line if br=='}']);
   lvl_up = len([br for br in line if br=='{']);
@@ -198,19 +215,23 @@ for line in lines:
 
   app_com="";
   if("//" in line):
-    bits  = line.split("//");
-    com   = "".join(b for b in bits[1:]);
-    com   = com.rstrip('\n').rstrip(' ');
-    com   = com.lstrip(' ');
+
+    bits    = line.split("//");
+    com     = "".join(b for b in bits[1:]);
+    com     = com.rstrip('\n').rstrip(' ');
+    com     = com.lstrip(' ');
+
+    bits[0] = bits[0].lstrip(' ').rstrip('\n');
+    bits[0] = bits[0].rstrip(' ');
+
+    line    = bits[0];
+
+    for ch in llb:
+      l2=line.split(ch);
+      l2=[sub.strip() for sub in l2 if len(l2)];
+      line=ch.join(l2);
 
 #    ---     ---     ---     ---     ---
-
-    if(not len(bits[0])):   #:YESCOM;>
-      s=s+com_fill(com);    #:NOCODE;>
-      continue;
-
-    bits[0]=bits[0].lstrip(' ').rstrip('\n');
-    bits[0]=bits[0].rstrip(' ');
 
     com=com_fill(com); i=0;
     com=com.split('\n');
@@ -226,25 +247,35 @@ for line in lines:
 
     com=[sub for sub in com if len(sub)];
 
-    if(not len(com)):
-      line=bits[0];
+#    ---     ---     ---     ---     ---
 
-    elif((len(indent)+len(bits[0])<=l_mid)):
+    if(not len(line)):      #:YESCOM;>
+                            #:NOCODE;>
+      s=s+('\n'.join(com)+'\n');
+      continue;
+
+    if(not len(com)):
+      pass;
+
+    elif((len(indent)+len(line)<=l_mid)):
       com[0]=com[0].lstrip(' ');
       app_com=('\n'.join(com)+'\n');
 
+      line=cfa_fill(line);
       line=line[:l_mid-len(indent)];
-      line=cfa_fill(bits[0]);
-      if("stack" in app_com):
-        print(line+app_com);
 
     else:                   #:FULINE;>
       s=s+('\n'.join(com)+'\n');
-      line=bits[0];
 
 #    ---     ---     ---     ---     ---
 
   else:                     #:NOCOM;>
+
+    for ch in llb:
+      l2=line.split(ch);
+      l2=[sub.strip() for sub in l2 if len(l2)];
+      line=ch.join(l2);
+
     line   = cde_fill(line);
     line   = line[:-1].rstrip(' ')+'\n';
 
@@ -256,27 +287,15 @@ for line in lines:
   if(n_nl):
     indent = '\n'+indent; n_nl=0;
 
-  line     = (indent+line+app_com);
-
 #    ---     ---     ---     ---     ---
 
-  #if(len(line)>l_wid):
-  #  for pos in range(l_wid,0,-1):
-  #    if(line[pos] in llb):
-  #
-  #      if(line[pos]==' '):
-  #        line = line[:pos]+'\n' \
-  #             + indent+(line[pos:].lstrip(' '));
-  #
-  #      else:
-  #        line = line[:pos]+'\n'+indent+line[pos:];
-  #
-  #      break;
-
-#    ---     ---     ---     ---     ---
+  line=(indent+line+app_com);
 
   if(lvl_up!=lvl_dw):
     lvl += lvl_up;
+
+  if(line[-1]!='\n'):
+    line=line+'\n';
 
   s=s+line;
 
@@ -285,6 +304,4 @@ for line in lines:
 with open(root+"/IDNT.c", "w+") as dst:
   dst.write(s);
 
-#print(s);
-
-#os.system("indent -hnl -sob -di2 -bls -bad -bbo -bap -bbb -d2 -ci0 -lp -ip0 -i2 -c0 -lc56 -cd0 -cp0 -bli0 -cli0 -nsaf -nsai -nsaw -npsl -nfca -nfc1 -ntac -nsc -ntac -nv -pal -nut -l56 avtomat/idntd.c");
+print(s);
