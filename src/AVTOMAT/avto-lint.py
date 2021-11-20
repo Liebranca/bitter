@@ -18,11 +18,16 @@ l_wid   = 56;
 l_mid   = 28;
 c_len   = (l_wid-l_mid)-3;
 
-llb     = [',', '(', ')', ';', '{', '}', '+' \
-           '-', '/', '&', '!', '|', '%', '^' \
-           '>', '<', '=',                    ];
+llb     = [');', '};', '];', '!=', '|=', '&=',
+           '++', '--', '+=', '*=', '/=', '%=',
+           '||', '&&', '^=', '~' , '!(','&=~',
+           '->', '>=', '<=', '<<', '>>', ' ' ,
+           ',' , '(' , ')' , ';' , '{' , '}' ,
+           '-' , '/' , '&' , '!' , '|' , '%' ,
+           '+' , '^' , '>' , '<' , '=' , '*)'  ];
 
-lbrk    = [' ', ',', '(', ')', ';', '{', '}' ];
+lbrk    = [' ' , ',' , '(' , ')' , ';' , '{' ,
+           '}'                                 ];
 
 bx_cap  = "//"+('*'*(l_mid-2))+"\n";
 bx_fld  = "//"+(' '*(l_mid-3))+"*\n";
@@ -80,6 +85,57 @@ def cfb_fill(s):
   return __fill(s, cde_fb,  0);
 
 #    ---     ---     ---     ---     ---
+
+def pickllb(s):
+  c='';w='';l=len(s);i=0;
+  llb_cpy=[];
+
+  for c in s:
+
+    if(i<l-2):
+      w=c+s[i+1];
+
+    else:
+      w='';
+
+    if(w in llb):
+      llb_cpy.append(w);
+
+    elif(c in llb):
+      llb_cpy.append(c);
+
+    i+=1;
+
+  return llb_cpy;
+
+def despace(line):
+
+  llb_cpy=pickllb(line);
+  for ch in llb_cpy:
+    l2=line.split(ch);
+    ch=ch if ch[-1]!='{' else ch+' ';
+
+    if(ch==' '):
+      l2=[sub.strip() for sub in l2 if len(sub)];
+
+    else:
+      l2=[sub.strip() for sub in l2];
+
+    old=line;
+    line=ch.join(l2);
+    if(('}' in old) and ('}' not in line)):
+      print(old);
+
+  i=0;
+  for ch in [')(', '){', '*)']:
+    l2=line.split(ch);
+    l2=[sub for sub in l2];
+    ch=ch[0]+' '+ch[1] if i<2 else ch+' ';
+    line=ch.join(l2);
+
+    i+=1;
+
+  return line.rstrip();
 
 def docbox(fname):
 
@@ -166,7 +222,7 @@ def docbox(fname):
 docbox("idntest.c");
 import os;
 
-os.system("indent -nhnl -sob -di2 -bad -bbo -bap -bbb -br -brf -brs -d2 -ci0 -lp -ip0 -i2 -c0 -lc56 -cd0 -cp0 -bli0 -cli0 -nsaf -nsai -nsaw -npsl -nfca -nfc1 -ntac -nsc -ntac -nv -pal -nut -l56 avtomat/IDNT.c -o avtomat/IDNT.c");
+#os.system("indent -nhnl -sob -di2 -bad -bbo -bap -bbb -br -brf -brs -d2 -ci0 -lp -ip0 -i2 -c0 -lc56 -cd0 -cp0 -bli0 -cli0 -nsaf -nsai -nsaw -npsl -nfca -nfc1 -ntac -nsc -ntac -nv -pal -nut -l56 avtomat/IDNT.c -o avtomat/IDNT.c");
 
 #    ---     ---     ---     ---     ---
 
@@ -174,8 +230,9 @@ s     = "";
 n_nl  = 0;
 
 lines = [];
-cs_lv = 0;
 cs_nx = 0;
+cs_lv = 0;
+cs_sw = 0;
 
 with open(root+"/IDNT.c", "r") as src:
   lines=src.readlines();
@@ -185,8 +242,10 @@ for line in lines:
   line=line.strip();
 
   if(not len(line)):
-    s=s+'\n';
-    continue;
+    s=s+('\n' if not n_nl else '');
+    n_nl=1; continue;
+
+  n_nl=0;
 
   if(line[0:8]=="//   ---" \
 
@@ -194,17 +253,25 @@ for line in lines:
 
   or (line[0:2]=="//"      \
     and line[-1]=="*")     ):
-
     s=s+line+('\n' if line[-1]!='\n' else '');
-    n_nl=1; continue;
+    continue;
 
 #    ---     ---     ---     ---     ---
 
-  if(line[0:4]=="case"):
-    cs_nx=1;
+  if(line[0:6]=="switch"):
+    cs_sw=lvl+1;
+
+  elif(lvl<=cs_sw and cs_sw):
+    cs_sw=0; cs_nx=0;
+
+  if(cs_nx):
+    cs_lv=((line[0:5]!="case ")!=0)*(cs_sw!=0);
 
   lvl_dw = len([br for br in line if br=='}']);
   lvl_up = len([br for br in line if br=='{']);
+
+  if(line[0:5]=="case "):
+    cs_nx=1;
 
   if(lvl_up!=lvl_dw):
     lvl -= lvl_dw;
@@ -224,12 +291,7 @@ for line in lines:
     bits[0] = bits[0].lstrip(' ').rstrip('\n');
     bits[0] = bits[0].rstrip(' ');
 
-    line    = bits[0];
-
-    for ch in llb:
-      l2=line.split(ch);
-      l2=[sub.strip() for sub in l2 if len(l2)];
-      line=ch.join(l2);
+    line    = despace(bits[0]);
 
 #    ---     ---     ---     ---     ---
 
@@ -271,21 +333,14 @@ for line in lines:
 
   else:                     #:NOCOM;>
 
-    for ch in llb:
-      l2=line.split(ch);
-      l2=[sub.strip() for sub in l2 if len(l2)];
-      line=ch.join(l2);
-
-    line   = cde_fill(line);
+    line   = cde_fill(despace(line));
     line   = line[:-1].rstrip(' ')+'\n';
 
 #    ---     ---     ---     ---     ---
 
-  if(not len(line)):
-    continue;
-
-  if(n_nl):
-    indent = '\n'+indent; n_nl=0;
+  if(len(line.strip())<=1):
+    if(not len(line) and line not in llb):
+      continue;
 
 #    ---     ---     ---     ---     ---
 
@@ -297,6 +352,11 @@ for line in lines:
   if(line[-1]!='\n'):
     line=line+'\n';
 
+  elif(line==indent+'\n'\
+  or   line==indent     \
+  or   line=='\n'       ):
+    line='';
+
   s=s+line;
 
 #    ---     ---     ---     ---     ---
@@ -304,4 +364,4 @@ for line in lines:
 with open(root+"/IDNT.c", "w+") as dst:
   dst.write(s);
 
-print(s);
+#print(s);
