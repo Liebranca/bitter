@@ -89,27 +89,27 @@ def cfb_fill(s):
 
 def pickllb(s):
   c='';w='';l=len(s);i=0;
-  llb_cpy=[];
+  hp=[];lp=[];
 
   for c in s:
 
-    if(i<l-2):
+    if(i<l-1):
       w=c+s[i+1];
 
     else:
       w='';
 
     if(w in llb):
-      if(w not in llb_cpy):
-        llb_cpy.append(w);
+      if(w not in hp):
+        hp.append(w);
 
     elif(c in llb):
-      if(c not in llb_cpy):
-        llb_cpy.append(c);
+      if(c not in lp):
+        lp.append(c);
 
     i+=1;
 
-  return llb_cpy;
+  return hp+lp;
 
 #    ---     ---     ---     ---     ---
 
@@ -132,46 +132,56 @@ def sepcstr(s):
 
 #    ---     ---     ---     ---     ---
 
+def llbsplit(l1):
+
+  llb_cpy=pickllb(l1);
+  for ch in llb_cpy:
+    l2=l1.split(ch);
+    ar='' if ch not in '{' else ' ';
+    al='' if ch not in '}' else ' ';
+
+    if(ch==' '):
+      l2=[sub.strip() for sub in l2 if len(sub)];
+
+    else:
+      l2=[sub.strip() for sub in l2];
+
+    ch=ar+ch+al;
+    l1=ch.join(l2);
+
+#    ---     ---     ---     ---     ---
+
+  j=0;
+  for ch in [')(', '){', '*)']:
+    l2=l1.split(ch);
+    l2=[sub for sub in l2];
+    ch=ch[0]+' '+ch[1] if j<2 else ch+' ';
+    l1=ch.join(l2);
+
+    j+=1;
+
+  return l1;
+
+#    ---     ---     ---     ---     ---
+
 def despace(line):
 
+  hasstr=0;
   if(line.startswith('#')):
     return line;
 
   strseg=sepcstr(line);
   if(not len(strseg)):
-    strseg=[len(line), len(line)];
+    strseg=[len(line)];
+
+  else:
+    hasstr=1;
+
+#    ---     ---     ---     ---     ---
 
   start=0;result="";
   for i in range(len(strseg)):
-    end=strseg[i];l1=line[start:end];
-
-#    ---     ---     ---     ---     ---
-
-    llb_cpy=pickllb(line);
-    for ch in llb_cpy:
-      l2=l1.split(ch);
-      ar='' if ch not in '{' else ' ';
-      al='' if ch not in '}' else ' ';
-
-      if(ch==' '):
-        l2=[sub.strip() for sub in l2 if len(sub)];
-
-      else:
-        l2=[sub.strip() for sub in l2];
-
-      ch=ar+ch+al;
-      l1=ch.join(l2);
-
-#    ---     ---     ---     ---     ---
-
-    j=0;
-    for ch in [')(', '){', '*)']:
-      l2=l1.split(ch);
-      l2=[sub for sub in l2];
-      ch=ch[0]+' '+ch[1] if j<2 else ch+' ';
-      l1=ch.join(l2);
-
-      j+=1;
+    end=strseg[i];l1=llbsplit(line[start:end]);
 
     if((i+1)<len(strseg)):
       start=strseg[i+1];
@@ -179,7 +189,12 @@ def despace(line):
     else:
       start=len(line);
 
-    result=result+l1+line[end:start];
+    sub=line[end:start];
+    if(len(sub) and sub[0]!='"'):
+      result=result+l1+llbsplit(sub);
+
+    else:
+      result=result+l1+line[end:start];
 
   return result.rstrip();
 
@@ -307,24 +322,25 @@ for line in lines:
 #    ---     ---     ---     ---     ---
 
   if(line[0:6]=="switch"):
-    cs_sw=lvl+1;
+    cs_sw=lvl;
 
-  elif(lvl<=cs_sw and cs_sw):
-    cs_sw=0; cs_nx=0;
+  elif(line[0:5]=="case "   \
+  or   line[0:8]=='default '):
+    cs_nx=0;
 
-  if(cs_nx):
-    cs_lv=((line[0:5]!="case ")!=0)*(cs_sw!=0);
+  elif(cs_sw):
+    cs_nx=1;
+
+  curly_beg='}' in line[0:2];
 
   lvl_dw = len([br for br in line if br=='}']);
   lvl_up = len([br for br in line if br=='{']);
 
-  if(line[0:5]=="case "):
-    cs_nx=1;
-
-  if(lvl_up!=lvl_dw):
+  if( (lvl_up!=lvl_dw) \
+  and (curly_beg)      ):
     lvl -= lvl_dw;
 
-  indent = " "*(i_wid*lvl);
+  indent = " "*(i_wid*(lvl+cs_nx));
 
 #    ---     ---     ---     ---     ---
 
@@ -392,10 +408,44 @@ for line in lines:
 
 #    ---     ---     ---     ---     ---
 
-  line=(indent+line+app_com);
+  curly_end='';
 
   if(lvl_up!=lvl_dw):
     lvl += lvl_up;
+
+    if(not curly_beg):
+      lvl -= lvl_dw;
+
+#    ---     ---     ---     ---     ---
+
+      frun='\n';
+      while('}' in line[-3:]):
+        if(lvl_up): break;
+
+        if(line[-3:-1]=='};'):
+          curly_end=curly_end+'};';
+          line=line[:-3]+'\n'+frun;
+          frun='';
+
+        elif(line[-2]=='}'):
+          curly_end=curly_end+'}';
+          line=line[:-2]+'\n'+frun;
+          frun='';
+
+        else:
+          break;
+
+#    ---     ---     ---     ---     ---
+
+  if(cs_sw and (  line[0:5]=="case "   \
+               or line[0:8]=='default ')):
+
+    cs_nx=-1;
+
+  if(lvl<=cs_sw and cs_sw):
+    cs_sw=0;cs_nx=0;
+
+  line=(indent+line+app_com);
 
   if(line[-1]!='\n'):
     line=line+'\n';
@@ -405,7 +455,7 @@ for line in lines:
   or   line=='\n'       ):
     line='';
 
-  s=s+line;
+  s=s+line+curly_end;
 
 #    ---     ---     ---     ---     ---
 
