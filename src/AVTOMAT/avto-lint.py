@@ -22,6 +22,7 @@ llb     = [');', '};', '];', '!=', '|=', '&=',
            '++', '--', '+=', '*=', '/=', '%=',
            '||', '&&', '^=', '~' , '!(','&=~',
            '->', '>=', '<=', '<<', '>>', ' ' ,
+           '-=', 
            ',' , '(' , ')' , ';' , '{' , '}' ,
            '-' , '/' , '&' , '!' , '|' , '%' ,
            '+' , '^' , '>' , '<' , '=' , '*)'  ];
@@ -99,43 +100,90 @@ def pickllb(s):
       w='';
 
     if(w in llb):
-      llb_cpy.append(w);
+      if(w not in llb_cpy):
+        llb_cpy.append(w);
 
     elif(c in llb):
-      llb_cpy.append(c);
+      if(c not in llb_cpy):
+        llb_cpy.append(c);
 
     i+=1;
 
   return llb_cpy;
 
-def despace(line):
+#    ---     ---     ---     ---     ---
 
-  llb_cpy=pickllb(line);
-  for ch in llb_cpy:
-    l2=line.split(ch);
-    ch=ch if ch[-1]!='{' else ch+' ';
+def sepcstr(s):
+  pos=[];has=0;prev='';i=0;
 
-    if(ch==' '):
-      l2=[sub.strip() for sub in l2 if len(sub)];
+  for c in s:
+    if(c=='"' and prev!='\\'):
+      if(has):
+        pos.append(i+1);
+        has=0;
 
-    else:
-      l2=[sub.strip() for sub in l2];
-
-    old=line;
-    line=ch.join(l2);
-    if(('}' in old) and ('}' not in line)):
-      print(old);
-
-  i=0;
-  for ch in [')(', '){', '*)']:
-    l2=line.split(ch);
-    l2=[sub for sub in l2];
-    ch=ch[0]+' '+ch[1] if i<2 else ch+' ';
-    line=ch.join(l2);
+      else:
+        pos.append(i);
+        has=1;
 
     i+=1;
 
-  return line.rstrip();
+  return pos;
+
+#    ---     ---     ---     ---     ---
+
+def despace(line):
+
+  if(line.startswith('#')):
+    return line;
+
+  strseg=sepcstr(line);
+  if(not len(strseg)):
+    strseg=[len(line), len(line)];
+
+  start=0;result="";
+  for i in range(len(strseg)):
+    end=strseg[i];l1=line[start:end];
+
+#    ---     ---     ---     ---     ---
+
+    llb_cpy=pickllb(line);
+    for ch in llb_cpy:
+      l2=l1.split(ch);
+      ar='' if ch not in '{' else ' ';
+      al='' if ch not in '}' else ' ';
+
+      if(ch==' '):
+        l2=[sub.strip() for sub in l2 if len(sub)];
+
+      else:
+        l2=[sub.strip() for sub in l2];
+
+      ch=ar+ch+al;
+      l1=ch.join(l2);
+
+#    ---     ---     ---     ---     ---
+
+    j=0;
+    for ch in [')(', '){', '*)']:
+      l2=l1.split(ch);
+      l2=[sub for sub in l2];
+      ch=ch[0]+' '+ch[1] if j<2 else ch+' ';
+      l1=ch.join(l2);
+
+      j+=1;
+
+    if((i+1)<len(strseg)):
+      start=strseg[i+1];
+
+    else:
+      start=len(line);
+
+    result=result+l1+line[end:start];
+
+  return result.rstrip();
+
+#    ---     ---     ---     ---     ---
 
 def docbox(fname):
 
