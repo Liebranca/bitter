@@ -77,7 +77,11 @@ def bwfllb(s,fr):
 
 #    ---     ---     ---     ---     ---
 
-def __fillstrg(no_goto):
+no_goto=[[],0,0,0,0,0,0,0];
+
+def __fillstrg():
+
+  global no_goto;
   bx,l_start,pad,space,s,pos,base=no_goto;
 
   sub_cnt=1+int(len(s)/(space-1));
@@ -85,8 +89,6 @@ def __fillstrg(no_goto):
 
   bx.extend(c for c in base);
   pos=l_start;pad+=len(base);
-
-  spad=pad;
 
 #    ---     ---     ---     ---     ---
 
@@ -119,11 +121,14 @@ def __fillstrg(no_goto):
 
       bx.extend(c for c in base);
 
-  return [bx,l_start,pad,space,s,pos,base];
+  no_goto[2]=pad;
+  no_goto[5]=pos;
 
 #    ---     ---     ---     ---     ---
 
-def __fillcode(no_goto):
+def __fillcode():
+
+  global no_goto;
   bx,l_start,pad,space,s,pos,base=no_goto;
 
   for sub in s.split(' '):
@@ -141,7 +146,7 @@ def __fillcode(no_goto):
       if(len(sub)>=(space)):
         while(len(sub)>=(space)):
 
-          sub,nsub=bwfllb(sub,space-(pos-l_start));
+          sub,nsub=bwfllb(sub,space-pos);
 
           bx[pos+pad:space+pad]=(
             sub[:space-(pos-l_start)]
@@ -152,6 +157,8 @@ def __fillcode(no_goto):
           pad  += len(base);
 
           bx.extend(c for c in base);
+
+#    ---     ---     ---     ---     ---
 
         if(len(sub)):
           bx[pos+pad:pos+pad+len(sub)]=(
@@ -181,7 +188,8 @@ def __fillcode(no_goto):
     and  pos+pad<len(bx)):
       bx[pos+pad]=' ';pos+=1;
 
-  return [bx,l_start,pad,space,s,pos,base];
+  no_goto[2]=pad;
+  no_goto[5]=pos;
 
 #    ---     ---     ---     ---     ---
 
@@ -197,6 +205,7 @@ def __fill(s, base,pos=3,cap=4,trim=0):
   space   = len(base)-cap-l_start;
   s       = s.strip();
 
+  global no_goto;
   no_goto = [bx,l_start,pad,space,s,pos,base];
 
 #    ---     ---     ---     ---     ---
@@ -210,7 +219,7 @@ def __fill(s, base,pos=3,cap=4,trim=0):
   );
 
   if(not hasstr or len(s)<space):
-    no_goto=__fillcode(no_goto);
+    __fillcode();
 
 #    ---     ---     ---     ---     ---
 
@@ -227,10 +236,10 @@ def __fill(s, base,pos=3,cap=4,trim=0):
       cde_seg=s[beg_cde:end_cde];
       if(len(cde_seg)):
         no_goto[4]=cde_seg;
-        no_goto=__fillcode(no_goto);
+        __fillcode();
 
       no_goto[4]=s[beg_str:end_str];
-      no_goto=__fillstrg(no_goto);
+      __fillstrg();
 
 
       beg_cde=end_str;
@@ -242,7 +251,7 @@ def __fill(s, base,pos=3,cap=4,trim=0):
 
     if(len(cde_seg)):
       no_goto[4]=cde_seg;
-      no_goto=__fillcode(no_goto);
+      __fillcode();
 
     bx,l_start,pad,space,s,pos,base=no_goto;
 
@@ -331,6 +340,7 @@ def llbsplit(l1):
   llb_cpy=pickllb(l1);
   for ch in llb_cpy:
     l2=l1.split(ch);
+
     ar='' if ch not in '{' else ' ';
     al='' if ch not in '}' else ' ';
 
@@ -346,10 +356,18 @@ def llbsplit(l1):
 #    ---     ---     ---     ---     ---
 
   j=0;
-  for ch in [')(', '){', '*)']:
+  for ch in [')(', '){', '*)', '} ;']:
     l2=l1.split(ch);
     l2=[sub for sub in l2];
-    ch=ch[0]+' '+ch[1] if j<2 else ch+' ';
+    if(j<2):
+      ch=ch[0]+' '+ch[1]
+
+    elif(j==2):
+      ch=ch+' ';
+
+    else:
+      ch=ch[0]+ch[2];
+
     l1=ch.join(l2);
 
     j+=1;
@@ -477,11 +495,6 @@ def docbox(fname):
 #    ---     ---     ---     ---     ---
 
 docbox("idntest.c");
-import os;
-
-#os.system("indent -nhnl -sob -di2 -bad -bbo -bap -bbb -br -brf -brs -d2 -ci0 -lp -ip0 -i2 -c0 -lc56 -cd0 -cp0 -bli0 -cli0 -nsaf -nsai -nsaw -npsl -nfca -nfc1 -ntac -nsc -ntac -nv -pal -nut -l56 avtomat/IDNT.c -o avtomat/IDNT.c");
-
-#    ---     ---     ---     ---     ---
 
 s     = "";
 n_nl  = 0;
@@ -522,7 +535,7 @@ for line in lines:
     cs_nx=0;
 
   elif(cs_sw):
-    cs_nx=lvl<=cs_sw;
+    cs_nx=lvl<=cs_sw+1;
 
   curly_beg='}' in line[0:2];
 
@@ -611,7 +624,8 @@ for line in lines:
 
 #    ---     ---     ---     ---     ---
 
-      frun='\n';
+      frun='\n';            #:CURLY_END;>
+
       while('}' in line[-3:]):
         if(lvl_up): break;
 
