@@ -1,5 +1,5 @@
 #--------------------------o
-# AVTO-LINT                |
+# AVTO-FMAT                |
 # formats my shit          |
 #--------------------------o
 # LIBRE SOFTWARE           |
@@ -38,6 +38,45 @@ cde_fld = " "+(' '*(l_wid))+'\n';
 
 cde_fa  = cde_fld[:(l_mid)];
 cde_fb  = cde_fld[(l_mid):];
+
+#    ---     ---     ---     ---     ---
+
+class coldde:
+
+  cln = 1;
+  clw = 4;
+
+  @staticmethod
+  def test(line,seps,pad):
+
+    col_i  = 0;
+    row_i  = 0;
+    result = "";
+    row    = "";
+
+    for c in line:
+
+      row=row+c;
+      col_i=int(len(row)/coldde.clw);
+
+      if( col_i==coldde.cln
+      and c in seps):
+        result=result+(pad*seps[c])+row+'\n';
+        col_i=0;row_i+=1;row="";
+
+    for c in row:
+      if(c in seps):
+        result=result+(pad*seps[c])+row+'\n';
+
+    return result;
+
+print(
+  coldde.test(
+    "list=i,x,y,z,w,t,r,e,q,v,f;",
+    {',':1,';':1,'=':0},
+    '  '
+  )
+);
 
 #    ---     ---     ---     ---     ---
 
@@ -496,6 +535,9 @@ def docbox(fname):
 
 docbox("idntest.c");
 
+culsp = "//   ---     ---     ---     ---     ---";
+culsg = 0;
+
 s     = "";
 n_nl  = 0;
 
@@ -522,6 +564,16 @@ for line in lines:
 
   or (line[0:2]=="//"      \
     and line[-1]=="*")     ):
+
+    if(line[0:8]=="//   ---"):
+      line=line.replace(culsp,'').strip();
+      line=line.replace('// ', '');
+      line=' '+line if len(line) else '';
+      ln='#:'+hex(culsg).upper()+';>';
+      ln=ln[0:3]+'x'+ln[4:];
+
+      line=culsp+'\n// '+ln+line; culsg+=1;
+
     s=s+line+('\n' if line[-1]!='\n' else '');
     continue;
 
