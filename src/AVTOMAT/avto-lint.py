@@ -41,34 +41,228 @@ cde_fb  = cde_fld[(l_mid):];
 
 #    ---     ---     ---     ---     ---
 
-def __fill(s, base, pos=3):
+def mkline(s,indent,pad):
+  result="";i=0;subs=s.split('\n');
+  for sub in subs:
 
-  ned     = 1+(int(len(s)/len(base)));
+    nl='\n' if i<(len(subs)-1) else '';
+
+    if(i):
+      result=result+indent+pad+sub+nl;
+
+    else:
+      result=result+indent+sub+nl;
+
+    i+=1;
+
+  return result;
+
+def bwfllb(s,fr):
+  c='';w='';
+  for i in range(len(s)-(len(s)-fr),0,-1):
+
+    if(i+1>len(s)-1):
+      continue;
+
+    c=s[i+1];
+    w=s[i]+c;
+
+    if(w in llb):
+      return (s[:i],s[i:]);
+
+    elif(c in llb):
+      return (s[:i+1],s[i+1:]);
+
+  return 0;
+
+#    ---     ---     ---     ---     ---
+
+def __fillstrg(no_goto):
+  bx,l_start,pad,space,s,pos,base=no_goto;
+
+  sub_cnt=1+int(len(s)/(space-1));
+  sub_pos=0;
+
+  bx.extend(c for c in base);
+  pos=l_start;pad+=len(base);
+
+  spad=pad;
+
+#    ---     ---     ---     ---     ---
+
+  for i in range(sub_cnt):
+
+    sub_end=((space-1) if len(s[sub_pos:])>=space
+                       else len(s[sub_pos:]));
+
+    sub=(
+
+      ('"' if i else '')
+      +s[sub_pos:sub_pos+sub_end]
+      +('"' if sub_end!=len(s[sub_pos:]) else '')
+
+    );
+
+    if(sub=='"'):
+      break;
+
+#    ---     ---     ---     ---     ---
+
+    sub_pos+=sub_end;
+    bx[pos+pad:pad+space]=sub;
+
+    pad+=len(base);
+
+    if(sub_end==(space-1) and i<(sub_cnt-1)):
+      if(len(s[sub_pos:])<1):
+        break;
+
+      bx.extend(c for c in base);
+
+  return [bx,l_start,pad,space,s,pos,base];
+
+#    ---     ---     ---     ---     ---
+
+def __fillcode(no_goto):
+  bx,l_start,pad,space,s,pos,base=no_goto;
+
+  for sub in s.split(' '):
+
+    if(pos==l_start):
+      if(not len(sub)):
+        continue;
+
+      bx.extend(c for c in base);
+
+#    ---     ---     ---     ---     ---
+
+    if(len(sub)>=(space-pos)):
+
+      if(len(sub)>=(space)):
+        while(len(sub)>=(space)):
+
+          sub,nsub=bwfllb(sub,space-(pos-l_start));
+
+          bx[pos+pad:space+pad]=(
+            sub[:space-(pos-l_start)]
+
+          );sub = nsub;
+
+          pos   = l_start;
+          pad  += len(base);
+
+          bx.extend(c for c in base);
+
+        if(len(sub)):
+          bx[pos+pad:pos+pad+len(sub)]=(
+            sub[:]
+
+          );pos+=len(sub);sub='';
+
+#    ---     ---     ---     ---     ---
+
+      else:
+        bx.extend(c for c in base);
+        pad += len(base);
+        bx[l_start+pad:l_start+pad+len(sub)]=sub[:];
+
+        pos  = l_start+len(sub);
+
+    else:
+      bx[pos+pad:pos+pad+len(sub)]=sub[:];
+      pos+=len(sub);
+
+#    ---     ---     ---     ---     ---
+
+    if(pos==space):
+      pos=l_start;pad+=len(base);
+
+    elif(pos>l_start and bx[pos+pad-1]!=' '
+    and  pos+pad<len(bx)):
+      bx[pos+pad]=' ';pos+=1;
+
+  return [bx,l_start,pad,space,s,pos,base];
+
+#    ---     ---     ---     ---     ---
+
+def __fill(s, base,pos=3,cap=4,trim=0):
+
+  if(not len(s)): return '';
+
   bx      = [];
 
   l_start = pos;
   pad     = 0;
 
-  space   = len(base)-pos;
+  space   = len(base)-cap-l_start;
+  s       = s.strip();
 
-  for c in s.lstrip().rstrip():
+  no_goto = [bx,l_start,pad,space,s,pos,base];
 
-    if(pos==l_start):
-      if(c==' ' or c=='\n'):
-        continue;
+#    ---     ---     ---     ---     ---
 
-      bx.extend(c for c in base);
+  strseg=sepcstr(s);
+  hasstr=(
+    len(strseg)
+    *(not (base==com_fld or base==lcm_fld))
+    *(s[0]!='#')
 
-    bx[pos+pad]=c; pos+=1;
-    if(pos==space):
-      pos=l_start; pad+=len(base);
+  );
 
-  return ''.join(c for c in bx);
+  if(not hasstr or len(s)<space):
+    no_goto=__fillcode(no_goto);
+
+#    ---     ---     ---     ---     ---
+
+  else:
+    beg_cde,end_cde=0,0;
+    beg_str,end_str=0,0;
+
+    for i in range(0,len(strseg),2):
+      beg_str=strseg[i]
+
+      end_str=strseg[i+1];
+      end_cde=beg_str;
+
+      cde_seg=s[beg_cde:end_cde];
+      if(len(cde_seg)):
+        no_goto[4]=cde_seg;
+        no_goto=__fillcode(no_goto);
+
+      no_goto[4]=s[beg_str:end_str];
+      no_goto=__fillstrg(no_goto);
+
+
+      beg_cde=end_str;
+
+#    ---     ---     ---     ---     ---
+
+    end_cde=len(s);
+    cde_seg=s[beg_cde:end_cde];
+
+    if(len(cde_seg)):
+      no_goto[4]=cde_seg;
+      no_goto=__fillcode(no_goto);
+
+    bx,l_start,pad,space,s,pos,base=no_goto;
+
+#    ---     ---     ---     ---     ---
+
+  st = ''.join(c for c in bx);
+
+  if(trim):
+    st=(
+      '\n'.join(sub.strip()
+      for sub in st.split('\n'))
+
+    );
+
+  return st;
 
 #    ---     ---     ---     ---     ---
 
 def bx_fill(s):
-  return __fill(s, bx_fld);
+  return __fill(s, bx_fld,cap=1);
 
 def com_fill(s):
   return __fill(s, com_fld);
@@ -76,11 +270,11 @@ def com_fill(s):
 def lcm_fill(s):
   return __fill(s, lcm_fld);
 
-def cde_fill(s):
-  return __fill(s, cde_fld, 0);
+def cde_fill(s,cap=4):
+  return __fill(s, cde_fld, 0, cap=cap, trim=1);
 
-def cfa_fill(s):
-  return __fill(s, cde_fa,  0);
+def cfa_fill(s,cap=1):
+  return __fill(s,cde_fa,0,cap=cap);
 
 def cfb_fill(s):
   return __fill(s, cde_fb,  0);
@@ -294,7 +488,6 @@ n_nl  = 0;
 
 lines = [];
 cs_nx = 0;
-cs_lv = 0;
 cs_sw = 0;
 
 with open(root+"/IDNT.c", "r") as src:
@@ -329,7 +522,7 @@ for line in lines:
     cs_nx=0;
 
   elif(cs_sw):
-    cs_nx=1;
+    cs_nx=lvl<=cs_sw;
 
   curly_beg='}' in line[0:2];
 
@@ -340,7 +533,7 @@ for line in lines:
   and (curly_beg)      ):
     lvl -= lvl_dw;
 
-  indent = " "*(i_wid*(lvl+cs_nx));
+  indent = ' '*(i_wid*(lvl+cs_nx));
 
 #    ---     ---     ---     ---     ---
 
@@ -387,7 +580,7 @@ for line in lines:
       com[0]=com[0].lstrip(' ');
       app_com=('\n'.join(com)+'\n');
 
-      line=cfa_fill(line);
+      line=cfa_fill(line,cap=1);
       line=line[:l_mid-len(indent)];
 
     else:                   #:FULINE;>
@@ -397,7 +590,7 @@ for line in lines:
 
   else:                     #:NOCOM;>
 
-    line   = cde_fill(despace(line));
+    line   = cde_fill(despace(line),cap=5+len(indent));
     line   = line[:-1].rstrip(' ')+'\n';
 
 #    ---     ---     ---     ---     ---
@@ -445,7 +638,13 @@ for line in lines:
   if(lvl<=cs_sw and cs_sw):
     cs_sw=0;cs_nx=0;
 
-  line=(indent+line+app_com);
+  line=mkline(              #:MKLINE;>
+    line,indent,
+    (' '*i_wid)
+
+  )+app_com;
+
+  line=line.rstrip();
 
   if(line[-1]!='\n'):
     line=line+'\n';
