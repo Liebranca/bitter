@@ -13,6 +13,133 @@
 # test that the formated file compiles!
 # gcc -I/cygdrive/d/lieb_git/kvr/src -I/cygdrive/d/lieb_git/kvr/src/mammoth -DKVR_DEBUG=1 -c avtomat/idnt.c -L/cygdrive/d/lieb_git/kvr/bin/x64 -lkvrnel -o avtomat/a.o
 
+
+#    ---     ---     ---     ---     ---
+
+class dtdde:
+
+  lvl   = 0;
+  chops = [
+    ',','-','+','|','&',
+    '/','*','%','^','<',
+    '>','='
+
+  ];
+
+  @staticmethod
+  def gi():
+    return '  '*dtdde.lvl;
+
+  @staticmethod
+  def detchain(s):
+
+    i=0;
+    for c in s:
+
+      next='';
+      if(i<(len(s)-1)):
+        next=s[i+1];
+
+      if( c in dtdde.chops
+      and next.isalnum()):
+        return 1;
+
+      if(c==')'):
+        break;
+
+      i+=1;
+
+    return 0;
+
+#    ---     ---     ---     ---     ---
+
+  @staticmethod
+  def format(s):
+
+    ff_write   = 0x01;
+    ff_newline = 0x02;
+    ff_indent  = 0x04;
+
+    flush  = 0 ;last   = '';next ='';i=0;
+    result = "";indent = "";row  ="";
+    chain  = 0 ;
+
+#    ---     ---     ---     ---     ---
+
+    for c in s:
+
+      next='';
+      if(i<(len(s)-1)):
+        next=s[i+1];
+
+      row=row+c;
+
+#    ---     ---     ---     ---     ---
+
+      if(c==';'):
+        flush|=ff_write;
+
+      elif(c=='\n'):
+        flush|=ff_write|ff_indent;
+
+#    ---     ---     ---     ---     ---
+
+      elif(c in '{('):
+
+        if(c=='('):
+          chain+=dtdde.detchain(s[i:]);
+
+        if(chain or c=='{'):
+          dtdde.lvl+=1;
+          flush|=(
+            ff_write
+           |ff_indent
+           |ff_newline
+
+          );
+
+#    ---     ---     ---     ---     ---
+
+      elif(c=='}' or (c==')' and chain)):
+        dtdde.lvl-=1;chain=chain-(c==')');
+        row=(
+          row[:-1]
+         +('\n'*(chain==0))
+         +('\n'*(last!=c))
+         +dtdde.gi()+c
+
+        );flush|=ff_write;
+
+#    ---     ---     ---     ---     ---
+
+      if(flush&ff_write):
+        result=result+row;
+        row=(
+
+           ('\n'*((flush&ff_newline)!=0))
+          +( dtdde.gi()*((flush&ff_indent)!=0) )
+
+        );flush=0;
+
+      if(ord(c)>0x20):
+        last=c;
+
+      i+=1;
+
+    print(result);
+
+#    ---     ---     ---     ---     ---
+
+dtdde.format(
+"""
+if c {then y {do_stuff(arg1,arg2);x++;} else {do_not();}};ret DONE;
+
+"""
+
+);
+
+exit();
+
 root    = "/".join((__file__.split("/"))[:-1]);
 
 lvl     = 0;
