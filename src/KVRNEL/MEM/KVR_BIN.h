@@ -175,6 +175,10 @@ int   BIN2BIN (uint size       );           // write size bytes from src to dst
         fseek(bin->file, 0, SEEK_CUR); fseek(bin->file, offset, SEEK_CUR);                   \
         rb=fread(buff, sizeof(type), count, bin->file); fseek(bin->file, 0, SEEK_CUR)
 
+    #define PBINREAD(bin, rb, type, count, buff) { rb = count;                               \
+        fread(buff, sizeof(type), count, bin->file); if(rb!=count && !feof(bin->file)) { ; } \
+        rb *= sizeof(type);                                                                 }
+
     #define BINSIG(bin, sig) STBADSIG(CMPSIG(&bin->sign, &sig));
 
     #define BINREMOVE(bin) RMBIN(bin)

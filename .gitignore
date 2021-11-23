@@ -29,3 +29,4 @@ rprules.txt
 data/font/*
 src/AVTOMAT/IDNT.c
 src/AVTOMAT/idntest.c
+*.o

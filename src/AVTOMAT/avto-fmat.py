@@ -10,6 +10,9 @@
 # lyeb,(=)                 |
 #--------------------------o
 
+# test that the formated file compiles!
+# gcc -I/cygdrive/d/lieb_git/kvr/src -I/cygdrive/d/lieb_git/kvr/src/mammoth -DKVR_DEBUG=1 -c avtomat/idnt.c -L/cygdrive/d/lieb_git/kvr/bin/x64 -lkvrnel -o avtomat/a.o
+
 root    = "/".join((__file__.split("/"))[:-1]);
 
 lvl     = 0;
@@ -27,8 +30,14 @@ llb     = [');', '};', '];', '!=', '|=', '&=',
            '-' , '/' , '&' , '!' , '|' , '%' ,
            '+' , '^' , '>' , '<' , '=' , '*)'  ];
 
-lbrk    = [' ' , ',' , '(' , ')' , ';' , '{' ,
-           '}'                                 ];
+lbrk    = [');', '};', '];', '!=', '|=', '&=',
+           '++', '--', '+=', '*=', '/=', '%=',
+           '||', '&&', '^=', '~' , '!(','&=~',
+           '>=', '<=', '<<', '>>', ' ' ,
+           '-=', 
+           ',' , '(' , ')' , ';' , '{' , '}' ,
+           '/' , '&' , '!' , '|' , '%' ,
+           '+' , '^' , '=' , '*)'              ];
 
 bx_cap  = "//"+('*'*(l_mid-2))+"\n";
 bx_fld  = "//"+(' '*(l_mid-3))+"*\n";
@@ -46,6 +55,8 @@ class coldde:
   cln = 1;
   clw = 4;
 
+#    ---     ---     ---     ---     ---
+
   @staticmethod
   def test(line,seps,pad):
 
@@ -53,6 +64,8 @@ class coldde:
     row_i  = 0;
     result = "";
     row    = "";
+
+#    ---     ---     ---     ---     ---
 
     for c in line:
 
@@ -64,19 +77,13 @@ class coldde:
         result=result+(pad*seps[c])+row+'\n';
         col_i=0;row_i+=1;row="";
 
+#    ---     ---     ---     ---     ---
+
     for c in row:
       if(c in seps):
         result=result+(pad*seps[c])+row+'\n';
 
     return result;
-
-print(
-  coldde.test(
-    "list=i,x,y,z,w,t,r,e,q,v,f;",
-    {',':1,';':1,'=':0},
-    '  '
-  )
-);
 
 #    ---     ---     ---     ---     ---
 
@@ -97,7 +104,7 @@ def mkline(s,indent,pad):
   return result;
 
 def bwfllb(s,fr):
-  c='';w='';
+  c='';w='';r=(s,"");
   for i in range(len(s)-(len(s)-fr),0,-1):
 
     if(i+1>len(s)-1):
@@ -106,13 +113,24 @@ def bwfllb(s,fr):
     c=s[i+1];
     w=s[i]+c;
 
-    if(w in llb):
-      return (s[:i],s[i:]);
+    if(w in lbrk):
+      if(w in ('};',');','];')):
+        r=(s[:i+2],s[i+2:]);
 
-    elif(c in llb):
-      return (s[:i+1],s[i+1:]);
+      else:
+        r=(s[:i],s[i:]);
 
-  return 0;
+    elif(c in lbrk):
+      if(c in "{[(,)]};"):
+        r=(s[:i+2],s[i+2:]);
+
+      else:
+        r=(s[:i+1],s[i+1:]);
+
+    if(len(r[0])<=fr/2):
+      break;
+
+  return r;
 
 #    ---     ---     ---     ---     ---
 
@@ -122,43 +140,49 @@ def __fillstrg():
 
   global no_goto;
   bx,l_start,pad,space,s,pos,base=no_goto;
-
-  sub_cnt=1+int(len(s)/(space-1));
   sub_pos=0;
 
-  bx.extend(c for c in base);
-  pos=l_start;pad+=len(base);
+  if(pos>=space-2):
+    pos=l_start;pad+=len(base);
 
 #    ---     ---     ---     ---     ---
 
-  for i in range(sub_cnt):
+  while(sub_pos<len(s)):
 
-    sub_end=((space-1) if len(s[sub_pos:])>=space
-                       else len(s[sub_pos:]));
+    if(pos==l_start):
+      bx.extend(c for c in base);
 
-    sub=(
-
-      ('"' if i else '')
-      +s[sub_pos:sub_pos+sub_end]
-      +('"' if sub_end!=len(s[sub_pos:]) else '')
+    sub_len=min(
+      space-pos-2,
+      len(s[sub_pos:])
 
     );
 
-    if(sub=='"'):
-      break;
+    if(sub_len<=0):
+      pos=l_start;pad+=len(base);
+      continue;
 
 #    ---     ---     ---     ---     ---
 
-    sub_pos+=sub_end;
-    bx[pos+pad:pad+space]=sub;
+    sub=s[sub_pos:sub_pos+sub_len];
+    sub_pos+=sub_len;
 
-    pad+=len(base);
+    if(not len(sub)):
+      break;
 
-    if(sub_end==(space-1) and i<(sub_cnt-1)):
-      if(len(s[sub_pos:])<1):
-        break;
+    if(sub[0]!='"'):
+      sub='"'+sub;
 
-      bx.extend(c for c in base);
+    if(sub[-1]!='"'):
+      sub=sub+'"';
+
+#    ---     ---     ---     ---     ---
+
+    bx[pos+pad:pad+pos+len(sub)]=sub;
+    pos+=len(sub);
+
+    if(pos==space-2):
+      pos=l_start;pad+=len(base);
 
   no_goto[2]=pad;
   no_goto[5]=pos;
@@ -169,6 +193,9 @@ def __fillcode():
 
   global no_goto;
   bx,l_start,pad,space,s,pos,base=no_goto;
+
+  if(pos>=space):
+    pos=l_start;pad+=len(base);
 
   for sub in s.split(' '):
 
@@ -186,9 +213,11 @@ def __fillcode():
         while(len(sub)>=(space)):
 
           sub,nsub=bwfllb(sub,space-pos);
+          if(len(sub)>space-pos):
+            nsub=sub[space-pos:]+nsub;
+            sub=sub[:space-pos];
 
-          bx[pos+pad:space+pad]=(
-            sub[:space-(pos-l_start)]
+          bx[pos+pad:pos+pad+len(sub)]=(sub
 
           );sub = nsub;
 
@@ -523,30 +552,25 @@ def docbox(fname):
   s=s+bx_fill(''.join(c for c in cont));
   s=s+bx_cap+"\n";
 
-  lines=[];
-  with open(root+"/"+fname, "r") as src:
-    lines=src.readlines();
-
-  final=s+''.join(lines[atl:]);
-  with open(root+"/IDNT.c", "w+") as dst:
-    dst.write(final);
+  return (s, atl);
 
 #    ---     ---     ---     ---     ---
 
-docbox("idntest.c");
+docf  = docbox("idntest.c");
 
 culsp = "//   ---     ---     ---     ---     ---";
 culsg = 0;
 
 s     = "";
+
 n_nl  = 0;
 
 lines = [];
 cs_nx = 0;
 cs_sw = 0;
 
-with open(root+"/IDNT.c", "r") as src:
-  lines=src.readlines();
+with open(root+"/idntest.c", "r") as src:
+  lines=src.readlines()[docf[1]:];
 
 for line in lines:
 
@@ -724,7 +748,7 @@ for line in lines:
 
 #    ---     ---     ---     ---     ---
 
+s=docf[0]+s;
+
 with open(root+"/IDNT.c", "w+") as dst:
   dst.write(s);
-
-#print(s);
