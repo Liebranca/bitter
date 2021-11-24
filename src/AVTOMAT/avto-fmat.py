@@ -51,7 +51,11 @@ class dtdde:
 
   @classmethod
   def gi(self):
-    return self.rgi*(self.lvl-(self.state&ff_label));
+    return (
+      self.rgi
+    *(self.lvl+((self.state&ff_label)!=0))
+
+    );
 
 #    ---     ---     ---     ---     ---
 
@@ -61,12 +65,12 @@ class dtdde:
     i=0;
     for c in s:
 
-      next='';
+      nx='';
       if(i<(len(s)-1)):
-        next=s[i+1];
+        nx=s[i+1];
 
       if( c in self.chops
-      and next.isalnum()):
+      and nx.isalnum()):
         return 1;
 
       if(c==')'):
@@ -75,6 +79,30 @@ class dtdde:
       i+=1;
 
     return 0;
+
+  @classmethod
+  def detlabel(self,s,idex):
+
+    llvl=self.lvl;
+    for sub in s[idex:].split(' '):
+
+      if(sub=='\n' or not len(sub)):
+        idex+=1;continue;
+
+      elif( (':'       in sub)
+      or    ("case"    in sub)
+      or    ("default" in sub) ): break;
+
+      elif('{' in sub or '}' in sub):
+        llvl+=len([br for br in sub if br=='{']);
+        llvl-=len([br for br in sub if br=='}']);
+
+      if(llvl<self.lvl):
+        break;
+
+      idex+=len(sub)+1;
+
+    return idex;
 
 #    ---     ---     ---     ---     ---
 
@@ -178,19 +206,20 @@ class dtdde:
 
     self.state=ff_wsig;
 
-    last   = '';next    = '' ;i   =0 ;
+    last   = '';nx    = '' ;i   =0 ;
     result = "";indent  = "" ;row ="";
     chain  = 0 ;clchain = 0  ;
 
     last_nl= 0 ;tok     = "_";tokb="";
+    lblspan= 0 ;labl="";
 
 #    ---     ---     ---     ---     ---
 
     for c in s:
 
-      next='';
+      nx='';
       if(i<(len(s)-1)):
-        next=s[i+1];
+        nx=s[i+1];
 
       if((self.state&ff_wsig) and c!=' '):
         row=row+c;self.state&=~ff_wsig;
@@ -200,19 +229,13 @@ class dtdde:
 
 #    ---     ---     ---     ---     ---
 
-      if(tok!='_'):
-        if(tok[-1]==':'):
-          self.state|=ff_label;
-
-        self.state|=(
-          ff_write*(not last_nl)
-
-        );tok='_';
-
-#    ---     ---     ---     ---     ---
-
       if(c==';'):
         self.state|=ff_write;
+
+      elif(c==':'):
+        labl=row;
+        self.state|=ff_label|ff_indent;
+        lblspan=self.detlabel(s,i);
 
 #    ---     ---     ---     ---     ---
 
@@ -256,15 +279,15 @@ class dtdde:
 
 #    ---     ---     ---     ---     ---
 
-      elif(c+next=='//'):
+      elif(c+nx=='//'):
         self.state|=ff_lcomm;
         if(not last_nl and not len(row)):
           row=row[:-1]+'\n'+c;
 
-      elif(c+next=='/*'):
+      elif(c+nx=='/*'):
         self.state|=ff_bcomm;
 
-      elif(c+next=='*/'):
+      elif(c+nx=='*/'):
         self.state&=~ff_bcomm;
 
 #    ---     ---     ---     ---     ---
@@ -279,7 +302,7 @@ class dtdde:
           self.state|=(
             ff_write
            |ff_indent
-           |(ff_newline*(next!='\n'))
+           |(ff_newline*(nx!='\n'))
 
           );
 
@@ -303,6 +326,10 @@ class dtdde:
 #    ---     ---     ---     ---     ---
 
       if(self.state&ff_write):
+
+        if(lblspan and i>=lblspan):
+          lblspan=0;
+
         result=result+self.accom(row,clchain);
         row=(
 
@@ -316,7 +343,7 @@ class dtdde:
           ff_write
          |ff_indent
          |ff_newline
-         |ff_label
+         |ff_label*(lblspan==0)
 
         );self.state|=ff_wsig;
         clchain=0;
@@ -330,6 +357,14 @@ class dtdde:
 
       else:
         tok=tokb if tokb else "_";tokb="";
+
+#    ---     ---     ---     ---     ---
+
+      #if(tok!='_'):
+      #  if(tok[-1]==':'):
+      #    self.state|=ff_label|ff_indent;
+      #
+      #  tok='_';
 
       i+=1;
     print(result);
