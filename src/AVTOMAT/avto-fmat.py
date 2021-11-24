@@ -16,9 +16,22 @@
 
 #    ---     ---     ---     ---     ---
 
+ff_write   = 0x01;
+ff_newline = 0x02;
+ff_indent  = 0x04;
+
+ff_lcomm   = 0x08;
+ff_bcomm   = 0x10;
+ff_prepo   = 0x20;
+ff_label   = 0x40;
+ff_wsig    = 0x80;
+
+#    ---     ---     ---     ---     ---
+
 class dtdde:
 
   lvl   = 0;
+  state = 0x00;
 
   i_wid = 2;
   l_wid = 56;
@@ -38,7 +51,7 @@ class dtdde:
 
   @classmethod
   def gi(self):
-    return self.rgi*self.lvl;
+    return self.rgi*(self.lvl-(self.state&ff_label));
 
 #    ---     ---     ---     ---     ---
 
@@ -137,7 +150,6 @@ class dtdde:
     if(not len(row)):
       return '';
 
-    fmated="";
     if(len(row)>self.l_mid):
       pass;
 
@@ -150,26 +162,27 @@ class dtdde:
 
   @classmethod
   def iatst(self,row):
-    return row[0:self.i_wid*self.lvl]!=self.gi();
+    if(row==('\n'*len(row))):
+      return 0;
+
+    _gi=self.gi(); return (
+      not row.startswith(_gi)
+      and not row[1:].startswith(_gi)
+
+    );
 
 #    ---     ---     ---     ---     ---
 
   @classmethod
   def format(self,s):
 
-    ff_write   = 0x01;
-    ff_newline = 0x02;
-    ff_indent  = 0x04;
+    self.state=ff_wsig;
 
-    ff_lcomm   = 0x08;
-    ff_bcomm   = 0x10;
-    ff_prepo   = 0x20;
+    last   = '';next    = '' ;i   =0 ;
+    result = "";indent  = "" ;row ="";
+    chain  = 0 ;clchain = 0  ;
 
-    state  = 0 ;last    = '';next='';i=0;
-    result = "";indent  = "";row ="";
-    chain  = 0 ;clchain = 0 ;
-
-    last_nl= 0 ;
+    last_nl= 0 ;tok     = "_";tokb="";
 
 #    ---     ---     ---     ---     ---
 
@@ -179,35 +192,64 @@ class dtdde:
       if(i<(len(s)-1)):
         next=s[i+1];
 
-      row=row+c;
+      if((self.state&ff_wsig) and c!=' '):
+        row=row+c;self.state&=~ff_wsig;
+
+      elif((self.state&ff_wsig)==0):
+        row=row+c;
+
+#    ---     ---     ---     ---     ---
+
+      if(tok!='_'):
+        if(tok[-1]==':'):
+          self.state|=ff_label;
+
+        self.state|=(
+          ff_write*(not last_nl)
+
+        );tok='_';
 
 #    ---     ---     ---     ---     ---
 
       if(c==';'):
-        state|=ff_write;
+        self.state|=ff_write;
+
+#    ---     ---     ---     ---     ---
+
+      elif(c==' '):
+        igws=not self.state&(
+          ff_lcomm
+         |ff_bcomm
+         |ff_prepo
+
+        );
+
+        if(igws):
+          if(row[-2]=='\n'):
+            row=row[:-1];
 
       elif(c=='#'):
         if(not last_nl):
           row=row[:-1]+'\n'+c;
 
-        state|=ff_prepo;
+        self.state|=ff_prepo;
 
 #    ---     ---     ---     ---     ---
 
       elif(c=='\n'):
 
-        state|=(
+        self.state|=(
           ff_write
           |(ff_indent
-           *(self.iatst(row))
-           *(state&ff_lcomm)
+           *(not self.iatst(row))
+           *(not (self.state&ff_lcomm))
           )
           |ff_newline
 
         );row=row[:-1];
 
-        state&=~ff_lcomm;
-        state&=~(
+        self.state&=~ff_lcomm;
+        self.state&=~(
           ff_prepo*(last!='\\')
 
         );
@@ -215,15 +257,15 @@ class dtdde:
 #    ---     ---     ---     ---     ---
 
       elif(c+next=='//'):
-        state|=ff_lcomm;
+        self.state|=ff_lcomm;
         if(not last_nl and not len(row)):
           row=row[:-1]+'\n'+c;
 
       elif(c+next=='/*'):
-        state|=ff_bcomm;
+        self.state|=ff_bcomm;
 
       elif(c+next=='*/'):
-        state&=~ff_bcomm;
+        self.state&=~ff_bcomm;
 
 #    ---     ---     ---     ---     ---
 
@@ -234,10 +276,10 @@ class dtdde:
 
         if(chain or c=='{'):
           self.lvl+=1;
-          state|=(
+          self.state|=(
             ff_write
            |ff_indent
-           |ff_newline*(next!='\n')
+           |(ff_newline*(next!='\n'))
 
           );
 
@@ -246,40 +288,50 @@ class dtdde:
       elif(c=='}' or (c==')' and chain)):
         clchain=chain!=0;
         self.lvl-=1;chain=chain-(c==')');
+
         row=(
-          row[:-1]
+          row[:-1].rstrip(' ')
          +('\n'*(chain==0)*(not last_nl))
          +('\n'*(last!=c)*(not last_nl))
          +self.gi()+c
 
-        );state|=ff_write;
+        );self.state|=ff_write;
 
       elif(i==len(s)-1):
-        state|=ff_write;
+        self.state|=ff_write;
 
 #    ---     ---     ---     ---     ---
 
-      if(state&ff_write):
+      if(self.state&ff_write):
         result=result+self.accom(row,clchain);
         row=(
 
-          ('\n'*((state&ff_newline)!=0))
-         +( self.gi()*((state&ff_indent)!=0) )
+          ('\n'*((self.state&ff_newline)!=0))
 
-        );last_nl=state&ff_newline;
+         +(self.gi()*((self.state&ff_indent)!=0))
 
-        state&=~(
+        );last_nl=self.state&ff_newline;
+
+        self.state&=~(
           ff_write
          |ff_indent
          |ff_newline
+         |ff_label
 
-        );clchain=0;
+        );self.state|=ff_wsig;
+        clchain=0;
+
+#    ---     ---     ---     ---     ---
 
       if(ord(c)>0x20):
         last=c;
+        if(c.isalnum() or c==':'):
+          tokb=tokb+c;
+
+      else:
+        tok=tokb if tokb else "_";tokb="";
 
       i+=1;
-
     print(result);
 
 #    ---     ---     ---     ---     ---
