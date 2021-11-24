@@ -30,3 +30,4 @@ data/font/*
 src/AVTOMAT/IDNT.c
 src/AVTOMAT/idntest.c
 *.o
+src/AVTOMAT/fmat_test.c

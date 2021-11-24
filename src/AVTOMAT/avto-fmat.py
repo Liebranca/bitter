@@ -19,6 +19,14 @@
 class dtdde:
 
   lvl   = 0;
+
+  i_wid = 2;
+  l_wid = 56;
+  l_mid = 28;
+  c_len = (l_wid-l_mid)-3;
+
+  rgi   = ' '*i_wid;
+
   chops = [
     ',','-','+','|','&',
     '/','*','%','^','<',
@@ -26,12 +34,16 @@ class dtdde:
 
   ];
 
-  @staticmethod
-  def gi():
-    return '  '*dtdde.lvl;
+#    ---     ---     ---     ---     ---
 
-  @staticmethod
-  def detchain(s):
+  @classmethod
+  def gi(self):
+    return self.rgi*self.lvl;
+
+#    ---     ---     ---     ---     ---
+
+  @classmethod
+  def detchain(self,s):
 
     i=0;
     for c in s:
@@ -40,7 +52,7 @@ class dtdde:
       if(i<(len(s)-1)):
         next=s[i+1];
 
-      if( c in dtdde.chops
+      if( c in self.chops
       and next.isalnum()):
         return 1;
 
@@ -53,16 +65,111 @@ class dtdde:
 
 #    ---     ---     ---     ---     ---
 
-  @staticmethod
-  def format(s):
+  @classmethod
+  def opnparn(self,seg):
+
+    parens=0;i=0;
+    lsplit=0;do_split=0;opch=0;
+
+    seg_cpy=str(seg);
+
+    for c in seg_cpy:
+      if(c in ' \n\t'):
+        if(c=='\n'):
+          lsplit=i+1;
+          do_split=(
+            len(seg[lsplit:])
+            >self.l_mid
+          );
+
+        i+=1;continue;
+      
+      if(c=='('):
+        parens=1;
+
+      elif(c==')'):
+        parens=0;
+
+      if(parens):
+        continue;
+
+#    ---     ---     ---     ---     ---
+
+      if(c in self.chops and do_split):
+
+        if(c==','):
+          pad=1+len(self.rgi)+opch;
+          seg=(
+            seg[:i+1]+'\n'
+           +('\n'*opch)
+           +self.gi()
+           +self.rgi
+           +seg[i+1:]
+
+          );opch=0;
+
+#    ---     ---     ---     ---     ---
+
+        else:
+          pad=2;
+          opch=1;
+          seg=(
+            seg[:i]+'\n'
+           +self.gi()
+           +' '
+           +seg[i:]
+
+          );
+
+        i+=pad+(self.i_wid*self.lvl);
+
+#    ---     ---     ---     ---     ---
+
+      i+=1;
+
+    return seg;
+
+#    ---     ---     ---     ---     ---
+
+  @classmethod
+  def accom(self,row,chain):
+
+    if(not len(row)):
+      return '';
+
+    fmated="";
+    if(len(row)>self.l_mid):
+      pass;
+
+    if(chain):
+      row=self.opnparn(row);
+
+    return row;
+
+#    ---     ---     ---     ---     ---
+
+  @classmethod
+  def iatst(self,row):
+    return row[0:self.i_wid*self.lvl]!=self.gi();
+
+#    ---     ---     ---     ---     ---
+
+  @classmethod
+  def format(self,s):
 
     ff_write   = 0x01;
     ff_newline = 0x02;
     ff_indent  = 0x04;
 
-    flush  = 0 ;last   = '';next ='';i=0;
-    result = "";indent = "";row  ="";
-    chain  = 0 ;
+    ff_lcomm   = 0x08;
+    ff_bcomm   = 0x10;
+    ff_prepo   = 0x20;
+
+    state  = 0 ;last    = '';next='';i=0;
+    result = "";indent  = "";row ="";
+    chain  = 0 ;clchain = 0 ;
+
+    last_nl= 0 ;
 
 #    ---     ---     ---     ---     ---
 
@@ -77,49 +184,96 @@ class dtdde:
 #    ---     ---     ---     ---     ---
 
       if(c==';'):
-        flush|=ff_write;
+        state|=ff_write;
+
+      elif(c=='#'):
+        if(not last_nl):
+          row=row[:-1]+'\n'+c;
+
+        state|=ff_prepo;
+
+#    ---     ---     ---     ---     ---
 
       elif(c=='\n'):
-        flush|=ff_write|ff_indent;
+
+        state|=(
+          ff_write
+          |(ff_indent
+           *(self.iatst(row))
+           *(state&ff_lcomm)
+          )
+          |ff_newline
+
+        );row=row[:-1];
+
+        state&=~ff_lcomm;
+        state&=~(
+          ff_prepo*(last!='\\')
+
+        );
+
+#    ---     ---     ---     ---     ---
+
+      elif(c+next=='//'):
+        state|=ff_lcomm;
+        if(not last_nl and not len(row)):
+          row=row[:-1]+'\n'+c;
+
+      elif(c+next=='/*'):
+        state|=ff_bcomm;
+
+      elif(c+next=='*/'):
+        state&=~ff_bcomm;
 
 #    ---     ---     ---     ---     ---
 
       elif(c in '{('):
 
         if(c=='('):
-          chain+=dtdde.detchain(s[i:]);
+          chain+=self.detchain(s[i:]);
 
         if(chain or c=='{'):
-          dtdde.lvl+=1;
-          flush|=(
+          self.lvl+=1;
+          state|=(
             ff_write
            |ff_indent
-           |ff_newline
+           |ff_newline*(next!='\n')
 
           );
 
 #    ---     ---     ---     ---     ---
 
       elif(c=='}' or (c==')' and chain)):
-        dtdde.lvl-=1;chain=chain-(c==')');
+        clchain=chain!=0;
+        self.lvl-=1;chain=chain-(c==')');
         row=(
           row[:-1]
-         +('\n'*(chain==0))
-         +('\n'*(last!=c))
-         +dtdde.gi()+c
+         +('\n'*(chain==0)*(not last_nl))
+         +('\n'*(last!=c)*(not last_nl))
+         +self.gi()+c
 
-        );flush|=ff_write;
+        );state|=ff_write;
+
+      elif(i==len(s)-1):
+        state|=ff_write;
 
 #    ---     ---     ---     ---     ---
 
-      if(flush&ff_write):
-        result=result+row;
+      if(state&ff_write):
+        result=result+self.accom(row,clchain);
         row=(
 
-           ('\n'*((flush&ff_newline)!=0))
-          +( dtdde.gi()*((flush&ff_indent)!=0) )
+          ('\n'*((state&ff_newline)!=0))
+         +( self.gi()*((state&ff_indent)!=0) )
 
-        );flush=0;
+        );last_nl=state&ff_newline;
+
+        state&=~(
+          ff_write
+         |ff_indent
+         |ff_newline
+
+        );clchain=0;
 
       if(ord(c)>0x20):
         last=c;
@@ -130,24 +284,13 @@ class dtdde:
 
 #    ---     ---     ---     ---     ---
 
-dtdde.format(
-"""
-if c {then y {do_stuff(arg1,arg2);x++;} else {do_not();}};ret DONE;
+root    = "/".join((__file__.split("/"))[:-1]);
 
-"""
-
-);
+dtdde.format(open(root+"/fmat_test.c").read());
 
 exit();
 
-root    = "/".join((__file__.split("/"))[:-1]);
-
 lvl     = 0;
-i_wid   = 2;
-l_wid   = 56;
-l_mid   = 28;
-c_len   = (l_wid-l_mid)-3;
-
 llb     = [');', '};', '];', '!=', '|=', '&=',
            '++', '--', '+=', '*=', '/=', '%=',
            '||', '&&', '^=', '~' , '!(','&=~',
