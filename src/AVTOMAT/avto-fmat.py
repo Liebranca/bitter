@@ -31,6 +31,8 @@ ff_wsig    = 0x80;
 class dtdde:
 
   lvl   = 0;
+  lvl_l = 0;
+
   state = 0x00;
 
   i_wid = 2;
@@ -51,9 +53,16 @@ class dtdde:
 
   @classmethod
   def gi(self):
+
+    mod=(self.state&ff_label)!=0;
+    mod_l=(self.lvl_l&0xF0)>>4
+
+    if(mod and mod_l==self.lvl):
+      mod=mod if (self.lvl_l&1) else mod+1;
+
     return (
       self.rgi
-    *(self.lvl+((self.state&ff_label)!=0))
+    *(self.lvl+mod)
 
     );
 
@@ -83,26 +92,52 @@ class dtdde:
   @classmethod
   def detlabel(self,s,idex):
 
-    llvl=self.lvl;
-    for sub in s[idex:].split(' '):
+    llvl=self.lvl;row="";i=0;
+    self.lvl_l&=~1;
 
-      if(sub=='\n' or not len(sub)):
-        idex+=1;continue;
+    for c in s[idex:]:
 
-      elif( (':'       in sub)
-      or    ("case"    in sub)
-      or    ("default" in sub) ): break;
+      row=row+c;
 
-      elif('{' in sub or '}' in sub):
-        llvl+=len([br for br in sub if br=='{']);
-        llvl-=len([br for br in sub if br=='}']);
+#    ---     ---     ---     ---     ---
 
-      if(llvl<self.lvl):
+      if( (':'      in row)
+      or  ("case"   in row)
+      or  ("default"in row) ):
+
+        if(llvl>self.lvl):
+          self.lvl_l=(llvl<<4);
+
+        elif(self.lvl_l):
+          self.lvl_l|=0x100;
+
         break;
 
-      idex+=len(sub)+1;
+      elif(llvl<self.lvl):
 
-    return idex;
+        if(llvl>self.lvl):
+          self.lvl_l=(llvl<<4);
+
+        elif(self.lvl_l):
+          self.lvl_l|=0x100;
+
+        #self.lvl_l|=0x800;
+        break;
+
+#    ---     ---     ---     ---     ---
+
+      elif(c=='{'):
+        llvl+=1;
+
+      elif(c=='}'):
+        llvl-=1;
+
+      elif(c in ' ;\n'):
+        row="";
+
+      i+=1;
+
+    return idex+i;
 
 #    ---     ---     ---     ---     ---
 
@@ -206,12 +241,15 @@ class dtdde:
 
     self.state=ff_wsig;
 
+    lf_flb = 0x01;
+
     last   = '';nx    = '' ;i   =0 ;
     result = "";indent  = "" ;row ="";
     chain  = 0 ;clchain = 0  ;
 
     last_nl= 0 ;tok     = "_";tokb="";
-    lblspan= 0 ;labl="";
+    lblspan= 0 ;
+    flg    = 0 ;
 
 #    ---     ---     ---     ---     ---
 
@@ -230,12 +268,17 @@ class dtdde:
 #    ---     ---     ---     ---     ---
 
       if(c==';'):
+        if( (self.state&ff_label)
+        and (flg&lf_flb         ) ):
+          flg&=~lf_flb;
+          self.state|=ff_newline|ff_indent;
+
         self.state|=ff_write;
 
       elif(c==':'):
-        labl=row;
-        self.state|=ff_label|ff_indent;
-        lblspan=self.detlabel(s,i);
+        labl=row;flg|=lf_flb;
+        self.state|=ff_label;
+        lblspan=self.detlabel(s,i+1);
 
 #    ---     ---     ---     ---     ---
 
@@ -260,6 +303,11 @@ class dtdde:
 #    ---     ---     ---     ---     ---
 
       elif(c=='\n'):
+
+        if( (self.state&ff_label)
+        and (flg&lf_flb         ) ):
+          flg&=~lf_flb;
+          self.state|=ff_newline|ff_indent;
 
         self.state|=(
           ff_write
@@ -324,11 +372,27 @@ class dtdde:
         self.state|=ff_write;
 
 #    ---     ---     ---     ---     ---
+# format:flush
 
       if(self.state&ff_write):
 
-        if(lblspan and i>=lblspan):
-          lblspan=0;
+
+        if(lblspan):
+
+          if(self.lvl_l&0x100):
+            self.lvl_l&=~0x100;
+
+          elif(self.lvl_l&0x700):
+            self.lvl_l|=(self.lvl_l&0x700)>>1;
+
+          else:
+            self.lvl_l|=1;
+
+          if(i>=lblspan):
+            lblspan=0;self.lvl_l&=~1;
+
+          if(self.lvl_l&0x800):
+            self.lvl_l=0;
 
         result=result+self.accom(row,clchain);
         row=(
@@ -339,11 +403,13 @@ class dtdde:
 
         );last_nl=self.state&ff_newline;
 
+#    ---     ---     ---     ---     ---
+
         self.state&=~(
           ff_write
          |ff_indent
          |ff_newline
-         |ff_label*(lblspan==0)
+         |(ff_label*(lblspan==0))
 
         );self.state|=ff_wsig;
         clchain=0;
