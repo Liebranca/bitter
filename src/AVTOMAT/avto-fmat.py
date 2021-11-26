@@ -26,254 +26,342 @@ ff_label   = 0x0040;
 ff_wsig    = 0x0080;
 
 ff_lnlup   = 0x0100;
+ff_nnl     = 0x0200;
+ff_ncnl    = 0x0400;
 
 #    ---     ---     ---     ---     ---
 
-class dtdde:
+llb        = [');', '};', '];', '!=', '|=', '&=',
+              '++', '--', '+=', '*=', '/=', '%=',
+              '||', '&&', '^=', '~' , '!(','&=~',
+              '->', '>=', '<=', '<<', '>>', ' ' ,
+              '-=', 
+              ',' , '(' , ')' , ';' , '{' , '}' ,
+              '-' , '/' , '&' , '!' , '|' , '%' ,
+              '+' , '^' , '>' , '<' , '=' , '*)'  ];
 
-  lvl   = 0;
+lbrk       = [');', '};', '];', '!=', '|=', '&=',
+              '++', '--', '+=', '*=', '/=', '%=',
+              '||', '&&', '^=', '~' , '!(','&=~',
+              '>=', '<=', '<<', '>>', ' ' ,
+              '-=', 
+              ',' , '(' , ')' , ';' , '{' , '}' ,
+              '/' , '&' , '!' , '|' , '%' ,
+              '+' , '^' , '=' , '*)'              ];
 
-  state = 0x00;
+i_wid      = 2;
+l_wid      = 56;
+l_mid      = 28;
+c_len      = (l_wid-l_mid)-3;
 
-  i_wid = 2;
-  l_wid = 56;
-  l_mid = 28;
-  c_len = (l_wid-l_mid)-3;
+bx_cap     = "//"+('*'*(l_mid-2))+"\n";
+bx_fld     = "//"+(' '*(l_mid-3))+"*\n";
+com_fld    = "// "+(' '*c_len)+'\n';
+lcm_fld    = "// "+(' '*l_wid)+'\n';
+cde_fld    = " "+(' '*(l_wid))+'\n';
 
-  rgi   = ' '*i_wid;
+cde_fa     = cde_fld[:(l_mid)];
+cde_fb     = cde_fld[(l_mid):];
 
-  chops = [
-    ',','-','+','|','&',
-    '/','*','%','^','<',
-    '>','='
-
-  ];
+culsp      = "//   ---     ---     ---" \
+             +"     ---     ---";
 
 #    ---     ---     ---     ---     ---
 
-  @classmethod
-  def gi(self):
-    return self.rgi*self.lvl;
+lvl        = 0;
+state      = 0x00;
+
+rgi        = ' '*i_wid;
+chops      =[
+  ',','-','+','|','&',
+  '/','*','%','^','<',
+  '>','='
+];
 
 #    ---     ---     ---     ---     ---
 
-  @classmethod
-  def detchain(self,s):
+def gi():
+  return rgi*lvl;
 
-    i=0;
-    for c in s:
+def detchain(s):
 
-      nx='';
-      if(i<(len(s)-1)):
-        nx=s[i+1];
+  i=0;
+  for c in s:
 
-      if( c in self.chops
-      and nx.isalnum()):
-        return 1;
+    nx='';
+    if(i<(len(s)-1)):
+      nx=s[i+1];
 
-      if(c==')'):
-        break;
+    if( c in chops
+    and nx.isalnum()):
+      return 1;
 
-      i+=1;
+    if(c==')'):
+      break;
 
+    i+=1;
+
+  return 0;
+
+def detlabel(s,idex):
+
+  llvl = lvl;row  ="";
+  i    = 0       ;found=0 ;
+
+  for c in s[idex:]:
+
+    row=row+c;
+
+#    ---     ---     ---     ---     ---
+
+    if( (':'       in row)
+    or  ("case"    in row)
+    or  ("default" in row) ):
+      i-=len(row);found=1;
+      break;
+
+    elif(llvl<lvl):
+      i-=len(row);found=1;
+      break;
+
+#    ---     ---     ---     ---     ---
+
+    elif(c=='{'):
+      llvl+=1;
+
+    elif(c=='}'):
+      llvl-=1;
+
+    elif(c in ' ;\n'):
+      row="";
+
+    i+=1;
+
+  if(i==-1):
     return 0;
 
-  @classmethod
-  def detlabel(self,s,idex):
-
-    llvl = self.lvl;row  ="";
-    i    = 0       ;found=0 ;
-
-    for c in s[idex:]:
-
-      row=row+c;
+  return (idex+i)*found;
 
 #    ---     ---     ---     ---     ---
 
-      if( (':'       in row)
-      or  ("case"    in row)
-      or  ("default" in row) ):
-        i-=len(row);found=1;
-        break;
+def opnparn(seg):
 
-      elif(llvl<self.lvl):
-        i-=len(row);found=1;
-        break;
+  parens=0;i=0;
+  lsplit=0;do_split=0;opch=0;
 
-#    ---     ---     ---     ---     ---
+  seg_cpy=str(seg);
 
-      elif(c=='{'):
-        llvl+=1;
+  for c in seg_cpy:
+    if(c in ' \n\t'):
+      if(c=='\n'):
+        lsplit=i+1;
+        do_split=(
+          len(seg[lsplit:])
+          >l_mid
+        );
 
-      elif(c=='}'):
-        llvl-=1;
+      i+=1;continue;
+    
+    if(c=='('):
+      parens=1;
 
-      elif(c in ' ;\n'):
-        row="";
+    elif(c==')'):
+      parens=0;
 
-      i+=1;
-
-    if(i==-1):
-      return 0;
-
-    return (idex+i)*found;
-
-#    ---     ---     ---     ---     ---
-
-  @classmethod
-  def opnparn(self,seg):
-
-    parens=0;i=0;
-    lsplit=0;do_split=0;opch=0;
-
-    seg_cpy=str(seg);
-
-    for c in seg_cpy:
-      if(c in ' \n\t'):
-        if(c=='\n'):
-          lsplit=i+1;
-          do_split=(
-            len(seg[lsplit:])
-            >self.l_mid
-          );
-
-        i+=1;continue;
-      
-      if(c=='('):
-        parens=1;
-
-      elif(c==')'):
-        parens=0;
-
-      if(parens):
-        continue;
+    if(parens):
+      continue;
 
 #    ---     ---     ---     ---     ---
 
-      if(c in self.chops and do_split):
+    if(c in chops and do_split):
 
-        if(c==','):
-          pad=1+len(self.rgi)+opch;
-          seg=(
-            seg[:i+1]+'\n'
-           +('\n'*opch)
-           +self.gi()
-           +self.rgi
-           +seg[i+1:]
+      if(c==','):
+        pad=1+len(rgi)+opch;
+        seg=(
+          seg[:i+1]+'\n'
+         +('\n'*opch)
+         +gi()
+         +rgi
+         +seg[i+1:]
 
-          );opch=0;
-
-#    ---     ---     ---     ---     ---
-
-        else:
-          pad=2;
-          opch=1;
-          seg=(
-            seg[:i]+'\n'
-           +self.gi()
-           +' '
-           +seg[i:]
-
-          );
-
-        i+=pad+(self.i_wid*self.lvl);
+        );opch=0;
 
 #    ---     ---     ---     ---     ---
 
-      i+=1;
+      else:
+        pad=2;
+        opch=1;
+        seg=(
+          seg[:i]+'\n'
+         +gi()
+         +' '
+         +seg[i:]
 
-    return seg;
+        );
 
-#    ---     ---     ---     ---     ---
-
-  @classmethod
-  def accom(self,row,chain):
-
-    if(not len(row)):
-      return '';
-
-    if(len(row)>self.l_mid):
-      pass;
-
-    if(chain):
-      row=self.opnparn(row);
-
-    return row;
+      i+=pad+(i_wid*lvl);
 
 #    ---     ---     ---     ---     ---
 
-  @classmethod
-  def iatst(self,row):
-    if(row==('\n'*len(row))):
-      return 0;
+    i+=1;
 
-    _gi=self.gi(); return (
-      not row.startswith(_gi)
-      and not row[1:].startswith(_gi)
-
-    );
+  return seg;
 
 #    ---     ---     ---     ---     ---
 
-  @classmethod
-  def format(self,s):
+def accom(row,chain):
 
-    self.state=ff_wsig|ff_lnlup;
+  if(not len(row)):
+    return '';
 
-    lf_flb = 0x01;
+  if(len(row)>l_mid):
+    pass;
 
-    last   = '';nx      = '' ;i   =0 ;
-    result = "";indent  = "" ;row ="";
-    chain  = 0 ;clchain = 0  ;
+  if(chain):
+    row=opnparn(row);
 
-    last_nl= 0 ;tok     = "_";tokb="";
-    lblspan= 0 ;
-    flg    = 0 ;
+  return row;
 
 #    ---     ---     ---     ---     ---
 
-    for c in s:
+def iatst(row):
+  if(row==('\n'*len(row))):
+    return 0;
+
+  _gi=gi(); return (
+    not row.startswith(_gi)
+    and not row[1:].startswith(_gi)
+
+  );
+
+#    ---     ---     ---     ---     ---
+
+def format(fname):
+
+  global lvl,state;
+  state=ff_wsig|ff_lnlup;
+
+  lf_flb = 0x01;
+
+  last   = '';nx      = '' ;i   =0 ;
+  result = "";row     = "" ;
+  chain  = 0 ;clchain = 0  ;
+
+  last_nl= 0 ;tok     = "_";tokb="";
+  lblspan= 0 ;culsg   = 0  ;
+
+#    ---     ---     ---     ---     ---
+# fmat:top
+
+  lines=[];
+  with open(fname, 'r') as file:
+    lines=file.readlines()
+
+  s=''.join(lines);flines=[];
+  for line in lines:
+
+    if(not len(line.strip())):
+
+      line=('\n'
+        if not (state&ff_nnl)
+        else ''
+
+      );state|=ff_nnl;
+
+    else:
+      state&=~ff_nnl;
+
+#    ---     ---     ---     ---     ---
+# fmat:lcomm
+
+    if(line[0:8]=="//   ---"
+    or line[0:3]=="//*"
+    or (line[0:2]=="//"
+      and line[-1]=="*")):
+
+      if(line[0:8]=="//   ---"):
+        line=line.replace(culsp,'').strip();
+        line=line.replace('// ', '');
+        line=' '+line if len(line) else '';
+        ln='#:'+hex(culsg).upper()+';>';
+        ln=ln[0:3]+'x'+ln[4:];
+        
+        line=culsp+'\n// '+ln+line; culsg+=1;
+
+      if(len(row) and row[-1]!='\n'):
+        row=row+'\n';
+
+      line=line+(
+        '\n' if  line[-1]!='\n'
+             and line[-1]!='*' else ''
+
+      );state|=ff_lcomm;
+
+    flines.append(line);
+
+#    ---     ---     ---     ---     ---
+# fmat:rdline
+
+  s=''.join(flines);
+  for line in flines:
+
+    j=0;
+    for c in line:
 
       nx='';
       if(i<(len(s)-1)):
         nx=s[i+1];
 
-      if((self.state&ff_wsig) and c!=' '):
-        row=row+c;self.state&=~ff_wsig;
+      if((state&ff_wsig) and c!=' '):
+        row=row+c;state&=~ff_wsig;
 
-      elif((self.state&ff_wsig)==0):
+      elif((state&ff_wsig)==0):
         row=row+c;
 
 #    ---     ---     ---     ---     ---
+# fmat:fmat:h_lcomm
 
-      if(c==';'):
-        if( (self.state&ff_label)
-        and (flg&lf_flb         ) ):
-          flg&=~lf_flb;
-          self.state|=ff_newline|ff_indent;
+      if(state&ff_lcomm):
+        if(c=='\n' and j==len(line)-1):
+          state&=~ff_lcomm;
+          state|=(
+            ff_write
+           |(ff_newline*line[-2]!='*')
 
-        self.state|=ff_write;
+          );
+
+#    ---     ---     ---     ---     ---
+# fmat:case
+
+      elif(c==';'):
+        if( (state&ff_label)
+        and (state&ff_ncnl ) ):
+          state&=~ff_ncnl;
+          state|=ff_newline|ff_indent;
+
+        state|=ff_write;
 
       elif(c==':'):
 
-        flg|=lf_flb;
-        self.state|=ff_label;
-        lblspan=self.detlabel(s,i+1);
+        state|=ff_ncnl;
+        state|=ff_label;
+        lblspan=detlabel(s,i+1);
 
-        self.lvl+=(self.state&ff_lnlup)!=0;
-        self.state&=~ff_lnlup;
+        lvl+=(state&ff_lnlup)!=0;
+        state&=~ff_lnlup;
 
 #    ---     ---     ---     ---     ---
+# fmat:space
 
       elif(c==' '):
-        igws=not self.state&(
+        igws=not state&(
           ff_lcomm
          |ff_bcomm
          |ff_prepo
 
         );
 
-        if(igws):
+        if(igws and len(row)>1):
           if(row[-2]=='\n'):
             row=row[:-1];
 
@@ -281,59 +369,63 @@ class dtdde:
         if(not last_nl):
           row=row[:-1]+'\n'+c;
 
-        self.state|=ff_prepo;
+        state|=ff_prepo;
 
 #    ---     ---     ---     ---     ---
+# fmat:nl
 
       elif(c=='\n'):
 
-        if( (self.state&ff_label)
-        and (flg&lf_flb         ) ):
-          flg&=~lf_flb;
-          self.state|=ff_newline|ff_indent;
+        if( (state&ff_label)
+        and (state&ff_ncnl) ):
+          state&=~ff_ncnl;
+          state|=ff_newline|ff_indent;
 
-        self.state|=(
+        state|=(
           ff_write
           |(ff_indent
-           *(not self.iatst(row))
-           *(not (self.state&ff_lcomm))
+           *(not iatst(row))
+           *(not (state&ff_lcomm))
           )
           |ff_newline
 
         );row=row[:-1];
 
-        self.state&=~ff_lcomm;
-        self.state&=~(
+        state&=~ff_lcomm;
+        state&=~(
           ff_prepo*(last!='\\')
 
         );
 
 #    ---     ---     ---     ---     ---
+# fmat:c_comm
 
       elif(c+nx=='//'):
-        self.state|=ff_lcomm;
+        state|=ff_lcomm;
         if(not last_nl and not len(row)):
           row=row[:-1]+'\n'+c;
 
       elif(c+nx=='/*'):
-        self.state|=ff_bcomm;
+        state|=ff_bcomm;
 
+      # TODO: move to comment-handle block
       elif(c+nx=='*/'):
-        self.state&=~ff_bcomm;
+        state&=~ff_bcomm;
 
 #    ---     ---     ---     ---     ---
+# fmat:chain
 
       elif(c in '{('):
 
         if(c=='('):
-          chain+=self.detchain(s[i:]);
+          chain+=detchain(s[i:]);
 
         if(chain or c=='{'):
-          self.lvl+=(
+          lvl+=(
             (chain!=0) 
-           |((self.state&ff_lnlup)!=0)
+           |((state&ff_lnlup)!=0)
 
-          );self.state|=(
+          );state|=(
             ff_write
            |ff_indent
            |(ff_newline*(nx!='\n'))
@@ -341,58 +433,58 @@ class dtdde:
           );
 
 #    ---     ---     ---     ---     ---
+# fmat:clchain
 
       elif(c=='}' or (c==')' and chain)):
 
         clchain=chain!=0;
-        self.lvl-=self.lvl!=0;chain=chain-(c==')');
+        lvl-=lvl!=0;chain=chain-(c==')');
 
         row=(
           row[:-1].rstrip(' ')
          +('\n'*(chain==0)*(not last_nl)
-          *(self.lvl!=0))
+          *(lvl!=0))
 
          +('\n'*(last!=c)*(not last_nl)
-          *(self.lvl!=0))
+          *(lvl!=0))
 
-         +self.gi()+c
+         +gi()+c
 
-        );self.state|=ff_write;
+        );state|=ff_write;
 
       elif(i==len(s)-1):
-        self.state|=ff_write;
+        state|=ff_write|ff_newline;
 
 #    ---     ---     ---     ---     ---
-# format:flush
+# fmat:flush
 
-      if(self.state&ff_write):
-
+      if(state&ff_write):
 
         if(lblspan and i>=lblspan):
-          self.lvl-=1;lblspan=0;
+          lvl-=1;lblspan=0;
 
-        result=result+self.accom(row,clchain);
+        result=result+accom(row,clchain);
         row=(
 
-          ('\n'*((self.state&ff_newline)!=0))
+          ('\n'*((state&ff_newline)!=0))
 
-         +(self.gi()*((self.state&ff_indent)!=0))
+         +(gi()*((state&ff_indent)!=0))
 
-        );last_nl=self.state&ff_newline;
+        );last_nl=state&ff_newline;
 
 #    ---     ---     ---     ---     ---
 
-        self.state|=(
+        state|=(
           ff_lnlup
-         *((self.state&ff_newline)!=0)
+         *((state&ff_newline)!=0)
 
-        );self.state&=~(
+        );state&=~(
           ff_write
          |ff_indent
          |ff_newline
          |(ff_label*(lblspan==0))
 
-        );self.state|=ff_wsig;
+        );state|=ff_wsig;
         clchain=0;
 
 #    ---     ---     ---     ---     ---
@@ -405,81 +497,17 @@ class dtdde:
       else:
         tok=tokb if tokb else "_";tokb="";
 
-      i+=1;
-    print(result);
+      i+=1;j+=1;
+
+  print(result);
 
 #    ---     ---     ---     ---     ---
 
 root    = "/".join((__file__.split("/"))[:-1]);
 
-dtdde.format(open(root+"/fmat_test.c").read());
+format(root+"/fmat_test.c");
 
 exit();
-
-lvl     = 0;
-llb     = [');', '};', '];', '!=', '|=', '&=',
-           '++', '--', '+=', '*=', '/=', '%=',
-           '||', '&&', '^=', '~' , '!(','&=~',
-           '->', '>=', '<=', '<<', '>>', ' ' ,
-           '-=', 
-           ',' , '(' , ')' , ';' , '{' , '}' ,
-           '-' , '/' , '&' , '!' , '|' , '%' ,
-           '+' , '^' , '>' , '<' , '=' , '*)'  ];
-
-lbrk    = [');', '};', '];', '!=', '|=', '&=',
-           '++', '--', '+=', '*=', '/=', '%=',
-           '||', '&&', '^=', '~' , '!(','&=~',
-           '>=', '<=', '<<', '>>', ' ' ,
-           '-=', 
-           ',' , '(' , ')' , ';' , '{' , '}' ,
-           '/' , '&' , '!' , '|' , '%' ,
-           '+' , '^' , '=' , '*)'              ];
-
-bx_cap  = "//"+('*'*(l_mid-2))+"\n";
-bx_fld  = "//"+(' '*(l_mid-3))+"*\n";
-com_fld = "// "+(' '*c_len)+'\n';
-lcm_fld = "// "+(' '*l_wid)+'\n';
-cde_fld = " "+(' '*(l_wid))+'\n';
-
-cde_fa  = cde_fld[:(l_mid)];
-cde_fb  = cde_fld[(l_mid):];
-
-#    ---     ---     ---     ---     ---
-
-class coldde:
-
-  cln = 1;
-  clw = 4;
-
-#    ---     ---     ---     ---     ---
-
-  @staticmethod
-  def test(line,seps,pad):
-
-    col_i  = 0;
-    row_i  = 0;
-    result = "";
-    row    = "";
-
-#    ---     ---     ---     ---     ---
-
-    for c in line:
-
-      row=row+c;
-      col_i=int(len(row)/coldde.clw);
-
-      if( col_i==coldde.cln
-      and c in seps):
-        result=result+(pad*seps[c])+row+'\n';
-        col_i=0;row_i+=1;row="";
-
-#    ---     ---     ---     ---     ---
-
-    for c in row:
-      if(c in seps):
-        result=result+(pad*seps[c])+row+'\n';
-
-    return result;
 
 #    ---     ---     ---     ---     ---
 
@@ -954,48 +982,12 @@ def docbox(fname):
 
 docf  = docbox("idntest.c");
 
-culsp = "//   ---     ---     ---     ---     ---";
-culsg = 0;
-
-s     = "";
-
-n_nl  = 0;
-
-lines = [];
-cs_nx = 0;
-cs_sw = 0;
-
 with open(root+"/idntest.c", "r") as src:
   lines=src.readlines()[docf[1]:];
 
 for line in lines:
 
-  line=line.strip();
 
-  if(not len(line)):
-    s=s+('\n' if not n_nl else '');
-    n_nl=1; continue;
-
-  n_nl=0;
-
-  if(line[0:8]=="//   ---" \
-
-  or line[0:3]=="//*"      \
-
-  or (line[0:2]=="//"      \
-    and line[-1]=="*")     ):
-
-    if(line[0:8]=="//   ---"):
-      line=line.replace(culsp,'').strip();
-      line=line.replace('// ', '');
-      line=' '+line if len(line) else '';
-      ln='#:'+hex(culsg).upper()+';>';
-      ln=ln[0:3]+'x'+ln[4:];
-
-      line=culsp+'\n// '+ln+line; culsg+=1;
-
-    s=s+line+('\n' if line[-1]!='\n' else '');
-    continue;
 
 #    ---     ---     ---     ---     ---
 
