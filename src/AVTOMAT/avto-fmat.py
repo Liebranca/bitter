@@ -333,7 +333,7 @@ def __fill(s, base,pos=3,cap=4,trim=0):
 #    ---     ---     ---     ---     ---
 
 def bx_fill(s):
-  return __fill(s, bx_fld,cap=1);
+  return __fill(s, bx_fld,cap=-1);
 
 def com_fill(s):
   return __fill(s, com_fld);
@@ -533,7 +533,7 @@ def docbox(fname):
   s="";
 
   s=s+bx_cap;
-  s=s+bx_fill(mname);
+  s=s+bx_fill(mname.upper());
   s=s+bx_fill(desc);
   s=s+bx_fld;
 
@@ -624,14 +624,14 @@ def opnparn(seg):
 
   global state;
 
-  parens=0;i=0;
+  parens=0;i=0;j=0;
   lsplit=0;do_split=0;opch=0;
 
   seg_cpy=str(seg);
 
   for c in seg_cpy:
 
-    if(c=='"'):
+    if(seg[i]=='"'):
 
       if(not (state&ff_string)):
         state|=ff_string;
@@ -640,22 +640,22 @@ def opnparn(seg):
         state&=~ff_string;
 
     if(state&ff_string):
-      i+=1;continue;
+      i+=1;j+=1;continue;
 
-    elif(c in ' \n\t'):
-      if(c=='\n'):
+    elif(seg[i] in ' \n\t'):
+      if(seg[i]=='\n'):
         lsplit=i+1;
         do_split=(
           len(seg[lsplit:])
-          >l_wid
+          >l_mid
         );
 
       i+=1;continue;
     
-    if(c=='('):
+    if(seg[i]=='('):
       parens=1;
 
-    elif(c==')'):
+    elif(seg[i]==')'):
       parens=0;
 
     if(parens):
@@ -663,9 +663,11 @@ def opnparn(seg):
 
 #    ---     ---     ---     ---     ---
 
-    if(c in chops and do_split):
+    if(seg[i] in chops and do_split):
 
-      if(c==','):
+      print(seg[i]);
+
+      if(seg[i]==','):
         pad=1+len(rgi)+opch;
         seg=(
           seg[:i+1]+'\n'
@@ -676,11 +678,11 @@ def opnparn(seg):
 
         );opch=0;
 
-        i+=pad+(i_wid*lvl);
+        i+=pad+(i_wid*lvl);j=0;
 
 #    ---     ---     ---     ---     ---
 
-      elif(i>=l_mid):
+      elif(j>=l_mid):
         pad=2;
         opch=1;
         seg=(
@@ -691,11 +693,13 @@ def opnparn(seg):
 
         );
 
-        i+=pad+(i_wid*lvl);
+        i+=pad+(i_wid*lvl);j=0;
+
+      do_split=0;
 
 #    ---     ---     ---     ---     ---
 
-    i+=1;
+    i+=1;j+=1;
 
   return seg;
 
@@ -1171,9 +1175,38 @@ def format(fname):
 
 #    ---     ---     ---     ---     ---
 
-root    = "/".join((__file__.split("/"))[:-1]);
+#root    = "/".join((__file__.split("/"))[:-1]);
 
-s=format(root+"/idntest.c");
+import sys,os;
 
-with open(root+"/IDNT.c", "w+") as dst:
-  dst.write(s);
+argc=len(sys.argv);
+argv=None;
+if(argc>=2):
+  argv=sys.argv[1:];
+
+else:
+  print(
+    "Usage: fmat filepath\n" \
+    "fmat formats C code and outputs to stdout\n"
+
+  );exit();
+
+root=os.getcwd()+'/';
+
+srcp=argv[0];
+
+oksrc=(os.path.exists(root+srcp)
+  if os.path.isfile(root+srcp)
+  else 0
+
+);
+
+if(not oksrc):
+  print(f"Invalid source <{root+srcp}>");
+  exit();
+
+s=format(srcp);
+print(s);
+
+#with open(root+"/IDNT.c", "w+") as dst:
+#  dst.write(s);
