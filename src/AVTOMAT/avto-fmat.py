@@ -80,437 +80,6 @@ chops      =[
 
 #    ---     ---     ---     ---     ---
 
-def gi():
-  return rgi*lvl;
-
-def detchain(s):
-
-  i=0;
-  for c in s:
-
-    nx='';
-    if(i<(len(s)-1)):
-      nx=s[i+1];
-
-    if( c in chops
-    and nx.isalnum()):
-      return 1;
-
-    if(c==')'):
-      break;
-
-    i+=1;
-
-  return 0;
-
-def detlabel(s,idex):
-
-  llvl = lvl;row  ="";
-  i    = 0       ;found=0 ;
-
-  for c in s[idex:]:
-
-    row=row+c;
-
-#    ---     ---     ---     ---     ---
-
-    if( (':'       in row)
-    or  ("case"    in row)
-    or  ("default" in row) ):
-      i-=len(row);found=1;
-      break;
-
-    elif(llvl<lvl):
-      i-=len(row);found=1;
-      break;
-
-#    ---     ---     ---     ---     ---
-
-    elif(c=='{'):
-      llvl+=1;
-
-    elif(c=='}'):
-      llvl-=1;
-
-    elif(c in ' ;\n'):
-      row="";
-
-    i+=1;
-
-  if(i==-1):
-    return 0;
-
-  return (idex+i)*found;
-
-#    ---     ---     ---     ---     ---
-
-def opnparn(seg):
-
-  parens=0;i=0;
-  lsplit=0;do_split=0;opch=0;
-
-  seg_cpy=str(seg);
-
-  for c in seg_cpy:
-    if(c in ' \n\t'):
-      if(c=='\n'):
-        lsplit=i+1;
-        do_split=(
-          len(seg[lsplit:])
-          >l_mid
-        );
-
-      i+=1;continue;
-    
-    if(c=='('):
-      parens=1;
-
-    elif(c==')'):
-      parens=0;
-
-    if(parens):
-      continue;
-
-#    ---     ---     ---     ---     ---
-
-    if(c in chops and do_split):
-
-      if(c==','):
-        pad=1+len(rgi)+opch;
-        seg=(
-          seg[:i+1]+'\n'
-         +('\n'*opch)
-         +gi()
-         +rgi
-         +seg[i+1:]
-
-        );opch=0;
-
-#    ---     ---     ---     ---     ---
-
-      else:
-        pad=2;
-        opch=1;
-        seg=(
-          seg[:i]+'\n'
-         +gi()
-         +' '
-         +seg[i:]
-
-        );
-
-      i+=pad+(i_wid*lvl);
-
-#    ---     ---     ---     ---     ---
-
-    i+=1;
-
-  return seg;
-
-#    ---     ---     ---     ---     ---
-
-def accom(row,chain):
-
-  if(not len(row)):
-    return '';
-
-  if(len(row)>l_mid):
-    pass;
-
-  if(chain):
-    row=opnparn(row);
-
-  return row;
-
-#    ---     ---     ---     ---     ---
-
-def iatst(row):
-  if(row==('\n'*len(row))):
-    return 0;
-
-  _gi=gi(); return (
-    not row.startswith(_gi)
-    and not row[1:].startswith(_gi)
-
-  );
-
-#    ---     ---     ---     ---     ---
-
-def format(fname):
-
-  global lvl,state;
-  state=ff_wsig|ff_lnlup;
-
-  lf_flb = 0x01;
-
-  last   = '';nx      = '' ;i   =0 ;
-  result = "";row     = "" ;
-  chain  = 0 ;clchain = 0  ;
-
-  last_nl= 0 ;tok     = "_";tokb="";
-  lblspan= 0 ;culsg   = 0  ;
-
-#    ---     ---     ---     ---     ---
-# fmat:top
-
-  lines=[];
-  with open(fname, 'r') as file:
-    lines=file.readlines()
-
-  s=''.join(lines);flines=[];
-  for line in lines:
-
-    if(not len(line.strip())):
-
-      line=('\n'
-        if not (state&ff_nnl)
-        else ''
-
-      );state|=ff_nnl;
-
-    else:
-      state&=~ff_nnl;
-
-#    ---     ---     ---     ---     ---
-# fmat:lcomm
-
-    if(line[0:8]=="//   ---"
-    or line[0:3]=="//*"
-    or (line[0:2]=="//"
-      and line[-1]=="*")):
-
-      if(line[0:8]=="//   ---"):
-        line=line.replace(culsp,'').strip();
-        line=line.replace('// ', '');
-        line=' '+line if len(line) else '';
-        ln='#:'+hex(culsg).upper()+';>';
-        ln=ln[0:3]+'x'+ln[4:];
-        
-        line=culsp+'\n// '+ln+line; culsg+=1;
-
-      if(len(row) and row[-1]!='\n'):
-        row=row+'\n';
-
-      line=line+(
-        '\n' if  line[-1]!='\n'
-             and line[-1]!='*' else ''
-
-      );state|=ff_lcomm;
-
-    flines.append(line);
-
-#    ---     ---     ---     ---     ---
-# fmat:rdline
-
-  s=''.join(flines);
-  for line in flines:
-
-    j=0;
-    for c in line:
-
-      nx='';
-      if(i<(len(s)-1)):
-        nx=s[i+1];
-
-      if((state&ff_wsig) and c!=' '):
-        row=row+c;state&=~ff_wsig;
-
-      elif((state&ff_wsig)==0):
-        row=row+c;
-
-#    ---     ---     ---     ---     ---
-# fmat:fmat:h_lcomm
-
-      if(state&ff_lcomm):
-        if(c=='\n' and j==len(line)-1):
-          state&=~ff_lcomm;
-          state|=(
-            ff_write
-           |(ff_newline*line[-2]!='*')
-
-          );
-
-#    ---     ---     ---     ---     ---
-# fmat:case
-
-      elif(c==';'):
-        if( (state&ff_label)
-        and (state&ff_ncnl ) ):
-          state&=~ff_ncnl;
-          state|=ff_newline|ff_indent;
-
-        state|=ff_write;
-
-      elif(c==':'):
-
-        state|=ff_ncnl;
-        state|=ff_label;
-        lblspan=detlabel(s,i+1);
-
-        lvl+=(state&ff_lnlup)!=0;
-        state&=~ff_lnlup;
-
-#    ---     ---     ---     ---     ---
-# fmat:space
-
-      elif(c==' '):
-        igws=not state&(
-          ff_lcomm
-         |ff_bcomm
-         |ff_prepo
-
-        );
-
-        if(igws and len(row)>1):
-          if(row[-2]=='\n'):
-            row=row[:-1];
-
-      elif(c=='#'):
-        if(not last_nl):
-          row=row[:-1]+'\n'+c;
-
-        state|=ff_prepo;
-
-#    ---     ---     ---     ---     ---
-# fmat:nl
-
-      elif(c=='\n'):
-
-        if( (state&ff_label)
-        and (state&ff_ncnl) ):
-          state&=~ff_ncnl;
-          state|=ff_newline|ff_indent;
-
-        state|=(
-          ff_write
-          |(ff_indent
-           *(not iatst(row))
-           *(not (state&ff_lcomm))
-          )
-          |ff_newline
-
-        );row=row[:-1];
-
-        state&=~ff_lcomm;
-        state&=~(
-          ff_prepo*(last!='\\')
-
-        );
-
-#    ---     ---     ---     ---     ---
-# fmat:c_comm
-
-      elif(c+nx=='//'):
-        state|=ff_lcomm;
-        if(not last_nl and not len(row)):
-          row=row[:-1]+'\n'+c;
-
-      elif(c+nx=='/*'):
-        state|=ff_bcomm;
-
-      # TODO: move to comment-handle block
-      elif(c+nx=='*/'):
-        state&=~ff_bcomm;
-
-#    ---     ---     ---     ---     ---
-# fmat:chain
-
-      elif(c in '{('):
-
-        if(c=='('):
-          chain+=detchain(s[i:]);
-
-        if(chain or c=='{'):
-          lvl+=(
-            (chain!=0) 
-           |((state&ff_lnlup)!=0)
-
-          );state|=(
-            ff_write
-           |ff_indent
-           |(ff_newline*(nx!='\n'))
-
-          );
-
-#    ---     ---     ---     ---     ---
-# fmat:clchain
-
-      elif(c=='}' or (c==')' and chain)):
-
-        clchain=chain!=0;
-        lvl-=lvl!=0;chain=chain-(c==')');
-
-        row=(
-          row[:-1].rstrip(' ')
-         +('\n'*(chain==0)*(not last_nl)
-          *(lvl!=0))
-
-         +('\n'*(last!=c)*(not last_nl)
-          *(lvl!=0))
-
-         +gi()+c
-
-        );state|=ff_write;
-
-      elif(i==len(s)-1):
-        state|=ff_write|ff_newline;
-
-#    ---     ---     ---     ---     ---
-# fmat:flush
-
-      if(state&ff_write):
-
-        if(lblspan and i>=lblspan):
-          lvl-=1;lblspan=0;
-
-        result=result+accom(row,clchain);
-        row=(
-
-          ('\n'*((state&ff_newline)!=0))
-
-         +(gi()*((state&ff_indent)!=0))
-
-        );last_nl=state&ff_newline;
-
-#    ---     ---     ---     ---     ---
-
-        state|=(
-          ff_lnlup
-         *((state&ff_newline)!=0)
-
-        );state&=~(
-          ff_write
-         |ff_indent
-         |ff_newline
-         |(ff_label*(lblspan==0))
-
-        );state|=ff_wsig;
-        clchain=0;
-
-#    ---     ---     ---     ---     ---
-
-      if(ord(c)>0x20):
-        last=c;
-        if(c.isalnum() or c==':'):
-          tokb=tokb+c;
-
-      else:
-        tok=tokb if tokb else "_";tokb="";
-
-      i+=1;j+=1;
-
-  print(result);
-
-#    ---     ---     ---     ---     ---
-
-root    = "/".join((__file__.split("/"))[:-1]);
-
-format(root+"/fmat_test.c");
-
-exit();
-
-#    ---     ---     ---     ---     ---
-
 def mkline(s,indent,pad):
   result="";i=0;subs=s.split('\n');
   for sub in subs:
@@ -980,6 +549,527 @@ def docbox(fname):
 
 #    ---     ---     ---     ---     ---
 
+def gi():
+  return rgi*lvl;
+
+def ri(line):
+  indent="";
+  for c in line:
+    if c not in ' \n\t':
+      break;
+
+    indent=indent+c;
+
+  return indent;
+
+def detchain(s):
+
+  i=0;
+  for c in s:
+
+    nx='';
+    if(i<(len(s)-1)):
+      nx=s[i+1];
+
+    if( c in chops
+    and nx.isalnum()):
+      return 1;
+
+    if(c==')'):
+      break;
+
+    i+=1;
+
+  return 0;
+
+def detlabel(s,idex):
+
+  llvl = lvl;row  ="";
+  i    = 0       ;found=0 ;
+
+  for c in s[idex:]:
+
+    row=row+c;
+
+#    ---     ---     ---     ---     ---
+
+    if( (':'       in row)
+    or  ("case"    in row)
+    or  ("default" in row) ):
+      i-=len(row);found=1;
+      break;
+
+    elif(llvl<lvl):
+      i-=len(row);found=1;
+      break;
+
+#    ---     ---     ---     ---     ---
+
+    elif(c=='{'):
+      llvl+=1;
+
+    elif(c=='}'):
+      llvl-=1;
+
+    elif(c in ' ;\n'):
+      row="";
+
+    i+=1;
+
+  if(i==-1):
+    return 0;
+
+  return (idex+i)*found;
+
+#    ---     ---     ---     ---     ---
+
+def opnparn(seg):
+
+  parens=0;i=0;
+  lsplit=0;do_split=0;opch=0;
+
+  seg_cpy=str(seg);
+
+  for c in seg_cpy:
+    if(c in ' \n\t'):
+      if(c=='\n'):
+        lsplit=i+1;
+        do_split=(
+          len(seg[lsplit:])
+          >l_mid
+        );
+
+      i+=1;continue;
+    
+    if(c=='('):
+      parens=1;
+
+    elif(c==')'):
+      parens=0;
+
+    if(parens):
+      continue;
+
+#    ---     ---     ---     ---     ---
+
+    if(c in chops and do_split):
+
+      if(c==','):
+        pad=1+len(rgi)+opch;
+        seg=(
+          seg[:i+1]+'\n'
+         +('\n'*opch)
+         +gi()
+         +rgi
+         +seg[i+1:]
+
+        );opch=0;
+
+#    ---     ---     ---     ---     ---
+
+      else:
+        pad=2;
+        opch=1;
+        seg=(
+          seg[:i]+'\n'
+         +gi()
+         +' '
+         +seg[i:]
+
+        );
+
+      i+=pad+(i_wid*lvl);
+
+#    ---     ---     ---     ---     ---
+
+    i+=1;
+
+  return seg;
+
+#    ---     ---     ---     ---     ---
+
+def accom(row,chain):
+
+  if(not len(row)):
+    return '';
+
+  if(len(row)>l_mid):
+    pass;
+
+  if(chain):
+    row=opnparn(row);
+
+  return row;
+
+#    ---     ---     ---     ---     ---
+
+def iatst(row):
+  if(row==('\n'*len(row))):
+    return 0;
+
+  _gi=gi(); return (
+    not row.startswith(_gi)
+    and not row[1:].startswith(_gi)
+
+  );
+
+#    ---     ---     ---     ---     ---
+
+def format(fname):
+
+  global lvl,state;
+  state=ff_wsig|ff_lnlup;
+
+  lf_flb = 0x01;
+
+  last   = '';nx      = '' ;i   =0 ;
+  result = "";row     = "" ;
+  chain  = 0 ;clchain = 0  ;
+
+  last_nl= 0 ;tok     = "_";tokb="";
+  lblspan= 0 ;culsg   = 0  ;
+
+#    ---     ---     ---     ---     ---
+# fmat:top
+
+  lines=[];
+  with open(fname, 'r') as file:
+    lines=file.readlines()
+
+  s=''.join(lines);flines=[];
+  for line in lines:
+
+    if(not len(line.strip())):
+
+      line=('\n'
+        if not (state&ff_nnl)
+        else ''
+
+      );state|=ff_nnl;
+
+    else:
+      state&=~ff_nnl;
+
+#    ---     ---     ---     ---     ---
+# fmat:lcomm
+
+    if(line[0:8]=="//   ---"
+    or line[0:3]=="//*"
+    or (line[0:2]=="//"
+      and line[-1]=="*")):
+
+      if(line[0:8]=="//   ---"):
+        line=line.replace(culsp,'').strip();
+        line=line.replace('// ', '');
+        line=' '+line if len(line) else '';
+        ln='#:'+hex(culsg).upper()+';>';
+        ln=ln[0:3]+'x'+ln[4:];
+        
+        line=culsp+'\n// '+ln+line; culsg+=1;
+
+      if(len(row) and row[-1]!='\n'):
+        row=row+'\n';
+
+      line=line+(
+        '\n' if  line[-1]!='\n'
+             and line[-1]!='*' else ''
+
+      );state|=ff_lcomm;
+
+    flines.append(line);
+
+#    ---     ---     ---     ---     ---
+# fmat:rdline
+
+  s=''.join(flines);
+  for line in flines:
+
+    j=0;state&=~ff_ncnl;
+    for c in line:
+
+      nx='';
+      if(i<(len(s)-1)):
+        nx=s[i+1];
+
+      if((state&ff_wsig) and c!=' '):
+        row=row+c;state&=~ff_wsig;
+
+      elif((state&ff_wsig)==0):
+        row=row+c;
+
+#    ---     ---     ---     ---     ---
+# fmat:h_lcomm
+
+      if(state&ff_lcomm):
+        if(c=='\n' and j==len(line)-1):
+          state&=~ff_lcomm;
+          state|=(
+            ff_write
+           |(ff_newline*line[-2]!='*')
+           |ff_indent
+
+          );
+
+#    ---     ---     ---     ---     ---
+# fmat:case
+
+      elif(c==';'):
+        if( (state&ff_label)
+        and (state&ff_ncnl ) ):
+          state&=~ff_ncnl;
+          state|=ff_newline|ff_indent;
+
+        state|=ff_write;
+
+      elif(c==':'):
+
+        state|=ff_ncnl;
+        state|=ff_label;
+        lblspan=detlabel(s,i+1);
+
+        lvl+=(state&ff_lnlup)!=0;
+        state&=~ff_lnlup;
+
+#    ---     ---     ---     ---     ---
+# fmat:space
+
+      elif(c==' '):
+        igws=not state&(
+          ff_lcomm
+         |ff_bcomm
+         |ff_prepo
+
+        );
+
+        if(igws and len(row)>1):
+          if(row[-2]=='\n'):
+            row=row[:-1];
+
+      elif(c=='#'):
+        if(not last_nl):
+          row=row[:-1]+'\n'+c;
+
+        state|=ff_prepo;
+
+#    ---     ---     ---     ---     ---
+# fmat:nl
+
+      elif(c=='\n'):
+
+        if( (state&ff_label)
+        and (state&ff_ncnl) ):
+          state&=~ff_ncnl;
+          state|=ff_newline|ff_indent;
+
+        state|=(
+          ff_write
+          |(ff_indent
+           *(not iatst(row))
+           *(not (state&ff_lcomm))
+          )
+          |ff_newline
+
+        );row=row[:-1];
+
+        state&=~ff_lcomm;
+        state&=~(
+          ff_prepo*(last!='\\')
+
+        );
+
+#    ---     ---     ---     ---     ---
+# fmat:c_comm
+
+      elif(c+nx=='//'):
+        state|=ff_lcomm;
+        if(not last_nl and not len(row)):
+          row=row[:-1]+'\n'+c;
+
+      elif(c+nx=='/*'):
+        state|=ff_bcomm;
+
+      # TODO: move to comment-handle block
+      elif(c+nx=='*/'):
+        state&=~ff_bcomm;
+
+#    ---     ---     ---     ---     ---
+# fmat:chain
+
+      elif(c in '{('):
+
+        if(c=='('):
+          chain+=detchain(s[i:]);
+
+        if(chain or c=='{'):
+          lvl+=(
+            (chain!=0) 
+           |((state&ff_lnlup)!=0)
+
+          );state|=(
+            ff_write
+           |(ff_newline*(nx!='\n')*('//' not in line))
+
+          );state|=(
+            ff_indent
+           *((state&ff_newline)!=0)
+
+          );
+
+#    ---     ---     ---     ---     ---
+# fmat:clchain
+
+      elif(c=='}' or (c==')' and chain)):
+
+        clchain=chain!=0;
+        lvl-=lvl!=0;chain=chain-(c==')');
+
+        row=(
+          row[:-1].rstrip(' ')
+         +('\n'*(chain==0)*(not last_nl)
+          *(lvl!=0))
+
+         +('\n'*(last!=c)*(not last_nl)
+          *(lvl!=0))
+
+         +gi()+c
+
+        );state|=ff_write;
+
+      elif(i==len(s)-1):
+        state|=ff_write|ff_newline;
+
+#    ---     ---     ---     ---     ---
+# fmat:flush
+
+      if(state&ff_write):
+
+        if(lblspan and i>=lblspan):
+          lvl-=1;lblspan=0;
+
+        result=result+accom(row,clchain);
+        row=(
+
+          ('\n'*((state&ff_newline)!=0))
+
+         +(gi()*((state&ff_indent)!=0))
+
+        );last_nl=state&ff_newline;
+
+#    ---     ---     ---     ---     ---
+
+        state|=(
+          ff_lnlup
+         *((state&ff_newline)!=0)
+
+        );state&=~(
+          ff_write
+         |ff_indent
+         |ff_newline
+         |(ff_label*(lblspan==0))
+
+        );state|=ff_wsig;
+        clchain=0;
+
+#    ---     ---     ---     ---     ---
+
+      if(ord(c)>0x20):
+        last=c;
+        if(c.isalnum() or c==':'):
+          tokb=tokb+c;
+
+      else:
+        tok=tokb if tokb else "_";tokb="";
+
+      i+=1;j+=1;
+
+#    ---     ---     ---     ---     ---
+# fmat:dcomm
+
+  lines=([
+    sub+'\n' for sub in result.split('\n')
+
+  ]);j=0;
+
+  for line in lines:
+
+    indent = ri(line);
+    app_com="";
+
+    if(len(line)<2):
+      pass;
+
+    elif(line[0:2]=='//'):
+      pass;
+
+    elif("//" in line):
+      bits    = line.split("//");
+      com     = "".join(b for b in bits[1:]);
+      com     = com.rstrip('\n').rstrip(' ');
+      com     = com.lstrip(' ');
+
+      bits[0] = bits[0].lstrip(' ').rstrip('\n');
+      bits[0] = bits[0].rstrip(' ');
+
+      line    = despace(bits[0]);
+
+#    ---     ---     ---     ---     ---
+
+      com=com_fill(com); i=0;
+      com=com.split('\n');
+
+      for sub in com:
+        sub=sub.lstrip(' ').rstrip(' ');
+        com[i]=com[i].rstrip(' ');
+
+        if(len(sub)):
+          com[i]=(' '*l_mid)+sub;
+
+        i+=1;
+
+      com=[sub for sub in com if len(sub)];
+
+#    ---     ---     ---     ---     ---
+
+      if(not len(line)):    #:YESCOM;>
+                            #:NOCODE;>
+        line='\n'.join(com)+'\n';
+
+      elif(not len(com)):
+        pass;
+
+      elif((len(indent)+len(line)<=l_mid)):
+        com[0]=com[0].lstrip(' ');
+        app_com=('\n'.join(com)+'\n');
+
+        line=cfa_fill(line,cap=1);
+        line=line[:l_mid-len(indent)];
+
+      else:                 #:FULINE;>
+        line='\n'.join(com)+'\n';
+
+#    ---     ---     ---     ---     ---
+
+    else:                   #:NOCOM;>
+      line   = cde_fill(despace(line),cap=5+len(indent));
+      #line   = line[:-1].rstrip(' ')+'\n';
+
+#    ---     ---     ---     ---     ---
+
+    #if(len(line.strip())<=1):
+    #  if(not len(line) and line not in llb):
+    #    continue;
+
+    print(indent+line+app_com,end='');j+=1;
+
+#    ---     ---     ---     ---     ---
+
+root    = "/".join((__file__.split("/"))[:-1]);
+
+format(root+"/fmat_test.c");
+
+exit();
+
+
 docf  = docbox("idntest.c");
 
 with open(root+"/idntest.c", "r") as src:
@@ -1014,69 +1104,7 @@ for line in lines:
 
 #    ---     ---     ---     ---     ---
 
-  app_com="";
-  if("//" in line):
 
-    bits    = line.split("//");
-    com     = "".join(b for b in bits[1:]);
-    com     = com.rstrip('\n').rstrip(' ');
-    com     = com.lstrip(' ');
-
-    bits[0] = bits[0].lstrip(' ').rstrip('\n');
-    bits[0] = bits[0].rstrip(' ');
-
-    line    = despace(bits[0]);
-
-#    ---     ---     ---     ---     ---
-
-    com=com_fill(com); i=0;
-    com=com.split('\n');
-
-    for sub in com:
-      sub=sub.lstrip(' ').rstrip(' ');
-      com[i]=com[i].rstrip(' ');
-
-      if(len(sub)):
-        com[i]=(' '*l_mid)+sub;
-
-      i+=1;
-
-    com=[sub for sub in com if len(sub)];
-
-#    ---     ---     ---     ---     ---
-
-    if(not len(line)):      #:YESCOM;>
-                            #:NOCODE;>
-      s=s+('\n'.join(com)+'\n');
-      continue;
-
-    if(not len(com)):
-      pass;
-
-    elif((len(indent)+len(line)<=l_mid)):
-      com[0]=com[0].lstrip(' ');
-      app_com=('\n'.join(com)+'\n');
-
-      line=cfa_fill(line,cap=1);
-      line=line[:l_mid-len(indent)];
-
-    else:                   #:FULINE;>
-      s=s+('\n'.join(com)+'\n');
-
-#    ---     ---     ---     ---     ---
-
-  else:                     #:NOCOM;>
-
-    line   = cde_fill(despace(line),cap=5+len(indent));
-    line   = line[:-1].rstrip(' ')+'\n';
-
-#    ---     ---     ---     ---     ---
-
-  if(len(line.strip())<=1):
-    if(not len(line) and line not in llb):
-      continue;
-
-#    ---     ---     ---     ---     ---
 
   curly_end='';
 
