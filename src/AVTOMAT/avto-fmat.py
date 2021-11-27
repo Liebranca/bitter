@@ -491,7 +491,7 @@ def docbox(fname):
 #    ---     ---     ---     ---     ---
 
   atl=0;
-  with open(root+"/"+fname, "r") as src:
+  with open(fname, "r") as src:
     while(1):
 
       line=src.readline();
@@ -556,7 +556,10 @@ def gi():
 def ri(line):
   indent="";
   for c in line:
-    if c not in ' \n\t':
+    if c=='\n':
+      continue;
+
+    elif c not in ' \t':
       break;
 
     indent=indent+c;
@@ -569,7 +572,7 @@ def detchain(s,line):
   rl=rl.split("//")[0];
   rl=rl.split("/*")[0];
 
-  if(len(rl)<l_mid):
+  if(len(rl)<l_wid):
     return 0;
 
   i=0;
@@ -599,25 +602,11 @@ def detlabel(s,idex):
 
     row=row+c;
 
-#    ---     ---     ---     ---     ---
-
     if( (':'       in row)
     or  ("case"    in row)
     or  ("default" in row) ):
-      i-=len(row);found=1;
+      i-=len(row)+1;found=1;
       break;
-
-    elif(llvl<lvl):
-      i-=len(row);found=1;
-      break;
-
-#    ---     ---     ---     ---     ---
-
-    elif(c=='{'):
-      llvl+=1;
-
-    elif(c=='}'):
-      llvl-=1;
 
     elif(c in ' ;\n'):
       row="";
@@ -687,9 +676,11 @@ def opnparn(seg):
 
         );opch=0;
 
+        i+=pad+(i_wid*lvl);
+
 #    ---     ---     ---     ---     ---
 
-      else:
+      elif(i>=l_mid):
         pad=2;
         opch=1;
         seg=(
@@ -700,14 +691,11 @@ def opnparn(seg):
 
         );
 
-      i+=pad+(i_wid*lvl);
+        i+=pad+(i_wid*lvl);
 
 #    ---     ---     ---     ---     ---
 
     i+=1;
-
-  if(seg!=seg_cpy):
-    seg=seg[:-1]+'\n\n'+gi()+')';
 
   return seg;
 
@@ -766,7 +754,7 @@ def format(fname):
 
   global lvl,state;
 
-  docf   = docbox("idntest.c");
+  docf   = docbox(fname);
   state  = ff_wsig|ff_lnlup;
 
   lf_flb = 0x01;
@@ -784,8 +772,6 @@ def format(fname):
   lines=[];
   with open(fname, 'r') as file:
     lines=file.readlines()[docf[1]:];
-
-  lines=lines[:100];
 
   flines=[];
   for line in lines:
@@ -835,6 +821,25 @@ def format(fname):
   s=''.join(flines);
   for line in flines:
 
+    if(culsp in line
+    or (line.startswith("//")
+    and ("#:" in line
+    and ";>" in line))):
+
+      if(len(result)):
+        if(result[-1]!='\n'):
+          result=result+'\n';
+
+      result=result+line;
+      i+=len(line);
+      continue;
+
+    if(len(line)<2):
+      result=result+line;
+      i+=len(line);
+      continue;
+
+    
     j=0;state&=~ff_ncnl;
     for c in line:
 
@@ -866,6 +871,12 @@ def format(fname):
           state&=~ff_bcomm;
           state|=ff_write;
 
+      elif(state&ff_prepo):
+        if(c=='\n' and last!='\\'):
+          state&=~ff_prepo;
+          state|=ff_write;
+          row=row[:-1];
+
 #    ---     ---     ---     ---     ---
 # fmat:string
 
@@ -888,16 +899,21 @@ def format(fname):
           state&=~ff_ncnl;
           state|=ff_newline|ff_indent;
 
-        state|=ff_write;
+        state|=(
+          ff_write
+         |(ff_newline*(nx=='}'))
+
+        );
 
       elif(c==':'):
+        pass; #out of order!
 
-        state|=ff_ncnl;
-        state|=ff_label;
-        lblspan=detlabel(s,i+1);
+        #state|=ff_ncnl;
+        #state|=ff_label;
+        #lblspan=detlabel(s,i+1);
 
-        lvl+=(state&ff_lnlup)!=0;
-        state&=~ff_lnlup;
+        #lvl+=(state&ff_lnlup)!=0;
+        #state&=~ff_lnlup;
 
 #    ---     ---     ---     ---     ---
 # fmat:space
@@ -950,29 +966,10 @@ def format(fname):
 # fmat:c_comm
 
       elif(c+nx=='//'):
-
         state|=ff_lcomm;
-        if(not last_nl and not len(row)):
-          row=row[:-1]+'\n'+c;
-
-        elif(not len(row[:-1].strip())):
-          row=c;
-
-          if(last_nl and (
-            culsp in line or "// #" in line)
-
-          ):result=result[:len(result)-len(gi())];
 
       elif(c+nx=='/*'
       and not (state&ff_lcomm)):
-        if(last_nl):
-          w=line[:j];
-          row=(
-            '\n'+w
-            +row[(lvl*i_wid)+1:]
-
-          );
-
         state|=ff_bcomm;
 
 #    ---     ---     ---     ---     ---
@@ -988,7 +985,8 @@ def format(fname):
 
           state|=(
             ff_write
-           |(ff_newline*(nx!='\n')*('//' not in line))
+           |(ff_newline*(nx!='\n')
+           *('//' not in line))
 
           );state|=(
             ff_indent
@@ -1002,7 +1000,6 @@ def format(fname):
       elif(c in '})'):
 
         if(chain==1 or c=='}'):
-          lvl-=(lvl!=0);
 
           row=(
             row[:-1].rstrip(' ')
@@ -1012,9 +1009,9 @@ def format(fname):
            +('\n'*(last!=c)*(not last_nl)
             *(lvl!=0))
 
-           +gi()+c
-
           );state|=ff_write;
+          lvl-=(lvl!=0)*((state&ff_lnlup)!=0);
+          row=row+gi()+c;
 
         if(c==')'):
           chain-=(chain!=0);
@@ -1029,7 +1026,9 @@ def format(fname):
       if(state&ff_write):
 
         if(lblspan and i>=lblspan):
-          lvl-=1;lblspan=0;
+
+          #lvl-=(lvl!=0)*((state&ff_lnlup)!=0);
+          lblspan=0;
 
         result=result+accom(row,clchain);
         row=(
@@ -1039,7 +1038,11 @@ def format(fname):
 
          +(gi()*((state&ff_indent )!=0))
 
-        );last_nl=state&ff_newline;
+        );last_nl=(
+          (len(row) and row[-1]=='\n')
+          or (state&ff_newline)
+
+        );
 
 #    ---     ---     ---     ---     ---
 
@@ -1047,7 +1050,9 @@ def format(fname):
           ff_lnlup
          *((state&ff_newline)!=0)
 
-        );state&=~(
+        );
+
+        state&=~(
           ff_write
          |ff_indent
          |ff_newline
@@ -1071,9 +1076,8 @@ def format(fname):
 #    ---     ---     ---     ---     ---
 # fmat:dcomm
 
-  #print(result);
-
   s=docf[0];
+
   lines=([
     sub+'\n' for sub in result.split('\n')
 
@@ -1125,7 +1129,8 @@ def format(fname):
 
       if(not len(line)):    #:YESCOM;>
                             #:NOCODE;>
-        line='\n'.join(com)+'\n';
+        s=s+'\n'.join(com)+'\n';
+        continue;
 
       elif(not len(com)):
         pass;
@@ -1139,118 +1144,36 @@ def format(fname):
 
       else:                 #:FULINE;>
         s=s+'\n'.join(com)+'\n';
-        continue;
 
 #    ---     ---     ---     ---     ---
 
     else:                   #:NOCOM;>
       line   = cde_fill(despace(line),cap=5+len(indent));
 
-      #line   = line[:-1].rstrip(' ')+'\n';
+      line   = line[:-1].rstrip(' ')+'\n';
 
 #    ---     ---     ---     ---     ---
 
-    #if(len(line.strip())<=1):
-    #  if(not len(line) and line not in llb):
-    #    continue;
+    if(len(line.strip())<=1):
+      if(not len(line) and line not in llb):
+        continue;
 
     line=mkline(              #:MKLINE;>
       line,indent,
-      (' '*i_wid)
+      rgi
 
     )+app_com;
 
     line=line.rstrip()+'\n';
     s=s+line;j+=1;
 
-  print(s);
+  return s;
 
 #    ---     ---     ---     ---     ---
 
 root    = "/".join((__file__.split("/"))[:-1]);
 
-format(root+"/idntest.c");
-
-exit();
-
-
-with open(root+"/fmat_test.c", "r") as src:
-  lines=src.readlines();
-
-for line in lines:
-
-
-
-#    ---     ---     ---     ---     ---
-
-  if(line[0:6]=="switch"):
-    cs_sw=lvl;
-
-  elif(line[0:5]=="case "   \
-  or   line[0:8]=='default '):
-    cs_nx=0;
-
-  elif(cs_sw):
-    cs_nx=lvl<=cs_sw+1;
-
-  curly_beg='}' in line[0:2];
-
-  lvl_dw = len([br for br in line if br=='}']);
-  lvl_up = len([br for br in line if br=='{']);
-
-  if( (lvl_up!=lvl_dw) \
-  and (curly_beg)      ):
-    lvl -= lvl_dw;
-
-  indent = ' '*(i_wid*(lvl+cs_nx));
-
-#    ---     ---     ---     ---     ---
-
-
-
-  curly_end='';
-
-  if(lvl_up!=lvl_dw):
-    lvl += lvl_up;
-
-    if(not curly_beg):
-      lvl -= lvl_dw;
-
-#    ---     ---     ---     ---     ---
-
-      frun='\n';            #:CURLY_END;>
-
-      while('}' in line[-3:]):
-        if(lvl_up): break;
-
-        if(line[-3:-1]=='};'):
-          curly_end=curly_end+'};';
-          line=line[:-3]+'\n'+frun;
-          frun='';
-
-        elif(line[-2]=='}'):
-          curly_end=curly_end+'}';
-          line=line[:-2]+'\n'+frun;
-          frun='';
-
-        else:
-          break;
-
-#    ---     ---     ---     ---     ---
-
-  if(cs_sw and (  line[0:5]=="case "   \
-               or line[0:8]=='default ')):
-
-    cs_nx=-1;
-
-  if(lvl<=cs_sw and cs_sw):
-    cs_sw=0;cs_nx=0;
-
-  s=s+line+curly_end;
-
-#    ---     ---     ---     ---     ---
-
-s=docf[0]+s;
+s=format(root+"/idntest.c");
 
 with open(root+"/IDNT.c", "w+") as dst:
   dst.write(s);
