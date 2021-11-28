@@ -1,4 +1,4 @@
-# MAMMOTH GNU MAKEFILE
+# GRIM GNU MAKEFILE
 
 #   ---     ---     ---     ---     ---
 # platform switch
@@ -18,8 +18,8 @@ OFLG     += -fsingle-precision-constant -ffast-math -fno-ident
 LFLG      = -s -Os -flto -ffunction-sections -fdata-sections -fPIC
 LFLG     += -Wl,--gc-sections -Wl,-fuse-ld=bfd
 
-FSWAT     = MAMMOTH
-MKWAT     = mamm.exe
+FSWAT     = GRIM
+MKWAT     = grim.exe
 
 DIRS      = $(shell find $(BASE_DIR) -type d)
 HEDS      = $(wildcard $(DIRS:%=%/*.h))

@@ -834,6 +834,10 @@ def format(fname):
         if(result[-1]!='\n'):
           result=result+'\n';
 
+      if(culsp in line):
+        result=result+'\n';
+        i+=1;
+
       result=result+line;
       i+=len(line);
       continue;
@@ -1175,24 +1179,25 @@ def format(fname):
 
 #    ---     ---     ---     ---     ---
 
-#root    = "/".join((__file__.split("/"))[:-1]);
-
 import sys,os;
 
 argc=len(sys.argv);
 argv=None;
 if(argc>=2):
   argv=sys.argv[1:];
+  argc-=1;
 
 else:
   print(
-    "Usage: fmat filepath\n" \
-    "fmat formats C code and outputs to stdout\n"
+    "Usage: fmat filepath\n\n"                     \
+    "formats a C file to 56 columns\n\n"           \
+    "Options:\n"                                   \
+    " outpath  writes to file rather than stdout\n"\
+    " -r       replaces the original\n\n"          \
 
   );exit();
 
 root=os.getcwd()+'/';
-
 srcp=argv[0];
 
 oksrc=(os.path.exists(root+srcp)
@@ -1205,8 +1210,13 @@ if(not oksrc):
   print(f"Invalid source <{root+srcp}>");
   exit();
 
-s=format(srcp);
-print(s);
+s=format(root+srcp);
 
-#with open(root+"/IDNT.c", "w+") as dst:
-#  dst.write(s);
+if(argc>=2):
+  dstp=srcp if argv[1]=="-r" else argv[1];
+
+  with open(root+dstp, "w+") as dst:
+    dst.write(s);
+
+else:
+  print(s);
