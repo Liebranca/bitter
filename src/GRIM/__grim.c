@@ -12,11 +12,13 @@
 
 #include "__grim.h"
 
-#include <fcntl.h>
 #include <stdlib.h>
-#include <termios.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
+
+#include <fcntl.h>
+#include <termios.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -25,6 +27,46 @@
 #define frlen 0x100
 #define scrsz_x 0x3F
 #define scrsz_y 0x1F
+
+#define utsz 0x4000
+
+char utbuff[utsz]={0};      // output buffer
+int ut_i=0;                 // ^cur.idex into
+
+// we write to this custom buffer full of long
+// escapes and things, *then* we dump the whole
+// string into stdout, in one go
+//
+// better than repeated printf? i think so
+
+//   ---     ---     ---     ---     --- gb:utwrite
+
+void utwr(char* format,...) {
+
+  va_list args;
+
+  va_start(args, format);
+  vsprintf(utbuff+ut_i, format, args);
+  va_end(args);
+
+  ut_i+=strlen(utbuff+ut_i);
+
+};
+
+//   ---     ---     ---     ---     --- gb:utflush
+
+void utfl(void) {
+  printf("%s",utbuff);fflush(stdout);
+
+  memset(
+    utbuff,0,
+    ut_i*sizeof(char)
+
+  );ut_i=0;
+
+}
+
+//   ---     ---     ---     ---     ---
 
 enum modes { r_mode,w_mode,c_mode };
 static int mode=r_mode;
@@ -96,7 +138,11 @@ static GRMB scr={
 
 };
 
-void ntgrmb(GRMB** buffs, int num) {
+//   ---     ---     ---     ---     --- grmb:nit
+
+void ntgrmb(
+  GRMB** buffs,
+  int num) {
 
   for(int x=0;x<num;x++) {
 
@@ -107,6 +153,50 @@ void ntgrmb(GRMB** buffs, int num) {
     buff->ptr=buff->s;
 
   };
+
+};
+
+//   ---     ---     ---     ---     --- grmb:drw
+
+int logrmb(GRMB* buff) {
+
+  if(!buff->of) {
+    return buff->y*buff->Mx;
+
+  };return (buff->y-(buff->my))*(buff->Mx-buff->mx);
+
+};
+
+void drwgrmb(
+  GRMB* buff,
+  int iscur) {
+
+  int x=buff->mx;int ofst=logrmb(buff);
+  char* s=buff->s+ofst;
+
+  while(!(*s)) {
+    s++;x++;
+
+    if(x>=buff->Mx) {
+      x=buff->mx;break;
+
+    };
+  };
+
+  char* bc=(
+    (iscur)
+    ? palette[p_cur_b]
+    : palette[p_def_b]
+
+  );utwr(
+    "\e[%u;1H\e[48;2;%sm\e[38;2;%sm\e[K",
+    scr.y+1,bc,palette[p_def_f]
+
+  );utwr(
+    "\e[%u;%uH%s\e[0m",
+    scr.y+1,x+1,s
+
+  );
 
 };
 
@@ -134,6 +224,8 @@ void mvgrmb(
     buff->y=buff->my;
 
   };
+
+//   ---     ---     ---     ---     --- grmb:mvptr
 
   if(!buff->of) {
     buff->ptr=(
@@ -187,7 +279,7 @@ void fr_rmode(uint64_t in) {
       y=1;break;
 
     case 0x77:
-      *(scr.ptr)=0x24;
+      mode=w_mode;
       break;
 
     default:
@@ -197,9 +289,11 @@ void fr_rmode(uint64_t in) {
 
 //   ---     ---     ---     ---     --- rmode:move
 
+  drwgrmb(&scr,0);
   mvgrmb(&scr,x,y);
+  drwgrmb(&scr,1);
 
-  printf(
+  utwr(
 
     "\e[27;1H\e[48;2;%sm"
     "\e[38;2;%sm\e[K"
@@ -214,12 +308,12 @@ void fr_rmode(uint64_t in) {
   );
 
   if(*scr.ptr) {
-    printf("\e[%u;%uH%c\b",scr.y+1,scr.x+1,*scr.ptr);
+    utwr("\e[%u;%uH%c\b",scr.y+1,scr.x+1,*scr.ptr);
 
   } else {
-    printf("\e[%u;%uH",scr.y+1,scr.x+1);
+    utwr("\e[%u;%uH",scr.y+1,scr.x+1);
 
-  };fflush(stdout);
+  };
 
 };
 
@@ -227,7 +321,57 @@ void fr_rmode(uint64_t in) {
 
 void fr_wmode(uint64_t in) {
 
-  ;
+  if(in && in!=META_X) {
+
+    if(in!=DEL) {
+
+      if(scr.x>=scr.Mx) {
+        scr.ptr--;
+
+      };*scr.ptr=(char) in;
+
+      utwr(
+
+        "\e[%u;%uH"
+        "\e[48;2;%sm"
+        "\e[38;2;%sm"
+        "%c\e[0m",
+
+        scr.y+1,scr.x+1,
+        palette[p_cur_d],palette[p_car_b],
+
+        *scr.ptr
+
+      );if(in!=RET) {
+        mvgrmb(&scr,1,0);
+        return;
+
+      };scr.x=0;mvgrmb(&scr,0,1);
+
+//   ---     ---     ---     ---     --- wmode:del
+
+    } else if(scr.x>=scr.mx) {
+
+      mvgrmb(&scr,-1,0);
+      *scr.ptr=0x20;
+
+      utwr(
+
+        "\e[%u;%uH"
+        "\e[48;2;%sm"
+        "\e[38;2;%sm"
+        "%c\b\e[0m",
+
+        scr.y+1,scr.x+1,
+        palette[p_cur_d],palette[p_car_b],
+
+        *scr.ptr
+
+      );
+
+    };
+
+  };
 
 };
 
@@ -238,7 +382,8 @@ void fr_cmode(uint64_t in) {
   if(in && in!=META_X) {
 
     if(in==RET) {
-      printf(
+
+      utwr(
         "\e[27;1H\e[48;2;%sm\e[K"
         "\e[38;2;%sm$:\e[0m"
         "\e[%u;%uH%s",
@@ -250,6 +395,8 @@ void fr_cmode(uint64_t in) {
 
       mode=r_mode;
 
+//   ---     ---     ---     ---     --- cmode:ins
+
     } else if(in!=DEL) {
 
       if(cmd.x>=cmd.Mx) {
@@ -257,7 +404,7 @@ void fr_cmode(uint64_t in) {
 
       };*cmd.ptr=(char) in;
 
-      printf(
+      utwr(
 
         "\e[%u;%uH"
         "\e[48;2;%sm"
@@ -271,12 +418,14 @@ void fr_cmode(uint64_t in) {
 
       );mvgrmb(&cmd,1,0);
 
+//   ---     ---     ---     ---     --- cmode:del
+
     } else if(cmd.x>=cmd.mx) {
 
       mvgrmb(&cmd,-1,0);
       *cmd.ptr=0x20;
 
-      printf(
+      utwr(
 
         "\e[%u;%uH"
         "\e[48;2;%sm"
@@ -336,7 +485,7 @@ void main(void) {
   };system("clear");
   printf("\e[1;1H");
 
-//   ---     ---     ---     ---     --- setup
+//   ---     ---     ---     ---     --- e:setup
 
   struct termios term;
   tcgetattr(fno, &term);
@@ -347,7 +496,7 @@ void main(void) {
   fc|=O_NONBLOCK;
   fcntl(fno, F_SETFL, fc);
 
-//   ---     ---     ---     ---     --- loop
+//   ---     ---     ---     ---     --- e:loop
 
   char buff[16]={0x00};
   uint64_t clk=(uint64_t) clock();
@@ -377,8 +526,10 @@ void main(void) {
       //printf("0x%016" PRIX64 "\n",*btt);
 
     };fr_act[mode](*btt);
+    if(ut_i) {
+      utfl();
 
-    if(clk<frlen) {
+    };if(clk<frlen) {
       usleep(frlen-clk);
 
     } else {
@@ -388,7 +539,7 @@ void main(void) {
 
   };
 
-//   ---     ---     ---     ---     --- clenup
+//   ---     ---     ---     ---     --- e:clenup
 
   free(cmd.s);
   free(scr.s);
@@ -401,4 +552,4 @@ void main(void) {
 
 };
 
-//   ---     ---     ---     ---     --- end
+//   ---     ---     ---     ---     --- e:end
