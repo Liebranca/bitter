@@ -20,7 +20,7 @@
 #include <time.h>
 #include <unistd.h>
 
-//   ---     ---     ---     ---     --- boxes
+//   ---     ---     ---     ---     --- gb:boxes
 
 #define frlen 0x100
 #define scrsz_x 0x3F
@@ -39,17 +39,74 @@ static fr_mode fr_act[]={
 
 };
 
+//   ---     ---     ---     ---     --- gb:palette
+
+enum palette_i {
+
+  p_def_b,p_cur_b,p_sel_b,p_cur_d,
+
+  p_def_f,p_str_f,p_car_b,p_num_f,
+  p_ope_f,p_key_f,p_ins_f,p_dtv_f,
+
+  
+
+};static char* palette[]={
+
+  "0;0;32",                 // background default
+  "0;0;64",                 // bkg current line
+  "128;0;0",                // shift-select
+  "64;0;64",                // delimiter highlight
+
+  "64;174;64",              // foreground default
+  "0;160;160",              // strings/comments
+  "176;176;0",              // caret
+  "208;152;32",             // numbers
+  "176;160;64",             // operators
+
+  "128;32;160",             // keywords
+  "0;128;176",              // instructions/types
+  "160;16;32"               // directives
+
+};
+
 //   ---     ---     ---     ---     --- grmb
 
 typedef struct {
 
-  int x;int mx;int us;
-  int y;int my;int sz;
+  int mx;int x;int Mx;
+  int my;int y;int My;
+
+  int of;int sz;
 
   char* s;char* ptr;
 
-} GRMB;static GRMB scr={
-  0,scrsz_x-7,0,0,scrsz_y-5,2048
+} GRMB;
+
+static GRMB scr={
+  0,0,scrsz_x-7,
+  0,0,scrsz_y-6,
+
+  0,2048
+
+};static GRMB cmd={
+  2,2,scrsz_x-7,
+  scrsz_y-5,scrsz_y-5,scrsz_y-4,
+
+  1,256
+
+};
+
+void ntgrmb(GRMB** buffs, int num) {
+
+  for(int x=0;x<num;x++) {
+
+    GRMB* buff=buffs[x];
+
+    buff->s=(char*) malloc(buff->sz*sizeof(char));
+    memset(buff->s,0,buff->sz*sizeof(char));
+    buff->ptr=buff->s;
+
+  };
 
 };
 
@@ -62,35 +119,48 @@ void mvgrmb(
 
   buff->x+=x;buff->y+=y;
 
-  if(buff->x>=buff->mx) {
-    buff->x=0;
-    buff->y+=1;
+  if(buff->x>=buff->Mx) {
+    buff->x=buff->Mx;
 
-  } else if(buff->x<0) {
-    buff->x=buff->mx-1;
-    buff->y-=1;
+  } else if(buff->x<buff->mx) {
+    buff->x=buff->mx;
 
   };
 
-  if(buff->y>=buff->my) {
-    buff->y=buff->my-1;
+  if(buff->y>=buff->My) {
+    buff->y=buff->My-1;
 
-  } else if(buff->y<0) {
-    buff->y=0;
+  } else if(buff->y<buff->my) {
+    buff->y=buff->my;
+
+  };
+
+  if(!buff->of) {
+    buff->ptr=(
+      buff->s
+
+     +(buff->x
+     +((buff->y)*buff->Mx))
+
+    );return;
 
   };
 
   buff->ptr=(
     buff->s
 
-   +(buff->x
-   +(buff->y*buff->mx))
+   +((buff->x-(buff->mx))
+   +((buff->y-(buff->my))*(buff->Mx-buff->mx)))
 
   );
-
 };
 
 //   ---     ---     ---     ---     --- rmode
+
+#define CTRL_X 0x0018       // ctrl+x
+#define META_X 0x781B       // alt+x
+#define DEL    0x7F         // <- backspace
+#define RET    0x0A         // enter/return/newline
 
 #define LFT 0x6A            // j
 #define RGT 0x6C            // l
@@ -131,12 +201,15 @@ void fr_rmode(uint64_t in) {
 
   printf(
 
-    "\e[27;1H\e[48;2;0;0;128m"
-    "\e[38;2;64;174;64m\e[K"
+    "\e[27;1H\e[48;2;%sm"
+    "\e[38;2;%sm\e[K"
 
-    "[%u;%u] | %c | %u/%u\e[0m",
+    "[%02"PRIX8";%02"PRIX8"] 0x%"
+    PRIXPTR"/%"PRIXPTR"\e[0m",
 
-    scr.y+1,scr.x+1,(char) in,scr.ptr,scr.sz
+    palette[p_cur_b],palette[p_str_f],
+
+    scr.y+1,scr.x+1,scr.ptr,scr.s+(scr.sz-1)
 
   );
 
@@ -160,13 +233,70 @@ void fr_wmode(uint64_t in) {
 
 //   ---     ---     ---     ---     --- cmode
 
-#define CTRL_X 0x0018
-#define META_X 0x781B
-
 void fr_cmode(uint64_t in) {
 
-  ;
+  if(in && in!=META_X) {
 
+    if(in==RET) {
+      printf(
+        "\e[27;1H\e[48;2;%sm\e[K"
+        "\e[38;2;%sm$:\e[0m"
+        "\e[%u;%uH%s",
+        palette[p_cur_d],palette[p_car_b],
+        scr.y+1,scr.x+1,cmd.s
+
+      );cmd.x=0;cmd.y=0;mvgrmb(&cmd,0,0);
+      memset(cmd.s,0,strlen(cmd.s));
+
+      mode=r_mode;
+
+    } else if(in!=DEL) {
+
+      if(cmd.x>=cmd.Mx) {
+        cmd.ptr--;
+
+      };*cmd.ptr=(char) in;
+
+      printf(
+
+        "\e[%u;%uH"
+        "\e[48;2;%sm"
+        "\e[38;2;%sm"
+        "%c\e[0m",
+
+        cmd.y+1,cmd.x+1,
+        palette[p_cur_d],palette[p_car_b],
+
+        *cmd.ptr
+
+      );mvgrmb(&cmd,1,0);
+
+    } else if(cmd.x>=cmd.mx) {
+
+      mvgrmb(&cmd,-1,0);
+      *cmd.ptr=0x20;
+
+      printf(
+
+        "\e[%u;%uH"
+        "\e[48;2;%sm"
+        "\e[38;2;%sm"
+        "%c\b\e[0m",
+
+        cmd.y+1,cmd.x+1,
+        palette[p_cur_d],palette[p_car_b],
+
+        *cmd.ptr
+
+      );int end=strlen(cmd.s)-1;
+      while(cmd.s[end]==0x20) {
+        cmd.s[end]=0x00;end--;
+
+      };
+
+    };
+
+  };
 };
 
 //   ---     ---     ---     ---     --- entry
@@ -217,15 +347,14 @@ void main(void) {
   fc|=O_NONBLOCK;
   fcntl(fno, F_SETFL, fc);
 
-  scr.s=(char*) malloc(scr.sz*sizeof(char));
-  memset(scr.s,0,scr.sz*sizeof(char));
-  scr.ptr=scr.s;
-
 //   ---     ---     ---     ---     --- loop
 
   char buff[16]={0x00};
   uint64_t clk=(uint64_t) clock();
   uint64_t* btt=(uint64_t*) &buff;
+
+  GRMB* grmbs[]={&scr,&cmd};
+  ntgrmb(grmbs, 2);
 
   while(*btt!=0x1B) {
 
@@ -236,7 +365,12 @@ void main(void) {
 
       if(*btt==META_X && mode!=c_mode) {
         mode=c_mode;
-        printf("\e[27;1H\e[48;2;0;0;0m\e[K");
+        printf(
+          "\e[27;1H\e[48;2;%sm\e[K"
+          "\e[38;2;%sm$:\e[0m",
+          palette[p_cur_d],palette[p_car_b]
+
+        );cmd.x=0;cmd.y=0;mvgrmb(&cmd,0,0);
 
       };
 
@@ -256,6 +390,7 @@ void main(void) {
 
 //   ---     ---     ---     ---     --- clenup
 
+  free(cmd.s);
   free(scr.s);
 
   term.c_lflag |= ICANON|ECHO;
