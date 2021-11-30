@@ -46,7 +46,7 @@ for fold in ["KVRNEL","GRIM", "MAMMOTH", "SIN", "CHASM", "SHB7"]:
     if not os.path.exists(dpath+"/MKLOG"):
         print(f"->generated {fold} can");
         with open(dpath+"/MKLOG", "w+") as mkflags:
-            mkflags.write("-D KVR_DEBUG=0x0D");
+            mkflags.write("-D KVR_DEBUG=0x88");
 
 print("\n Ready\n");
 

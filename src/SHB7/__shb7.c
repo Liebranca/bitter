@@ -20,6 +20,9 @@
 #include "SIN/sin_texture.h"
 #include "SIN/REND/sin_canvas.h"
 
+#include <stdlib.h>
+#include <inttypes.h>
+
 //   ---     ---     ---     ---     ---
 // #:0x0;>
 
@@ -35,10 +38,17 @@ int main(int argc,char** argv) {
   GTCHRSZ(sc);
   GTSCRSZ(ws);
 
-  ustr8 d={0x24,0,0,0};
-  float t[4]={sc[0],-1,sc[1],1};
+  uint CharCount=ws[0]*ws[1];
+  uint* d=(uint*) malloc(CharCount*sizeof(uint));
 
-  int fuck=0;
+  for(uint y=0;y<ws[1];y++) {
+    for(uint x=0;x<ws[0];x++) {
+      d[x+(y*ws[0])]=0xFF;
+
+    };
+  };
+
+  float t[4]={sc[0],-1,sc[1],1};
 
   while(GTCHMNGRUN()) {
 
@@ -48,23 +58,14 @@ int main(int argc,char** argv) {
 
     };
 
-    t[0]=sc[0];t[1]=-1;
-    t[2]=sc[1];t[3]= 1;
-
-    for(int y=0;y<ws[1];y++) {
-      for(int x=0;x<ws[0];x++) {
-        PSHCHR(t,&d);
-        t[1]+=t[0];
-
-      };t[1]=(-1);
-        t[3]-=(t[2]*1.5);
-
-    };
+    PSHCHR(d);
 
     FRENDCHMNG();
     SLEEPCHMNG();
 
   };
+
+  free(d);
 
   DLSIN();
   DLCHMNG();

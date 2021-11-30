@@ -12,7 +12,6 @@ extern"C" {
 //   ---     ---     ---     ---     ---
 // #:0x0;>
 
-
 void NTCANVAS();            // kyknit
 void DLCANVAS(void);        // kykdel
 
@@ -20,7 +19,7 @@ void BEGPSH(void);          // frbeg for char
                             // pushing
 
 // pushchar to screen
-void PSHCHR(float* t,ustr8* d);
+void PSHCHR(uint* d);
 
 // frend for char pushing
 void ENDPSH(float* t,ustr8* d);

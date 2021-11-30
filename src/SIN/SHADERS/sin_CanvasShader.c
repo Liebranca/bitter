@@ -28,20 +28,32 @@ cchar* SIN_CanvasShader_source_v[2] =
 SIN_GL_VER,
 
 "\
-in  vec3  Position;\
+in  vec4  Position;\
 uniform vec4 Transform;\
-uniform uvec4 CharData;\
+\
+layout (std140) uniform CharData {\
+  flat uint i[2048];\
+} _CharData;\
 \
 out vec2  texCoords;\
-out uint  chidex;\
+flat out uint  chidex;\
 \
 void main() {\
 \
-    gl_Position = vec4((Position.x*Transform[0])+Transform[1],\
-                       (Position.y*Transform[2])+(Transform[3]-Transform[2]), 0, 1.0);\
 \
-    texCoords   = vec2(Position.x>0, Position.y>0);\
-    chidex      = CharData[0];\
+  float px=float(uint(Position.x)&1);\
+  float py=float(uint(Position.y)&1);\
+\
+  gl_Position = vec4(\
+    (px*Transform[0])+Position.z,\
+\
+    (py*Transform[1])+(Position.w-Transform[1]),\
+    0, 1.0\
+  );\
+\
+  texCoords=vec2(px>0,py>0);\
+  uint c_id=uint(Position.x)>>1;\
+  chidex=0x24;\
 };\
 "
 
@@ -72,8 +84,8 @@ void main() {\
     uint z = uint(i > 31);\
 \
     i-=z*32;\
-    bool r = bool(lycon[chidex][z]&(1<<i)); r=r&&chidex>0x1F;\
-\
+    bool r = bool(lycon[chidex][z]&(1<<i));\
+    r=r&&(chidex>=0x00);\
 \
     vec4 color = vec4(64.0/255.0,174.0/255.0,64.0/255.0,r);\
     gl_FragColor = color;\
@@ -91,9 +103,9 @@ const SHDP SIN_CanvasShader =
 
     { "Position"                            },      // Attributes
 
-    { "Transform", "CharData"               },      // Uniforms
+    { "Transform"                           },      // Uniforms
 
-    {                                       },      // UBOs
+    { "CharData"                            },      // UBOs
 
     {                                       },      // Samplers
 
@@ -101,7 +113,7 @@ const SHDP SIN_CanvasShader =
     3,                                              // Number of fragment shader blocks
     1,                                              // Number of attributes
     1,                                              // Number of uniforms
-    0,                                              // Number of UBOs
+    1,                                              // Number of UBOs
     0,                                              // Number of samplers
 
     0                                               // Flags

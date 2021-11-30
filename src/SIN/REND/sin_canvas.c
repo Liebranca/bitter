@@ -22,37 +22,89 @@
 
 #include "SHADERS/sin_CanvasShader.h"
 
+#include <stdlib.h>
+
 //   ---     ---     ---     ---     ---
 // #:0x0;>
 
 static uint canvasVAO=0;
 static uint canvasVBO=0;
+static uint canvasUBO=0;
+
 static uint canvasProgram=0;
 static uint canvasShader [2]= {0,0};
 static uint canvasUniforms[2]= {0,0};
 
+static uint VertCount=0;
+static uint CharCount=0;
+
 //   ---     ---     ---     ---     ---
 // #:0x1;>
-
 
 void NTCANVAS(void) {
 
                             // just a shorthand
   const SHDP* params=&SIN_CanvasShader;
 
-  uint ws[2];
-  GTSCRSZ(ws);
+  float sc[2];GTCHRSZ(sc);
+  uint ws[2];GTSCRSZ(ws);
 
-  CALOUT(E, "%u,%u\n",ws[0],ws[1]);
+  CharCount=ws[0]*ws[1];
 
-  float quadVertices[]= {   // draw rect
-    0.0f,1.0f,
-    0.0f,0.0f,
-    1.0f,0.0f,
-    0.0f,1.0f,
-    1.0f,0.0f,
-    1.0f,1.0f
+  uint vsz=(CharCount)*(4*6)*sizeof(float);
+  float* quadVerts=(float*) malloc(vsz);
 
+  uint idex=0;
+
+  float px=-1.0f;
+  float py=1.0f;
+
+  for(uint y=0;y<ws[1];y++) {
+    for(uint x=0;x<ws[0];x++) {
+
+      if(px>=1.0f) {
+        px=-1.0f;
+        py-=sc[1];
+
+      };
+
+      uint chidex=(x+(y*ws[0]))<<1;
+      uint videx=0;
+
+      quadVerts[idex+0x00]=0|chidex;
+      quadVerts[idex+0x01]=1|videx;
+      quadVerts[idex+0x02]=px;
+      quadVerts[idex+0x03]=py;
+
+      quadVerts[idex+0x04]=0|chidex;
+      quadVerts[idex+0x05]=0|videx;
+      quadVerts[idex+0x06]=px;
+      quadVerts[idex+0x07]=py;
+
+      quadVerts[idex+0x08]=1|chidex;
+      quadVerts[idex+0x09]=0|videx;
+      quadVerts[idex+0x0A]=px;
+      quadVerts[idex+0x0B]=py;
+
+      quadVerts[idex+0x0C]=0|chidex;
+      quadVerts[idex+0x0D]=1|videx;
+      quadVerts[idex+0x0E]=px;
+      quadVerts[idex+0x0F]=py;
+
+      quadVerts[idex+0x10]=1|chidex;
+      quadVerts[idex+0x11]=0|videx;
+      quadVerts[idex+0x12]=px;
+      quadVerts[idex+0x13]=py;
+
+      quadVerts[idex+0x14]=1|chidex;
+      quadVerts[idex+0x15]=1|videx;
+      quadVerts[idex+0x16]=px;
+      quadVerts[idex+0x17]=py;
+
+      idex+=0x18;px+=(sc[0]);
+      VertCount+=6;
+
+    };
   };
 
 //   ---     ---     ---     ---     ---
@@ -65,14 +117,35 @@ void NTCANVAS(void) {
 
   // load data
   glBindBuffer(GL_ARRAY_BUFFER,canvasVBO);
-  glBufferData(GL_ARRAY_BUFFER,sizeof(quadVertices),
+  glBufferData(GL_ARRAY_BUFFER,vsz,
 
-  &quadVertices,GL_STATIC_DRAW);
+  quadVerts,GL_STATIC_DRAW);
 
   // set attrib pointers
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE,
-  2 * sizeof(float),(void*) 0);
+  glVertexAttribPointer(0,4,GL_FLOAT,GL_FALSE,
+  4 * sizeof(float),(void*) 0);
+
+  free(quadVerts);
+
+//   ---     ---     ---     ---     --- UBO as char array
+
+  glGenBuffers(1,&canvasUBO);
+  glBindBuffer(GL_ARRAY_BUFFER,0);
+
+  glBindBuffer(GL_UNIFORM_BUFFER,canvasUBO);
+
+  glBufferData(
+    GL_UNIFORM_BUFFER,
+
+    CharCount*sizeof(uint),
+    NULL, GL_DYNAMIC_DRAW
+
+  );glBindBufferBase(
+    GL_UNIFORM_BUFFER,
+    0,canvasUBO
+
+  );
 
 //   ---     ---     ---     ---     ---
 // #:0x3;>
@@ -143,6 +216,18 @@ void NTCANVAS(void) {
        params->uniforms[i]);
 
   };
+
+  uint block_index=glGetUniformBlockIndex(
+    canvasProgram,
+    params->ubos[0]
+
+  );glUniformBlockBinding(
+    canvasProgram,
+    block_index,
+    0
+
+  );
+
 };
 
 //   ---     ---     ---     ---     ---
@@ -153,15 +238,21 @@ void BEGPSH(void) {
 
   glDisable(GL_DEPTH_TEST);
   glUseProgram(canvasProgram);
-  glBindVertexArray(canvasVAO);
+
+  float sc[4];GTCHRSZ(sc);
+  glUniform4fv(canvasUniforms[0],1,sc);
 
 };
 
-void PSHCHR(float* t,ustr8* d) {
+void PSHCHR(uint* d) {
 
-  glUniform4fv(canvasUniforms[0],1,t);
-  glUniform4uiv(canvasUniforms[1],1,(uint*) d);
-  glDrawArrays(GL_TRIANGLES,0,6);
+  glBindBuffer(GL_UNIFORM_BUFFER,canvasUBO);
+
+  glBufferSubData(
+    GL_UNIFORM_BUFFER,0,
+    CharCount*sizeof(uint),(void*) d
+
+  );glDrawArrays(GL_TRIANGLES,0,VertCount);
 
 };
 
@@ -190,6 +281,7 @@ void DLCANVAS(void) {
   };
 
   glDeleteProgram(canvasProgram);
+  glDeleteBuffers(1,&canvasUBO);
   glDeleteBuffers(1,&canvasVBO);
   glDeleteBuffers(1,&canvasVAO);
 
