@@ -15,7 +15,8 @@ endif
 
 OFLG      = -s -Os -fno-unwind-tables -fno-asynchronous-unwind-tables
 OFLG     += -fsingle-precision-constant -ffast-math -fno-ident
-LFLG      = -ffunction-sections -fdata-sections -Wl,--gc-sections -fPIC
+LFLG      = -s -Os -flto -ffunction-sections -fdata-sections
+LFLG     += -Wl,--gc-sections -Wl,-fuse-ld=bfd -fPIC
 
 FSWAT     = CHASM
 MKWAT     = chasm.dll

@@ -1,5 +1,5 @@
-#ifndef __ES_WERG_H__
-#define __ES_WERG_H__
+#ifndef __SHB7_H__
+#define __SHB7_H__
 
 #include "KVRNEL/zjc_CommonTypes.h"
 
@@ -17,4 +17,4 @@ int main(int argc, char** argv);
 }
 #endif
 
-#endif // __ES_WERG_H__
+#endif // __SHB7_H__

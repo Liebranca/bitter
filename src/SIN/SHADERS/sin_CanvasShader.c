@@ -75,7 +75,7 @@ void main() {\
     bool r = bool(lycon[chidex][z]&(1<<i)); r=r&&chidex>0x1F;\
 \
 \
-    vec4 color = vec4(192.0/255.0,206.0/255.0,192.0/255.0,r);\
+    vec4 color = vec4(64.0/255.0,174.0/255.0,64.0/255.0,r);\
     gl_FragColor = color;\
 }\
 "

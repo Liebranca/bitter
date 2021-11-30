@@ -36,7 +36,7 @@ llb        = [');', '};', '];', '!=', '|=', '&=',
               '++', '--', '+=', '*=', '/=', '%=',
               '||', '&&', '^=', '~' , '!(','&=~',
               '->', '>=', '<=', '<<', '>>', ' ' ,
-              '-=', 
+              '-=', '\\',
               ',' , '(' , ')' , ';' , '{' , '}' ,
               '-' , '/' , '&' , '!' , '|' , '%' ,
               '+' , '^' , '>' , '<' , '=' , '*)'  ];
@@ -45,7 +45,7 @@ lbrk       = [');', '};', '];', '!=', '|=', '&=',
               '++', '--', '+=', '*=', '/=', '%=',
               '||', '&&', '^=', '~' , '!(','&=~',
               '>=', '<=', '<<', '>>', ' ' ,
-              '-=', 
+              '-=', '\\',
               ',' , '(' , ')' , ';' , '{' , '}' ,
               '/' , '&' , '!' , '|' , '%' ,
               '+' , '^' , '=' , '*)'              ];
@@ -76,7 +76,7 @@ rgi        = ' '*i_wid;
 chops      =[
   ',','-','+','|','&',
   '/','*','%','^','<',
-  '>','='
+  '>','=','\\'
 ];
 
 #    ---     ---     ---     ---     ---
@@ -303,7 +303,6 @@ def __fill(s, base,pos=3,cap=4,trim=0):
       no_goto[4]=s[beg_str:end_str];
       __fillstrg();
 
-
       beg_cde=end_str;
 
 #    ---     ---     ---     ---     ---
@@ -382,6 +381,7 @@ def sepcstr(s):
   pos=[];has=0;prev='';i=0;
 
   for c in s:
+
     if(c=='"' and prev!='\\'):
       if(has):
         pos.append(i+1);
@@ -391,9 +391,12 @@ def sepcstr(s):
         pos.append(i);
         has=1;
 
-    i+=1;
+    prev=c;i+=1;
 
-  return pos;
+  if(not len(pos)%2):
+    return pos;
+
+  return [0]+pos;
 
 #    ---     ---     ---     ---     ---
 
@@ -622,7 +625,7 @@ def detlabel(s,idex):
 
 def opnparn(seg):
 
-  global state;
+  global state,lvl;
 
   parens=0;i=0;j=0;
   lsplit=0;do_split=0;opch=0;
@@ -650,7 +653,7 @@ def opnparn(seg):
           >l_mid
         );
 
-      i+=1;continue;
+      i+=1;j+=1;continue;
     
     if(seg[i]=='('):
       parens=1;
@@ -659,15 +662,14 @@ def opnparn(seg):
       parens=0;
 
     if(parens):
-      continue;
+      i+=1;j+=1;continue;
 
 #    ---     ---     ---     ---     ---
 
     if(seg[i] in chops and do_split):
 
-      print(seg[i]);
-
       if(seg[i]==','):
+
         pad=1+len(rgi)+opch;
         seg=(
           seg[:i+1]+'\n'
@@ -758,7 +760,12 @@ def format(fname):
 
   global lvl,state;
 
-  docf   = docbox(fname);
+  if(not fname.endswith('.h')):
+    docf = docbox(fname);
+
+  else:
+    docf = ["",0];
+
   state  = ff_wsig|ff_lnlup;
 
   lf_flb = 0x01;
@@ -869,7 +876,7 @@ def format(fname):
           state&=~(ff_lcomm|ff_bcomm);
           state|=(
             ff_write
-           |(ff_newline*line[-2]!='*')
+           |((ff_newline)*line[-2]!='*')
            |ff_indent
 
           );
@@ -877,12 +884,12 @@ def format(fname):
       elif(state&ff_bcomm):
         if(c+nx=='*/'):
           state&=~ff_bcomm;
-          state|=ff_write;
+          state|=ff_write|ff_indent;
 
       elif(state&ff_prepo):
         if(c=='\n' and last!='\\'):
           state&=~ff_prepo;
-          state|=ff_write;
+          state|=ff_write|ff_indent;
           row=row[:-1];
 
 #    ---     ---     ---     ---     ---
@@ -902,19 +909,26 @@ def format(fname):
 # fmat:case
 
       elif(c==';'):
-        if( (state&ff_label)
-        and (state&ff_ncnl ) ):
-          state&=~ff_ncnl;
-          state|=ff_newline|ff_indent;
+        #if( (state&ff_label)
+        #and (state&ff_ncnl ) ):
+        #  state&=~ff_ncnl;
+        #  state|=ff_newline|ff_indent;
 
         state|=(
           ff_write
-         |(ff_newline*(nx=='}'))
-
+         |ff_indent
+        
         );
 
       elif(c==':'):
-        pass; #out of order!
+        state|=(
+          ff_write
+         |(ff_newline*(nx!='\n'))
+         |ff_indent
+
+        );
+
+        #out of order!
 
         #state|=ff_ncnl;
         #state|=ff_label;
@@ -949,10 +963,10 @@ def format(fname):
 
       elif(c=='\n'):
 
-        if( (state&ff_label)
-        and (state&ff_ncnl) ):
-          state&=~ff_ncnl;
-          state|=ff_newline|ff_indent;
+        #if( (state&ff_label)
+        #and (state&ff_ncnl) ):
+        #  state&=~ff_ncnl;
+        #  state|=ff_newline|ff_indent;
 
         state|=(
           ff_write
@@ -985,20 +999,23 @@ def format(fname):
 
       elif(c in '{('):
 
+        donew=(
+          len([br for br in line if br=='{'])
+        !=len([br for br in line if br=='}'])
+
+        );
+
         if(c=='('):
           chain+=detchain(s[i+1:],line);
 
-        if(chain==1 or c=='{'):
+        if(chain==1
+        or (c=='{' and '}' not in line)):
           lvl+=(state&ff_lnlup)!=0;
 
           state|=(
             ff_write
-           |(ff_newline*(nx!='\n')
-           *('//' not in line))
-
-          );state|=(
-            ff_indent
-           *((state&ff_newline)!=0)
+           |ff_newline*('//' not in line or donew)
+           |ff_indent
 
           );
 
@@ -1018,6 +1035,7 @@ def format(fname):
             *(lvl!=0))
 
           );state|=ff_write;
+
           lvl-=(lvl!=0)*((state&ff_lnlup)!=0);
           row=row+gi()+c;
 
@@ -1051,6 +1069,10 @@ def format(fname):
           or (state&ff_newline)
 
         );
+
+        while(row.startswith('\n\n')):
+          row=row[1:];
+
 
 #    ---     ---     ---     ---     ---
 

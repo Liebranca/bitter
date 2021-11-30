@@ -1,4 +1,4 @@
-# ESPECTRO GNU MAKEFILE
+# SHB7 GNU MAKEFILE
 
 #   ---     ---     ---     ---     ---
 # platform switch
@@ -18,8 +18,8 @@ OFLG     += -fsingle-precision-constant -ffast-math -fno-ident
 LFLG      = -s -Os -flto -ffunction-sections -fdata-sections
 LFLG     += -Wl,--gc-sections -Wl,-fuse-ld=bfd
 
-FSWAT     = ESPECTRO
-MKWAT     = es-shell.exe
+FSWAT     = SHB7
+MKWAT     = shb7.exe
 
 DIRS      = $(shell find $(BASE_DIR) -type d)
 HEDS      = $(wildcard $(DIRS:%=%/*.h))
@@ -33,7 +33,7 @@ ODIR      = $(patsubst %,$(TRSH)/%,$(DIRS))
 
 INCLUDES  = -I$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 INCLUDES += -I$(dir $(abspath ..)/)
-LIBS      = -L$(BIN) -lkvrnel -lgl -lglew -lopengl32 -lsin -lSDL2main -lSDL2 -lchasm 
+LIBS      = -L$(BIN) -lkvrnel -lgl -lglew -lopengl32 -lsin -lSDL2main -lSDL2 -lchasm
 
 MAIN      = $(BIN)/$(MKWAT)
 
@@ -72,7 +72,7 @@ $(TRSH)/%.d: %.c %.h $(TRSH)/MKLOG
 
 $(TRSH)/%.o: %.c %.h $(TRSH)/MKLOG
 	@echo $<
-	@gcc $(OFLG) $(INCLUDES) $(DFLG) $(PFLG) -c $< -o $@
+	@gcc $(OFLG) $(INCLUDES) $(DFLG) $(PFLG) -Wa,-a=$(subst .o,.asm,$@) -c $< -o $@
 
 #   ---     ---     ---     ---     ---
 

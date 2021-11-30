@@ -17,7 +17,7 @@ AVTO_FILES = $(CURDIR)/AVTOMAT/calout.h
 
 #   ---     ---     ---     ---     ---
 
-.PHONY: kvrnel grim mamm sin chasm espectro nrun reb clean
+.PHONY: kvrnel grim mamm sin chasm shb7 nrun reb clean
 
 $(CURDIR)/AVTO:
 	@cd $(CURDIR)/AVTOMAT; python avtomat.py; \
@@ -39,14 +39,14 @@ sin: kvrnel
 chasm: sin
 	@cd $(CURDIR)/CHASM; make
 
-espectro: chasm
-	@cd $(CURDIR)/ESPECTRO; make
+shb7: chasm
+	@cd $(CURDIR)/SHB7; make
 
-nrun: espectro
-	@clear; ../bin/$(PLAT)/es-shell
+nrun: shb7
+	@clear; ../bin/$(PLAT)/shb7
 
 rrun:
-	@../bin/$(PLAT)/es-shell
+	@../bin/$(PLAT)/shb7
 
 clean:
 	@echo Cleaning up...
@@ -60,10 +60,10 @@ clean:
 	@cd $(CURDIR)/SIN; make clean -s;
 	@echo chasm
 	@cd $(CURDIR)/CHASM; make clean -s;
-	@echo espectro
-	@cd $(CURDIR)/ESPECTRO; make clean -s;
+	@echo shb7
+	@cd $(CURDIR)/SHB7; make clean -s;
 	@rm -f $(CURDIR)/AVTO
 
-reb: | clean kvrnel mamm sin chasm espectro
+reb: | clean kvrnel mamm sin chasm shb7
 
 #   ---     ---     ---     ---     ---

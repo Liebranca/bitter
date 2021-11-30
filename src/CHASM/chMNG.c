@@ -36,7 +36,7 @@ static WIN*          curwin          = NULL;
 
 static uchar         openwins;
 
-static float         ambientColor[4] = { 22.0f/255.0f, 30.0f/255.0f, 35.0f/255.0f, 1.0f };
+static float         ambientColor[4] = { 0.0f, 0.0f, 32.0f/255.0f, 1.0f };
 static float         ambientMult     = 1.0f;
 
 //   ---     ---     ---     ---     ---
@@ -104,8 +104,8 @@ int NTCHMNG(char* title, int fullscreen)    {
     SDL_GetCurrentDisplayMode(0, &DM);
 
     if(fullscreen) {
-        SIN_WSIZX = DM.w;
-        SIN_WSIZY = DM.h;
+        SIN_WSIZX = DM.w-1;
+        SIN_WSIZY = DM.h-1;
     
     };
 
@@ -119,6 +119,7 @@ int NTCHMNG(char* title, int fullscreen)    {
     //SDL_SetWindowOpacity(curwin->window, 0.0f);
     SDL_GL_SetSwapInterval(1);
 
+    SDL_SetWindowOpacity(curwin->window, 0.84f);
 //   ---     ---     ---     ---     ---
 
     /* joystick stuff can't be tested now
@@ -145,7 +146,7 @@ int NTCHMNG(char* title, int fullscreen)    {
 
     chmang_clock = MKCLCK                   (".*^~", 8, 1.0f                              );
     STCLCK                                  (chmang_clock                                 );
-    GTCHRGRD                                (16                                           );
+    GTCHRGRD                                (24                                           );
 
     return DONE;                                                                            };
 

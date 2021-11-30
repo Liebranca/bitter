@@ -24,7 +24,7 @@
 
 //   ---     ---     ---     ---     --- gb:boxes
 
-#define frlen 0x100
+#define frlen 0x8000
 #define scrsz_x 0x3F
 #define scrsz_y 0x1F
 
@@ -295,7 +295,7 @@ void fr_rmode(uint64_t in) {
 
   utwr(
 
-    "\e[27;1H\e[48;2;%sm"
+    "\e[27;3H\e[48;2;%sm"
     "\e[38;2;%sm\e[K"
 
     "[%02"PRIX8";%02"PRIX8"] 0x%"
@@ -338,7 +338,7 @@ void fr_wmode(uint64_t in) {
         "%c\e[0m",
 
         scr.y+1,scr.x+1,
-        palette[p_cur_d],palette[p_car_b],
+        palette[p_cur_b],palette[p_def_f],
 
         *scr.ptr
 
@@ -363,16 +363,13 @@ void fr_wmode(uint64_t in) {
         "%c\b\e[0m",
 
         scr.y+1,scr.x+1,
-        palette[p_cur_d],palette[p_car_b],
+        palette[p_cur_b],palette[p_def_f],
 
         *scr.ptr
 
       );
-
     };
-
   };
-
 };
 
 //   ---     ---     ---     ---     --- cmode
@@ -499,16 +496,35 @@ void main(void) {
 //   ---     ---     ---     ---     --- e:loop
 
   char buff[16]={0x00};
-  uint64_t clk=(uint64_t) clock();
+
+  uint64_t clk_b;
+  uint64_t clk_e=(uint64_t) clock();
+  uint64_t delta=0;
+
   uint64_t* btt=(uint64_t*) &buff;
+
+  char* clk_v="+*^~";
+  int clk_vi=0;
 
   GRMB* grmbs[]={&scr,&cmd};
   ntgrmb(grmbs, 2);
 
   while(*btt!=0x1B) {
 
+    clk_b=(uint64_t) clock();
+    delta=clk_b-clk_e;
+    clk_e=clk_b;
+
+    if(delta<frlen) {
+      usleep(frlen-delta);
+      delta=0;
+
+    };
+
     *btt^=*btt;fgets(buff, 16, f);
-    clk=((uint64_t) clock())-clk;
+
+    utwr("\e[27;1H%c",clk_v[clk_vi]);
+    clk_vi+=1;clk_vi^=clk_vi*(clk_vi>3);
 
     if(*btt) {
 
@@ -526,17 +542,11 @@ void main(void) {
       //printf("0x%016" PRIX64 "\n",*btt);
 
     };fr_act[mode](*btt);
+
     if(ut_i) {
       utfl();
 
-    };if(clk<frlen) {
-      usleep(frlen-clk);
-
-    } else {
-      usleep(frlen);
-
     };
-
   };
 
 //   ---     ---     ---     ---     --- e:clenup
