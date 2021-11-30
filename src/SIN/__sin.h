@@ -1,25 +1,52 @@
 #ifndef __SIN_H__
 #define __SIN_H__
+
 #ifdef __cplusplus
-extern "C" {
+
+extern"C" {
+
+
 #endif
 
-//   ---     ---     ---     ---     ---
-
-void NTSIN  (void                  );
-void DLSIN  (void                  );
 
 //   ---     ---     ---     ---     ---
 
-void GTCHRGRD(uint chrsz          );        // gets dimentions of chargrid for new screen size
+// #:0x0;>
 
-void GTCHRSZ (float* dst, uint mul);        // calculates percent of screen used by square
-void GTSCRSZ (uint* dst,  uint mul);        // calculates how many chars fit in screen
+
+
+void NTSIN(int chrsz);      // kyknit
+void DLSIN(void);           // kykdel
+
 
 //   ---     ---     ---     ---     ---
+
+// #:0x1;>
+
+
+
+void GTCHRGRD(uint chrsz);  // gets dimentions of
+                            // chargrid for new
+                            // screen size
+
+
+
+// calculates percent of screen used by square
+void GTCHRSZ(float* dst);
+
+// calculates how many chars fit in screen
+void GTSCRSZ(uint* dst);
+
+//   ---     ---     ---     ---     ---
+
+// #:0x2;>
+
+
 
 #ifdef __cplusplus
+
 }
+
 #endif
 
-#endif // __SIN_GLOBALS_H__
+#endif // __SIN_H__

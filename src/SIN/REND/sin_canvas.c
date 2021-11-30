@@ -16,6 +16,7 @@
 #include "sin_canvas.h"
 #include "KVRNEL/MEM/kvr_mem.h"
 
+#include "__sin.h"
 #include "sin_globals.h"
 #include "sin_shader.h"
 
@@ -38,6 +39,11 @@ void NTCANVAS(void) {
 
                             // just a shorthand
   const SHDP* params=&SIN_CanvasShader;
+
+  uint ws[2];
+  GTSCRSZ(ws);
+
+  CALOUT(E, "%u,%u\n",ws[0],ws[1]);
 
   float quadVertices[]= {   // draw rect
     0.0f,1.0f,
@@ -191,4 +197,3 @@ void DLCANVAS(void) {
 
 //   ---     ---     ---     ---     ---
 // #:0x7;>
-

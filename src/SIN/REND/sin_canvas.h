@@ -5,19 +5,29 @@
 #include "KVRNEL/lymath.h"
 
 #ifdef __cplusplus
-extern "C" {
+extern"C" {
+
 #endif
 
 //   ---     ---     ---     ---     ---
+// #:0x0;>
 
-void NTCANVAS(void              );          // kyknit
-void DLCANVAS(void              );          // kykdel
 
-void BEGPSH  (void              );          // frbeg for char pushing
-void PSHCHR  (float* t, ustr8* d);          // pushchar to screen
-void ENDPSH  (float* t, ustr8* d);          // frend for char pushing
+void NTCANVAS();            // kyknit
+void DLCANVAS(void);        // kykdel
+
+void BEGPSH(void);          // frbeg for char
+                            // pushing
+
+// pushchar to screen
+void PSHCHR(float* t,ustr8* d);
+
+// frend for char pushing
+void ENDPSH(float* t,ustr8* d);
 
 //   ---     ---     ---     ---     ---
+// #:0x1;>
+
 
 #ifdef __cplusplus
 }

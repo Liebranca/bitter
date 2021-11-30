@@ -229,7 +229,7 @@ void NTKVR(uint chrsz) {
                             
                             
   float sc[2];              // init cursor/char
-  GTCHRSZ(sc,chrsz);        // vars
+  GTCHRSZ(sc);              // vars
 
   // set initial x,y scale & position
   // we just initialize next char and cursor
@@ -248,7 +248,7 @@ void NTKVR(uint chrsz) {
 
   uint ws[2];
 
-  GTSCRSZ(ws,chrsz);        // screen size
+  GTSCRSZ(ws);              // screen size
   kvr.nchars_x=ws[0];       // calculation,
   kvr.nchars_y=ws[1];       // needed for jumps
 

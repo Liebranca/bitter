@@ -775,7 +775,7 @@ def format(fname):
   chain  = 0 ;clchain = 0  ;
 
   last_nl= 0 ;tok     = "_";tokb="";
-  lblspan= 0 ;culsg   = 0  ;
+  lblspan= 0 ;culsg   = 0  ;prepif=0;
 
 #    ---     ---     ---     ---     ---
 # fmat:top
@@ -784,7 +784,7 @@ def format(fname):
   with open(fname, 'r') as file:
     lines=file.readlines()[docf[1]:];
 
-  flines=[];
+  flines=[];h=0;
   for line in lines:
 
     stline=line.strip();
@@ -803,10 +803,13 @@ def format(fname):
 # fmat:lcomm
 
     x=cmtp(stline);
+    nx="";
+    if(h<(len(lines)-1)):
+      nx=lines[h+1];
 
     if(x):
 
-      if(culsp in line):
+      if(culsp in line and "// #:" not in nx):
         line=line.replace(culsp,'').strip();
         line=line.replace('// ', '');
         line=' '+line if len(line) else '';
@@ -824,7 +827,7 @@ def format(fname):
 
       );
 
-    flines.append(line);
+    flines.append(line);h+=1;
 
 #    ---     ---     ---     ---     ---
 # fmat:rdline
@@ -889,8 +892,12 @@ def format(fname):
       elif(state&ff_prepo):
         if(c=='\n' and last!='\\'):
           state&=~ff_prepo;
-          state|=ff_write|ff_indent;
-          row=row[:-1];
+          state|=(
+            ff_write
+           |ff_indent
+           |(ff_newline*(prepif!=0))
+
+          );row=row[:-1];
 
 #    ---     ---     ---     ---     ---
 # fmat:string
@@ -957,6 +964,11 @@ def format(fname):
           row=row[:-1]+'\n'+c;
 
         state|=ff_prepo;
+        prepif+=(
+          ("#if" in line)
+         +(-1*("#endif" in line))
+
+        );
 
 #    ---     ---     ---     ---     ---
 # fmat:nl
@@ -1010,12 +1022,15 @@ def format(fname):
 
         if(chain==1
         or (c=='{' and '}' not in line)):
-          lvl+=(state&ff_lnlup)!=0;
+          lvl+=(
+            ((state&ff_lnlup)!=0)
+           *(prepif==0)
+           *(donew==1)
 
-          state|=(
+          );state|=(
             ff_write
            |ff_newline*('//' not in line or donew)
-           |ff_indent
+           |ff_indent*(prepif==0)
 
           );
 
@@ -1024,7 +1039,13 @@ def format(fname):
 
       elif(c in '})'):
 
-        if(chain==1 or c=='}'):
+        donew=(
+          len([br for br in line if br=='{'])
+        !=len([br for br in line if br=='}'])
+
+        );
+
+        if((chain==1 or c=='}') and donew):
 
           row=(
             row[:-1].rstrip(' ')
@@ -1046,7 +1067,7 @@ def format(fname):
 #    ---     ---     ---     ---     ---
 # fmat:flush
 
-      elif(i==len(s)-1):
+      if(i==len(s)-1):
         state|=ff_write|ff_newline;
 
       if(state&ff_write):
@@ -1173,7 +1194,15 @@ def format(fname):
         line=line[:l_mid-len(indent)];
 
       else:                 #:FULINE;>
-        s=s+'\n'.join(com)+'\n';
+        com=lcm_fill(
+          ''.join(com).replace('// ', '')
+
+        );cnl='';
+
+        if(len(s) and s[-1]=='\n'):
+          cnl='\n';
+
+        s=s+cnl+com.strip()+'\n';
 
 #    ---     ---     ---     ---     ---
 
