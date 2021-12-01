@@ -31,7 +31,7 @@ SIN_GL_VER,
 in  vec4  Position;\
 uniform vec4 Transform;\
 \
-layout (std140) uniform CharData {\
+layout (std430, binding=0) buffer CharData {\
   flat uint i[2048];\
 } _CharData;\
 \
@@ -53,7 +53,7 @@ void main() {\
 \
   texCoords=vec2(px>0,py>0);\
   uint c_id=uint(Position.x)>>1;\
-  chidex=0x24;\
+  chidex=_CharData.i[c_id];\
 };\
 "
 

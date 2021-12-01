@@ -29,7 +29,7 @@
 
 static uint canvasVAO=0;
 static uint canvasVBO=0;
-static uint canvasUBO=0;
+static uint canvasSSBO=0;
 
 static uint canvasProgram=0;
 static uint canvasShader [2]= {0,0};
@@ -128,22 +128,20 @@ void NTCANVAS(void) {
 
   free(quadVerts);
 
-//   ---     ---     ---     ---     --- UBO as char array
+//   ---     ---     ---     ---     --- SSBO as char array
 
-  glGenBuffers(1,&canvasUBO);
-  glBindBuffer(GL_ARRAY_BUFFER,0);
-
-  glBindBuffer(GL_UNIFORM_BUFFER,canvasUBO);
+  glGenBuffers(1,&canvasSSBO);
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER,canvasSSBO);
 
   glBufferData(
-    GL_UNIFORM_BUFFER,
+    GL_SHADER_STORAGE_BUFFER,
 
     CharCount*sizeof(uint),
     NULL, GL_DYNAMIC_DRAW
 
   );glBindBufferBase(
-    GL_UNIFORM_BUFFER,
-    0,canvasUBO
+    GL_SHADER_STORAGE_BUFFER,
+    0,canvasSSBO
 
   );
 
@@ -246,10 +244,10 @@ void BEGPSH(void) {
 
 void PSHCHR(uint* d) {
 
-  glBindBuffer(GL_UNIFORM_BUFFER,canvasUBO);
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER,canvasSSBO);
 
   glBufferSubData(
-    GL_UNIFORM_BUFFER,0,
+    GL_SHADER_STORAGE_BUFFER,0,
     CharCount*sizeof(uint),(void*) d
 
   );glDrawArrays(GL_TRIANGLES,0,VertCount);
@@ -281,7 +279,7 @@ void DLCANVAS(void) {
   };
 
   glDeleteProgram(canvasProgram);
-  glDeleteBuffers(1,&canvasUBO);
+  glDeleteBuffers(1,&canvasSSBO);
   glDeleteBuffers(1,&canvasVBO);
   glDeleteBuffers(1,&canvasVAO);
 
