@@ -29,11 +29,12 @@
 
 static uint canvasVAO=0;
 static uint canvasVBO=0;
+static uint canvasUBO=0;
 static uint canvasSSBO=0;
 
 static uint canvasProgram=0;
-static uint canvasShader [2]= {0,0};
-static uint canvasUniforms[2]= {0,0};
+static uint canvasShader[2]={0,0};
+static uint canvasUniforms[2]={0,0};
 
 static uint VertCount=0;
 static uint CharCount=0;
@@ -128,6 +129,23 @@ void NTCANVAS(void) {
 
   free(quadVerts);
 
+//   ---     ---     ---     ---     --- UBO as palette
+
+  glGenBuffers(1,&canvasUBO);
+  glBindBuffer(GL_UNIFORM_BUFFER,canvasUBO);
+
+  glBufferData(
+    GL_UNIFORM_BUFFER,
+
+    64*sizeof(float),
+    GTPAL(0), GL_DYNAMIC_DRAW
+
+  );glBindBufferBase(
+    GL_UNIFORM_BUFFER,
+    0,canvasUBO
+
+  );
+
 //   ---     ---     ---     ---     --- SSBO as char array
 
   glGenBuffers(1,&canvasSSBO);
@@ -141,7 +159,7 @@ void NTCANVAS(void) {
 
   );glBindBufferBase(
     GL_SHADER_STORAGE_BUFFER,
-    0,canvasSSBO
+    1,canvasSSBO
 
   );
 
@@ -215,7 +233,7 @@ void NTCANVAS(void) {
 
   };
 
-  uint block_index=glGetUniformBlockIndex(
+  /*uint block_index=glGetUniformBlockIndex(
     canvasProgram,
     params->ubos[0]
 
@@ -224,7 +242,7 @@ void NTCANVAS(void) {
     block_index,
     0
 
-  );
+  );*/
 
 };
 
@@ -244,6 +262,7 @@ void BEGPSH(void) {
 
 void PSHCHR(uint* d) {
 
+  glBindBuffer(GL_UNIFORM_BUFFER,canvasUBO);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER,canvasSSBO);
 
   glBufferSubData(
@@ -254,11 +273,7 @@ void PSHCHR(uint* d) {
 
 };
 
-void ENDPSH(float* t,ustr8* d) {
-
-  glUniform4fv(canvasUniforms[0],1,t);
-  glUniform4uiv(canvasUniforms[1],1,(uint*) d);
-  glDrawArrays(GL_TRIANGLES,0,6);
+void ENDPSH(void) {
   glEnable(GL_DEPTH_TEST);
   RSTSHDLOC();
 
@@ -280,6 +295,7 @@ void DLCANVAS(void) {
 
   glDeleteProgram(canvasProgram);
   glDeleteBuffers(1,&canvasSSBO);
+  glDeleteBuffers(1,&canvasUBO);
   glDeleteBuffers(1,&canvasVBO);
   glDeleteBuffers(1,&canvasVAO);
 

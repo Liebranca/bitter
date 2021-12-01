@@ -15,14 +15,9 @@ extern"C" {
 void NTCANVAS();            // kyknit
 void DLCANVAS(void);        // kykdel
 
-void BEGPSH(void);          // frbeg for char
-                            // pushing
-
-// pushchar to screen
-void PSHCHR(uint* d);
-
-// frend for char pushing
-void ENDPSH(float* t,ustr8* d);
+void BEGPSH(void);          // frbeg for buff push
+void PSHCHR(uint* d);       // push buff to screen
+void ENDPSH(void);          // frend for buff push
 
 //   ---     ---     ---     ---     ---
 // #:0x1;>

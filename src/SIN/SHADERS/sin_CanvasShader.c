@@ -31,12 +31,19 @@ SIN_GL_VER,
 in  vec4  Position;\
 uniform vec4 Transform;\
 \
-layout (std430, binding=0) buffer CharData {\
+layout(std140, binding=0) uniform Palette {\
+  vec4 color[16];\
+\
+} _Palette;\
+\
+layout (std430, binding=1) buffer CharData {\
   flat uint i[2048];\
+\
 } _CharData;\
 \
 out vec2  texCoords;\
-flat out uint  chidex;\
+flat out uint  ch;\
+out vec4 col;\
 \
 void main() {\
 \
@@ -53,7 +60,9 @@ void main() {\
 \
   texCoords=vec2(px>0,py>0);\
   uint c_id=uint(Position.x)>>1;\
-  chidex=_CharData.i[c_id];\
+  ch=_CharData.i[c_id];\
+  col=_Palette.color[((ch&0x0000FF00)>>8)&0xF];\
+  ch=ch&0xFF;\
 };\
 "
 
@@ -71,7 +80,8 @@ FONTS_LYCON,
 "\
 \
 in vec2 texCoords;\
-flat in uint chidex;\
+flat in uint ch;\
+in vec4 col;\
 \
 \
 \
@@ -82,13 +92,13 @@ void main() {\
 \
     uint i = x+(y*8);\
     uint z = uint(i > 31);\
+    uint chidex = ch&0xFF;\
 \
     i-=z*32;\
     bool r = bool(lycon[chidex][z]&(1<<i));\
-    r=r&&(chidex>=0x00);\
+    r=r&&(chidex>=0x20);\
 \
-    vec4 color = vec4(64.0/255.0,174.0/255.0,64.0/255.0,r);\
-    gl_FragColor = color;\
+    gl_FragColor = vec4(col.rgb,col.w*float(r));\
 }\
 "
 };
@@ -105,7 +115,7 @@ const SHDP SIN_CanvasShader =
 
     { "Transform"                           },      // Uniforms
 
-    { "CharData"                            },      // UBOs
+    { "Palette"                             },      // UBOs
 
     {                                       },      // Samplers
 
@@ -114,7 +124,7 @@ const SHDP SIN_CanvasShader =
     1,                                              // Number of attributes
     1,                                              // Number of uniforms
     1,                                              // Number of UBOs
-    0,                                              // Number of samplers
+    1,                                              // Number of samplers
 
     0                                               // Flags
 

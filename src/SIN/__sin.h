@@ -8,19 +8,16 @@ extern"C" {
 
 #endif
 
-
 //   ---     ---     ---     ---     ---
-
 // #:0x0;>
 
-
+float* GTPAL(int n);        // fetch N color
 
 void NTSIN(int chrsz);      // kyknit
 void DLSIN(void);           // kykdel
 
 
 //   ---     ---     ---     ---     ---
-
 // #:0x1;>
 
 
@@ -38,7 +35,6 @@ void GTCHRSZ(float* dst);
 void GTSCRSZ(uint* dst);
 
 //   ---     ---     ---     ---     ---
-
 // #:0x2;>
 
 

@@ -27,10 +27,53 @@
 // #:0x0;>
 
 static int FONT_MUL = 1;
+static float PALETTE[64];
+
+void STPAL(
+
+  uint* pal,
+  int off,
+  int sz) {
+
+  for(int x=off*4,y=0;x<sz*4;x+=4,y++) {
+    PALETTE[x+0]=pal_utof(pal[y],24); // R
+    PALETTE[x+1]=pal_utof(pal[y],16); // G
+    PALETTE[x+2]=pal_utof(pal[y], 8); // B
+    PALETTE[x+3]=pal_utof(pal[y], 0); // A
+
+  };
+};
+
+float* GTPAL(int n) {
+  return (PALETTE+(n*4));
+
+};
 
 void NTSIN(int chrsz) {
 
   FONT_MUL=chrsz;
+
+  uint def_pal[16]={
+    0x000020FF,             // bg def
+    0x000040FF,             // bg high a
+    0x800000FF,             // bg high b
+    0x400040FF,             // bg high c
+
+    0x40AE40FF,             // fg def
+    0x00A0A0FF,             // string/comment
+    0xB0B000FF,             // caret/bracehi
+    0xD09820FF,             // numbers
+    0xB0A040FF,             // operators
+    0x8020A0FF,             // keys
+    0x0080B0FF,             // ins/type
+    0xA01020FF,             // directive
+
+    0x000000FF,             // free
+    0x000000FF,             // free
+    0x000000FF,             // free
+    0x000000FF              // free
+
+  };STPAL(def_pal,0,16);
 
   NTSINHASH();
   NTSINTEX();

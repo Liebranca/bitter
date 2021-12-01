@@ -41,10 +41,11 @@ int main(int argc,char** argv) {
   uint CharCount=ws[0]*ws[1];
   uint* d=(uint*) malloc(CharCount*sizeof(uint));
 
-  uchar c=0;
+  uchar c=0;uint col=0;
   for(uint y=0;y<ws[1];y++) {
     for(uint x=0;x<ws[0];x++) {
-      d[x+(y*ws[0])]=c;c++;
+      d[x+(y*ws[0])]=(c&0xFF)|((col&0xF)<<8);
+      c++;col++;
 
     };
   };
