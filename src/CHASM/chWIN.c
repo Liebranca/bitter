@@ -85,7 +85,7 @@ int  GTWINOPEN  (WIN* win)                  { return win->flags & chWIN_FLAGS_OP
 
 //   ---     ---     ---     ---     ---
 
-void POLWIN(WIN* win)                       {
+int POLWIN(WIN* win) {
 
     int k;
     SDL_Event event;
@@ -101,9 +101,13 @@ void POLWIN(WIN* win)                       {
     &&   (whandle->isOnTop             ))       {       mouseWrap(whandle);                                                   }
     */
 
+  int busy=0;
+
 //   ---     ---     ---     ---     ---
 
     while (SDL_PollEvent(&event)) {
+      busy++;
+
         switch (event.type) {
 
         case SDL_QUIT:
@@ -196,7 +200,10 @@ void POLWIN(WIN* win)                       {
     default: break;
 
     };
-    };                                                                                      };
+    };
+
+  return busy;
+};
 
 
 //   ---     ---     ---     ---     ---

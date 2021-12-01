@@ -31,6 +31,7 @@ static CLCK* chmang_clock=NULL;
 static WIN* curwin=NULL;
 
 static uchar openwins;
+static uint busy=0;
 
 static float ambientColor[4]={
   0.0f,0.0f,32.0f/255.0f,1.0f
@@ -44,7 +45,6 @@ static float ambientColor[4]={
 int GTCHMNGRUN(void) {return GTWINOPEN(curwin);};
 
 int FRBEGCHMNG(void) {
-  KFRBEG();POLWIN(curwin);
 
   if(SIN_EVILSTATE) {
 
@@ -54,6 +54,23 @@ int FRBEGCHMNG(void) {
 
     );return FATAL;
 
+  };
+
+  KFRBEG();
+
+  uint busy_last=busy;
+  busy+=POLWIN(curwin)*(busy<8);
+
+  if(busy && !busy_last) {
+    STFRCAP(60);busy+=8;
+
+  } else if(busy && busy_last) {
+    busy--;
+
+    if(!busy) {
+      STFRCAP(2);
+
+    };
   };
 
   SWPWINBUF(curwin);
@@ -85,7 +102,7 @@ uint UBYCHMNG(void) {
 void FRENDCHMNG(void) { KFREND();};
 
 void SLEEPCHMNG(void) {
-  if(GTSLEEP()) { SDL_Delay(GTSLTIM());};
+  if(GTSLEEP()) {SDL_Delay(GTSLTIM());};
 
 };
 
@@ -189,7 +206,6 @@ int NTCHMNG(char* title,int fullscreen) {
 
 //   ---     ---     ---     ---     ---
 // #:0x6;>
-
 
 int DLCHMNG() {
 

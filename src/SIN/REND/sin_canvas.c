@@ -260,17 +260,19 @@ void BEGPSH(void) {
 
 };
 
-void PSHCHR(uint* d) {
+void PSHCHR(uint* d, int update) {
 
-  glBindBuffer(GL_UNIFORM_BUFFER,canvasUBO);
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER,canvasSSBO);
+  if(update) {
+    glBindBuffer(GL_UNIFORM_BUFFER,canvasUBO);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER,canvasSSBO);
 
-  glBufferSubData(
-    GL_SHADER_STORAGE_BUFFER,0,
-    CharCount*sizeof(uint),(void*) d
+    glBufferSubData(
+      GL_SHADER_STORAGE_BUFFER,0,
+      CharCount*sizeof(uint),(void*) d
 
-  );glDrawArrays(GL_TRIANGLES,0,VertCount);
+    );
 
+  };glDrawArrays(GL_TRIANGLES,0,VertCount);
 };
 
 void ENDPSH(void) {

@@ -16,7 +16,10 @@ void NTCANVAS();            // kyknit
 void DLCANVAS(void);        // kykdel
 
 void BEGPSH(void);          // frbeg for buff push
-void PSHCHR(uint* d);       // push buff to screen
+
+// push buff to screen
+void PSHCHR(uint* d, int update);
+
 void ENDPSH(void);          // frend for buff push
 
 //   ---     ---     ---     ---     ---

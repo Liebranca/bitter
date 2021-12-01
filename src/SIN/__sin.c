@@ -68,10 +68,10 @@ void NTSIN(int chrsz) {
     0x0080B0FF,             // ins/type
     0xA01020FF,             // directive
 
-    0x000000FF,             // free
-    0x000000FF,             // free
-    0x000000FF,             // free
-    0x000000FF              // free
+    0x202060FF,             // shade darker
+    0x404080FF,             // shade dark
+    0x6060A0FF,             // shade light
+    0x8080C0FF,             // shade lighter
 
   };STPAL(def_pal,0,16);
 

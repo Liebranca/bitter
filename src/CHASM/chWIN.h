@@ -41,7 +41,7 @@ WIN* MKWIN      (char* title,         \
 
 int  BKWIN      (WIN* win             );    // breaks the window
 
-void POLWIN     (WIN* win             );    // polls the windows for input events
+int POLWIN      (WIN* win             );    // polls the windows for input events
 int  GTWINOPEN  (WIN* win             );    // check if the window is open
 void SWPWINBUF  (WIN* win             );    // 
 

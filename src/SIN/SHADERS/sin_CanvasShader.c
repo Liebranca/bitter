@@ -96,7 +96,7 @@ void main() {\
 \
     i-=z*32;\
     bool r = bool(lycon[chidex][z]&(1<<i));\
-    r=r&&(chidex>=0x20);\
+    r=r&&(chidex>=0x00);\
 \
     gl_FragColor = vec4(col.rgb,col.w*float(r));\
 }\
