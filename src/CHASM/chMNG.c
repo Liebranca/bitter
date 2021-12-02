@@ -44,7 +44,7 @@ static float ambientColor[4]={
 
 int GTCHMNGRUN(void) {return GTWINOPEN(curwin);};
 
-int FRBEGCHMNG(void) {
+int FRBEGCHMNG(int update) {
 
   if(SIN_EVILSTATE) {
 
@@ -59,10 +59,10 @@ int FRBEGCHMNG(void) {
   KFRBEG();
 
   uint busy_last=busy;
-  busy+=POLWIN(curwin)*(busy<8);
+  busy+=(POLWIN(curwin)+update)*(busy<60);
 
   if(busy && !busy_last) {
-    STFRCAP(60);busy+=8;
+    STFRCAP(60);busy+=30;
 
   } else if(busy && busy_last) {
     busy--;
@@ -149,8 +149,8 @@ int NTCHMNG(char* title,int fullscreen) {
 
   if(fullscreen) {
 
-    SIN_WSIZX=DM.w-1;
-    SIN_WSIZY=DM.h-1;
+    SIN_WSIZX=DM.w;
+    SIN_WSIZY=DM.h;
 
   };
 
@@ -164,7 +164,6 @@ int NTCHMNG(char* title,int fullscreen) {
     GLADloadproc)SDL_GL_GetProcAddress
 
   );SDL_GL_SetSwapInterval(1);
-  SDL_SetWindowOpacity(curwin->window,0.84f);
 
 //   ---     ---     ---     ---     ---
 // #:0x4;>

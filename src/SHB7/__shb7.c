@@ -21,9 +21,13 @@
 #include "SIN/sin_texture.h"
 #include "SIN/REND/sin_canvas.h"
 
+#include "sh_map.h"
+
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
+#include <unistd.h>
+#include <signal.h>
 
 //   ---     ---     ---     ---     ---
 // #:0x0;>
@@ -39,8 +43,8 @@ static int shbout_y=0;
 static int shbout_flg=0x00;
 
 void pshout(
-  char* str,
-  char col_id,
+  uchar* str,
+  uchar col_id,
   char reset) {
 
   uint ox=shbout_x;
@@ -77,6 +81,11 @@ void pshout(
 
 };
 
+void oncont(int sig) {
+  return;
+
+};
+
 int main(int argc,char** argv) {
 
   NTCHMNG("SINx8",1);
@@ -98,33 +107,50 @@ int main(int argc,char** argv) {
 
   float t[4]={sc[0],-1,sc[1],1};
 
-  char buff[64]={0,0};
+  uchar buff[64]={0,0};
 
   BEGPSH();
+
+  char* bf=ntshb7();
+  signal(SIGCONT,oncont);
+
+  int fr=0;
+
   while(GTCHMNGRUN()) {
 
-    int evilstate=FRBEGCHMNG();
+    //(shbout_flg&0x01)!=0
+    int evilstate=FRBEGCHMNG(0);
     if(evilstate) {
       break;
 
+    };shbout_flg&=~0x01;
+
+
+    if(!fr) {
+      fr|=1;int pid=fork();
+      if(!pid) {
+        char* argv[]={"./pf.exe",NULL};
+        execv(argv[0],argv);exit(-1);
+
+      } else {
+        pause();
+
+      }
     };
 
-    buff[0]=0xA9+counter;
+    //buff[0]=0xA9+(counter&0x7);
 
-    pshout(buff,13,1);
+    pshout(bf,4,1);
     PSHCHR(shbout,shbout_flg&0x01);
-    shbout_flg&=~0x01;
 
     counter++;
-    if(counter>7) {
-      counter^=counter;
-
-    };
 
     FRENDCHMNG();
     SLEEPCHMNG();
 
   };
+
+  dlmap();
 
   ENDPSH();
   free(shbout);

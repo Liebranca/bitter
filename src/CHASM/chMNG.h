@@ -17,7 +17,7 @@ int NTCHMNG(char* title,int fullscreen);
 int DLCHMNG(void);          // trashes it
 int GTCHMNGRUN(void);       // check window  open
 
-int FRBEGCHMNG(void);       // loop top
+int FRBEGCHMNG(int uptdate);// loop top
 float FBYCHMNG(void);       // get 1*clock
 uint UBYCHMNG(void);        // get (1*clock)*base
 void FRENDCHMNG(void);      // loop bottom
