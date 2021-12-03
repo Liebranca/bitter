@@ -1,3 +1,4 @@
+
 #ifndef __CH_WIN_H__
 #define __CH_WIN_H__
 
@@ -10,45 +11,63 @@
 #include "chKEY.h"
 
 #ifdef __cplusplus
-extern "C" {
+extern"C" {
+
 #endif
 
 //   ---     ---     ---     ---     ---
+// #:0x0;>
 
-typedef struct CHASM_WINDOW {               // sdl window stuff
 
-    ID            id;                       // pol header
+typedef struct CHASM_WINDOW {
+// sdl window stuff
 
-    char          key;                      // cool custom keyboard shit
-    RAT           rat;                      // cool custom mouse shit
+ID id;                      // pol header
 
-    SDL_Window*   window;                   // handle to the window
-    SDL_GLContext context;                  // opengl context for this window
+char key;                   // cool custom
+                            // keyboard shit
+RAT rat;                    // cool custom mouse
+                            // shit
 
-    ustr8         size;                     // screen size
-    ustr8         hsize;                    // guides relative to screen size
+SDL_Window* window;         // handle to the
+                            // window
+SDL_GLContext context;      // opengl context for
+                            // this window
 
-    int           flags;                    // 0x01 is open
-                                            // 0x02 has focus
-                                            // 0x04 is on top
+ustr8 size;                 // screen size
+ustr8 hsize;                // guides relative to
+                            // screen size
+
+int flags;                  // 0x01 is open
+// 0x02 has focus
+// 0x04 is on top
 
 } WIN;
 
 //   ---     ---     ---     ---     ---
+// #:0x1;>
 
-WIN* MKWIN      (char* title,         \
-                 int height, int width);    // makes new window
 
-int  BKWIN      (WIN* win             );    // breaks the window
+WIN* MKWIN(
+  char* title,int height,
+  int width,int fullscreen);// makes new window
 
-int POLWIN      (WIN* win             );    // polls the windows for input events
-int  GTWINOPEN  (WIN* win             );    // check if the window is open
-void SWPWINBUF  (WIN* win             );    // 
+int BKWIN(WIN* win);        // breaks the window
+
+int POLWIN(WIN* win);       // polls the windows
+                            // for input events
+
+int GTWINOPEN(WIN* win);    // check if the
+                            // window is open
+
+void SWPWINBUF(WIN* win);
 
 //   ---     ---     ---     ---     ---
+// #:0x2;>
+
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // __CH_WIN_H__
+#endif                      // __CH_WIN_

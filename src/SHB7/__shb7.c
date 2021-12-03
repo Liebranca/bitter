@@ -14,20 +14,21 @@
 
 #include "__shb7.h"
 
-#include "KVRNEL/MEM/zjc_clock.h"
+#include "KVRNEL/MEM/sh_map.h"
+
 #include "CHASM/chMNG.h"
 
 #include "SIN/__sin.h"
 #include "SIN/sin_texture.h"
 #include "SIN/REND/sin_canvas.h"
 
-#include "sh_map.h"
-
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
 #include <unistd.h>
 #include <signal.h>
+
+#include <sys/wait.h>
 
 //   ---     ---     ---     ---     ---
 // #:0x0;>
@@ -88,7 +89,7 @@ void oncont(int sig) {
 
 int main(int argc,char** argv) {
 
-  NTCHMNG("SINx8",1);
+  NTCHMNG("SINx8",0);
   NTSIN(2);
 
   float sc[2];
@@ -111,7 +112,11 @@ int main(int argc,char** argv) {
 
   BEGPSH();
 
-  char* bf=ntshb7();
+  void** mh=ntmap_origin("./shb7wt",4);
+  char* bf=(char*) (*mh);
+
+  char* mh_key=encodemh(mh);
+
   signal(SIGCONT,oncont);
 
   int fr=0;
@@ -125,15 +130,23 @@ int main(int argc,char** argv) {
 
     };shbout_flg&=~0x01;
 
-
     if(!fr) {
       fr|=1;int pid=fork();
+
       if(!pid) {
-        char* argv[]={"./pf.exe",NULL};
-        execv(argv[0],argv);exit(-1);
+
+        char* ex_argv[3]={
+          "../bin/x64/pf.exe",
+          mh_key,
+          NULL
+
+        };execv(ex_argv[0],ex_argv);exit(-1);
 
       } else {
-        pause();
+        int wst;
+        wait(&wst);
+
+        //pause();
 
       }
     };
@@ -150,7 +163,7 @@ int main(int argc,char** argv) {
 
   };
 
-  dlmap();
+  dlmap(mh);
 
   ENDPSH();
   free(shbout);

@@ -43,7 +43,8 @@ void USTWINFLAG(
 WIN* MKWIN(
   char* title,
   int height,
-  int width) {
+  int width,
+  int fullscreen) {
 
 
   WIN* win;ID id=IDNEW("WIN*",title);
@@ -64,7 +65,7 @@ WIN* MKWIN(
     height,
 
     SDL_WINDOW_OPENGL|SDL_WINDOW_BORDERLESS
-    |SDL_WINDOW_FULLSCREEN_DESKTOP
+    |(SDL_WINDOW_FULLSCREEN_DESKTOP*fullscreen)
 
   );win->flags|=chWIN_FLAGS_OPEN;
 

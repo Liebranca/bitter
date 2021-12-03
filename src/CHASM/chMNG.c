@@ -158,7 +158,7 @@ int NTCHMNG(char* title,int fullscreen) {
 // #:0x3;> make window
 
 
-  curwin=MKWIN(title,SIN_WSIZY,SIN_WSIZX);
+  curwin=MKWIN(title,SIN_WSIZY,SIN_WSIZX,fullscreen);
   ogl_context=SDL_GL_CreateContext(curwin->window);
   gladLoadGLLoader((
     GLADloadproc)SDL_GL_GetProcAddress
