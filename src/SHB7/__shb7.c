@@ -29,6 +29,7 @@
 #include <signal.h>
 
 #include <sys/wait.h>
+#include <limits.h>
 
 //   ---     ---     ---     ---     ---
 // #:0x0;>
@@ -42,6 +43,8 @@ static int shbout_x=0;
 static int shbout_y=0;
 
 static int shbout_flg=0x00;
+
+//   ---     ---     ---     ---     ---
 
 void pshout(
   uchar* str,
@@ -87,7 +90,94 @@ void oncont(int sig) {
 
 };
 
+//   ---     ---     ---     ---     ---
+
 int main(int argc,char** argv) {
+
+  char** PATH;
+  int PATH_SZ=0;
+
+  {
+
+    // make search path array
+    // PATH[0] is always cwd
+
+    char* path=getenv("KVR_PATH");
+    int x=0;
+
+    while(*(path+x)) {
+      if(*(path+x)==':') {
+        PATH_SZ++;
+
+      };x++;
+    };
+
+//   ---     ---     ---     ---     ---
+
+    PATH=malloc(PATH_SZ*sizeof(char*));
+
+    char pwd [PATH_MAX+1];  // find current directory
+    char* cd;
+
+    {
+      cd = realpath(argv[0],pwd);
+      int last=strlen(cd)-1;
+      do {
+        last--;
+
+      } while(cd[last]!='/');
+      cd[last+1]=0x00;
+
+    };PATH[0]=malloc(strlen(cd)*sizeof(char)+2);
+
+    strcpy(PATH[0],cd);
+    char* lach=PATH[0]+(strlen(cd)-1);
+
+    if(*lach!='/') {
+      *(lach+1)='/';
+      *(lach+2)=0x00;
+
+    };
+
+//   ---     ---     ---     ---     ---
+
+    char* token=strtok(path,":");
+
+    for(x=1;x<PATH_SZ;x++) {
+      PATH[x]=malloc(strlen(token)*sizeof(char)+2);
+
+      strcpy(PATH[x],token);
+      lach=PATH[x]+(strlen(token)-1);
+
+      if(*lach!='/') {
+        *(lach+1)='/';
+        *(lach+2)=0x00;
+
+      };
+
+      token=strtok(NULL,":");
+
+    };
+  };
+
+//   ---     ---     ---     ---     ---
+
+  void** mh;                // cat path to outfile
+                            // out doubles as shmem
+  {
+
+    char fpath[PATH_MAX+1+8];
+    strcat(fpath,"shb7wt");
+
+    mh=ntmap_origin(fpath,4);
+
+  };char* bf=(char*) (*mh);
+  char* mh_key=encodemh(mh);
+
+  signal(SIGCONT,oncont);
+  int fr=1;// just for testing
+
+//   ---     ---     ---     ---     ---
 
   NTCHMNG("SINx8",0);
   NTSIN(2);
@@ -101,25 +191,12 @@ int main(int argc,char** argv) {
   shbout_mx=ws[0];
   shbout_my=ws[1];
 
-  uint counter=0;
-
   shbout=(uint*) malloc(CharCount*sizeof(uint));
   memset(shbout,0,CharCount*sizeof(uint));
 
-  float t[4]={sc[0],-1,sc[1],1};
-
-  uchar buff[64]={0,0};
-
   BEGPSH();
 
-  void** mh=ntmap_origin("./shb7wt",4);
-  char* bf=(char*) (*mh);
-
-  char* mh_key=encodemh(mh);
-
-  signal(SIGCONT,oncont);
-
-  int fr=0;
+//   ---     ---     ---     ---     ---
 
   while(GTCHMNGRUN()) {
 
@@ -130,38 +207,67 @@ int main(int argc,char** argv) {
 
     };shbout_flg&=~0x01;
 
-    if(!fr) {
-      fr|=1;int pid=fork();
+//   ---     ---     ---     ---     ---
+
+    if(fr) {
+      fr^=fr;int pid=fork();
 
       if(!pid) {
 
-        char* ex_argv[3]={
-          "../bin/x64/pf.exe",
-          mh_key,
-          NULL
+        char ex_path[PATH_MAX+1]={0};
+        {
 
-        };execv(ex_argv[0],ex_argv);exit(-1);
+          int x_err=1;
+          for(int x=0;x<PATH_SZ;x++) {
+            strcpy(ex_path,PATH[x]);
+            strcat(ex_path,"pf.exe");
+
+            x_err=access(ex_path, X_OK);
+            if(!x_err) {
+              break;
+
+            };
+
+          };if(!x_err) {
+
+            char* ex_argv[3]={
+
+              ex_path,
+              mh_key,
+              NULL
+
+            };
+
+            execv(ex_argv[0],ex_argv);
+            exit(-1);
+
+          };
+
+        };CALOUT(E,"Could not exec %s\n",ex_path);
+        return -1;
+
+//   ---     ---     ---     ---     ---
 
       } else {
         int wst;
         wait(&wst);
+        pshout(bf,4,1);
 
         //pause();
 
       }
     };
 
-    //buff[0]=0xA9+(counter&0x7);
+//   ---     ---     ---     ---     ---
 
-    pshout(bf,4,1);
     PSHCHR(shbout,shbout_flg&0x01);
-
-    counter++;
 
     FRENDCHMNG();
     SLEEPCHMNG();
 
   };
+
+//   ---     ---     ---     ---     --- cleanup
 
   dlmap(mh);
 
@@ -170,6 +276,12 @@ int main(int argc,char** argv) {
 
   DLSIN();
   DLCHMNG();
+
+  for(int x=0;x<PATH_SZ;x++) {
+    CALOUT(E,"%s\n" ,PATH[x]);
+    free(PATH[x]);
+
+  };free(PATH);
 
   return 0;
 
