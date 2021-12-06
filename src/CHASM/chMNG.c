@@ -42,9 +42,12 @@ static float ambientColor[4]={
 // #:0x1;>
 
 
-int GTCHMNGRUN(void) {return GTWINOPEN(curwin);};
+int GTRUN(void) {
+  return GTWINOPEN(curwin);
 
-int FRBEGCHMNG(int update) {
+};
+
+int FRBEG(int update) {
 
   if(SIN_EVILSTATE) {
 
@@ -89,19 +92,19 @@ int FRBEGCHMNG(int update) {
 
 };
 
-float FBYCHMNG(void) {
+float FBY(void) {
   return chmang_clock->fBy;
 
 };
 
-uint UBYCHMNG(void) {
+uint UBY(void) {
   return chmang_clock->uBy;
 
 };
 
-void FRENDCHMNG(void) { KFREND();};
+void FREND(void) { KFREND();};
 
-void SLEEPCHMNG(void) {
+void FRSLP(void) {
   if(GTSLEEP()) {SDL_Delay(GTSLTIM());};
 
 };
@@ -251,11 +254,17 @@ void GTCHMNGMVKEY(ustr8* moveaxis) {
 
 //   ---     ---     ---     ---     ---
 
-uchar* IBUFCHMNG(void) {
+uchar* GTIBUF(void) {
   if(strlen(curwin->ibuff)) {
     return curwin->ibuff;
 
   };return NULL;
+
+};
+
+void CLIBUF(void) {
+  curwin->ibuff[0]=0x00;
+  curwin->ibuff_i^=curwin->ibuff_i;
 
 };
 

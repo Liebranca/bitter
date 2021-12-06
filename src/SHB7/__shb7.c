@@ -56,12 +56,19 @@ void pshout(
 
   int pos=shbout_x+(shbout_y*shbout_mx);
   do {
-    if(!*str) { break; }
+    if(!*str) {
+      break;
+
+    } else if(*str<0x20 && *str!=0x0A) {
+      continue;
+
+    };
 
     shbout[pos]=(*str)|(col_id<<8);
     pos++;shbout_x++;
 
-    if(shbout_x>=shbout_mx) {
+    if(shbout_x>=shbout_mx
+    || *str==0x0A) {
       shbout_x=0;
       shbout_y++;
 
@@ -128,8 +135,10 @@ int main(int argc,char** argv) {
       } while(cd[last]!='/');
       cd[last+1]=0x00;
 
+    // make search path array
     };PATH[0]=malloc(strlen(cd)*sizeof(char)+2);
 
+    // add cwd ;>
     strcpy(PATH[0],cd);
     char* lach=PATH[0]+(strlen(cd)-1);
 
@@ -140,6 +149,9 @@ int main(int argc,char** argv) {
     };
 
 //   ---     ---     ---     ---     ---
+
+    // iter through the user's $PATH
+    // append each string to the array
 
     char* token=strtok(path,":");
 
@@ -162,55 +174,112 @@ int main(int argc,char** argv) {
 
 //   ---     ---     ---     ---     ---
 
-  void** mh;                // cat path to outfile
-                            // out doubles as shmem
+  void** mh;
+
   {
 
-    char fpath[PATH_MAX+1+8];
-    strcat(fpath,"shb7wt");
+    // set outfile as an abspath
 
+    // why? because it doubles as shared memory
+    // we don't just need to know where it is
+    // every child process needs to know as well
+
+    char fpath[PATH_MAX+1+8];
+
+    strcpy(fpath,PATH[0]);  // set cwd
+    strcat(fpath,"shb7wt"); // cat cwd+outfile
+
+    // now make an mmapd file ;>
     mh=ntmap_origin(fpath,4);
 
-  };char* bf=(char*) (*mh);
-  char* mh_key=encodemh(mh);
+  };char* bf=(char*) (*mh); // our shared memory
+  char* mh_key=encodemh(mh);// the encoded shmem
+
+  // mh key is needed solely as a brute-force way of
+  // telling a child process about the shmem
+
+  // don't need shmem in your child?
+  // then you don't need the key
 
   signal(SIGCONT,oncont);
   int fr=1;// just for testing
 
-//   ---     ---     ---     ---     ---
+//   ---     ---     ---     ---     --- window init
 
-  NTCHMNG("SINx8",0);
+  // create the window manager
+  // that in turn spawns a window!
+
+  NTCHMNG("SHB7x64",0);
+
+  // *then* init the renderer
+  // this is simply so there is an OpenGL context
+  // before the system is even able to try and draw
+  // honestly? you could flip them around
+  // i init in this order because it makes sense to me
+
   NTSIN(2);
 
-  float sc[2];
-  uint  ws[2];
-  GTCHRSZ(sc);
-  GTSCRSZ(ws);
+
+  // get charsize as a value between {0.0f,1.0f}
+  // this value is relative to screen size
+
+  // why? basis: the screen is a grid of characters
+  // you want to know the percentage of the screen
+  // taken up by each one of those
+
+  float sc[2];GTCHRSZ(sc);
+
+  // related to charsize, this gives you how many
+  // characters fit in the screen on a given direction
+  // x gives you the number of columns
+  // y is number of rows
+
+  uint  ws[2];GTSCRSZ(ws);
+
+  // now multiply those, and you know how many
+  // characters total a single screen can have
 
   uint CharCount=ws[0]*ws[1];
-  shbout_mx=ws[0];
-  shbout_my=ws[1];
+  shbout_mx=ws[0];shbout_my=ws[1];
+
+  // basically stdout;
+  // write here and it'll be printed
 
   shbout=(uint*) malloc(CharCount*sizeof(uint));
   memset(shbout,0,CharCount*sizeof(uint));
 
-  BEGPSH();
+  BEGPSH();pshout("$:",4,0);
 
-//   ---     ---     ---     ---     ---
+//   ---     ---     ---     ---     --- loop head
 
-  while(GTCHMNGRUN()) {
+  // the window manager will know when to exit
+  while(GTRUN()) {
 
-    //(shbout_flg&0x01)!=0
-    int evilstate=FRBEGCHMNG(0);
-    if(evilstate) {
+    // frame start is very important!
+
+    // based on the value passed to frbeg, the manager
+    // can speed up or slow down the program
+
+    // this translates to longer or shorter sleep time
+    // so mind this arg -- it controls everything
+
+    // for now we only care if out has been written to
+
+    int evilstate=FRBEG(
+      ((shbout_flg&0x01)!=0)*4
+
+    );if(evilstate) {
       break;
 
     };shbout_flg&=~0x01;
 
-//   ---     ---     ---     ---     ---
+//   ---     ---     ---     ---     --- child exec
 
-    if(fr) {
+    if(!fr) {
       fr^=fr;int pid=fork();
+
+      // child: locate requested
+      // that means iter through the search path
 
       if(!pid) {
 
@@ -223,12 +292,13 @@ int main(int argc,char** argv) {
             strcat(ex_path,"pf.exe");
 
             x_err=access(ex_path, X_OK);
-            if(!x_err) {
+
+            if(!x_err) {    // can execute? then do
               break;
 
             };
 
-          };if(!x_err) {
+          };if(!x_err) {    // else don't
 
             char* ex_argv[3]={
 
@@ -238,38 +308,69 @@ int main(int argc,char** argv) {
 
             };
 
+            // the exit line should never happen
+            // TODO: handle that error
+
             execv(ex_argv[0],ex_argv);
             exit(-1);
 
           };
 
+        // or just print something vague, whatever
         };CALOUT(E,"Could not exec %s\n",ex_path);
         return -1;
 
-//   ---     ---     ---     ---     ---
+//   ---     ---     ---     ---     --- parent wait
 
       } else {
-        int wst;
-        wait(&wst);
+
+        // TODO:look into another way of locking...
+        // we will need to pause and resume childs
+        // at some point
+
+        int wst;wait(&wst);
+
+        // TODO:don't just push the shared memory!
+        // this is okay for testing trivial programs
+        // not so pretty for anything else
+
         pshout(bf,4,1);
 
-        //pause();
-
       }
-    } else {
-      uchar* ibuff=IBUFCHMNG();
-      if(ibuff) {
-        pshout(ibuff,4,1);
 
-      };
+//   ---     ---     ---     ---     --- parent exec
+
+    } else {
+
+      // normal execution: check for text input
+      uchar* ibuff=GTIBUF();
+      if(ibuff) {
+        pshout(ibuff,5,0);
+
+      };CLIBUF();
     };
 
-//   ---     ---     ---     ---     ---
+//   ---     ---     ---     ---     --- loop tail
+
+    // draw the screen buffer, it's done in one go!
+
+    // how many chars you have is irrelevant, so
+    // large prints are insanely cheap
+
+    // do note that the buffer is only updated
+    // when shbout is written to, and so if you
+    // don't register a write then the previous
+    // frame is drawn instead, repeating right
+    // until you set the flag
 
     PSHCHR(shbout,shbout_flg&0x01);
 
-    FRENDCHMNG();
-    SLEEPCHMNG();
+    // these two must always go at the very bottom!
+    // order matters: one gets current time, the
+    // other calculates frame delta
+
+    FREND();
+    FRSLP();
 
   };
 

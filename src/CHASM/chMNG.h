@@ -14,16 +14,20 @@ extern"C" {
 // start-kicks chasm
 int NTCHMNG(char* title,int fullscreen);
 
-int DLCHMNG(void);          // trashes it
-int GTCHMNGRUN(void);       // check window  open
+// ends chasm
+int DLCHMNG(void);
 
-int FRBEGCHMNG(int uptdate);// loop top
-float FBYCHMNG(void);       // get 1*clock
-uint UBYCHMNG(void);        // get (1*clock)*base
-void FRENDCHMNG(void);      // loop bottom
-void SLEEPCHMNG(void);      // run the clock
 
-uchar* IBUFCHMNG(void);     // get textinput buffer
+int GTRUN(void);            // check exit condition
+
+int FRBEG(int uptdate);     // loop top
+float FBY(void);            // get 1*clock
+uint UBY(void);             // get (1*clock)*base
+void FREND(void);           // loop bottom
+void FRSLP(void);           // get deltas and sleep
+
+uchar* GTIBUF(void);        // get textinput buffer
+void CLIBUF(void);          // clean it up
 
 //   ---     ---     ---     ---     ---
 // #:0x1;>
