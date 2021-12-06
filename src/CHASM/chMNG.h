@@ -23,6 +23,8 @@ uint UBYCHMNG(void);        // get (1*clock)*base
 void FRENDCHMNG(void);      // loop bottom
 void SLEEPCHMNG(void);      // run the clock
 
+uchar* IBUFCHMNG(void);     // get textinput buffer
+
 //   ---     ---     ---     ---     ---
 // #:0x1;>
 

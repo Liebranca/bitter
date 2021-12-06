@@ -5,24 +5,45 @@
 #include "SDL2/SDL.h"
 
 #ifdef __cplusplus
-extern "C" {
+extern"C" {
+
 #endif
 
+/*uint CH_KEYB_KCODES[]={
+
+  SDLK_LALT,SDLK_LCTRL,SDLK_LSHIFT,
+  SDLK_RALT,SDLK_RCTRL,SDLK_RSHIFT,
+  
+
+  SDLK_CAPSLOCK,SDLK_INSERT,SDLK_SCROLLLOCK
+
+};*/
+
+typedef struct {
+
+  uint lv_keys;             // flip on held
+  uint tg_keys;             // flip on up
+
+} KEYB;
+
 //   ---     ---     ---     ---     ---
+// #:0x1;>
 
-static int CH_KEYB_KCODES[8] =              { SDLK_LEFT, SDLK_RIGHT, SDLK_DOWN, SDLK_UP,    \
-                                              SDLK_q,    SDLK_w,     SDLK_e,    SDLK_ESCAPE };
+// set key state
+void STWINKEY(uint* k,uint input);
+
+// clear key state
+void CLWINKEY(uint* k,uint input);
+
+// get key state
+int GTWINKEY(uint* k,uint value);
 
 //   ---     ---     ---     ---     ---
+// #:0x2;>
 
-void STWINKEY(uchar* k, uchar input);       // set key state
-void CLWINKEY(uchar* k, uchar input);       // clear key state
-int  GTWINKEY(uchar* k, uchar value);       // get key state
-
-//   ---     ---     ---     ---     ---
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // __CH_KEY_H__
+#endif                      // __CH_KEY_

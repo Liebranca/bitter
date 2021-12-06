@@ -25,6 +25,7 @@
 void STWINFLAG(
   WIN* win,
   int flag) {
+
   win->flags|=flag;
 
 };
@@ -32,6 +33,7 @@ void STWINFLAG(
 void USTWINFLAG(
   WIN* win,
   int flag) {
+
   win->flags&=~flag;
 
 };
@@ -72,6 +74,8 @@ WIN* MKWIN(
 //   ---     ---     ---     ---     ---
 // #:0x3;>
 
+  CLMEM2(win->ibuff,CHW_IBUFF_SZ);
+  win->ibuff_i^=win->ibuff_i;
 
   win->size.x=width;
   win->size.y=height;
@@ -131,11 +135,10 @@ int POLWIN(WIN* win) {
   Uint32 wFlags=SDL_GetWindowFlags(win->window);
 
   int wrap_cond=focused!=win->window;
-                            // if(wFlags & SDL_WIN
-                            // DOW_FULLSCREEN_DESK
-                            // TOP) { wrap_cond =
-                            // cursorToWall(
-                            // whandle); }
+
+  /* legacy stuff I might port later
+
+  if(wFlags & SDL_WINDOW_FULLSCREEN_DESKTOP) { wrap_cond = cursorToWall(whandle); }*/
 
   /*if((wrap_cond)
   &&!(wFlags&SDL_WINDOW_MINIMIZED)
@@ -166,7 +169,7 @@ int POLWIN(WIN* win) {
 
       case SDL_WINDOWEVENT:
 
-      if(event.window.windowID\
+      if(event.window.windowID
       ==SDL_GetWindowID(win->window)) {
 
 
@@ -238,30 +241,54 @@ int POLWIN(WIN* win) {
 
       */
 
+//   ---     ---     ---     ---     ---
+
+      case SDL_TEXTINPUT:
+
+      win->ibuff_i&=(CHW_IBUFF_SZ-1);
+
+      strcpy(
+        win->ibuff+win->ibuff_i,
+        event.text.text
+
+      );win->ibuff_i+=strlen(event.text.text);
+
+      win->ibuff_i&=(CHW_IBUFF_SZ-1);
+      win->ibuff[win->ibuff_i]=0x00;
+
+      break;
+
+//   ---     ---     ---     ---     ---
+
       case SDL_KEYDOWN:
 
       k=event.key.keysym.sym;
-      if(
-      k==SDLK_ESCAPE) {USTWINFLAG(
-      win,
-         chWIN_FLAGS_OPEN);break;};
+      if(k==SDLK_ESCAPE) {
+        USTWINFLAG(win,chWIN_FLAGS_OPEN);
+        break;
 
-      for(uchar i=0;i<8;i++) {
+      };
 
-        if(k==CH_KEYB_KCODES[i])
-          {STWINKEY(&win->key,i);};
+      /*for(uint i=0;i<8;i++) {
 
-      };break;
+        if(k==CH_KEYB_KCODES[i]) {
+          STWINKEY(((uint*) &win->keys)+1,i);
+
+        };
+      };*/break;
+
+//   ---     ---     ---     ---     ---
 
       case SDL_KEYUP:
 
       k=event.key.keysym.sym;
-      for(uchar i=0;i<8;i++) {
+      /*for(uint i=0;i<8;i++) {
 
-        if(k==CH_KEYB_KCODES[i])
-          {CLWINKEY(&win->key,i);};
+        if(k==CH_KEYB_KCODES[i]) {
+          CLWINKEY(((uint*) &win->keys)+1,i);
 
-      };break;
+        };
+      };*/break;
 
 //   ---     ---     ---     ---     ---
 // #:0x9;>

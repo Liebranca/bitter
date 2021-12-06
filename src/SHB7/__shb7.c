@@ -256,6 +256,12 @@ int main(int argc,char** argv) {
         //pause();
 
       }
+    } else {
+      uchar* ibuff=IBUFCHMNG();
+      if(ibuff) {
+        pshout(ibuff,4,1);
+
+      };
     };
 
 //   ---     ---     ---     ---     ---

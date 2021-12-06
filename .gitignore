@@ -32,4 +32,4 @@ src/AVTOMAT/idntest.c
 *.o
 *test.c
 shb7wt
-
+*flat*.*

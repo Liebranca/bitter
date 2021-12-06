@@ -223,7 +223,7 @@ int DLCHMNG() {
 
 
 void GTCHMNGKPROC(uchar* mask) {
-  *mask=(curwin->key&*mask);
+  *mask=0;/*(curwin->keyb&*mask);*/
 
 };
 
@@ -233,19 +233,29 @@ void GTCHMNGMVKEY(ustr8* moveaxis) {
   moveaxis->x=0;
   moveaxis->y=0;
 
-  if(curwin->key&(0x2000+0x8000)) {
+  /*if(curwin->keyb&(0x2000+0x8000)) {
 
     moveaxis->x=255;
-    if(curwin->key&0x8000) {moveaxis
+    if(curwin->keyb&0x8000) {moveaxis
      ->x*=-1;};
   };
 
   if(curwin->key&(0x1000+0x4000)) {
 
     moveaxis->y=255;
-    if(curwin->key&0x4000) {moveaxis
+    if(curwin->keyb&0x4000) {moveaxis
      ->y*=-1;};
-  };
+  };*/
+
+};
+
+//   ---     ---     ---     ---     ---
+
+uchar* IBUFCHMNG(void) {
+  if(strlen(curwin->ibuff)) {
+    return curwin->ibuff;
+
+  };return NULL;
 
 };
 

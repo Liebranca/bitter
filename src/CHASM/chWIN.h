@@ -18,23 +18,28 @@ extern"C" {
 //   ---     ---     ---     ---     ---
 // #:0x0;>
 
+#define CHW_IBUFF_SZ 64
 
 typedef struct CHASM_WINDOW {
 // sdl window stuff
 
 ID id;                      // pol header
 
-char key;                   // cool custom
-                            // keyboard shit
-RAT rat;                    // cool custom mouse
-                            // shit
+uchar ibuff_i;              // 'cursor' into ibuff
+uchar ibuff[CHW_IBUFF_SZ];  // text input buff
 
-SDL_Window* window;         // handle to the
-                            // window
+KEYB keyb;                  // cool custom
+                            // keyboard shit
+
+RAT rat;                    // cool custom mouse shit
+
+SDL_Window* window;         // handle to the window
+
 SDL_GLContext context;      // opengl context for
                             // this window
 
 ustr8 size;                 // screen size
+
 ustr8 hsize;                // guides relative to
                             // screen size
 
@@ -54,7 +59,7 @@ WIN* MKWIN(
 
 int BKWIN(WIN* win);        // breaks the window
 
-int POLWIN(WIN* win);       // polls the windows
+int POLWIN(WIN* win);       // polls the window
                             // for input events
 
 int GTWINOPEN(WIN* win);    // check if the
