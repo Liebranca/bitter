@@ -152,7 +152,7 @@ void decodemh(
 //   ---     ---     ---     ---     ---
 
 void gtsysd(void) {
-  page_sz=sysconf(_SC_PAGE_SIZE);
+  page_sz=sysconf(_SC_PAGE_SIZE)-1;
 
 };
 
@@ -202,7 +202,7 @@ void** ntmap_origin(
 
   FILE *fp = fopen(fpath, "w+");
   fseek(fp, page_sz*pages, SEEK_SET);
-  fputc('\0', fp);fclose(fp);
+  fputc(0x00, fp);fclose(fp);
 
 //   ---     ---     ---     ---     ---
 
@@ -221,6 +221,12 @@ void** ntmap_origin(
     return NULL;
 
   };return (void**) mh;
+
+};
+
+int mapfd(void** mh_a) {
+  MAPHED* mh=(MAPHED*) mh_a;
+  return mh->fd;
 
 };
 

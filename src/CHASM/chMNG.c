@@ -120,10 +120,10 @@ int NTCHMNG(char* title,int fullscreen) {
 
 
   // SDL setup boilerplate
-  SDL_GL_SetAttribute(SDL_GL_RED_SIZE,8);
-  SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE,8);
-  SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE,8);
-  SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE,8);
+  SDL_GL_SetAttribute(SDL_GL_RED_SIZE,4);
+  SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE,4);
+  SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE,4);
+  SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE,4);
 
   SDL_GL_SetAttribute(SDL_GL_BUFFER_SIZE,16);
   SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE,16);
@@ -136,7 +136,7 @@ int NTCHMNG(char* title,int fullscreen) {
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
   SDL_GL_CONTEXT_PROFILE_CORE);
 
-  if(SDL_Init(SDL_INIT_EVERYTHING)
+  if(SDL_Init(SDL_INIT_VIDEO)
      <0) {
 
 
@@ -159,7 +159,6 @@ int NTCHMNG(char* title,int fullscreen) {
 
 //   ---     ---     ---     ---     ---
 // #:0x3;> make window
-
 
   curwin=MKWIN(title,SIN_WSIZY,SIN_WSIZX,fullscreen);
   ogl_context=SDL_GL_CreateContext(curwin->window);
@@ -213,7 +212,7 @@ int DLCHMNG() {
 
 
   SDL_GL_DeleteContext(ogl_context);
-  BKWIN(curwin);DLMEM(chmang_clock);
+  DLMEM(chmang_clock);BKWIN(curwin);
 
   SDL_Quit();
 

@@ -30,17 +30,21 @@
 
 #include <sys/wait.h>
 #include <limits.h>
+#include <errno.h>
 
 //   ---     ---     ---     ---     ---
 // #:0x0;>
 
 static uint* shbout=NULL;
+static char* shbout_str=NULL;
 
-static int shbout_mx=0;
-static int shbout_my=0;
+static uint shbout_str_mx=0;
 
-static int shbout_x=0;
-static int shbout_y=0;
+static uint shbout_mx=0;
+static uint shbout_my=0;
+
+static uint shbout_x=0;
+static uint shbout_y=0;
 
 static int shbout_flg=0x00;
 
@@ -54,8 +58,9 @@ void pshout(
   uint ox=shbout_x;
   uint oy=shbout_y;
 
-  int pos=shbout_x+(shbout_y*shbout_mx);
+  uint pos=shbout_x+(shbout_y*shbout_mx);
   do {
+
     if(!*str) {
       break;
 
@@ -89,6 +94,23 @@ void pshout(
     shbout_y=oy;
 
   };
+
+};
+
+void pllout(uint pos) {
+
+  uint x;char last=0x00;char c=0x00;
+
+  for(x=0;x<pos;x++) {
+    c=shbout[x]&0xFF;
+
+    // skip repeat spaces!
+    if(!(c==' ' && c==last)) {
+      shbout_str[x]=c;
+
+    };last=c;
+
+  };shbout_str[x]=0x00;
 
 };
 
@@ -190,10 +212,17 @@ int main(int argc,char** argv) {
     strcat(fpath,"shb7wt"); // cat cwd+outfile
 
     // now make an mmapd file ;>
-    mh=ntmap_origin(fpath,4);
+    mh=ntmap_origin(fpath,1);
 
-  };char* bf=(char*) (*mh); // our shared memory
-  char* mh_key=encodemh(mh);// the encoded shmem
+  };
+
+  // shmem is a stdout of sorts;
+  // write here and it'll be printed
+
+  shbout=(uint*) (*mh);
+  int* shbuf=(int*) (shbout+0x1000);
+
+  char* mh_key=encodemh(mh);
 
   // mh key is needed solely as a brute-force way of
   // telling a child process about the shmem
@@ -202,7 +231,30 @@ int main(int argc,char** argv) {
   // then you don't need the key
 
   signal(SIGCONT,oncont);
-  int fr=1;// just for testing
+
+  int spwn_pid=fork();
+  if(!spwn_pid) {
+
+    shbout_str_mx=sysconf(ARG_MAX);
+    shbout_str=(char*) malloc(
+      shbout_str_mx*sizeof(char)
+
+    );STANDBY:
+
+    CALOUT(E,"BACK TO SLEEP\n");
+    pause();
+    CALOUT(E,"OUTTA PAUSE\n");
+
+    if(!(shbuf[0]&0x01)) {
+
+      pllout((uint) shbuf[1]);
+
+      goto SPWNEX;
+
+    };free(shbout_str);
+    goto SPWNFRE;
+
+  };
 
 //   ---     ---     ---     ---     --- window init
 
@@ -218,7 +270,6 @@ int main(int argc,char** argv) {
   // i init in this order because it makes sense to me
 
   NTSIN(2);
-
 
   // get charsize as a value between {0.0f,1.0f}
   // this value is relative to screen size
@@ -241,12 +292,6 @@ int main(int argc,char** argv) {
 
   uint CharCount=ws[0]*ws[1];
   shbout_mx=ws[0];shbout_my=ws[1];
-
-  // basically stdout;
-  // write here and it'll be printed
-
-  shbout=(uint*) malloc(CharCount*sizeof(uint));
-  memset(shbout,0,CharCount*sizeof(uint));
 
   BEGPSH();pshout("$:",4,0);
 
@@ -275,10 +320,20 @@ int main(int argc,char** argv) {
 
 //   ---     ---     ---     ---     --- child exec
 
-    if(!fr) {
-      fr^=fr;int pid=fork();
+    if(!spwn_pid) {
 
-      // child: locate requested
+      // TODO:move this block to it's own process
+      // that might fix the e1455 pop
+
+      SPWNEX:int pid=fork();
+
+      if(pid<0) {
+        CALOUT(E,"\n\n%s\n",strerror(errno));
+        exit(-1);
+
+      };
+
+      // grandchild: locate requested
       // that means iter through the search path
 
       if(!pid) {
@@ -286,30 +341,69 @@ int main(int argc,char** argv) {
         char ex_path[PATH_MAX+1]={0};
         {
 
+          uint ex_argc=2;uint x=0;
+          char c=*(shbout_str+x);
+
+          // we need to read the arguments
+          // count them first...
+
+          while(c) {
+
+            if(c==0x20) {
+              ex_argc++;
+
+            };x++;c=*(shbout_str+x);
+          };
+
+          CALOUT(E, "%s\n",shbout_str);
+
+//   ---     ---     ---     ---     ---
+
+          // now alocate a strarr and tokenize!
+
+          char** ex_argv=malloc(
+            ex_argc*sizeof(char*)
+
+          );ex_argv[0]=(ex_path+0);
+
+          x=1;char* token=strtok(shbout_str," ");
+          strcpy(ex_argv[0],PATH[x]);
+          strcat(ex_argv[0],token);
+
+          CALOUT(E, "%s\n",ex_argv[0]);
+
+          token=strtok(NULL," ");
+
+          for(;x<(argc-1);x++) {
+            ex_argv[x]=(char*) malloc(
+              strlen(token)+1
+
+            );strcpy(ex_argv[x],token);
+            token=strtok(NULL," ");
+            CALOUT(E, "%s\n",ex_argv[x]);
+
+          };
+
+//   ---     ---     ---     ---     ---
+
           int x_err=1;
           for(int x=0;x<PATH_SZ;x++) {
-            strcpy(ex_path,PATH[x]);
-            strcat(ex_path,"pf.exe");
 
             x_err=access(ex_path, X_OK);
 
-            if(!x_err) {    // can execute? then do
+            if(!x_err) {    // break if found && valid
               break;
 
             };
 
-          };if(!x_err) {    // else don't
+//   ---     ---     ---     ---     ---
 
-            char* ex_argv[3]={
-
-              ex_path,
-              mh_key,
-              NULL
-
-            };
+          };if(!x_err) {    // then execute
 
             // the exit line should never happen
             // TODO: handle that error
+
+            //dup2(mapfd(mh),STDOUT_FILENO);
 
             execv(ex_argv[0],ex_argv);
             exit(-1);
@@ -329,12 +423,13 @@ int main(int argc,char** argv) {
         // at some point
 
         int wst;wait(&wst);
+        goto STANDBY;
 
         // TODO:don't just push the shared memory!
         // this is okay for testing trivial programs
         // not so pretty for anything else
 
-        pshout(bf,4,1);
+        //pshout(bf,4,1);
 
       }
 
@@ -345,7 +440,13 @@ int main(int argc,char** argv) {
       // normal execution: check for text input
       uchar* ibuff=GTIBUF();
       if(ibuff) {
+
         pshout(ibuff,5,0);
+        if(ibuff[strlen(ibuff)-1]==0x0A) {
+          shbuf[1]=shbout_x+(shbout_y*shbout_mx);
+          kill(spwn_pid,SIGCONT);
+
+        };
 
       };CLIBUF();
     };
@@ -374,18 +475,24 @@ int main(int argc,char** argv) {
 
   };
 
-//   ---     ---     ---     ---     --- cleanup
+//   ---     ---     ---     ---     ---
 
-  dlmap(mh);
+  if(spwn_pid) {
+    shbuf[0]|=0x01;
+    kill(spwn_pid,SIGCONT);
+    int wst;wait(&wst);
 
-  ENDPSH();
-  free(shbout);
+    ENDPSH();
 
-  DLSIN();
-  DLCHMNG();
+    DLSIN();
+    DLCHMNG();
+    dlmap(mh);
+
+  };
+
+  SPWNFRE:
 
   for(int x=0;x<PATH_SZ;x++) {
-    CALOUT(E,"%s\n" ,PATH[x]);
     free(PATH[x]);
 
   };free(PATH);

@@ -105,21 +105,27 @@ WIN* MKWIN(
 // #:0x4;>
 
 
-int BKWIN(
-  WIN* win) {
-  SDL_DestroyWindow(
-    win->window);DLMEM(
-    win);\
+int BKWIN(WIN* win) {
+
+  SDL_DestroyWindow(win->window);
+  DLMEM(&(win->m));
+
   return DONE;
 
 };
-void SWPWINBUF(
-WIN* win) {SDL_GL_SwapWindow(
-win->window);};
+
+void SWPWINBUF(WIN* win) {
+  SDL_GL_SwapWindow(win->window);
+
+};
+
 void SHWWINCUR(void) {SDL_ShowCursor(SDL_DISABLE);};
 void HIDWINCUR(void) {SDL_ShowCursor(SDL_ENABLE);};
-int GTWINOPEN(
-WIN* win) {return win->flags&chWIN_FLAGS_OPEN;};
+
+int GTWINOPEN(WIN* win) {
+  return win->flags&chWIN_FLAGS_OPEN;
+
+};
 
 //   ---     ---     ---     ---     ---
 // #:0x5;>
@@ -282,6 +288,17 @@ int POLWIN(WIN* win) {
       case SDL_KEYUP:
 
       k=event.key.keysym.sym;
+      if(k==SDLK_RETURN) {
+        win->ibuff_i&=(CHW_IBUFF_SZ-1);
+
+        win->ibuff[win->ibuff_i]=0x0A;
+        win->ibuff_i++;
+
+        win->ibuff_i&=(CHW_IBUFF_SZ-1);
+        win->ibuff[win->ibuff_i]=0x00;
+
+      };
+
       /*for(uint i=0;i<8;i++) {
 
         if(k==CH_KEYB_KCODES[i]) {

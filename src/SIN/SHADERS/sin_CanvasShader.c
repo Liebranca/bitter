@@ -87,18 +87,18 @@ in vec4 col;\
 \
 void main() {\
 \
-    uint x = uint(texCoords.x*8);\
-    uint y = uint(texCoords.y*8);\
+  uint x = uint(texCoords.x*8);\
+  uint y = uint(texCoords.y*8);\
 \
-    uint i = x+(y*8);\
-    uint z = uint(i > 31);\
-    uint chidex = ch&0xFF;\
+  uint i = x+(y*8);\
+  uint z = uint(i > 31);\
+  uint chidex = ch&0xFF;\
 \
-    i-=z*32;\
-    bool r = bool(lycon[chidex][z]&(1<<i));\
-    r=r&&(chidex>=0x00);\
+  i-=z*32;\
+  bool r = bool(lycon[chidex][z]&(1<<i));\
+  r=r&&(chidex>=0x1F);\
 \
-    gl_FragColor = vec4(col.rgb,col.w*float(r));\
+  gl_FragColor = vec4(col.rgb,col.w*float(r));\
 }\
 "
 };

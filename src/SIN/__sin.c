@@ -75,9 +75,9 @@ void NTSIN(int chrsz) {
 
   };STPAL(def_pal,0,16);
 
-  NTSINHASH();
-  NTSINTEX();
-  NTSINSHD();
+  //NTSINHASH();
+  //NTSINTEX();
+  //NTSINSHD();
   NTCANVAS();
 
 };
@@ -86,9 +86,9 @@ void DLSIN() {
 
 
   DLCANVAS();
-  DLSINSHD();
-  DLSINTEX();
-  DLSINHASH();
+  //DLSINSHD();
+  //DLSINTEX();
+  //DLSINHASH();
 
 };
 

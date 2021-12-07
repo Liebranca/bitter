@@ -13,6 +13,9 @@ void** ntmap_heir(char* key);
 // generate maphed key
 char* encodemh(void** mh_b);
 
+// get file descriptor for map
+int mapfd(void** mh_a);
+
 // (parent process) get mmapped file
 void** ntmap_origin(char* fpath,int pages);
 

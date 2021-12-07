@@ -1,4 +1,3 @@
-
 #ifndef __CH_WIN_H__
 #define __CH_WIN_H__
 
@@ -20,10 +19,9 @@ extern"C" {
 
 #define CHW_IBUFF_SZ 64
 
-typedef struct CHASM_WINDOW {
-// sdl window stuff
+typedef struct {            // sdl window stuff
 
-ID id;                      // pol header
+MEM m;                      // pol header
 
 uchar ibuff_i;              // 'cursor' into ibuff
 uchar ibuff[CHW_IBUFF_SZ];  // text input buff
@@ -44,8 +42,8 @@ ustr8 hsize;                // guides relative to
                             // screen size
 
 int flags;                  // 0x01 is open
-// 0x02 has focus
-// 0x04 is on top
+                            // 0x02 has focus
+                            // 0x04 is on top
 
 } WIN;
 
