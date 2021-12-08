@@ -36,9 +36,6 @@
 // #:0x0;>
 
 static uint* shbout=NULL;
-static char* shbout_str=NULL;
-
-static uint shbout_str_mx=0;
 
 static uint shbout_mx=0;
 static uint shbout_my=0;
@@ -97,23 +94,6 @@ void pshout(
 
 };
 
-void pllout(uint pos) {
-
-  uint x;char last=0x00;char c=0x00;
-
-  for(x=0;x<pos;x++) {
-    c=shbout[x]&0xFF;
-
-    // skip repeat spaces!
-    if(!(c==' ' && c==last)) {
-      shbout_str[x]=c;
-
-    };last=c;
-
-  };shbout_str[x]=0x00;
-
-};
-
 void oncont(int sig) {
   return;
 
@@ -123,81 +103,30 @@ void oncont(int sig) {
 
 int main(int argc,char** argv) {
 
-  char** PATH;
-  int PATH_SZ=0;
+  char pwd[PATH_MAX+1];     // find current directory
+  char* cd;
 
   {
+    cd = realpath(argv[0],pwd);
+    int last=strlen(cd)-1;
+    do {
+      last--;
 
-    // make search path array
-    // PATH[0] is always cwd
+    } while(cd[last]!='/');
+    cd[last+1]=0x00;
 
-    char* path=getenv("KVR_PATH");
-    int x=0;
-
-    while(*(path+x)) {
-      if(*(path+x)==':') {
-        PATH_SZ++;
-
-      };x++;
-    };
-
-//   ---     ---     ---     ---     ---
-
-    PATH=malloc(PATH_SZ*sizeof(char*));
-
-    char pwd [PATH_MAX+1];  // find current directory
-    char* cd;
-
-    {
-      cd = realpath(argv[0],pwd);
-      int last=strlen(cd)-1;
-      do {
-        last--;
-
-      } while(cd[last]!='/');
-      cd[last+1]=0x00;
-
-    // make search path array
-    };PATH[0]=malloc(strlen(cd)*sizeof(char)+2);
-
-    // add cwd ;>
-    strcpy(PATH[0],cd);
-    char* lach=PATH[0]+(strlen(cd)-1);
-
+    char* lach=cd+(strlen(cd)-1);
     if(*lach!='/') {
       *(lach+1)='/';
       *(lach+2)=0x00;
-
-    };
-
-//   ---     ---     ---     ---     ---
-
-    // iter through the user's $PATH
-    // append each string to the array
-
-    char* token=strtok(path,":");
-
-    for(x=1;x<PATH_SZ;x++) {
-      PATH[x]=malloc(strlen(token)*sizeof(char)+2);
-
-      strcpy(PATH[x],token);
-      lach=PATH[x]+(strlen(token)-1);
-
-      if(*lach!='/') {
-        *(lach+1)='/';
-        *(lach+2)=0x00;
-
-      };
-
-      token=strtok(NULL,":");
 
     };
   };
 
 //   ---     ---     ---     ---     ---
 
+  int spwn_pid;
   void** mh;
-
   {
 
     // set outfile as an abspath
@@ -206,55 +135,55 @@ int main(int argc,char** argv) {
     // we don't just need to know where it is
     // every child process needs to know as well
 
-    char fpath[PATH_MAX+1+8];
+    char fpath[PATH_MAX+1];
 
-    strcpy(fpath,PATH[0]);  // set cwd
+    strcpy(fpath,cd);
     strcat(fpath,"shb7wt"); // cat cwd+outfile
 
     // now make an mmapd file ;>
     mh=ntmap_origin(fpath,1);
 
+    // mh key is needed solely as a brute-force way of
+    // telling spwn about the shmem
+    char* mh_key=encodemh(mh);
+
+//   ---     ---     ---     ---     ---
+
+    // we need to handle pauses
+    signal(SIGCONT,oncont);
+
+    // now make spwn
+    spwn_pid=fork();
+    if(!spwn_pid) {
+      char* ex_argv[3];
+      ex_argv[0]=(char*) malloc(
+        (strlen(cd)+strlen("spwn.exe"))
+       *sizeof(char)
+
+      );strcpy(ex_argv[0],cd);
+      strcat(ex_argv[0],"spwn.exe");
+
+      ex_argv[1]=mh_key;
+      ex_argv[2]=NULL;
+
+      if(!access(ex_argv[0], X_OK)) {
+        execv(ex_argv[0],ex_argv);
+        exit(-1);
+
+      };CALOUT(E,"spwn.exe not found\n");
+      free(ex_argv[0]);
+      dlmap(mh);
+
+      return -1;
+
+    };
   };
 
-  // shmem is a stdout of sorts;
-  // write here and it'll be printed
+  // first 4K of shmem are a stdout of sorts;
+  // second 4K is for IPC
 
   shbout=(uint*) (*mh);
-  int* shbuf=(int*) (shbout+0x1000);
-
-  char* mh_key=encodemh(mh);
-
-  // mh key is needed solely as a brute-force way of
-  // telling a child process about the shmem
-
-  // don't need shmem in your child?
-  // then you don't need the key
-
-  signal(SIGCONT,oncont);
-
-  int spwn_pid=fork();
-  if(!spwn_pid) {
-
-    shbout_str_mx=sysconf(ARG_MAX);
-    shbout_str=(char*) malloc(
-      shbout_str_mx*sizeof(char)
-
-    );STANDBY:
-
-    CALOUT(E,"BACK TO SLEEP\n");
-    pause();
-    CALOUT(E,"OUTTA PAUSE\n");
-
-    if(!(shbuf[0]&0x01)) {
-
-      pllout((uint) shbuf[1]);
-
-      goto SPWNEX;
-
-    };free(shbout_str);
-    goto SPWNFRE;
-
-  };
+  int* shbuf=(int*) (shbout+0x0400);
 
 //   ---     ---     ---     ---     --- window init
 
@@ -266,6 +195,7 @@ int main(int argc,char** argv) {
   // *then* init the renderer
   // this is simply so there is an OpenGL context
   // before the system is even able to try and draw
+
   // honestly? you could flip them around
   // i init in this order because it makes sense to me
 
@@ -294,6 +224,7 @@ int main(int argc,char** argv) {
   shbout_mx=ws[0];shbout_my=ws[1];
 
   BEGPSH();pshout("$:",4,0);
+  shbout_flg&=~0x02; // lock
 
 //   ---     ---     ---     ---     --- loop head
 
@@ -318,133 +249,20 @@ int main(int argc,char** argv) {
 
     };shbout_flg&=~0x01;
 
-//   ---     ---     ---     ---     --- child exec
+//   ---     ---     ---     ---     --- exec
 
-    if(!spwn_pid) {
+    if(!(shbuf[0]&0x02)) {
 
-      // TODO:move this block to it's own process
-      // that might fix the e1455 pop
-
-      SPWNEX:int pid=fork();
-
-      if(pid<0) {
-        CALOUT(E,"\n\n%s\n",strerror(errno));
-        exit(-1);
-
-      };
-
-      // grandchild: locate requested
-      // that means iter through the search path
-
-      if(!pid) {
-
-        char ex_path[PATH_MAX+1]={0};
-        {
-
-          uint ex_argc=2;uint x=0;
-          char c=*(shbout_str+x);
-
-          // we need to read the arguments
-          // count them first...
-
-          while(c) {
-
-            if(c==0x20) {
-              ex_argc++;
-
-            };x++;c=*(shbout_str+x);
-          };
-
-          CALOUT(E, "%s\n",shbout_str);
-
-//   ---     ---     ---     ---     ---
-
-          // now alocate a strarr and tokenize!
-
-          char** ex_argv=malloc(
-            ex_argc*sizeof(char*)
-
-          );ex_argv[0]=(ex_path+0);
-
-          x=1;char* token=strtok(shbout_str," ");
-          strcpy(ex_argv[0],PATH[x]);
-          strcat(ex_argv[0],token);
-
-          CALOUT(E, "%s\n",ex_argv[0]);
-
-          token=strtok(NULL," ");
-
-          for(;x<(argc-1);x++) {
-            ex_argv[x]=(char*) malloc(
-              strlen(token)+1
-
-            );strcpy(ex_argv[x],token);
-            token=strtok(NULL," ");
-            CALOUT(E, "%s\n",ex_argv[x]);
-
-          };
-
-//   ---     ---     ---     ---     ---
-
-          int x_err=1;
-          for(int x=0;x<PATH_SZ;x++) {
-
-            x_err=access(ex_path, X_OK);
-
-            if(!x_err) {    // break if found && valid
-              break;
-
-            };
-
-//   ---     ---     ---     ---     ---
-
-          };if(!x_err) {    // then execute
-
-            // the exit line should never happen
-            // TODO: handle that error
-
-            //dup2(mapfd(mh),STDOUT_FILENO);
-
-            execv(ex_argv[0],ex_argv);
-            exit(-1);
-
-          };
-
-        // or just print something vague, whatever
-        };CALOUT(E,"Could not exec %s\n",ex_path);
-        return -1;
-
-//   ---     ---     ---     ---     --- parent wait
-
-      } else {
-
-        // TODO:look into another way of locking...
-        // we will need to pause and resume childs
-        // at some point
-
-        int wst;wait(&wst);
-        goto STANDBY;
-
-        // TODO:don't just push the shared memory!
-        // this is okay for testing trivial programs
-        // not so pretty for anything else
-
-        //pshout(bf,4,1);
-
-      }
-
-//   ---     ---     ---     ---     --- parent exec
-
-    } else {
-
-      // normal execution: check for text input
       uchar* ibuff=GTIBUF();
       if(ibuff) {
 
         pshout(ibuff,5,0);
         if(ibuff[strlen(ibuff)-1]==0x0A) {
           shbuf[1]=shbout_x+(shbout_y*shbout_mx);
+          shbuf[0]|=0x02;
+
           kill(spwn_pid,SIGCONT);
+          pause();
 
         };
 
@@ -477,25 +295,16 @@ int main(int argc,char** argv) {
 
 //   ---     ---     ---     ---     ---
 
-  if(spwn_pid) {
-    shbuf[0]|=0x01;
-    kill(spwn_pid,SIGCONT);
-    int wst;wait(&wst);
 
-    ENDPSH();
+  shbuf[0]|=0x01;
+  kill(spwn_pid,SIGCONT);
+  int wst;wait(&wst);
 
-    DLSIN();
-    DLCHMNG();
-    dlmap(mh);
+  ENDPSH();
 
-  };
-
-  SPWNFRE:
-
-  for(int x=0;x<PATH_SZ;x++) {
-    free(PATH[x]);
-
-  };free(PATH);
+  DLSIN();
+  DLCHMNG();
+  dlmap(mh);
 
   return 0;
 

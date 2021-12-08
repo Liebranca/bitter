@@ -71,7 +71,7 @@ int FRBEG(int update) {
     busy--;
 
     if(!busy) {
-      STFRCAP(2);
+      STFRCAP(4);
 
     };
   };

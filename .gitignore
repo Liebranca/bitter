@@ -6,6 +6,7 @@ Makefile
 *.dll
 *.uu
 lib/
+bin/
 include/
 trashcan/
 release/
