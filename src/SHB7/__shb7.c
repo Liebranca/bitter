@@ -56,13 +56,11 @@ void pshout(
   uint oy=shbout_y;
 
   uint pos=shbout_x+(shbout_y*shbout_mx);
+
   do {
 
-    if(!*str) {
+    if(!*str || (*str<0x20 && !shbout[2])) {
       break;
-
-    } else if(*str<0x20 && *str!=0x0A) {
-      continue;
 
     };
 
@@ -103,19 +101,19 @@ void oncont(int sig) {
 
 int main(int argc,char** argv) {
 
-  char pwd[PATH_MAX+1];     // find current directory
-  char* cd;
+  char pwd[PATH_MAX+1];     // get bin folder
+  char* binf;
 
   {
-    cd = realpath(argv[0],pwd);
-    int last=strlen(cd)-1;
+    binf = realpath(argv[0],pwd);
+    int last=strlen(binf)-1;
     do {
       last--;
 
-    } while(cd[last]!='/');
-    cd[last+1]=0x00;
+    } while(binf[last]!='/');
+    binf[last+1]=0x00;
 
-    char* lach=cd+(strlen(cd)-1);
+    char* lach=binf+(strlen(binf)-1);
     if(*lach!='/') {
       *(lach+1)='/';
       *(lach+2)=0x00;
@@ -137,8 +135,8 @@ int main(int argc,char** argv) {
 
     char fpath[PATH_MAX+1];
 
-    strcpy(fpath,cd);
-    strcat(fpath,"shb7wt"); // cat cwd+outfile
+    strcpy(fpath,binf);
+    strcat(fpath,"shb7wt"); // cat bin+outfile
 
     // now make an mmapd file ;>
     mh=ntmap_origin(fpath,1);
@@ -156,22 +154,23 @@ int main(int argc,char** argv) {
     spwn_pid=fork();
     if(!spwn_pid) {
       char* ex_argv[3];
-      ex_argv[0]=(char*) malloc(
-        (strlen(cd)+strlen("spwn.exe"))
-       *sizeof(char)
+      char ex_fpath[PATH_MAX+1];
+      ex_argv[0]=ex_fpath;
 
-      );strcpy(ex_argv[0],cd);
-      strcat(ex_argv[0],"spwn.exe");
+      strcpy(ex_argv[0],binf);
+      strcat(ex_argv[0],"spwn");
 
       ex_argv[1]=mh_key;
       ex_argv[2]=NULL;
 
       if(!access(ex_argv[0], X_OK)) {
+
+        //dup2(mapfd(mh),STDOUT_FILENO);
+
         execv(ex_argv[0],ex_argv);
         exit(-1);
 
-      };CALOUT(E,"spwn.exe not found\n");
-      free(ex_argv[0]);
+      };CALOUT(E,"spwn not found\n");
       dlmap(mh);
 
       return -1;
@@ -182,7 +181,9 @@ int main(int argc,char** argv) {
   // first 4K of shmem are a stdout of sorts;
   // second 4K is for IPC
 
-  shbout=(uint*) (*mh);
+  char* c_out=(char*) *mh;
+
+  shbout=((uint*) *mh)+0x0400;
   int* shbuf=(int*) (shbout+0x0400);
 
 //   ---     ---     ---     ---     --- window init
@@ -264,9 +265,18 @@ int main(int argc,char** argv) {
           kill(spwn_pid,SIGCONT);
           pause();
 
+          shbout_x=0;
+          shbout_y=0;
+
+          pshout("$:",4,0);
+
         };
 
       };CLIBUF();
+
+    } else if(*c_out) {
+      pshout(c_out,5,0);
+
     };
 
 //   ---     ---     ---     ---     --- loop tail

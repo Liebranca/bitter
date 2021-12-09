@@ -22,7 +22,7 @@
 #include <limits.h>
 #include <errno.h>
 
-// make shb7 && gcc -s -Os -fno-unwind-tables -fno-asynchronous-unwind-tables -fsingle-precision-constant -ffast-math -fno-ident -flto -ffunction-sections -fdata-sections -Wl,--gc-sections -Wl,-fuse-ld=bfd -I/cygdrive/d/lieb_git/kvr/src/ ./spwn.c -L/cygdrive/d/lieb_git/kvr/bin/x64/ -lkvrnel -o /cygdrive/d/lieb_git/kvr/bin/x64/spwn.exe
+// make shb7 && gcc -s -Os -fno-unwind-tables -fno-asynchronous-unwind-tables -fsingle-precision-constant -ffast-math -fno-ident -flto -ffunction-sections -fdata-sections -Wl,--gc-sections -Wl,-fuse-ld=bfd -I/cygdrive/d/lieb_git/kvr/src/ ./spwn.c -L/cygdrive/d/lieb_git/kvr/bin/x64/ -lkvrnel -o /cygdrive/d/lieb_git/kvr/bin/x64/spwn && mv /cygdrive/d/lieb_git/kvr/bin/x64/spwn.exe /cygdrive/d/lieb_git/kvr/bin/x64/spwn
 
 static uint* shbout=NULL;
 static char* shbout_str=NULL;
@@ -70,7 +70,7 @@ int main(int argc,char** argv) {
 
   };
 
-  shbout=(uint*) (*mh);
+  shbout=((uint*) (*mh))+0x0400;
   int* shbuf=(int*) (shbout+0x0400);
 
   signal(SIGCONT,oncont);
@@ -79,14 +79,14 @@ int main(int argc,char** argv) {
 //   ---     ---     ---     ---     ---
 
   char** PATH;
-  int PATH_SZ=0;
+  int PATH_SZ=1;
 
   {
 
     // make search path array
     // PATH[0] is always cwd
 
-    char* path=getenv("KVR_PATH");
+    char* path=getenv("PATH");
     int x=0;
 
     while(*(path+x)) {
@@ -98,32 +98,15 @@ int main(int argc,char** argv) {
 
 //   ---     ---     ---     ---     ---
 
+    // make search path array
     PATH=malloc(PATH_SZ*sizeof(char*));
 
-    char pwd[PATH_MAX+1];  // find current directory
-    char* cd;
+    // get current directory
+    char pwd[PATH_MAX+1];
+    char* cd=pwd+0;getcwd(pwd,PATH_MAX+1);
 
-    {
-      cd = realpath(argv[0],pwd);
-      int last=strlen(cd)-1;
-      do {
-        last--;
-
-      } while(cd[last]!='/');
-      cd[last+1]=0x00;
-
-    // make search path array
-    };PATH[0]=malloc(strlen(cd)*sizeof(char)+2);
-
-    // add cwd ;>
-    strcpy(PATH[0],cd);
-    char* lach=PATH[0]+(strlen(cd)-1);
-
-    if(*lach!='/') {
-      *(lach+1)='/';
-      *(lach+2)=0x00;
-
-    };
+    // add cwd to arr ;>
+    PATH[0]=cd;
 
 //   ---     ---     ---     ---     ---
 
@@ -131,10 +114,10 @@ int main(int argc,char** argv) {
     // append each string to the array
 
     char* token=strtok(path,":");
+    char* lach;
 
     for(x=1;x<PATH_SZ;x++) {
       PATH[x]=malloc(strlen(token)*sizeof(char)+2);
-
       strcpy(PATH[x],token);
       lach=PATH[x]+(strlen(token)-1);
 
@@ -155,15 +138,11 @@ int main(int argc,char** argv) {
   shbout_str=(char*) (shbout+0x0404);
 
   STANDBY:
+  pause();
 
 //   ---     ---     ---     ---     ---
 
-  printf("BACK TO SLEEP\n");
-  pause();
-
-  printf("OUTTA PAUSE\n");
   pllout((uint) shbuf[1]);
-
   if(!(shbuf[0]&0x01)) {
 
     if(!strlen(shbout_str)) {
@@ -189,7 +168,7 @@ int main(int argc,char** argv) {
       char ex_path[PATH_MAX+1]={0};
       {
 
-        uint ex_argc=2;uint x=0;
+        uint ex_argc=0;uint x=0;
         char c=*(shbout_str+x);
 
         // we need to read the arguments
@@ -201,8 +180,6 @@ int main(int argc,char** argv) {
 
           };x++;c=*(shbout_str+x);
         };
-
-        printf("%s\n",shbout_str+2);
 
 //   ---     ---     ---     ---     ---
 
@@ -226,13 +203,12 @@ int main(int argc,char** argv) {
             break;
 
           };
-        };if(!x_err) {      // else abort
+        };if(x_err) {       // else abort
           goto EXEFAIL;
 
         };x=1;
 
         ex_argv[0]=ex_path;
-        printf("%s\n",ex_argv[0]);
 
 //   ---     ---     ---     ---     ---
 
@@ -241,35 +217,31 @@ int main(int argc,char** argv) {
 
         );token=strtok(NULL," ");
 
-        for(;x<(argc-1);x++) {
+        for(;x<(1+ex_argc);x++) {
           ex_argv[x]=ex_base;
           strcpy(ex_argv[x],token);
           ex_base+=(strlen(token)+1);
 
           token=strtok(NULL," ");
-          printf("%s\n",ex_argv[x]);
 
-        };ex_argv[argc-1]=NULL;
+        };ex_argv[1+ex_argc]=NULL;
 
 //   ---     ---     ---     ---     ---
 
         // the exit line should never happen
         // TODO: handle that error
 
-        //dup2(mapfd(mh),STDOUT_FILENO);
-
         execv(ex_argv[0],ex_argv);
         exit(-1);
 
       };EXEFAIL:
-      printf("Could not exec %s\n",ex_path);
-      return -1;
+      printf("Could not run %s\n",ex_path);
+      exit(-1);
 
 //   ---     ---     ---     ---     --- spawner wait
 
     } else {
 
-      printf("WAITING FOR GRANDCHILD...\n");
       int wst;wait(&wst);
 
       SPWNSKIP:
