@@ -50,7 +50,7 @@ static int shbout_flg=0x00;
 void pshout(
   uchar* str,
   uchar col_id,
-  char reset) {
+  char flg) {
 
   uint ox=shbout_x;
   uint oy=shbout_y;
@@ -59,7 +59,15 @@ void pshout(
 
   do {
 
-    if(!*str || (*str<0x20 && !shbout[2])) {
+    flg|=(
+     (!*str
+
+     ||(*str<0x20
+     && !shbout[2]))
+
+     *(0x04*(!(flg&0x02)))
+
+    );if(flg&0x04) {
       break;
 
     };
@@ -71,6 +79,8 @@ void pshout(
     || *str==0x0A) {
       shbout_x=0;
       shbout_y++;
+
+      pos=shbout_x+(shbout_y*shbout_mx);
 
     };
 
@@ -84,9 +94,12 @@ void pshout(
   } while(*str++);
 
   shbout_flg|=0x01;
-  if(reset) {
+  if(flg&0x01) {
     shbout_x=ox;
     shbout_y=oy;
+
+  };if(!(flg&0x02)) {
+    shbout[pos]=0xE2|(6<<8);
 
   };
 
@@ -165,7 +178,7 @@ int main(int argc,char** argv) {
 
       if(!access(ex_argv[0], X_OK)) {
 
-        //dup2(mapfd(mh),STDOUT_FILENO);
+        dup2(mapfd(mh),STDOUT_FILENO);
 
         execv(ex_argv[0],ex_argv);
         exit(-1);
@@ -265,6 +278,12 @@ int main(int argc,char** argv) {
           kill(spwn_pid,SIGCONT);
           pause();
 
+          memset(shbout,0,0x0400*sizeof(uint));
+
+          shbout_x=0;
+          shbout_y=2;
+          pshout(c_out,5,0b10);
+
           shbout_x=0;
           shbout_y=0;
 
@@ -274,10 +293,10 @@ int main(int argc,char** argv) {
 
       };CLIBUF();
 
-    } else if(*c_out) {
-      pshout(c_out,5,0);
+    };/* else if(*c_out) {
 
-    };
+
+    };*/
 
 //   ---     ---     ---     ---     --- loop tail
 
