@@ -47,7 +47,7 @@ static int shbout_flg=0x00;
 
 //   ---     ---     ---     ---     ---
 
-void pshout(
+char* pshout(
   uchar* str,
   uchar col_id,
   char flg) {
@@ -60,20 +60,31 @@ void pshout(
   do {
 
     flg|=(
-     (!*str
-
-     ||(*str<0x20
-     && !shbout[2]))
-
+     (*str<0x20 && shbout[2]<=0x20)
      *(0x04*(!(flg&0x02)))
 
-    );if(flg&0x04) {
+    );if(flg&0x04 || !*str) {
       break;
 
     };
 
-    shbout[pos]=(*str)|(col_id<<8);
-    pos++;shbout_x++;
+    if(*str!=0x08) {
+      shbout[pos]=(*str)|(col_id<<8);
+      pos++;shbout_x++;
+
+    } else {
+      shbout[pos]=0x0020;
+      pos--;shbout_x-=1*(pos>=2);
+
+      if(shbout_x>=shbout_mx) {
+        shbout_x=shbout_mx-1;
+        shbout_y--;
+
+        shbout_y*=0+(shbout_y<shbout_my);
+        pos=shbout_x+(shbout_y*shbout_mx);
+
+      };continue;
+    };
 
     if(shbout_x>=shbout_mx
     || *str==0x0A) {
@@ -99,9 +110,12 @@ void pshout(
     shbout_y=oy;
 
   };if(!(flg&0x02)) {
+    pos=(pos<2) ? 2 : pos;
     shbout[pos]=0xE2|(6<<8);
 
   };
+
+  return str++;
 
 };
 
@@ -282,7 +296,12 @@ int main(int argc,char** argv) {
 
           shbout_x=0;
           shbout_y=2;
-          pshout(c_out,5,0b10);
+
+          char* ic=c_out;
+          while(*(ic=pshout(ic,5,0b10))) {;};
+          //memset(c_out,0,0x0400*sizeof(uint));
+
+// cp /cygdrive/c/cygwin64/bin/cygwin1.dll /cygdrive/d/lieb_git/kvr/bin/x64/cygwin1.dll
 
           shbout_x=0;
           shbout_y=0;

@@ -65,7 +65,7 @@ void NTCANVAS(void) {
 
       if(px>=1.0f) {
         px=-1.0f;
-        py-=sc[1];
+        py-=sc[1]*1.10;
 
       };
 

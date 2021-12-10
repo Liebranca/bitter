@@ -269,11 +269,34 @@ int POLWIN(WIN* win) {
       case SDL_KEYDOWN:
 
       k=event.key.keysym.sym;
-      if(k==SDLK_ESCAPE) {
+      char c=0x00;
+
+      switch(k) {
+
+        case SDLK_ESCAPE:
         USTWINFLAG(win,chWIN_FLAGS_OPEN);
+        c=0x1B;break;
+
+        case SDLK_RETURN:
+        c=0x0A;goto KUP_INSERT;
+
+        case SDLK_BACKSPACE:
+        c=0x08;goto KUP_INSERT;
+
+        KUP_INSERT:
+        win->ibuff_i&=(CHW_IBUFF_SZ-1);
+
+        win->ibuff[win->ibuff_i]=c;
+        win->ibuff_i++;
+
+        win->ibuff_i&=(CHW_IBUFF_SZ-1);
+        win->ibuff[win->ibuff_i]=0x00;
         break;
 
-      };
+        default:
+        break;
+
+      }
 
       /*for(uint i=0;i<8;i++) {
 
@@ -286,18 +309,6 @@ int POLWIN(WIN* win) {
 //   ---     ---     ---     ---     ---
 
       case SDL_KEYUP:
-
-      k=event.key.keysym.sym;
-      if(k==SDLK_RETURN) {
-        win->ibuff_i&=(CHW_IBUFF_SZ-1);
-
-        win->ibuff[win->ibuff_i]=0x0A;
-        win->ibuff_i++;
-
-        win->ibuff_i&=(CHW_IBUFF_SZ-1);
-        win->ibuff[win->ibuff_i]=0x00;
-
-      };
 
       /*for(uint i=0;i<8;i++) {
 
