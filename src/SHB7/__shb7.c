@@ -95,12 +95,12 @@ char* pshout(
 
     };
 
-    if(shbout_y>=shbout_my) {
+    /*if(shbout_y>=shbout_my) {
       shbout_x=0;
       shbout_y=0;
       pos=0;break;
 
-    };
+    };*/
 
   } while(*str++);
 
@@ -205,20 +205,20 @@ int main(int argc,char** argv) {
     };
   };
 
-  // first 4K of shmem are a stdout of sorts;
-  // second 4K is for IPC
+  // first block of shmem is for console draw
+  // second is IPC flags
+  // third is IPC input (shb7 <- child process)
 
-  char* c_out=(char*) *mh;
-
-  shbout=((uint*) *mh)+0x0400;
-  int* shbuf=(int*) (shbout+0x0400);
+  shbout=(uint*) *mh;
+  int* shbuf=(int*) (shbout+SHM_STEP);
+  char* c_out=(char*) (shbuf+SHM_STEP);
 
 //   ---     ---     ---     ---     --- window init
 
   // create the window manager
   // that in turn spawns a window!
 
-  NTCHMNG("SHB7x64",0);
+  NTCHMNG("SHB7x64",1);
 
   // *then* init the renderer
   // this is simply so there is an OpenGL context
@@ -251,7 +251,21 @@ int main(int argc,char** argv) {
   uint CharCount=ws[0]*ws[1];
   shbout_mx=ws[0];shbout_my=ws[1];
 
-  BEGPSH();pshout("$:",4,0);
+  BEGPSH();
+
+  for(int i=0;i<5;i++) {
+
+    if(FRBEG(0)) {
+      break;
+
+    };
+
+    FREND();
+    FRSLP();
+
+  };CLIBUF();
+
+  pshout("$:",4,0);
   shbout_flg&=~0x02; // lock
 
 //   ---     ---     ---     ---     --- loop head
@@ -292,16 +306,17 @@ int main(int argc,char** argv) {
           kill(spwn_pid,SIGCONT);
           pause();
 
-          memset(shbout,0,0x0400*sizeof(uint));
+          for(uint i=0;i<SHM_STEP;i++) {
+            shbout[i]=0x00E2;
+
+          };
 
           shbout_x=0;
           shbout_y=2;
 
           char* ic=c_out;
-          while(*(ic=pshout(ic,5,0b10))) {;};
-          //memset(c_out,0,0x0400*sizeof(uint));
-
-// cp /cygdrive/c/cygwin64/bin/cygwin1.dll /cygdrive/d/lieb_git/kvr/bin/x64/cygwin1.dll
+          while(*(ic=pshout(ic,5,0b10))) {;}
+          memset(c_out,0,SHM_STEP);
 
           shbout_x=0;
           shbout_y=0;

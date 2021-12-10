@@ -70,8 +70,8 @@ int main(int argc,char** argv) {
 
   };
 
-  shbout=((uint*) (*mh))+0x0400;
-  int* shbuf=(int*) (shbout+0x0400);
+  shbout=(uint*) *mh;
+  int* shbuf=(int*) (shbout+SHM_STEP);
 
   signal(SIGCONT,oncont);
   kill(getppid(),SIGCONT);
@@ -135,15 +135,31 @@ int main(int argc,char** argv) {
 //   ---     ---     ---     ---     ---
 
   shbout_str_mx=sysconf(ARG_MAX);
-  shbout_str=(char*) (shbout+0x0404);
+  shbout_str=(char*) (shbuf+0x04);
 
-  STANDBY:
+  uint outjmp=(
+   +(SHM_STEP*sizeof(*shbout))
+   +(SHM_STEP*sizeof(*shbuf))
+
+//   ---     ---     ---     ---     ---
+
+  );STANDBY:                // rewind out and wait
+
+  rewind(stdout);
+
+  fseek(stdout,0,SEEK_CUR);
+  fseek(stdout,outjmp,SEEK_CUR);
+  fseek(stdout,0,SEEK_CUR);
+
   pause();
 
 //   ---     ---     ---     ---     ---
 
-  pllout((uint) shbuf[1]);
-  if(!(shbuf[0]&0x01)) {
+  pllout((uint) shbuf[1]);  // back from sleep
+  if(!(shbuf[0]&0x01)) {    // decode input
+
+    // input is empty?
+    // back to standby
 
     if(!strlen(shbout_str)) {
       goto SPWNSKIP;
@@ -151,6 +167,9 @@ int main(int argc,char** argv) {
     };
 
     SPWNEX:int pid=fork();
+
+    // fork error?
+    // back to standby
 
     if(pid<0) {
       printf("\n\n%s\n",strerror(errno));

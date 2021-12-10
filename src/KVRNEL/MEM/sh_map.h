@@ -5,6 +5,8 @@
 extern "C" {
 #endif
 
+#define SHM_STEP 0x0800
+
 //   ---     ---     ---     ---     ---
 
 // (child process) get mmapped file
