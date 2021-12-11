@@ -22,7 +22,9 @@
 #include <limits.h>
 #include <errno.h>
 
-// make shb7 && gcc -s -Os -fno-unwind-tables -fno-asynchronous-unwind-tables -fsingle-precision-constant -ffast-math -fno-ident -flto -ffunction-sections -fdata-sections -Wl,--gc-sections -Wl,-fuse-ld=bfd -I/cygdrive/d/lieb_git/kvr/src/ ./spwn.c -L/cygdrive/d/lieb_git/kvr/bin/x64/ -lkvrnel -o /cygdrive/d/lieb_git/kvr/bin/x64/spwn && mv /cygdrive/d/lieb_git/kvr/bin/x64/spwn.exe /cygdrive/d/lieb_git/kvr/bin/x64/spwn
+#define KVR_PATH_SEP '\xFF'
+#define NIX_PATH_SEP ':'
+#define WIN_PATH_SEP ';'
 
 static uint* shbout=NULL;
 static char* shbout_str=NULL;
@@ -89,11 +91,22 @@ int main(int argc,char** argv) {
     char* path=getenv("PATH");
     int x=0;
 
-    while(*(path+x)) {
-      if(*(path+x)==':') {
-        PATH_SZ++;
+    { int drive_ch=0;
+      char c=*(path+x);
 
-      };x++;
+      while(c) {
+        if(
+
+          ( c==NIX_PATH_SEP
+         || c==WIN_PATH_SEP
+         || c==KVR_PATH_SEP )
+
+         && drive_ch>1) {
+          path[x]=KVR_PATH_SEP;
+          PATH_SZ++;drive_ch=0;
+
+        };x++;drive_ch++;c=*(path+x);
+      };
     };
 
 //   ---     ---     ---     ---     ---
@@ -103,7 +116,22 @@ int main(int argc,char** argv) {
 
     // get current directory
     char pwd[PATH_MAX+1];
-    char* cd=pwd+0;getcwd(pwd,PATH_MAX+1);
+    char* cd=pwd+0;
+
+    {
+      char pwd2[PATH_MAX+1];
+      getcwd(pwd2,PATH_MAX+1);
+      realpath(pwd,pwd2);
+
+    };
+
+    // sanitize...
+    for(int y=0;y<strlen(cd);y++) {
+      if(cd[y]=='\\') {
+        cd[y]='/';
+
+      };
+    };
 
     // add cwd to arr ;>
     PATH[0]=cd;
@@ -113,12 +141,21 @@ int main(int argc,char** argv) {
     // iter through the user's $PATH
     // append each string to the array
 
-    char* token=strtok(path,":");
+    char kvr_path_sep[2]={KVR_PATH_SEP,0x00};
+    char* token=strtok(path,kvr_path_sep);
     char* lach;
 
     for(x=1;x<PATH_SZ;x++) {
       PATH[x]=malloc(strlen(token)*sizeof(char)+2);
       strcpy(PATH[x],token);
+
+      for(int y=0;y<strlen(PATH[x]);y++) {
+        if(PATH[x][y]=='\\') {
+          PATH[x][y]='/';
+
+        };
+      };
+
       lach=PATH[x]+(strlen(token)-1);
 
       if(*lach!='/') {
@@ -127,7 +164,7 @@ int main(int argc,char** argv) {
 
       };
 
-      token=strtok(NULL,":");
+      token=strtok(NULL,kvr_path_sep);
 
     };
   };
@@ -136,6 +173,8 @@ int main(int argc,char** argv) {
 
   shbout_str_mx=sysconf(ARG_MAX);
   shbout_str=(char*) (shbuf+0x04);
+
+
 
   uint outjmp=(
    +(SHM_STEP*sizeof(*shbout))
@@ -155,8 +194,8 @@ int main(int argc,char** argv) {
 
 //   ---     ---     ---     ---     ---
 
-  pllout((uint) shbuf[1]);  // back from sleep
-  if(!(shbuf[0]&0x01)) {    // decode input
+  if(!(shbuf[0]&0x01)) {    
+    pllout((uint) shbuf[1]);// decode input
 
     // input is empty?
     // back to standby
@@ -276,7 +315,7 @@ int main(int argc,char** argv) {
 
 //   ---     ---     ---     ---     --- cleanup
 
-  for(int x=0;x<PATH_SZ;x++) {
+  for(int x=1;x<PATH_SZ;x++) {
     free(PATH[x]);
 
   };free(PATH);

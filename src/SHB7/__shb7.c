@@ -140,6 +140,13 @@ int main(int argc,char** argv) {
     } while(binf[last]!='/');
     binf[last+1]=0x00;
 
+    for(int x=0;x<strlen(binf);x++) {
+      if(binf[x]=='\\') {
+        binf[x]='/';
+
+      };
+    };
+
     char* lach=binf+(strlen(binf)-1);
     if(*lach!='/') {
       *(lach+1)='/';
@@ -218,7 +225,7 @@ int main(int argc,char** argv) {
   // create the window manager
   // that in turn spawns a window!
 
-  NTCHMNG("SHB7x64",1);
+  NTCHMNG("SHB7x64",0);
 
   // *then* init the renderer
   // this is simply so there is an OpenGL context
