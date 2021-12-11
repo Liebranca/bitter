@@ -1,0 +1,26 @@
+$$$$$$$$$$$$$$$$
+
+// deref.pe
+
+entry main;
+
+reg vars;
+  char x ">Print this!";
+
+  long y x;
+  char z 0x0A;
+
+proc main;
+  wed long;
+  wap z,y;
+
+  call print_zy;
+  exit 0;
+
+proc print_zy;
+  wed str;buf 1;
+
+  sow [z],y;
+  reap 0b00;
+
+  ret;

@@ -1,6 +1,7 @@
 Makefile
 *.knit
 *.txt
+!palette.txt
 *.lib
 *.exe
 *.dll

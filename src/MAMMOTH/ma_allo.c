@@ -13,8 +13,7 @@
 //   ---     ---     ---     ---     ---
 
 // header of sub-block within allocation
-typedef struct MAMM_BLK_HED
-{
+typedef struct {
 
   uint64_t id;              // numerical identificator
 
@@ -26,8 +25,7 @@ typedef struct MAMM_BLK_HED
 } FHED;
 
 // allocation manager
-typedef struct MAMM_FAST_ALLOC
-{
+typedef struct {
 
   size_t sz;                // sum(sz) of all blocks
   size_t avail;             // sum(sz-us) of all blocks
@@ -43,23 +41,23 @@ typedef struct MAMM_FAST_ALLOC
 
 //   ---     ---     ---     ---     ---
 
-void ntallo(void)
-{
+void ntallo(void) {
 
-  for(int x=0;x<QMS_SZ;x++)
-  {
-    mfa.slots[x].id = FREE_BLOCK;
-    mfa.slots[x].fl = 0;
-    mfa.slots[x].cr = 0;
-    mfa.slots[x].us = 0;
-    mfa.slots[x].sz = 0;
+  for(int x=0;x<16;x++) {
+    for(int y=0;y<FMS_SZ;x++)
+    {
+      mfa.slots[x][y].id = FREE_BLOCK;
+      mfa.slots[x][y].fl = 0;
+      mfa.slots[x][y].cr = 0;
+      mfa.slots[x][y].us = 0;
+      mfa.slots[x][y].sz = 0;
 
+    };
   };
 
 };
 
-void dlallo(void)
-{
+void dlallo(void) {
 
   sbrk(mfa.sz);
 
@@ -67,32 +65,28 @@ void dlallo(void)
 
 //   ---     ---     ---     ---     ---
 
-FHED* hshb(void* ptr)
-{
+FHED* hshb(void* ptr) {
 
   uintptr_t addr = (uintptr_t) ptr;
 
   int       idy  = ((addr&0x00F0)>>4);
-  int       idx  = ((addr&0xFF00)>>8)&(QMS_SZ-1);
+  int       idx  = ((addr&0xFF00)>>8)&(FMS_SZ-1);
 
-  FHED*     slot = mfa.slots[idy][idx];
+  FHED*     slot = &(mfa.slots[idy][idx]);
 
-  if(
-
-  return &(mfa.slots[idy][idx]);
+  return slot;
 
 };
 
 //   ---     ---     ---     ---     ---
 
-void* fmem(int sz)
-{
+void* fmem(int sz) {
 
   int page_cnt = sz/PAGE_SZ;
   if(!page_cnt) { page_cnt++; }
 
 
   printf("BRK %i\n", sbrk(0));
-  return;
+  return NULL;
 
 };

@@ -17,6 +17,8 @@
 import os, datetime;
 today = datetime.datetime.now();
 
+KVR_DEBUG=0x88;
+
 #   ---     ---     ---     ---     ---
 
 pstr  =        "/*/************************************************\n";
@@ -46,7 +48,7 @@ for fold in ["KVRNEL","GRIM", "MAMMOTH", "SIN", "CHASM", "SHB7"]:
     if not os.path.exists(dpath+"/MKLOG"):
         print(f"->generated {fold} can");
         with open(dpath+"/MKLOG", "w+") as mkflags:
-            mkflags.write("-D KVR_DEBUG=0x88");
+            mkflags.write(f"-D KVR_DEBUG={KVR_DEBUG}");
 
 print("\n Ready\n");
 

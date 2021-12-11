@@ -1323,13 +1323,9 @@ void CLPASS(void)                           {
 
 //   ---     ---     ---     ---     ---
 
-#include "ma_allo.h"
+// #include "ma_allo.h"
 
 int main(int argc, char** argv)             {
-
-    allo_test();
-
-    return 0;
 
     int   prmemlay = 0;
     int   from_bin = 0;

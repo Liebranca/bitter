@@ -1,0 +1,23 @@
+$$$$$$$$$$$$$$$$
+
+// my_vars.pe
+
+entry main;
+
+reg my_vars;
+  char x "################";
+
+proc main;
+
+  wed str;buf 1;
+  sow x,0x0A;
+
+  wed long;
+  cpy x+0,0x25262728292A2B2C;
+  cpy x+8,0x2D2E2F3031323334;
+
+  wed str;
+  sow x,0x0A;
+
+  reap 0b00;
+  exit 0;

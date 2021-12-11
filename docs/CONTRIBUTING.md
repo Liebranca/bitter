@@ -1,107 +1,53 @@
-# KVR IS A BIG WIP
+# I WANT TO CONTRIBUTE!
 
-That first and foremost, and I am trapped on Windows for a variety of reasons. I cannot guarantee anything works on a GNU OS, though it just might -- and I'd be happy to help anyone attempting a port in any way I can.
+ I don't expect you to, and you're insane if you do, so welcome aboard.
 
-### So, for now:
-- Check that you're also on Windows (7 or later)
+ The bulk of KVR is C99 and the preferred compiler is GCC. For a list of dependencies check README and STYLE to get a taste of what you're getting into.
 
-### Then, understand that:
-- KVR's build system depends on the GNU compiler.
-- *For now* I use Mingw-w64 mainly, so producing binaries from other versions could need some fine-tunning.
-- The entire interface runs on ANSI escapes. If you don't run it on a terminal capable of understanding those sequences, you'll see weird things.
-- You'll have to get something like *ansicon* if you're seeing said weird things.
-- Every piece of code must display the following notice in comments, right at the start of the *source* file:
+### WHAT TO LOOK FOR
 
-```
-/*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
-/*    FILENAME                              *
-*                                           *
-*     -descriptor,(=)                       *
-*                                           */
-// *   ---     ---     ---     ---     ---  *
-/*    NOTICE                                *
-*                                           *
-*     Licenced under                        *
-*     your clever siggy.                    *
-*                                           */
-// *   ---     ---     ---     ---     ---  *
-/* CONTRIBUTORS                             *
-*     name,(=)                              *
-*                                           */
-/*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/*/
-```
+ There's never enough documentation. If you can help just describing the usage/arguments/return of a function that's highly appreciated.
 
-And this final license block cannot be incompatible with GPL3. Needless to say, if you `#include` a GPL'd file, then be a bro and use the same license because it's your inheritance.
+ Aside from that, optimizations for `mamm` parse and interpreting code would be welcome; it's probably the toughest part of the project.
 
-### What to look for
+ Also porting missing SIN bits over from DSM ( /Liebranca/DSM/tree/dev/src/SIN ), reformatting and all, would be really nice.
 
-Porting is a low priority for now. The main thing is:
-- Improving the build system and it's interface
-- Developing PE$O lang
-- Making C libraries compatible with `zjc_evil`
+ Final point, if you're interested in playing with PE$O scripts (for what little the language can do right now) it'd be pretty helpful if you found weirdness within the language (or rather, weirdness that's inconsistent with what's stated in /docs/PESOLANG.md ).
 
-And therefore, those are the things I would mainly be working on. So if you really want to help, help with those.
+ Anything else small you can find or fix is cool as well, but those are the main things right now.
 
-And what's that? You want to help and need detailed logging?
+# FAQ && THINGS
 
-# KVR_DEBUG
+### WAIT... THERE'S NO COC?
 
-Sometimes, you need certain data on the operations themselves rather than just the result. But this means collecting data \*as\* the operations run, which is a certain volume of added operations in and of itself, and additional memory usage to boot.
+ Yeah those things bother me. Be cool and that's that.
 
-Therefore, it's necessary to have the ability to simply make builds discard certain pieces of code, so that these appendices to the core function remain 'detachable'.
+ I don't like drama. I don't like most things, as a matter of fact. Do not use this repo as a vehicle for non-tech discussion or I'll ban you outright.
 
-Certain preprocessor hooks can be used to say, "don't include this chunk on this build" -- that's our very goal here. In `/src/kvrnel/zjc_evil` we declare some flags like so,
+### ISSUES
 
-```
-                                            // logflags. enables/disables certain logmesses
-#define KVR_CALOM 0x01                      // MEM
-#define KVR_CALOF 0x02                      // BIN
-#define KVR_CALOK 0x04                      // PROC
+ Don't report bugs unless you have absolutely no idea what is going on; then and only then I will look into it myself.
 
-#define KVR_CALOS 0x08                      // report string ops
-```
+ Note that I only ever use issues as task lists when I feel like it, or else do it on a notepad file -- less flashy, but same thing. Feel free to do as I do: report what you're working at, make a list of things to look at, assign yourself and get to work.
 
-And then set which flags we'd like to use on the build, like so
+### LICENSING
 
-```
-#define KVR_DEBUG (                         /* combined logflags */                          \
-    KVR_CALOM | KVR_CALOK | KVR_CALOS                                                        \
-                                                                                             \
-)
-```
+ I GPL3 into everything, that is my philosophy. If you have a problem with that for whichever reason then do the research yourself and pick a license that's compatible; it ultimately doesn't matter.
 
-It is all fairly simple.
+### LOOK AT MY BUGFIX
 
-We can then except a block from being called for the current build if the appropiate flags are not set. For a practical example of this, here is skipping the memory logger on `MKMEM` and `DLMEM`
+ No.
 
-```
+ I have my own schedule. If I can look at it then I will, else I won't. Don't nag me. If you grow too impatient just go ahead and fork.
 
-MEM* MKMEM(uint size, ID* id)               { void* buff = __kvrmalloc(size);
+### DOESN'T WORK ON X PLATFORM
 
-    if(buff != NULL)
-    {
-        MEM* m=(MEM*) buff;
+ Then put in the details or I can't help you.
 
-        m->id=*id;
-        m->fsize=size;
-#if KVR_DEBUG & KVR_CALOM
-        MEMCNT(m, 'A');
-#endif
+ Error messages, your specs, version of installed dependencies, your path variable, etc. Be descriptive or be ignored.
 
-        return m;
+### FEATURE REQUESTS
 
-    }; return NULL;                                                                         };
+ No.
 
-void DLMEM(void* p)                         {
-
-    if(p) {
-        MEM* m=(MEM*) p;
-#if KVR_DEBUG & KVR_CALOM
-        MEMCNT(m, 'D');
-#endif
-        free(p);
-
-    }                                                                                       };
-```
-
-Just like everything else, adding more flags or debug blocks where it might be useful is an ongoing process.
+ Alright, let me rephrase that: if you know something KVR is \_\_sorely\_\_ lacking then go ahead -- propose a way we could fix it. But don't ever try to invite in feature creep and additional bloat, it's just cringe.

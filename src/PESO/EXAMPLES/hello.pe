@@ -1,0 +1,12 @@
+$$$$$$$$$$$$$$$$
+
+entry main;
+
+proc  main;
+  wed   str;
+  buf   1;
+
+  sow   "Hello, world!",0x0A;
+  reap  0b00;
+
+  exit  0;

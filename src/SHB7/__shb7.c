@@ -265,8 +265,10 @@ int main(int argc,char** argv) {
 
   };CLIBUF();
 
-  pshout("$:",4,0);
-  shbout_flg&=~0x02; // lock
+  pshout("$:",4,0);         // draw prompt
+  PSHCHR(shbout,1);
+
+  shbout_flg&=~0x02;        // lock
 
 //   ---     ---     ---     ---     --- loop head
 
@@ -357,7 +359,6 @@ int main(int argc,char** argv) {
   };
 
 //   ---     ---     ---     ---     ---
-
 
   shbuf[0]|=0x01;
   kill(spwn_pid,SIGCONT);
