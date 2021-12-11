@@ -293,7 +293,8 @@ int main(int argc,char** argv) {
     // for now we only care if out has been written to
 
     int evilstate=FRBEG(
-      ((shbout_flg&0x01)!=0)*4
+      (( (shbout_flg&0x01)
+       && !(shbuf[0]&0x4) )!=0)*4
 
     );if(evilstate) {
       break;
@@ -302,44 +303,54 @@ int main(int argc,char** argv) {
 
 //   ---     ---     ---     ---     --- exec
 
-    if(!(shbuf[0]&0x02)) {
+    if( (!(shbuf[0]&0x02))
+    &&  (!(shbuf[0]&0x04)) ) {
 
       uchar* ibuff=GTIBUF();
       if(ibuff) {
 
-        pshout(ibuff,5,0);
         if(ibuff[strlen(ibuff)-1]==0x0A) {
           shbuf[1]=shbout_x+(shbout_y*shbout_mx);
           shbuf[0]|=0x02;
+          shbuf[0]|=0x04;
 
           kill(spwn_pid,SIGCONT);
-          pause();
-
-          for(uint i=0;i<SHM_STEP;i++) {
-            shbout[i]=0x00E2;
-
-          };
 
           shbout_x=0;
-          shbout_y=2;
+          shbout_y=shbout_my;
 
-          char* ic=c_out;
-          while(*(ic=pshout(ic,5,0b10))) {;}
-          memset(c_out,0,SHM_STEP);
-
-          shbout_x=0;
-          shbout_y=0;
-
-          pshout("$:",4,0);
+        } else {
+          pshout(ibuff,5,0);
 
         };
-
       };CLIBUF();
 
-    };/* else if(*c_out) {
+    } else
 
+    if( (!(shbuf[0]&0x02))
+    &&  ( (shbuf[0]&0x04)) ) {
 
-    };*/
+      shbout_x=0;
+      shbout_y=2;
+
+      if(*c_out) {
+        char* ic=c_out;
+        while(*(ic=pshout(ic,5,0b10))) {;}
+        memset(c_out,0,SHM_STEP);
+
+      };
+
+      shbout_x=0;
+      shbout_y=0;
+
+      pshout("$:",4,0b00);
+      shbuf[0]&=~0x04;
+
+    } else {
+      char cl[2]={0xA9+(shbuf[2]&0b111),0x00};
+      pshout(cl,6,0b01);shbuf[2]++;
+
+    };
 
 //   ---     ---     ---     ---     --- loop tail
 

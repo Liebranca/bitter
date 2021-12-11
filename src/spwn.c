@@ -32,6 +32,9 @@ static uint* shbout=NULL;
 static char* shbout_str=NULL;
 static uint shbout_str_mx=0;
 
+static char** PATH;
+static int PATH_SZ=1;
+
 void pllout(uint pos) {
 
   uint x;uint y=0;
@@ -50,8 +53,71 @@ void pllout(uint pos) {
     };last=c;
 
   };shbout_str[y]=0x00;
+  for(uint i=2;i<SHM_STEP;i++) {
+    shbout[i]=0x00E2;
+
+  };
+};
+
+//   ---     ---     ---     ---     ---
+
+void cd(void) {
+
+  char* c=shbout_str+5;
+  while(*c) {
+
+    ushort nc=*((ushort*) c);
+
+    // nc==".."
+    if(nc==0x2E2E) {
+
+      char* cd=PATH[0];
+      int len=strlen(cd)-1;
+
+      { int do_brk=0;
+        for(char* cd_c=cd+0;cd_c<cd+len;cd_c++) {
+          do_brk+=*cd_c=='/';
+
+        };if(do_brk<=2) { goto AFTERCH; }
+      };
+
+      cd[len]=0x00;
+      while(cd[len]!='/') {
+        cd[len]=0x00;
+        len--;
+
+      };
+    };
+
+    c++;
+
+  };chdir(PATH[0]);AFTERCH:
+  printf("%s",PATH[0]);
+};
+
+//   ---     ---     ---     ---     ---
+
+void pwd(void) {
+  printf("%s",PATH[0]);
 
 };
+
+//   ---     ---     ---     ---     ---
+
+typedef struct {
+
+  char  name[32];
+  void (*fun)(void);
+
+} SHB7_BI;
+
+static SHB7_BI SHB7_BUILTINS[]={
+  "cd",&cd,
+  "pwd",&pwd
+
+};
+
+//   ---     ---     ---     ---     ---
 
 void oncont(int sig) {
   return;
@@ -82,9 +148,6 @@ int main(int argc,char** argv) {
 
 //   ---     ---     ---     ---     ---
 
-  char** PATH;
-  int PATH_SZ=1;
-
   {
 
     // make search path array
@@ -97,6 +160,7 @@ int main(int argc,char** argv) {
       char c=*(path+x);
 
       while(c) {
+
         if(
 
           ( c==NIX_PATH_SEP
@@ -117,9 +181,9 @@ int main(int argc,char** argv) {
     PATH=malloc(PATH_SZ*sizeof(char*));
 
     // get current directory
-    char pwd[PATH_MAX+1];
-    char* cd=pwd+0;
-    getcwd(pwd,PATH_MAX+1);
+    char pwdv[PATH_MAX+1];
+    char* cd=pwdv+0;
+    getcwd(pwdv,PATH_MAX+1);
 
     // sanitize...
     for(int y=0;y<strlen(cd);y++) {
@@ -175,8 +239,6 @@ int main(int argc,char** argv) {
   shbout_str_mx=sysconf(ARG_MAX);
   shbout_str=(char*) (shbuf+0x04);
 
-
-
   uint outjmp=(
    +(SHM_STEP*sizeof(*shbout))
    +(SHM_STEP*sizeof(*shbuf))
@@ -185,10 +247,9 @@ int main(int argc,char** argv) {
 
   );STANDBY:                // rewind out and wait
 
-  rewind(stdout);
-
+  //rewind(stdout);
   fseek(stdout,0,SEEK_CUR);
-  fseek(stdout,outjmp,SEEK_CUR);
+  fseek(stdout,outjmp,SEEK_SET);
   fseek(stdout,0,SEEK_CUR);
 
   pause();
@@ -206,37 +267,23 @@ int main(int argc,char** argv) {
 
     };
 
+//   ---     ---     ---     ---     ---
+
     // look for builtins...
-    // ill add a lookup table later on
-    // but for *just* cd, this is it!
 
-    if( ((*((uint*) (shbout_str+2)))&0x00FFFFFF)
-    ==  0x00206463 ) {
-      char* c=shbout_str+5;
-      while(*c) {
+    {
 
-        ushort nc=*((ushort*) c);
+      char* token=strtok(shbout_str+2," ");
 
-        // nc==".."
-        if(nc==0x2E2E) {
-          fprintf(stderr,">%s\n",PATH[0]);
+      for(int x=0;x<sizeof(SHB7_BUILTINS);x++) {
 
-          char* cd=PATH[0];
-          int len=strlen(cd)-1;
-          cd[len]=0x00;
+        SHB7_BI* bi=SHB7_BUILTINS+x;
+        if(!strcmp(token,bi->name)) {
+          bi->fun();goto SPWNSKIP;
 
-          while(cd[len]!='/') {
-            cd[len]=0x00;
-            len--;
-
-          };
         };
 
-        c++;
-
-      };fprintf(stderr,">%s\n",PATH[0]);
-      chdir(PATH[0]);goto SPWNSKIP;
-
+      };
     };
 
 //   ---     ---     ---     ---     ---
