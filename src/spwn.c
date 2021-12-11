@@ -17,6 +17,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <inttypes.h>
+
 #include <signal.h>
 #include <sys/wait.h>
 #include <limits.h>
@@ -117,13 +119,7 @@ int main(int argc,char** argv) {
     // get current directory
     char pwd[PATH_MAX+1];
     char* cd=pwd+0;
-
-    {
-      char pwd2[PATH_MAX+1];
-      getcwd(pwd2,PATH_MAX+1);
-      realpath(pwd,pwd2);
-
-    };
+    getcwd(pwd,PATH_MAX+1);
 
     // sanitize...
     for(int y=0;y<strlen(cd);y++) {
@@ -131,6 +127,11 @@ int main(int argc,char** argv) {
         cd[y]='/';
 
       };
+    };
+
+    { int len=strlen(cd);
+      cd[len]='/';cd[len+1]=0x00;
+
     };
 
     // add cwd to arr ;>
@@ -204,6 +205,41 @@ int main(int argc,char** argv) {
       goto SPWNSKIP;
 
     };
+
+    // look for builtins...
+    // ill add a lookup table later on
+    // but for *just* cd, this is it!
+
+    if( ((*((uint*) (shbout_str+2)))&0x00FFFFFF)
+    ==  0x00206463 ) {
+      char* c=shbout_str+5;
+      while(*c) {
+
+        ushort nc=*((ushort*) c);
+
+        // nc==".."
+        if(nc==0x2E2E) {
+          fprintf(stderr,">%s\n",PATH[0]);
+
+          char* cd=PATH[0];
+          int len=strlen(cd)-1;
+          cd[len]=0x00;
+
+          while(cd[len]!='/') {
+            cd[len]=0x00;
+            len--;
+
+          };
+        };
+
+        c++;
+
+      };fprintf(stderr,">%s\n",PATH[0]);
+      chdir(PATH[0]);goto SPWNSKIP;
+
+    };
+
+//   ---     ---     ---     ---     ---
 
     SPWNEX:int pid=fork();
 
