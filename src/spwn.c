@@ -21,6 +21,8 @@
 
 #include <signal.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
+
 #include <limits.h>
 #include <errno.h>
 
@@ -63,36 +65,94 @@ void pllout(uint pos) {
 
 void cd(void) {
 
+  char* cd=PATH[0];
+  char cd_old[PATH_MAX+1];
+  strcpy(cd_old,cd);
+
+  int len=strlen(cd);
   char* c=shbout_str+5;
+
   while(*c) {
 
     ushort nc=*((ushort*) c);
+    len=strlen(cd);
 
-    // nc==".."
+//   ---     ---     ---     ---     ---
+
+    // go back on '..'
     if(nc==0x2E2E) {
 
-      char* cd=PATH[0];
-      int len=strlen(cd)-1;
+      len--;
+
+      // do not go back further on "/<fold>/"
+      // we assume that's a root dir
+
+      // ^so TODO:(maybe)
+      // add a switch to bypass this,
+      // we might need to move between roots
 
       { int do_brk=0;
         for(char* cd_c=cd+0;cd_c<cd+len;cd_c++) {
           do_brk+=*cd_c=='/';
 
-        };if(do_brk<=2) { goto AFTERCH; }
+        };if(do_brk<=2) { c+=2;continue; }
       };
+
+      // now simply go back until a seppy is found
 
       cd[len]=0x00;
       while(cd[len]!='/') {
         cd[len]=0x00;
         len--;
 
-      };
+      };c++;
+
+//   ---     ---     ---     ---     ---
+
+    // else append to cd...
+    // but avoid duplicate seppy
+
+    } else if(
+        !(*c=='/' && cd[len-1]=='/')
+
+      ) {
+      cd[len]=*c;len++;
+      fprintf(stderr,"%s\n",cd);
+
+    };c++;
+
+  };
+
+//   ---     ---     ---     ---     ---
+
+  { struct stat d;
+
+    // check that the new dir exists
+    // if so, change dir
+
+    if( (!stat(PATH[0],&d) )
+    &&  (d.st_mode & S_IFDIR) ) {
+      chdir(PATH[0]);
+
+    // else assume invalid && revert to previous
+
+    } else {
+      printf("Invalid path <%s>\n",cd);
+      strcpy(PATH[0],cd_old);
+
     };
 
-    c++;
+  };
 
-  };chdir(PATH[0]);AFTERCH:
-  printf("%s",PATH[0]);
+//   ---     ---     ---     ---     ---
+
+  len=strlen(PATH[0])-1;
+  if(PATH[0][len]!='/') {
+    len+=PATH[0][len]!=0x00;
+    PATH[0][len]='/';
+
+  };printf("%s",PATH[0]);
+
 };
 
 //   ---     ---     ---     ---     ---
@@ -252,6 +312,9 @@ int main(int argc,char** argv) {
   fseek(stdout,outjmp,SEEK_SET);
   fseek(stdout,0,SEEK_CUR);
 
+  getcwd(PATH[0],PATH_MAX+1);
+  PATH[0][strlen(PATH[0])]='/';
+
   pause();
 
 //   ---     ---     ---     ---     ---
@@ -275,14 +338,17 @@ int main(int argc,char** argv) {
 
       char* token=strtok(shbout_str+2," ");
 
-      for(int x=0;x<sizeof(SHB7_BUILTINS);x++) {
+      for(
+        int x=0;
+
+        x<sizeof(SHB7_BUILTINS)/sizeof(SHB7_BI);
+        x++) {
 
         SHB7_BI* bi=SHB7_BUILTINS+x;
         if(!strcmp(token,bi->name)) {
           bi->fun();goto SPWNSKIP;
 
         };
-
       };
     };
 
