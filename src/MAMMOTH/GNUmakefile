@@ -62,9 +62,8 @@ $(MAIN): $(ODIR) $(HEDS) $(SRCS) $(DEPS) $(OBJS) $(TRSH)/MKLOG
 $(ODIR):
 	@if ! test -d $@; then mkdir -p $@; fi
 
-%.c:: %.h $(TRSH)/MKLOG
+%.c: %.h $(TRSH)/MKLOG
 	@true
-#	@if test -f %.h; then touch $@; @echo $<; fi
 
 $(TRSH)/%.d: %.c %.h $(TRSH)/MKLOG
 	@echo $@

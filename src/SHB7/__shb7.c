@@ -13,8 +13,10 @@
 
 
 #include "__shb7.h"
+#include "sh_gbl.h"
 
 #include "KVRNEL/MEM/sh_map.h"
+#include "KVRNEL/fizzel.h"
 
 #include "CHASM/chMNG.h"
 
@@ -56,35 +58,76 @@ char* pshout(
   uint oy=shbout_y;
 
   uint pos=shbout_x+(shbout_y*shbout_mx);
+  uchar sh_ctl=0x1F;
+
+//   ---     ---     ---     ---     ---
+
+  if(strlen(str)==sizeof(SHSIG_MSIN)+1) {
+    SHSIG* sig=(SHSIG*) str;
+
+    // chances are a human wouldn't type this
+    // it's not impossible, just highly improbable
+
+    if( sig->hed[0]==SHSIG_MSIN[0]
+    &&  sig->hed[1]==SHSIG_MSIN[1] ) {
+      str+=sizeof(SHSIG)+sig->len;
+      //flg|=0x08;
+
+    };
+  };
+
+//   ---     ---     ---     ---     ---
 
   do {
 
-    flg|=(
-     (*str<0x20 && shbout[2]<=0x20)
-     *(0x04*(!(flg&0x02)))
+    if(!(flg&0x08)) {
 
-    );if(flg&0x04 || !*str) {
-      break;
+      flg|=(
+       (*str<0x20 && shbout[2]<=0x20)
+       *(0x04*(!(flg&0x02)))
 
-    };
+      );if( (flg&0x04) || !*str) {
+        break;
 
-    if(*str!=0x08) {
+      };ushort nc=0x0000;
+      if(strlen(str)>2) {
+        nc=*((ushort*) str);
+        if(nc==0x3A24) {
+          sh_ctl=0x00;str+=2;
+
+        } else if(nc==0x3E3B) {
+          sh_ctl=0x1F;str+=2;
+
+        };
+      };
+
+      if(*str!=0x08) {
+        shbout[pos]=(*str)|(col_id<<8)|(sh_ctl<<16);
+        pos++;shbout_x++;
+
+      } else {
+        shbout[pos]=0x0020;
+        pos--;shbout_x-=1*(pos>=2);
+
+        if(shbout_x>=shbout_mx) {
+          shbout_x=shbout_mx-1;
+          shbout_y--;
+
+          shbout_y*=0+(shbout_y<shbout_my);
+          pos=shbout_x+(shbout_y*shbout_mx);
+
+        };continue;
+      };
+
+//   ---     ---     ---     ---     ---
+
+    } else {
       shbout[pos]=(*str)|(col_id<<8);
       pos++;shbout_x++;
 
-    } else {
-      shbout[pos]=0x0020;
-      pos--;shbout_x-=1*(pos>=2);
-
-      if(shbout_x>=shbout_mx) {
-        shbout_x=shbout_mx-1;
-        shbout_y--;
-
-        shbout_y*=0+(shbout_y<shbout_my);
-        pos=shbout_x+(shbout_y*shbout_mx);
-
-      };continue;
     };
+
+//   ---     ---     ---     ---     ---
 
     if(shbout_x>=shbout_mx
     || *str==0x0A) {
@@ -95,14 +138,9 @@ char* pshout(
 
     };
 
-    /*if(shbout_y>=shbout_my) {
-      shbout_x=0;
-      shbout_y=0;
-      pos=0;break;
-
-    };*/
-
   } while(*str++);
+
+//   ---     ---     ---     ---     ---
 
   shbout_flg|=0x01;
   if(flg&0x01) {
@@ -111,7 +149,7 @@ char* pshout(
 
   };if(!(flg&0x02)) {
     pos=(pos<2) ? 2 : pos;
-    shbout[pos]=0xE2|(6<<8);
+    shbout[pos]=0xE2|(6<<8)|(sh_ctl<<16);
 
   };
 
@@ -127,6 +165,8 @@ void oncont(int sig) {
 //   ---     ---     ---     ---     ---
 
 int main(int argc,char** argv) {
+
+  effms();
 
   char pwd[PATH_MAX+1];     // get bin folder
   char* binf;
