@@ -343,6 +343,8 @@ int main(int argc,char** argv) {
 
 //   ---     ---     ---     ---     --- exec
 
+    // IPC BUFFER == SHBUF
+
     if( (!(shbuf[0]&0x02))
     &&  (!(shbuf[0]&0x04)) ) {
 

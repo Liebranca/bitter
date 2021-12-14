@@ -251,6 +251,7 @@ int POLWIN(WIN* win) {
 
       case SDL_TEXTINPUT:
 
+      // bounds check size-1
       win->ibuff_i&=(CHW_IBUFF_SZ-1);
 
       strcpy(

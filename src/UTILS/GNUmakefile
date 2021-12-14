@@ -48,7 +48,7 @@ INCLUDES  = -I$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 INCLUDES += -I$(dir $(abspath ..)/)
 LIBS      = -L$(BIN) -lkvrnel
 
-OUTF      = spwn msafr j3l
+OUTF      = spwn msafr j3l scpx
 
 #   ---     ---     ---     ---     ---
 
