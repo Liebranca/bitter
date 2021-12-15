@@ -48,8 +48,10 @@ typedef struct {
   "float*", "star(c_float)"
   "float",  "c_float",
 
-};static const int trtok_len=
-  sizeof(trtoks)/sizeof(TRTOK);
+};static const int trtok_len=(
+  sizeof(trtoks)/sizeof(TRTOK)
+
+);
 
 //   ---     ---     ---     ---     ---
 
@@ -80,6 +82,9 @@ int genpy_rd(char* new_src) {
 
 //   ---     ---     ---     ---     ---
 
+  // so this one used to be a state machine,
+  // hacked this so please forgvie how messy it is
+
   // get substr
   char* k=NULL;
   int y=0;int valid_res;
@@ -91,129 +96,121 @@ int genpy_rd(char* new_src) {
 
   *k=0x00;
 
-  // chksf table...
-  switch(state) {
+//   ---     ---     ---     ---     ---
 
-    // copy return type
-    case sf_type:
+  // copy return type
+  type=token;
 
-    type=token;
+  for(y=0;y<trtok_len;y++) {
 
-    for(y=0;y<trtok_len;y++) {
+    // check token against keywords
+    if((k=strstr(type,trtoks[y].c_name))
+    != NULL) {valid_res=1;break;};
 
-      // check token against keywords
-      if((k=strstr(type,trtoks[y].c_name))
-      != NULL) {valid_res=1;break;};
+  };if(valid_res) {
+    type=trtoks[y].c_name;
 
-    };if(valid_res) {
-      type=trtoks[y].c_name;
-
-    };token+=strlen(trtoks[y].c_name);
-    *token=0x00;token++;
-
-    printf("type: %s\n",type);
+  };token+=strlen(trtoks[y].c_name);
+  *token=0x00;token++;
 
 //   ---     ---     ---     ---     ---
 
-    // copy name
-    case sf_name:
+  // copy name
 
-    do { if(*token!=' ') {break;};
-    } while(*token++);
+  do { if(*token!=' ') {break;};
+  } while(*token++);
 
-    k=token;
-    name=token;do {
+  k=token;
+  name=token;do {
 
-      if(*k=='(' || *k==' ') {
-        *k=0x00;k++;
+    if(*k=='(' || *k==' ') {
+      *k=0x00;k++;
 
-      }
-    } while(*k++);
-
-    token=name+strlen(name)+1;
-    k=token;
-
-    state=sf_args;
-    printf("name: %s\n",name);
-
-    goto CPYARG;
+    }
+  } while(*k++);
 
 //   ---     ---     ---     ---     ---
 
-    // find first arg
-    case sf_args:ARGSLOOP:
-    token=k;
+  token=name+strlen(name)+1;
+  k=token;
 
-    do {char c=*k;
-      if(!c || c==' ') {
-        break;
+  state=sf_args;
 
-      };
-
-    } while(*k++);
-    *k=0x00;k++;
+  goto CPYARG;
 
 //   ---     ---     ---     ---     ---
 
-    valid_res=0;
-    CPYARG:
+  // find first arg
+  ARGSLOOP:
+  token=k;
 
-    // parse args
-    for(y=0;y<trtok_len;y++) {
+  do {char c=*k;
+    if(!c || c==' ') {
+      break;
 
-      // check token against keywords
-      if((strstr(token,trtoks[y].c_name))
-      != NULL) {valid_res=1;break;};
+    };
 
-    };if(!valid_res){break;}
-    args[curarg]=trtoks[y].py_name;
-    printf("arg:%s\n",args[curarg]);
-
-    curarg++;
+  } while(*k++);
+  *k=0x00;k++;
 
 //   ---     ---     ---     ---     ---
 
-    do {char c=*k;
+  valid_res=0;
+  CPYARG:
 
-      // delimiter check
-      if(c==',') {
-        break;
+  // parse args
+  for(y=0;y<trtok_len;y++) {
 
-      // delimiter end
-      } else if(c==')') {
-        state=sf_end;
-        break;
+    // check token against keywords
+    if((strstr(token,trtoks[y].c_name))
+    != NULL) {valid_res=1;break;};
 
-      };continue;
+  };/*if(!valid_res){break;}*/
+  args[curarg]=trtoks[y].py_name;
 
-    } while(*k++);
-    *k=0x00;k++;
-
-    // loop back if end not set
-    if(state!=sf_end) {goto ARGSLOOP;}
+  curarg++;
 
 //   ---     ---     ---     ---     ---
 
-    // function fully processed
-    case sf_end:SF_END:
+  do {char c=*k;
 
-      /*printf("%s %s\n",name,type);
-      while(**args) {
-        printf(" %s",*args);
-        *args+=strlen(*args)+1;
+    // delimiter check
+    if(c==',') {
+      break;
 
-      };printf(";\n");*/
+    // delimiter end
+    } else if(c==')') {
+      state=sf_end;
+      break;
 
-      state=sf_type;
-      curarg=0;
-      token=NULL;
+    };continue;
 
-      printf("\n");return 1;
+  } while(*k++);
+  *k=0x00;k++;
 
-    default:
-    break;
+//   ---     ---     ---     ---     ---
 
-  };return 0;
+  // loop back if end not set
+  if(state!=sf_end) {goto ARGSLOOP;}
+
+  // function fully processed
+  SF_END:
+  state=sf_type;
+  curarg=0;
+  token=NULL;
+
+//   ---     ---     ---     ---     ---
+
+  // make py string from parsed data
+  printf(
+
+    "wrap_cfunc(LIB,%s,%s,[",
+    name,type
+
+  );for(int x=0;x<curarg;x++) {
+    printf("%s,",args[x]);
+
+  };printf("\b\b]);\n");
 
 };
 
