@@ -33,7 +33,7 @@ MEM* CCTSTR(MEM* str,const char* tail);
 void STSTR(MEM** str,const char* buff);
 
 // get contents of mem as a char array
-extern inline char* GTSTR(MEM* str);
+char* GTSTR(MEM* str);
 
 // set contents of array @offset
 void RPSTR(

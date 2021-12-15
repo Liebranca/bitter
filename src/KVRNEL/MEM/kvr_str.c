@@ -183,7 +183,7 @@ void STSTR(
 
 };
 
-extern inline char* GTSTR(MEM* str) {
+char* GTSTR(MEM* str) {
   return MEMBUFF(str,char,0);
 
 }

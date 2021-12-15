@@ -14,36 +14,67 @@
 
 from ctypes import (
 
-    Structure as struct,
+  Structure as struct,
 
-    POINTER   as star,
-    c_void_p  as voidstar,
-    c_char_p  as charstar,
+  POINTER   as star,
+  c_void_p  as voidstar,
+  c_char_p  as charstar,
 
-    c_size_t  as size_t,
+  c_size_t  as size_t,
 
-    c_int8    as schar,
-    c_int16   as sshort,
-    c_int32   as sint,
-    c_int64   as slong,
+  c_int8    as schar,
+  c_int16   as sshort,
+  c_int32   as sint,
+  c_int64   as slong,
 
-    c_uint8   as uchar,
-    c_uint16  as ushort,
-    c_uint32  as uint,
-    c_uint64  as ulong,
+  c_uint8   as uchar,
+  c_uint16  as ushort,
+  c_uint32  as uint,
+  c_uint64  as ulong,
 
-    c_float,
+  c_float,
 
-    byref,
-    pointer,
-    cast,
+  byref,
+  pointer,
+  cast,
 );
 
-from ctypes import windll; winkernel = windll.kernel32;
+from ctypes import windll;
+winkernel = windll.kernel32;
 
 #   ---     ---     ---     ---     ---
 
 def CSTR (s): return bytes   (s, "utf-8");
 def MCSTR(s): return charstar(cstr(s)   );
+
+#   ---     ---     ---     ---     ---
+
+def GTCLIB(root,lib):
+
+  import os,struct;
+
+  plat=struct.calcsize("P") * 8;
+  plat='x64' if plat==64 else 'x32';
+
+  # pulla dir switcharoo so we can find dll
+  pastcwd=os.getcwd();
+  os.chdir(f"{root}\\bin\\{plat}");
+
+  from ctypes import WinDLL;
+  CLIB=WinDLL(f"{root}\\bin\\{plat}\\{lib}");
+
+  os.chdir(pastcwd);
+  return CLIB;
+
+# restype name(argtypes)
+# name=wrap_cfunc(lib,name,restype,[argtypes])
+
+def wrap_cfunc(lib, funcname, restype, argtypes):
+
+  func          = lib.__getattr__(funcname)
+  func.restype  = restype
+  func.argtypes = argtypes
+
+  return func
 
 #   ---     ---     ---     ---     ---
