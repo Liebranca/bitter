@@ -189,7 +189,7 @@ void dlmap(void** mh_b) {
 //   ---     ---     ---     ---     ---
 
 void** ntmap_origin(
-  char* fpath,
+  const char* fpath,
   int pages) {
 
   MAPHED* mh=(MAPHED*) malloc(sizeof(MAPHED));

@@ -11,6 +11,7 @@
 //**************************
 
 #include "KVRNEL/MEM/kvr_str.h"
+#include "KVRNEL/MEM/sh_map.h"
 
 #include <stdlib.h>
 
@@ -21,6 +22,9 @@
 
 //   ---     ---     ---     ---     ---
 // #:0x0;>
+
+static char* OUT=NULL;
+#define WR(format,...) sprintf(OUT+strlen(OUT),format,##__VA_ARGS__)
 
 typedef struct {
 
@@ -199,16 +203,16 @@ void genpy_fn(char* src) {
   if(state!=sf_end) {goto ARGSLOOP;}
 
   // make py string from parsed data
-  printf(
+  WR(
 
     "%s=wrap_cfunc(LIB,%s,%s,[",
     name,name,type
 
   );for(int x=0;x<curarg;x++) {
     if(!args[x]) {break;}
-    printf("%s,",args[x]);
+    WR("%s,",args[x]);
 
-  };printf("\b]);\n");
+  };WR("\b]);\n");
 
 };
 
@@ -228,7 +232,7 @@ void genpy_st(char* src) {
   const char* name=NULL;
   const char* st_name=NULL;
 
-  printf("_fields_=([");
+  WR("_fields_=([");
 
 //   ---     ---     ---     ---     ---
 
@@ -293,7 +297,7 @@ void genpy_st(char* src) {
   i++;if(!type && !name) {
     goto LOOP_HEAD;
 
-  };printf(
+  };WR(
 
     "(\"%s\",%s),",
     name,type
@@ -302,8 +306,7 @@ void genpy_st(char* src) {
 
   if(level) {goto LOOP_HEAD;}
 
-  END:printf("\b]);\n");
-  printf("class %s(c_struct):\n",st_name);
+  END:WR("\b]);\nclass %s(c_struct):\n",st_name);
 
 };
 
@@ -448,6 +451,19 @@ int fprs(
 
 void main(int argc,char** argv) {
 
+  // cache-write check
+  void** mh=(argc>1)
+    ? ntmap_heir(argv[1])
+    : NULL;
+
+  if(mh) {
+    OUT=*mh;
+
+  } else {
+    OUT=malloc(0x1000);
+
+  };
+
   // look at files at the provided module
   // generate a python interface for it
   int mode=0;
@@ -461,6 +477,12 @@ void main(int argc,char** argv) {
 
   };sep="EXPORT";mode=1;
   fprs(fpath,sep,mode);
+
+  // close cache if in use
+  if(mh) {dlmap(mh);return;}
+
+  printf("%s",OUT);
+  free(OUT);
 
 };
 

@@ -19,7 +19,7 @@ char* encodemh(void** mh_b);
 int mapfd(void** mh_a);
 
 // (parent process) get mmapped file
-void** ntmap_origin(char* fpath,int pages);
+void** ntmap_origin(const char* fpath,int pages);
 
 // cleanup
 void dlmap(void** mh_b);

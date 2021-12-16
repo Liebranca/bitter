@@ -53,7 +53,7 @@ INCLUDES += -I$(dir $(abspath ..)/)
 LIBS      = -L$(BIN) -lkvrnel
 
 OUTL      = test
-OUTF      = spwn msafr j3l scpx
+OUTF      = spwn msafr j3l scpx makepy
 
 #   ---     ---     ---     ---     ---
 
