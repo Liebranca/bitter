@@ -28,7 +28,7 @@ typedef struct {
 
 //   ---     ---     ---     ---     ---
 
-EXPORT void TYPE_TEST(void) {
+EXPORT void TYPE_TEST(int x,int y) {
   printf("Hello!\n");
 
 };

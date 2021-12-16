@@ -71,7 +71,7 @@ void genpy_fn(char* src) {
 
   const char* type=NULL;
   char* name=NULL;
-  const char* args[16]={NULL};
+  const char* args[32]={NULL};
 
   // state cache
   enum states {
@@ -124,48 +124,49 @@ void genpy_fn(char* src) {
 
 //   ---     ---     ---     ---     ---
 
-  // copy name
+  // get name
+  name=strtok(token,"(");
 
-  do { if(*token!=' ') {break;};
-  } while(*token++);
+  // lstrip
+  do {
+    if(*name!=' ') {break;};
+    name++;
 
-  k=token;
-  name=token;do {
-
-    if(*k=='(' || *k==' ') {
-      *k=0x00;k++;
-
-    }
-  } while(*k++);
+  } while(*name);
 
 //   ---     ---     ---     ---     ---
 
-  token=name+strlen(name)+1;
-  k=token;
+  // get first arg
+  k=name+strlen(name)+1;
 
+  token=k;
   state=sf_args;
-
-  goto CPYARG;
+  strtok(k,")");
 
 //   ---     ---     ---     ---     ---
 
   // find first arg
+
   ARGSLOOP:
-  token=k;
 
   do {char c=*k;
-    if(!c || c==' ') {
+    if(!c || c!=' ') {
       break;
 
-    };
+    };*k=0x00;k++;
 
-  } while(*k++);
-  *k=0x00;k++;
+  } while(*k);
+
+  if(*k=='{') {
+    goto DUMP;
+
+  };
 
 //   ---     ---     ---     ---     ---
 
   valid_res=0;
-  CPYARG:
+  token=strtok(k," ");
+  k+=strlen(token)+1;
 
   // parse args
   for(y=0;y<trtok_len;y++) {
@@ -175,44 +176,37 @@ void genpy_fn(char* src) {
     != NULL) {valid_res=1;break;};
 
   };if(!valid_res){y=0;}
+
+//   ---     ---     ---     ---     ---
+
+  // save type:name
+
   args[curarg]=trtoks[y].py_name;
+  token=strtok(NULL,",");
+  if(!token) {
+    token=k;
 
-  curarg++;
-
-//   ---     ---     ---     ---     ---
-
-  do {char c=*k;
-
-    // delimiter check
-    if(c==',') {
-      break;
-
-    // delimiter end
-    } else if(c==')') {
-      state=sf_end;
-      break;
-
-    };continue;
-
-  } while(*k++);
-  *k=0x00;k++;
+  };args[curarg+1]=token;curarg+=2;
 
 //   ---     ---     ---     ---     ---
 
-  // loop back if end not set
-  if(state!=sf_end) {goto ARGSLOOP;}
+  // next arg...
+  k+=strlen(token)+1;
+  goto ARGSLOOP;
+
+//   ---     ---     ---     ---     ---
 
   // make py string from parsed data
-  WR(
+  DUMP:WR(
 
-    "%s=wrap_cfunc(LIB,%s,%s,[",
-    name,name,type
+    "%s:%s\n",
+    type,name
 
-  );for(int x=0;x<curarg;x++) {
+  );for(int x=0;x<curarg;x+=2) {
     if(!args[x]) {break;}
-    WR("%s,",args[x]);
+    WR("%s:%s,",args[x],args[x+1]);
 
-  };WR("\b]);\n");
+  };OUT[strlen(OUT)-1]=0x0A;
 
 };
 
@@ -231,8 +225,6 @@ void genpy_st(char* src) {
   const char* type=NULL;
   const char* name=NULL;
   const char* st_name=NULL;
-
-  WR("_fields_=([");
 
 //   ---     ---     ---     ---     ---
 
@@ -299,14 +291,14 @@ void genpy_st(char* src) {
 
   };WR(
 
-    "(\"%s\",%s),",
-    name,type
+    "%s:%s,",
+    type,name
 
   );name=NULL;type=NULL;
 
   if(level) {goto LOOP_HEAD;}
 
-  END:WR("\b]);\nclass %s(c_struct):\n",st_name);
+  END:WR("\b\n%s\n",st_name);
 
 };
 

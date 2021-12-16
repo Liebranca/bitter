@@ -31,7 +31,6 @@ void main(int argc,char** argv) {
   char* fpath=pbuff;
 
   void** mh=ntmap_origin(fpath,1);
-
   char* mh_key=encodemh(mh);
 
 //   ---     ---     ---     ---     ---
@@ -43,7 +42,7 @@ void main(int argc,char** argv) {
     strcpy(fn,b);
     strcat(fn,"scpx.exe");
 
-    dup2(mapfd(mh),STDOUT_FILENO);
+    //dup2(mapfd(mh),STDOUT_FILENO);
 
     char* ex_argv[]={fn,mh_key,NULL};
     execv(ex_argv[0],ex_argv);
@@ -62,20 +61,28 @@ void main(int argc,char** argv) {
 //   ---     ---     ---     ---     ---
 
   // parse out
-  char* fields=NULL;
-  char* clsdef=NULL;
-  char* wrapfn=NULL;
-
-  fields=strtok(buff,"\n");
-  clsdef=strtok(NULL,"\n");
-  wrapfn=strtok(NULL,"\n");
+  char* fields=strtok(buff,"\n");
+  char* clsdef=strtok(NULL,"\n");
 
   printf(
-    "fields: %s\n\n"
-    "clsdef: %s\n"
-    "wrapfn: %s\n",
+    "reg rdwr;%s\n"
+    "::%s\n\n",
 
-    fields,clsdef,wrapfn
+    fields,clsdef
+
+  );
+
+//   ---     ---     ---     ---     ---
+
+  // get all funcs to wrap
+  char* wrapfn_type=strtok(NULL,"\n");
+  char* wrapfn_args=strtok(NULL,"\n");
+
+  printf(
+    "proc %s;\n"
+    "%s\n\n",
+
+    wrapfn_type,wrapfn_args
 
   );
 
