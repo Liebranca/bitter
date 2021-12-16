@@ -31,24 +31,30 @@ pstr  = pstr + " **************************************************/\n\n";
 
 print("\n>AVTOMAT"); pwd=os.getcwd();
 if not os.path.exists(pwd+"/calout.h"):
-    print("->generated calout.h");
-    import mkcalout; mkcalout.gen(pstr, pwd);
+  print("->generated calout.h");
+  import mkcalout; mkcalout.gen(pstr, pwd);
 
 import struct; plat=struct.calcsize("P") * 8
 plat='x64' if plat==64 else 'x32'
 
 for fold in ["KVRNEL","GRIM", "MAMMOTH", "SIN", "CHASM", "UTILS", "SHB7"]:
 
-    dpath=os.path.abspath(pwd+f"/../../trashcan/{plat}/{fold}");
-    d = dpath.split("\\"); r = d[0]; 
-    for sp in d[1:]:
-        r = r + f"\\{sp}";
-        if not os.path.exists(r): os.makedir(r);
+  dpath=os.path.abspath(pwd+f"/../../trashcan/{plat}/{fold}");
+  d = dpath.split("\\"); r = d[0]; 
+  for sp in d[1:]:
+    r = r + f"\\{sp}";
+    if not os.path.exists(r): os.mkdir(r);
 
-    if not os.path.exists(dpath+"/MKLOG"):
-        print(f"->generated {fold} can");
-        with open(dpath+"/MKLOG", "w+") as mkflags:
-            mkflags.write(f"-D KVR_DEBUG={KVR_DEBUG}");
+  if(fold=="UTILS"):
+    lpatch=os.path.abspath(f"{pwd}/../../trashcan/{plat}/{fold}/LIBS");
+    if(not os.path.exists(lpatch)):
+      print(f"->Made {lpatch} can");
+      os.mkdir(lpatch);
+
+  if not os.path.exists(dpath+"/MKLOG"):
+    print(f"->generated {fold} can");
+    with open(dpath+"/MKLOG", "w+") as mkflags:
+      mkflags.write(f"-D KVR_DEBUG={KVR_DEBUG}");
 
 print("\n Ready\n");
 

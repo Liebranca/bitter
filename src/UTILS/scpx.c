@@ -27,6 +27,10 @@ typedef struct {
   const char* c_name;
   const char* py_name;
 
+  // TODO: add convertion methods
+  // const char* pytoc;
+  // const char* ctopy;
+
 } TRTOK; static TRTOK trtoks[]={
 
   "void*",  "void_p",
@@ -40,13 +44,13 @@ typedef struct {
   "uint",   "uint",
   "ulong",  "ulong",
 
-  "char",   "char",
-  "short",  "short",
-  "int",    "int",
-  "long",   "long",
+  "char",   "schar",
+  "short",  "sshort",
+  "int",    "sint",
+  "long",   "slong",
 
-  "float*", "star(c_float)"
-  "float",  "c_float",
+  "float*", "star(c_float)",
+  "float",  "c_float"
 
 };static const int trtok_len=(
   sizeof(trtoks)/sizeof(TRTOK)
@@ -55,7 +59,7 @@ typedef struct {
 
 //   ---     ---     ---     ---     ---
 
-int genpy_rd(char* new_src) {
+void genpy_fn(char* src) {
 
   // token cache
   char* token=NULL;
@@ -74,11 +78,11 @@ int genpy_rd(char* new_src) {
 
 //   ---     ---     ---     ---     ---
 
-  // reset cache on new_src
-  if(new_src) {
-    token=new_src;
+  // reset cache on new src
+  if(src) {
+    token=src;
 
-  };if(!token) {return 1;}
+  };if(!token) {return;}
 
 //   ---     ---     ---     ---     ---
 
@@ -87,7 +91,7 @@ int genpy_rd(char* new_src) {
 
   // get substr
   char* k=NULL;
-  int y=0;int valid_res;
+  int y=0;int valid_res=0;
 
   k=token;
 
@@ -107,10 +111,11 @@ int genpy_rd(char* new_src) {
     if((k=strstr(type,trtoks[y].c_name))
     != NULL) {valid_res=1;break;};
 
-  };if(valid_res) {
-    type=trtoks[y].c_name;
+  };if(!valid_res) {y=0;};
 
-  };token+=strlen(trtoks[y].c_name);
+  type=trtoks[y].c_name;
+
+  token+=strlen(trtoks[y].c_name);
   *token=0x00;token++;
 
 //   ---     ---     ---     ---     ---
@@ -165,7 +170,7 @@ int genpy_rd(char* new_src) {
     if((strstr(token,trtoks[y].c_name))
     != NULL) {valid_res=1;break;};
 
-  };/*if(!valid_res){break;}*/
+  };if(!valid_res){y=0;}
   args[curarg]=trtoks[y].py_name;
 
   curarg++;
@@ -193,41 +198,143 @@ int genpy_rd(char* new_src) {
   // loop back if end not set
   if(state!=sf_end) {goto ARGSLOOP;}
 
-  // function fully processed
-  SF_END:
-  state=sf_type;
-  curarg=0;
-  token=NULL;
-
-//   ---     ---     ---     ---     ---
-
   // make py string from parsed data
   printf(
 
-    "wrap_cfunc(LIB,%s,%s,[",
-    name,type
+    "%s=wrap_cfunc(LIB,%s,%s,[",
+    name,name,type
 
   );for(int x=0;x<curarg;x++) {
+    if(!args[x]) {break;}
     printf("%s,",args[x]);
 
-  };printf("\b\b]);\n");
+  };printf("\b]);\n");
 
 };
 
 //   ---     ---     ---     ---     ---
 
-void genpy(char** expressions,int exp_cnt) {
+void genpy_st(char* src) {
+
+  // trackers
+  int field_cnt=0;
+  int level=0;
+  int i=0;
+
+  // curchar
+  char c;
+
+  const char* type=NULL;
+  const char* name=NULL;
+  const char* st_name=NULL;
+
+  printf("_fields_=([");
+
+//   ---     ---     ---     ---     ---
+
+  // run until we consue all fields
+
+  LOOP_HEAD:
+
+  c=*(src+i+0);
+
+//   ---     ---     ---     ---     ---
+
+  switch(c) {
+
+    case '}':
+    level--;break;
+
+    case '{':
+    level++;break;
+
+//   ---     ---     ---     ---     ---
+
+    default:
+    if(c>0x20) {
+
+      // parse fields
+      if(level) {
+
+        field_cnt++;
+
+        // put null on next blank char
+        type=strtok(src+i," ");i+=strlen(type)+1;
+        name=strtok(NULL,"\x00");i+=strlen(name)+1;
+
+        // translate type to py
+        int y=0;
+        for(;y<trtok_len;y++) {
+          if(strstr(type,trtoks[y].c_name)) {break;}
+
+        };type=trtoks[y].py_name;break;
+      };
+
+//   ---     ---     ---     ---     ---
+
+      // at least one field parse
+
+      if(field_cnt) {
+
+        // get struct name
+        st_name=strtok(src+i,"\x00");
+        i+=strlen(st_name)+1;
+        goto END;
+
+      };
+    };break;
+
+  };
+
+//   ---     ---     ---     ---     ---
+
+  LOOP_TAIL:
+
+  i++;if(!type && !name) {
+    goto LOOP_HEAD;
+
+  };printf(
+
+    "(\"%s\",%s),",
+    name,type
+
+  );name=NULL;type=NULL;
+
+  if(level) {goto LOOP_HEAD;}
+
+  END:printf("\b]);\n");
+  printf("class %s(c_struct):\n",st_name);
+
+};
+
+//   ---     ---     ---     ---     ---
+
+void genpy(
+
+  char** expressions,
+  int exp_cnt,
+
+  int mode
+
+) {
+
+  enum modes {BUILD_ST,BUILD_FN};
 
   // iter expressions
-  int beg=1;
-
   for(int x=0;x<exp_cnt;x++) {
 
     // process each export block
     char* block=expressions[x];
 
     if(block) {
-      beg=genpy_rd(block);
+
+      if(mode==BUILD_ST) {
+        genpy_st(block);
+
+      } else if(mode==BUILD_FN) {
+        genpy_fn(block);
+
+      };
 
     // go to next exp
     };GONEXT:block=expressions[x];
@@ -237,10 +344,14 @@ void genpy(char** expressions,int exp_cnt) {
 
 //   ---     ---     ---     ---     ---
 
-void main(int argc,char** argv) {
+int fprs(
 
-  const char* fpath=
-    "d:/lieb_git/kvr/src/blkmgk/__blkmgk.c";
+  const char* fpath,
+  const char* sep,
+
+  int mode
+
+) {
 
   MEM* m;
 
@@ -254,6 +365,11 @@ void main(int argc,char** argv) {
 //   ---     ---     ---     ---     ---
 
   FILE* f=fopen(fpath,"r");
+  if(!f) {
+    printf("Can't locate <%s>\n",fpath);
+    return FATAL;
+
+  };
 
   int rb=fread(
     buff,sizeof(char),
@@ -282,23 +398,17 @@ void main(int argc,char** argv) {
 //   ---     ---     ---     ---     ---
 
   // get first token
-  const char* sep="EXPORT";
-
   int block_n=0;
   char* token=strtok(buff,";");
 
-//   ---     ---     ---     ---     ---
-
-  // parse
-
+  // filter out expressions for parser
   while(token) {
 
     // if sep found in token
-
     char* k;
     if((k=strstr(token,sep))!=NULL) {
 
-      // save token after sep
+      // save token without sep
       expressions[block_n]=(char*) (
 
         ((uintptr_t) token)
@@ -315,18 +425,43 @@ void main(int argc,char** argv) {
 
   };
 
-  // process saved expressions
-  genpy(expressions,exp_cnt);
+  // parse
+  genpy(expressions,exp_cnt,mode);
 
 //   ---     ---     ---     ---     ---
+
+  // note to self: dealloc on each call is pretty
+  // terrible, but this is the only clear way within
+  // the current state of the core libs
 
   // cleanup
   free(expressions);
   fclose(f);
   DLMEM(m);
 
+  return DONE;
+
 };
 
 //   ---     ---     ---     ---     ---
 // #:0x1;>
 
+void main(int argc,char** argv) {
+
+  // look at files at the provided module
+  // generate a python interface for it
+  int mode=0;
+
+  const char* fpath="./utils/libs/test.h";
+  const char* sep="typedef struct";
+
+  int evil;
+  if((evil=fprs(fpath,sep,mode))==FATAL) {
+    return;
+
+  };sep="EXPORT";mode=1;
+  fprs(fpath,sep,mode);
+
+};
+
+//   ---     ---     ---     ---     ---
