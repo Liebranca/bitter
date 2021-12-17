@@ -24,6 +24,8 @@
 // #:0x0;>
 
 static char* OUT=NULL;
+static int* OUT_INT=NULL;
+
 #define WR(format,...) sprintf(OUT+strlen(OUT),format,##__VA_ARGS__)
 
 typedef struct {
@@ -314,6 +316,15 @@ void genpy(
 ) {
 
   enum modes {BUILD_ST,BUILD_FN};
+  void (*trfun)(char*)=NULL;
+
+  if(mode==BUILD_ST) {
+    trfun=&genpy_st;
+
+  } else if(mode==BUILD_FN) {
+    trfun=&genpy_fn;
+
+  };
 
   // iter expressions
   for(int x=0;x<exp_cnt;x++) {
@@ -322,14 +333,7 @@ void genpy(
     char* block=expressions[x];
 
     if(block) {
-
-      if(mode==BUILD_ST) {
-        genpy_st(block);
-
-      } else if(mode==BUILD_FN) {
-        genpy_fn(block);
-
-      };
+      trfun(block);OUT_INT[mode]++;
 
     // go to next exp
     };GONEXT:block=expressions[x];
@@ -449,12 +453,13 @@ void main(int argc,char** argv) {
     : NULL;
 
   if(mh) {
-    OUT=*mh;
+    OUT_INT=*mh;
 
   } else {
-    OUT=malloc(0x1000);
+    OUT_INT=malloc(0x1000);
+    memset(OUT_INT,0,0x1000);
 
-  };
+  };OUT=(char*) (OUT_INT+4);
 
   // look at files at the provided module
   // generate a python interface for it
@@ -473,8 +478,14 @@ void main(int argc,char** argv) {
   // close cache if in use
   if(mh) {dlmap(mh);return;}
 
-  printf("%s",OUT);
-  free(OUT);
+  printf(
+    "%08"PRIX32"%%08"PRIX32
+    "%s",
+
+    *OUT_INT,*(OUT_INT+1),
+    OUT
+
+  );free(OUT_INT);
 
 };
 

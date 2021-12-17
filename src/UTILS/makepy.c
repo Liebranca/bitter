@@ -56,35 +56,143 @@ void main(int argc,char** argv) {
   int i=0;
   char c=0x00;
 
-  char* buff=*mh;
+  int* rd_values=*mh;
+  char* buff=(char*) (rd_values+4);
 
 //   ---     ---     ---     ---     ---
+
+  int st_cnt=rd_values[0];
+  int fn_cnt=rd_values[1];
 
   // parse out
-  char* fields=strtok(buff,"\n");
-  char* clsdef=strtok(NULL,"\n");
+  MEM* sections=sepstr_g(buff, "\n");
+  { char** arr=MEMBUFF(sections,char*,0);
 
-  printf(
-    "reg rdwr;%s\n"
-    "::%s\n\n",
+    // get all structs
+    for(int x=0;x<st_cnt;x++) {
 
-    fields,clsdef
+      // get first field
+      char* field_name=strtok(*arr,":");
+      char* field_type=strtok(NULL,",");
 
-  );
+      //iter
+      while(field_name && field_type) {
+
+        printf("%s:%s\n",field_name,field_type);
+
+        // next set
+        field_name=strtok(NULL,":");
+        field_type=strtok(NULL,",");
+
+      };arr++;
+
+      char* st_name=*arr;arr++;
+      printf("%s\n\n",st_name);
+
+    };
 
 //   ---     ---     ---     ---     ---
 
-  // get all funcs to wrap
-  char* wrapfn_type=strtok(NULL,"\n");
-  char* wrapfn_args=strtok(NULL,"\n");
+    char* decl=malloc(0x1000);
+    char* head=malloc(0x1000);
+    char* call=malloc(0x1000);
 
-  printf(
-    "proc %s;\n"
-    "%s\n\n",
+    // get all functions
+    for(int x=0;x<fn_cnt;x++) {
 
-    wrapfn_type,wrapfn_args
+      // get first func to wrap
+      char* fn_type=strtok(*arr,":");
+      char* fn_name=strtok(NULL,"\x00");arr++;
 
-  );
+      char* fn_args=*arr++;
+
+//   ---     ---     ---     ---     ---
+
+      // translate up to args
+
+      sprintf(decl,
+        "_%s=wrap_cfunc("
+
+        "%s,\"%s\","
+        "%s,[",
+
+        fn_name,"test",fn_name,fn_type
+
+      );sprintf(head,
+
+        "def %s(",
+        fn_name
+
+      );sprintf(call,
+
+        "  _%s(",fn_name
+
+      );
+
+//   ---     ---     ---     ---     ---
+
+      // get first arg
+      char* ar_type=strtok(fn_args,":");
+      char* ar_name=strtok(NULL,",");
+
+      // iter
+      size_t len=strlen(decl);
+      char* decl_base=decl+len;
+
+      while(ar_type && ar_name) {
+
+        char e_buff[0x200]={0};
+        sprintf(e_buff,"%s(%s)",ar_type,ar_name);
+
+        strcpy(call+strlen(call),e_buff);
+
+        strcpy(head+strlen(head),ar_name);
+        strcpy(decl+len,ar_name);
+
+        len+=strlen(ar_name);
+        decl[len]=',';
+        head[strlen(head)]=',';
+        call[strlen(call)]=',';
+
+        ar_type=strtok(NULL,":");
+        ar_name=strtok(NULL,",");
+
+        len=strlen(decl);
+      };
+
+//   ---     ---     ---     ---     ---
+
+      len=strlen(decl);
+      decl[len-1]=']';
+      decl[len+0]=')';
+      decl[len+1]=';';
+      decl[len+2]=0x00;
+
+      len=strlen(head);
+      head[len-1]=')';
+      head[len+0]=':';
+      head[len+1]=0x00;
+
+      len=strlen(call);
+      call[len-1]=')';
+      call[len+0]=';';
+      call[len+1]=0x00;
+
+      printf("%s\n",decl);
+      printf("%s\n",head);
+      printf("%s\n",call);
+
+      memset(decl,0,0x1000);
+      memset(head,0,0x1000);
+      memset(call,0,0x1000);
+
+//   ---     ---     ---     ---     ---
+
+    };free(call);
+    free(head);
+    free(decl);
+
+  };DLMEM(sections);
 
 //   ---     ---     ---     ---     ---
 

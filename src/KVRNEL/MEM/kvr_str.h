@@ -50,6 +50,11 @@ MEM* GTLNG(void);           // get addr of lng
 //   ---     ---     ---     ---     ---
 // #:0x1;>
 
+// return array of tokens
+MEM* sepstr_g(char* s, char* sep);
+
+//   ---     ---     ---     ---     ---
+
 
 #ifdef __cplusplus
 }

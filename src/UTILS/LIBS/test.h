@@ -33,4 +33,9 @@ EXPORT void TYPE_TEST(int x,int y) {
 
 };
 
+EXPORT void TYPE_TEST2(char x,char** y) {
+  printf("Hello!\n");
+
+};
+
 //   ---     ---     ---     ---     ---

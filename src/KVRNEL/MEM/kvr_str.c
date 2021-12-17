@@ -220,3 +220,32 @@ void RPSTR(
 //   ---     ---     ---     ---     ---
 // #:0x8;>
 
+MEM* sepstr_g(char* s, char* sep) {
+
+  // count instances
+  int cnt;{
+
+    char* token=strtok(s,sep);
+    while(token) {
+      cnt++;token=strtok(NULL,sep);
+
+    };
+  };
+
+//   ---     ---     ---     ---     ---
+
+  // alloc storage
+  MEM* m=MKSTR(sep,(cnt+1)*sizeof(char*),1);
+  char** arr=MEMBUFF(m,char*,0);
+
+  // store all instances
+  for(int x=0;x<cnt;x++) {
+    arr[x]=s;s+=strlen(s)+1;
+
+  };arr[cnt]=NULL;
+
+  return m;
+
+};
+
+//   ---     ---     ---     ---     ---
