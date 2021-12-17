@@ -7,6 +7,7 @@
 
 from . import PYZJC;
 
+"""
 from .utils.lyos import (
 
     getch,
@@ -110,3 +111,5 @@ from .HXPX            import hxPX, SCANLIBS, PXUI;
 from .lang.KVR        import INTPRT;
 
 #   ---     ---     ---     ---     ---
+
+"""

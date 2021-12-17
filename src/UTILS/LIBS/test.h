@@ -29,7 +29,7 @@ typedef struct {
 //   ---     ---     ---     ---     ---
 
 EXPORT void TYPE_TEST(int x,int y) {
-  printf("Hello!\n");
+  printf("%u\n",x+y);
 
 };
 

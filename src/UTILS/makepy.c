@@ -53,7 +53,11 @@ void main(int argc,char** argv) {
 
   };int wst;wait(&wst);
 
-  int i=0;
+  printf("from ESPECTRO.PYZJC import *;\n"
+    "test=GTCLIB(\"d:/lieb_git/kvr\","
+    "\"test.dll\");\n\n"
+
+  );int i=0;
   char c=0x00;
 
   int* rd_values=*mh;
@@ -78,7 +82,7 @@ void main(int argc,char** argv) {
       //iter
       while(field_name && field_type) {
 
-        printf("%s:%s\n",field_name,field_type);
+        //printf("%s:%s\n",field_name,field_type);
 
         // next set
         field_name=strtok(NULL,":");
@@ -87,7 +91,7 @@ void main(int argc,char** argv) {
       };arr++;
 
       char* st_name=*arr;arr++;
-      printf("%s\n\n",st_name);
+      //printf("%s\n\n",st_name);
 
     };
 
@@ -148,7 +152,7 @@ void main(int argc,char** argv) {
         strcpy(call+strlen(call),e_buff);
 
         strcpy(head+strlen(head),ar_name);
-        strcpy(decl+len,ar_name);
+        strcpy(decl+len,ar_type);
 
 //   ---     ---     ---     ---     ---
 
@@ -205,6 +209,7 @@ void main(int argc,char** argv) {
 
 //   ---     ---     ---     ---     ---
 
+  printf("TYPE_TEST(25,50);");
   dlmap(mh);
 
 };

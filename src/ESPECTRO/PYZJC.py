@@ -39,8 +39,8 @@ from ctypes import (
   cast,
 );
 
-from ctypes import windll;
-winkernel = windll.kernel32;
+#from ctypes import windll;
+#winkernel = windll.kernel32;
 
 #   ---     ---     ---     ---     ---
 
@@ -71,8 +71,9 @@ def GTCLIB(root,lib):
   pastcwd=os.getcwd();
   os.chdir(f"{root}\\bin\\{plat}");
 
-  from ctypes import WinDLL;
-  CLIB=WinDLL(f"{root}\\bin\\{plat}\\{lib}");
+  from ctypes import CDLL;
+  CLIB=CDLL("./"+lib);
+  #f"{root}\\bin\\{plat}\\{lib}"
 
   os.chdir(pastcwd);
   return CLIB;
