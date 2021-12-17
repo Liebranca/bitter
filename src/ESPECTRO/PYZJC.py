@@ -44,8 +44,19 @@ winkernel = windll.kernel32;
 
 #   ---     ---     ---     ---     ---
 
-def CSTR (s): return bytes   (s, "utf-8");
-def MCSTR(s): return charstar(cstr(s)   );
+def cstr (s): return bytes   (s, "utf-8");
+def mcstr(s): return charstar(cstr(s)   );
+
+def mcstrp(l):
+  l=[cstr(v) for v in l];
+  return (charstar * len(l))();
+
+def mstar(type,l):
+  return (type * len(l[:]))(*l[:]);
+
+def vstar(v):
+  v=pointer(v);
+  return cast(v, voidstar);
 
 #   ---     ---     ---     ---     ---
 

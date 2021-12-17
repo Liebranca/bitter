@@ -132,7 +132,8 @@ void main(int argc,char** argv) {
 //   ---     ---     ---     ---     ---
 
       // get first arg
-      char* ar_type=strtok(fn_args,":");
+      char* ar_type=strtok(fn_args,">");
+      char* ar_pytoc=strtok(NULL,":");
       char* ar_name=strtok(NULL,",");
 
       // iter
@@ -142,25 +143,31 @@ void main(int argc,char** argv) {
       while(ar_type && ar_name) {
 
         char e_buff[0x200]={0};
-        sprintf(e_buff,"%s(%s)",ar_type,ar_name);
+        sprintf(e_buff,"%s%s),",ar_pytoc,ar_name);
 
         strcpy(call+strlen(call),e_buff);
 
         strcpy(head+strlen(head),ar_name);
         strcpy(decl+len,ar_name);
 
-        len+=strlen(ar_name);
+//   ---     ---     ---     ---     ---
+
+        // sloppy
+
+        len+=strlen(ar_type);
         decl[len]=',';
         head[strlen(head)]=',';
-        call[strlen(call)]=',';
 
-        ar_type=strtok(NULL,":");
+        ar_type=strtok(NULL,">");
+        ar_pytoc=strtok(NULL,":");
         ar_name=strtok(NULL,",");
 
         len=strlen(decl);
       };
 
 //   ---     ---     ---     ---     ---
+
+      // sloppier
 
       len=strlen(decl);
       decl[len-1]=']';
@@ -178,9 +185,11 @@ void main(int argc,char** argv) {
       call[len+0]=';';
       call[len+1]=0x00;
 
+//   ---     ---     ---     ---     ---
+
       printf("%s\n",decl);
       printf("%s\n",head);
-      printf("%s\n",call);
+      printf("%s\n\n",call);
 
       memset(decl,0,0x1000);
       memset(head,0,0x1000);

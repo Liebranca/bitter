@@ -13,6 +13,8 @@
 #include "KVRNEL/MEM/kvr_str.h"
 #include "KVRNEL/MEM/sh_map.h"
 
+#include "AVTOMAT/ctopy_table.h"
+
 #include <stdlib.h>
 
 #include <stdio.h>
@@ -28,41 +30,6 @@ static int* OUT_INT=NULL;
 
 #define WR(format,...) sprintf(OUT+strlen(OUT),format,##__VA_ARGS__)
 
-typedef struct {
-
-  const char* c_name;
-  const char* py_name;
-
-  // TODO: add convertion methods
-  // const char* pytoc;
-  // const char* ctopy;
-
-} TRTOK; static TRTOK trtoks[]={
-
-  "void*",  "void_p",
-  "void",   "None",
-  "char**", "star(charstar)",
-  "char*",  "charstar",
-  "size_t", "size_t",
-
-  "uchar",  "uchar",
-  "ushort", "ushort",
-  "uint",   "uint",
-  "ulong",  "ulong",
-
-  "char",   "schar",
-  "short",  "sshort",
-  "int",    "sint",
-  "long",   "slong",
-
-  "float*", "star(c_float)",
-  "float",  "c_float"
-
-};static const int trtok_len=(
-  sizeof(trtoks)/sizeof(TRTOK)
-
-);
-
 //   ---     ---     ---     ---     ---
 
 void genpy_fn(char* src) {
@@ -73,7 +40,7 @@ void genpy_fn(char* src) {
 
   const char* type=NULL;
   char* name=NULL;
-  const char* args[32]={NULL};
+  const char* args[48]={NULL};
 
   // state cache
   enum states {
@@ -119,7 +86,7 @@ void genpy_fn(char* src) {
 
   };if(!valid_res) {y=0;};
 
-  type=trtoks[y].c_name;
+  type=trtoks[y].py_name;
 
   token+=strlen(trtoks[y].c_name);
   *token=0x00;token++;
@@ -181,14 +148,24 @@ void genpy_fn(char* src) {
 
 //   ---     ---     ---     ---     ---
 
-  // save type:name
+  // save type>pytoc:name
 
-  args[curarg]=trtoks[y].py_name;
+  args[curarg+0]=trtoks[y].py_name;
+
+  args[curarg+1]=(
+
+    (trtoks[y].pytoc==NULL)
+
+    ? trtoks[y].py_name
+    : trtoks[y].pytoc
+
+  );
+
   token=strtok(NULL,",");
   if(!token) {
     token=k;
 
-  };args[curarg+1]=token;curarg+=2;
+  };args[curarg+2]=token;curarg+=3;
 
 //   ---     ---     ---     ---     ---
 
@@ -204,9 +181,9 @@ void genpy_fn(char* src) {
     "%s:%s\n",
     type,name
 
-  );for(int x=0;x<curarg;x+=2) {
+  );for(int x=0;x<curarg;x+=3) {
     if(!args[x]) {break;}
-    WR("%s:%s,",args[x],args[x+1]);
+    WR("%s>%s:%s,",args[x],args[x+1],args[x+2]);
 
   };OUT[strlen(OUT)-1]=0x0A;
 
