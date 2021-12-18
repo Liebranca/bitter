@@ -76,22 +76,35 @@ void main(int argc,char** argv) {
     for(int x=0;x<st_cnt;x++) {
 
       // get first field
-      char* field_name=strtok(*arr,":");
-      char* field_type=strtok(NULL,",");
+      char* field_type=strtok(*arr,":");
+      char* field_name=strtok(NULL,",");arr++;
+
+      char* st_name=*arr;arr++;
+
+      printf(
+        "class %s(c_struct):\n"
+        "  _fields_=[\n",
+
+        st_name
+
+      );int field_cnt=0;
 
       //iter
       while(field_name && field_type) {
 
-        //printf("%s:%s\n",field_name,field_type);
+        printf(
+          "(    \"%s\",%s),\n",
+          field_name,field_type
+
+        );field_cnt++;
 
         // next set
-        field_name=strtok(NULL,":");
-        field_type=strtok(NULL,",");
+        field_type=strtok(NULL,":");
+        field_name=strtok(NULL,",");
 
-      };arr++;
+      };
 
-      char* st_name=*arr;arr++;
-      //printf("%s\n\n",st_name);
+      printf("  ];\n\n");
 
     };
 
@@ -206,10 +219,6 @@ void main(int argc,char** argv) {
     free(decl);
 
   };DLMEM(sections);
-
-//   ---     ---     ---     ---     ---
-
-  printf("TYPE_TEST(25,50);");
   dlmap(mh);
 
 };

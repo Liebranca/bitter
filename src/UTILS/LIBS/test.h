@@ -28,13 +28,8 @@ typedef struct {
 
 //   ---     ---     ---     ---     ---
 
-EXPORT void TYPE_TEST(int x,int y) {
-  printf("%u\n",x+y);
-
-};
-
-EXPORT void TYPE_TEST2(char x,char** y) {
-  printf("Hello!\n");
+EXPORT void sayhi(void* ptr) {
+  printf("%s\n",(char*) ptr);
 
 };
 

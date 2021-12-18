@@ -247,13 +247,14 @@ void genpy_st(char* src) {
 
 //   ---     ---     ---     ---     ---
 
-      // at least one field parse
+      // at least one field parsed
 
       if(field_cnt) {
 
         // get struct name
         st_name=strtok(src+i,"\x00");
         i+=strlen(st_name)+1;
+
         goto END;
 
       };

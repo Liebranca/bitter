@@ -14,7 +14,7 @@
 
 from ctypes import (
 
-  Structure as struct,
+  Structure as c_struct,
 
   POINTER   as star,
   c_void_p  as voidstar,
@@ -43,20 +43,63 @@ from ctypes import (
 #winkernel = windll.kernel32;
 
 #   ---     ---     ---     ---     ---
+#:00;> type conversions
 
 def cstr (s): return bytes   (s, "utf-8");
 def mcstr(s): return charstar(cstr(s)   );
 
 def mcstrp(l):
   l=[cstr(v) for v in l];
-  return (charstar * len(l))();
+  return (charstar * len(l))(*l);
 
 def mstar(type,l):
   return (type * len(l[:]))(*l[:]);
 
 def vstar(v):
-  v=pointer(v);
+  try:v=pointer(v);
+  except TypeError:v=pointer();
+
   return cast(v, voidstar);
+
+CONVERTER={
+  str(str):cstr,
+  str(charstar):mcstr
+
+  str(c_struct):
+
+}
+
+def mkst(kls,items):
+
+  self=kls();
+
+  for field in kls._fields_:
+    name,type=field;
+    if name not in items:
+      continue;
+
+    v=items[name];
+
+    if(c_struct in type.__bases__):
+      setattr(
+
+        self,
+        name,
+
+        mkst(type,kls)
+
+      );continue;
+
+    setattr(
+
+      self,
+      name,
+
+      CONVERTER[str(type)](v)
+
+    );
+
+  return self;
 
 #   ---     ---     ---     ---     ---
 
@@ -78,8 +121,7 @@ def GTCLIB(root,lib):
   os.chdir(pastcwd);
   return CLIB;
 
-# restype name(argtypes)
-# name=wrap_cfunc(lib,name,restype,[argtypes])
+#   ---     ---     ---     ---     ---
 
 def wrap_cfunc(lib, funcname, restype, argtypes):
 

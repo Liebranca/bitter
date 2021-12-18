@@ -16,7 +16,7 @@ typedef struct {
 
 } TRTOK; static TRTOK trtoks[]={
 
-  "void*",  "void_p","vstar(",
+  "void*",  "voidstar","vstar(",
   "void",   "None", NULL,
   "char**", "star(charstar)","mcstrp(",
   "char*",  "charstar","mcstr(",
