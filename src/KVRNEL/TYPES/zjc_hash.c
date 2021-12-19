@@ -203,6 +203,13 @@ int NK4HSLOT(void)                          {
 
 //   ---     ---     ---     ---     ---
 
+size_t szhash(HASH* h) {
+  return h->nslots*ZJC_HASH_STKLEN;
+
+};
+
+//   ---     ---     ---     ---     ---
+
 void STHASH(void* data)                     { *ZJC_CURR_HNODE=data;                         };
 
 void GTHASH(void** to, int pop)             { *to=*ZJC_CURR_HNODE;

@@ -28,7 +28,7 @@ typedef struct ZJC_BLOCK_HEADER {           // base struct to identify otherwise
     sint x;                                 // table bucket index
     sint y;                                 // subindex into bucket array
 
-} ID;
+} ID;static const ID EMPTY_ID={0};
 
 //   ---     ---     ---     ---     ---
 
