@@ -35,33 +35,51 @@ name;
   || (c)=='\b' || (c)=='\t' )
 
 #define rdbuff_sz 0x40
+#define wrbuff_sz 0x400
 
 //   ---     ---     ---     ---     ---
+// header blocks generator
 
 typedef struct {
 
   char* format;
-  int symbol_cnt;
+  int order[4];
 
-  
+  char mem[wrbuff_sz];
 
-} ch_stark;
+} HBG;typedef struct {
 
-static MEM* scopes[rdbuff_sz]={NULL};
+  const char* format;
+  const int order[4];
+
+} HBG_nomem;
+
+static HBG scopes[rdbuff_sz]={0};
 static size_t scopes_i=0;
 
-//   ---     ---     ---     ---     ---
+//   ---     ---     ---     ---     --
+// keyword/callback table
+
 typedef struct {
 
   const char* key;
-  ch_stark mny;
+  HBG_nomem mny;
 
 } MNYK;static const MNYK money_keys[]={
 
-  "%iter",&scp_iter,"%s %s"
-  "/iter",&cscp_iter
+  "%iter",
+    "char* %s=strtok(%s,\"%s\");\n",
+    0,1,2,0,
 
-};ch_stark find_money_keys(char* key) {
+  "/iter",
+    "$:SCOPE_KILL;>",
+    0,0,0,0
+
+};const HBG_nomem* find_money_keys(char* key) {
+
+//   ---     ---     ---     ---     ---
+// find method is linear search
+// TODO:replace by zjc hash table
 
   for(
 
@@ -75,7 +93,7 @@ typedef struct {
   ) {
 
     if(!strcmp(key,money_keys[x].key)) {
-      return money_keys[x].mny;
+      return &(money_keys[x].mny);
 
     };
 
@@ -84,19 +102,49 @@ typedef struct {
 };
 
 //   ---     ---     ---     ---     ---
+// open/close generator steps
 
-MEM* opscp(void) {
+HBG* opscp(const HBG_nomem* src) {
 
-  scopes[scopes_i]=MKSTR("$BLK",0x4000,1);
-  MEM* m=scopes[scopes_i];
-
+  HBG* h=scopes+scopes_i;
   scopes_i++;
 
-};
+  memset(h->mem,0,wrbuff_sz);
 
-void clscp(void) {
-  scopes_i--;DLMEM(scopes[scopes_i]);
+  h->format=src->format;
 
+  h->order[0]=src->order[0];
+  h->order[1]=src->order[1];
+  h->order[2]=src->order[2];
+
+  return h;
+
+};HBG* clscp(void) {
+
+  scopes_i--;
+  return scopes+scopes_i;
+
+//   ---     ---     ---     ---     ---
+// generator write all steps
+
+};void onscp(char** symbols) {
+
+  for(int x=0;x<scopes_i;x++) {
+
+    HBG* h=scopes+x;
+
+    sprintf(
+      h->mem+strlen(h->mem),
+      h->format,
+
+      symbols[h->order[0]],
+      symbols[h->order[1]],
+      symbols[h->order[2]]
+
+    );printf("%s\n",h->mem);
+    memset(h->mem,0,wrbuff_sz);
+
+  };
 };
 
 //   ---     ---     ---     ---     ---
@@ -136,11 +184,18 @@ void mkpat(char* s) {
 
       if(state==SEPARATOR) {
         state=SYMBOL;
-
         *(sep+sep_i)=0x00;
-        printf("\"%s\");\n",sep);
 
-        sep_i=0;
+        printf(
+          "char* %s=strtok(%s"
+          ",\"%s\");\n",
+
+          name,ptr,sep
+
+        );sep_i=0;
+
+        char* symbols[]={name,ptr,sep};
+        onscp(symbols);
 
       };*(name+name_i)=c;
       name_i++;
@@ -152,9 +207,7 @@ void mkpat(char* s) {
 
       if(state==SYMBOL) {
         state=SEPARATOR;
-
         *(name+name_i)=0x00;
-        printf("char* %s=strtok(%s,",name,ptr);
 
         name_i=0;
 
@@ -168,18 +221,37 @@ void mkpat(char* s) {
 //   ---     ---     ---     ---     ---
 
   *(sep+sep_i)=0x00;
-  printf("\"%s\");\n",sep);
 
-  sep_i=0;
+  printf(
+    "char* %s=strtok(%s"
+    ",\"%s\");\n",
+
+    name,ptr,sep
+
+  );sep_i=0;
+
+  char* symbols[]={name,ptr,sep};
+  onscp(symbols);
 
 };
 
+//   ---     ---     ---     ---     ---
+
 void mkhed(char* s) {
 
+  // get header type
   char* token=strtok(s," ");
-  ch_stark mny=find_money_keys(token);
+  const HBG_nomem* mny=find_money_keys(token);
 
-  mny(s+strlen(token)+1);
+  // scope close
+  if(!strcmp(mny->format,"$:KILL_SCOPE;>")) {
+    clscp();
+    return;
+
+  };
+
+  // scope open
+  opscp(mny);
 
 };
 
