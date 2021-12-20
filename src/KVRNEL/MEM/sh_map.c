@@ -188,6 +188,36 @@ void dlmap(void** mh_b) {
 
 //   ---     ---     ---     ---     ---
 
+void** ntmap_solo(
+  const char* fpath,
+  size_t fsz
+
+) {
+
+  MAPHED* mh=(MAPHED*) malloc(sizeof(MAPHED));
+  mh->cne=NULL;
+
+  strncpy(
+    mh->fpath,
+    fpath,
+    255
+
+  );mh->ptr=NULL;
+
+  mh->sz=fsz;
+  mkmap(mh);
+
+  if(!mh->ptr) {
+    printf("Map failed @%s\n",__func__);
+    close(mh->fd);
+    return NULL;
+
+  };return (void**) mh;
+
+};
+
+//   ---     ---     ---     ---     ---
+
 void** ntmap_origin(
   const char* fpath,
   int pages) {

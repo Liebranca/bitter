@@ -5,9 +5,18 @@
 extern "C" {
 #endif
 
+#include <stddef.h>
+
 #define SHM_STEP 0x0800
 
 //   ---     ---     ---     ---     ---
+
+// he shot first
+void** ntmap_solo(
+  const char* fpath,
+  size_t fsz
+
+);
 
 // (child process) get mmapped file
 void** ntmap_heir(char* key);

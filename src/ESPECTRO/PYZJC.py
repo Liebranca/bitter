@@ -63,9 +63,9 @@ def vstar(v):
 
 CONVERTER={
   str(str):cstr,
-  str(charstar):mcstr
+  str(charstar):mcstr,
 
-  str(c_struct):
+  str(c_struct):None
 
 }
 

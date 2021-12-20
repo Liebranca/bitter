@@ -43,6 +43,11 @@ name;
 
 static char OUT_A[wrbuff_sz]={0};
 
+static size_t pattern_i=0;
+
+static char* pattern_str=NULL;
+static char** pattern_jumps={NULL};
+
 //   ---     ---     ---     ---     ---
 // header blocks generator
 
@@ -129,7 +134,21 @@ void ntmod(void) {
 
   };
 
+  pattern_str=malloc(
+    0x2000+(sizeof(pattern_jumps)*0x80)
+
+  );
+
+  pattern_jumps=(char**) (pattern_str+0x1000);
+  for(int x=0;x<0x80;x++) {
+    pattern_jumps[x]=pattern_str+(0x40*x);
+
+  };
+
 };void dlmod(void) {
+
+  free(pattern_str);
+
   free(lkp_table_ids);
   DLMEM(lkp_table);
 
@@ -166,15 +185,6 @@ HBG* opscp(const HBG_nomem* src) {
   h->order[1]=src->order[1];
   h->order[2]=src->order[2];
 
-  // save this special format
-  // we'll use it later :>
-
-  strcpy(
-    h->mem+(wrbuff_sz-0x80),
-    "char* %s"
-
-  );
-
   h->off_wr=h->mem+(wrbuff_sz-0x40);
   h->off_wr+=strlen(h->off_wr)+1;
   h->off_wr+=strlen(h->off_wr)+1;
@@ -185,28 +195,27 @@ HBG* opscp(const HBG_nomem* src) {
 
 void clscp(void) {
 
-  scopes_i--;
-
   // get generator
+  scopes_i--;
   HBG* h=scopes+scopes_i;
 
-  // last-minute stuff
-  char* format="[%u]={NULL};";
-  char* beg=h->off_wr;
+  // reposition and paste
+  sprintf(
+    h->off_wr+strlen(h->off_wr),
 
-  // seek to end
-  h->off_wr+=strlen(h->off_wr);
-
-  // paste
-  sprintf(h->off_wr,
-    format,
+    "[%u]={NULL};",
     h->token_cnt*0x200
 
-  );printf("%s\n\n",beg);
+  );printf("%s\n\n",h->off_wr);
+
+  // get additional generator content
+  char* clause=h->mem+(wrbuff_sz-0x120);
+  strcpy(clause+strlen(clause),") {");
 
   // print generated buffers
   printf("%s\n",h->mem);
-  printf("%s\n",OUT_A);
+  printf("%s\n",clause);
+  printf("%s\n};\n",OUT_A);
 
   memset(OUT_A,0,wrbuff_sz);
 
@@ -220,6 +229,28 @@ void onscp(char** symbols) {
   for(int x=0;x<scopes_i;x++) {
 
     HBG* h=scopes+x;
+
+    char* clause=h->mem+(wrbuff_sz-0x120);
+
+    if(!*clause) {
+      sprintf(
+        clause,
+        "while(%s",
+
+        symbols[h->order[0]]
+
+      );
+
+    } else {
+      sprintf(
+        clause+strlen(clause),
+        " && %s",
+
+        symbols[h->order[0]]
+
+      );
+
+    };
 
     sprintf(
       h->mem+strlen(h->mem),
@@ -241,13 +272,9 @@ void mkpat(char* s) {
   size_t sz;
   size_t i;
 
-  // reserve space for strings
-  char name_mem[rdbuff_sz]={0x00};
-  char sep_mem[rdbuff_sz]={0x00};
-
   // ^ ptrs for convenience
-  char* name=name_mem+0;
-  char* sep=sep_mem+0;
+  char* name=pattern_jumps[pattern_i];
+  char* sep=pattern_jumps[pattern_i+1];
 
   // ^ idex, same reason
   size_t name_i=0;
@@ -271,20 +298,12 @@ void mkpat(char* s) {
       if(state==SEPARATOR) {
         state=SYMBOL;
         *(sep+sep_i)=0x00;
+        pattern_i+=2;
 
-        char* symbols[]={name,strrptr[0],sep};
-        onscp(symbols);
+        name=pattern_jumps[pattern_i];
+        sep=pattern_jumps[pattern_i+1];
 
-        sprintf(
-
-          OUT_A+strlen(OUT_A),
-
-          "char* %s=strtok(%s"
-          ",\"%s\");\n",
-
-          name,"NULL",sep
-
-        );sep_i=0;
+        sep_i=0;
 
       };*(name+name_i)=c;
       name_i++;
@@ -310,20 +329,7 @@ void mkpat(char* s) {
 //   ---     ---     ---     ---     ---
 
   *(sep+sep_i)=0x00;
-
-  char* symbols[]={name,strrptr[0],sep};
-  onscp(symbols);
-
-  sprintf(
-
-    OUT_A+strlen(OUT_A),
-
-    "char* %s=strtok(%s"
-    ",\"%s\");\n",
-
-    name,"NULL",sep
-
-  );sep_i=0;
+  pattern_i+=2;
 
 };
 
@@ -377,7 +383,7 @@ void mkhed(char* s) {
     sprintf(
       scopes[scopes_i-1].off_wr,
 
-      scopes[scopes_i-1].mem+(wrbuff_sz-0x80),
+      "char* %s",
       strrptr[0]
 
     );
@@ -419,23 +425,23 @@ char* next(char* s) {
     // escape
     if(*(end+1)=='>'
     && *((ushort*) s)==0x3A24) {
+
       state=MONEY;end++;
       exp=strtok(s+2,";>");
-
-    // regular
-    } else {
-      exp=strtok(s,";");
+      goto TABLE;
 
     };
 
   // null or invalid
-  } else {
-    return end+1;
+  } else if(end==NULL) {
+      return end+1;
 
-  };
+  // regular
+  };exp=strtok(s,";");
 
 //   ---     ---     ---     ---     ---
 
+  TABLE:
   switch(state) {
     case MONEY:
     mkhed(exp);
@@ -464,23 +470,20 @@ void main(int argc,char** argv) {
   memset(s,0,0x400);
   strcpy(s,
 
-    "$:%iter arg;>"
-    "  type>con:name,;"
-
-    "$:/iter;>"
+    "type>con:name,;"
 
   );
 
   while(*s) {s=next(s);}
 
-  /* generate this...
+  for(int x=0;x<pattern_i;x+=2) {
+    printf(
+      "%s %s\n",
+      pattern_jumps[x],
+      pattern_jumps[x+1]
 
-  char* name=strtok(s," ");
+    );
 
-  char* arg_type=strtok(NULL, ">");
-  char* arg_con=strtok(NULL, ":");
-  char* arg_name=strtok(NULL, ",");*/
-
-  dlmod();
+  };dlmod();
 
 };
