@@ -48,7 +48,7 @@ float FRACTOFL(
   uint shift) {
 
   if(frac==maxval-1) {frac=maxval;};
-  return((int) (frac-shift))* fac;
+  return ((int) (frac-shift))* fac;
 
 };
 
@@ -60,7 +60,7 @@ uchar FLTOFRAC(
   uint shift) {
 
   v=clampf(v,-maxval,maxval-fraction);
-  return(uchar)roundf(v * fac)+shift;
+  return (uchar) roundf(v * fac)+shift;
 
 };
 

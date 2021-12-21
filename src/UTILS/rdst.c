@@ -460,6 +460,24 @@ char* next(char* s) {
 
 //   ---     ---     ---     ---     ---
 
+void fish(void) {
+
+  char* ptr="arr";
+
+  for(int x=0;x<pattern_i;x+=2) {
+    char* name=pattern_jumps[x];
+    char* sep=pattern_jumps[x+1];
+
+    printf(
+      "char* %s=strtok(%s,\"%s\");\n",
+      name,ptr,sep
+
+    );ptr="NULL";
+
+  };
+
+};
+
 void main(int argc,char** argv) {
 
   ntmod();memset(OUT_A,0,wrbuff_sz);
@@ -475,15 +493,6 @@ void main(int argc,char** argv) {
   );
 
   while(*s) {s=next(s);}
-
-  for(int x=0;x<pattern_i;x+=2) {
-    printf(
-      "%s %s\n",
-      pattern_jumps[x],
-      pattern_jumps[x+1]
-
-    );
-
-  };dlmod();
+  fish();dlmod();
 
 };

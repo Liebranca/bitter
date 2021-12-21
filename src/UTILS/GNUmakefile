@@ -52,8 +52,8 @@ INCLUDES  = -I$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 INCLUDES += -I$(dir $(abspath ..)/)
 LIBS      = -L$(BIN) -lkvrnel
 
-OUTL      = test
-OUTF      = rdst
+OUTL      = 
+OUTF      = ftest
 
 #   ---     ---     ---     ---     ---
 

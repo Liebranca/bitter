@@ -20,6 +20,8 @@ extern "C" {
 #define SIN_ANSNIDS  32
 #define SIN_HASHSIZ   6
 
+#define SIN_MSHBSZ 0x1000
+
 #define SIN_TEXLAYS   4
 #define SIN_SHDLAYS   2
 

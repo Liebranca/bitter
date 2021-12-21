@@ -24,6 +24,8 @@
 
 #include <stdlib.h>
 
+#include "sin_mesh.h"
+
 //   ---     ---     ---     ---     ---
 // #:0x0;>
 
@@ -43,6 +45,8 @@ static uint CharCount=0;
 // #:0x1;>
 
 void NTCANVAS(void) {
+
+  mk_meshbat();
 
                             // just a shorthand
   const SHDP* params=&SIN_CanvasShader;
@@ -187,7 +191,6 @@ void NTCANVAS(void) {
   );
 
   for(uint i=0;i<2;i++) {
-
     glAttachShader(canvasProgram,canvasShader[i]);
 
   };
@@ -262,6 +265,9 @@ void BEGPSH(void) {
 
 void PSHCHR(uint* d, int update) {
 
+  dr_meshbat();
+  return;
+
   if(update) {
     glBindBuffer(GL_UNIFORM_BUFFER,canvasUBO);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER,canvasSSBO);
@@ -300,6 +306,8 @@ void DLCANVAS(void) {
   glDeleteBuffers(1,&canvasUBO);
   glDeleteBuffers(1,&canvasVBO);
   glDeleteBuffers(1,&canvasVAO);
+
+  dl_meshbat();
 
 };
 
