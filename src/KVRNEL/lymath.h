@@ -4,6 +4,7 @@
 #include "zjc_CommonTypes.h"
 #include "LYMATH/zjc_ByteArray.h"
 #include "LYMATH/zjc_gops.h"
+#include "LYMATH/vec4.h"
 
 #ifdef __cplusplus
 extern "C" {

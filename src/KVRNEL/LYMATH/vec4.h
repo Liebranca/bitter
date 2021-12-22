@@ -11,42 +11,35 @@ typedef struct {
 
   union {
     struct {
-      float x;
-      float y;
-      float z;
-      float w;
+      char x;
+      char y;
+      char z;
+      char w;
 
-    };float mem[4];
+    };char mem[4];
   };
 
 } vec4;
-
-typedef struct {
-
-  union {
-    struct {
-      int x;
-      int y;
-      int z;
-      int w;
-
-    };int mem[4];
-  };
-
-} ivec4;
 
 //   ---     ---     ---     ---     ---
 
 // basic move/scaling
 void addv(vec4* a, vec4* b);
 void subv(vec4* a, vec4* b);
-void mulv(vec4* a, float b);
-void divv(vec4* a, float b);
+void mulv(vec4* a, char b);
+void divv(vec4* a, char b);
 
 // distance stuff
 int lenv(vec4* a);
 vec4 gtvecto(vec4* a,vec4* b);
+
 int distv(vec4* a,vec4* b);
+
+// brain hurty
+vec4 crossv(vec4* a,vec4* b);
+
+// because it's annoying doing it by hand
+char* prv(vec4* a);
 
 //   ---     ---     ---     ---     ---
 

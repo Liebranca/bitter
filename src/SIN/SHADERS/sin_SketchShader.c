@@ -3,8 +3,7 @@
 
 //   ---     ---     ---     ---     ---
 
-cchar* source_v[2] =
-{
+cchar* source_v[2] = {
 
 SIN_GL_VER,
 
@@ -21,14 +20,15 @@ layout(std140, binding=0) uniform Palette {\
 } _Palette;\
 \
 layout(std140, binding=1) uniform Camera {\
-  ivec4 Position;\
-  ivec4 Point;\
+  vec4 Position;\
+  vec4 Point;\
 \
 } _Camera;\
 \
 void main() {\
 \
   gl_Position=(Position*ffr)/4;\
+  gl_Position.x+=(_Camera.Position.x*ffr)/4;\
   gl_Position.z=0;gl_Position.w=1;\
   col=_Palette.color[int(ShData.x)&0xF];\
 \
@@ -39,8 +39,7 @@ void main() {\
 
 //   ---     ---     ---     ---     ---
 
-cchar* source_f[2] =
-{
+cchar* source_f[2] = {
 
 SIN_GL_VER,
 
@@ -54,8 +53,7 @@ void main() {\
 
 //   ---     ---     ---     ---     ---
 
-const SHDP SIN_SketchShader =
-{
+const SHDP SIN_SketchShader = {
 
   // sources
   source_v,

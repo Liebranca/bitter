@@ -32,8 +32,6 @@ typedef struct {
 
 } vertex;
 
-const float ffr=1.0f/32.0f;
-
 // get your brain around this tri
 static vertex mesh[]={
 
@@ -59,9 +57,8 @@ static int batch_program;
 enum shader_types {shd_vert,shd_frag,shd_num};
 static int batch_shaders[shd_num]={0,0};
 
-static vertex camera[]={
-  0x80,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-  0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+static vertex camera={
+  0x80,0x00,0x00,0x00,0x00,0x00,0x00,0x00
 
 };
 
@@ -210,7 +207,7 @@ void dr_meshbat(int keys) {
    -(keys&0x4 && v->y>-128)
    +(keys&0x8 && v->y<127)
 
-  );camera[0].x+=1;
+  );camera.x+=1;
 
   // upload modified geometry
   glBindBuffer(GL_ARRAY_BUFFER,batch);
@@ -225,7 +222,7 @@ void dr_meshbat(int keys) {
   glBufferSubData(
     GL_UNIFORM_BUFFER,0,
     sizeof(camera),
-    (void*) camera
+    (void*) &camera
 
   );
 
