@@ -6,8 +6,7 @@
 #include "SHADERS/sin_SketchShader.h"
 
 #include <stdio.h>
-
-const float ffr=1.0f/32.0f;
+#include <stddef.h>
 
 //   ---     ---     ---     ---     ---
 
@@ -15,26 +14,58 @@ typedef struct {
 
   union {
     struct {
-      char x;
+
+      char x;// plane coordinates
       char y;
       char z;
       char w;
 
-    };char mem[4];
+      char c;// color
+      char n;// normal
+      char t;// tangent
+
+      char pad;
+
+    };char mem[8];
 
   };
 
 } vertex;
 
+const float ffr=1.0f/32.0f;
+
+// get your brain around this tri
+static vertex mesh[]={
+
+  0x00,0x80,0x00,0xFF,0x0F,0x00,0x00,0x00,
+
+  0x00,0x7F,0x00,0xFF,0x0C,0x00,0x00,0x00,
+
+  0x7F,0x80,0x00,0xFF,0x0C,0x00,0x00,0x00
+
+};
+
+#define vertex_count \
+  ((sizeof(mesh)/sizeof(vertex))-1)
+
 //   ---     ---     ---     ---     ---
 
 static int batch;
 static int batch_vao;
+static int batch_ubo;
 
 static int batch_program;
 
 enum shader_types {shd_vert,shd_frag,shd_num};
 static int batch_shaders[shd_num]={0,0};
+
+static vertex camera[]={
+  0x80,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+  0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+
+};
+
+//   ---     ---     ---     ---     ---
 
 void mk_meshbat(void) {
 
@@ -42,15 +73,6 @@ void mk_meshbat(void) {
   glGenVertexArrays(1,&batch_vao);
   glGenBuffers(1,&batch);
   glBindVertexArray(batch_vao);
-
-  // get your brain around this tri
-  vertex mesh[]={
-
-    0x80,0x80,0x00,0xFF,
-    0x00,0x7F,0x00,0xFF,
-    0x7F,0x80,0x00,0xFF
-
-  };
 
   // load data
   glBindBuffer(GL_ARRAY_BUFFER,batch);
@@ -65,12 +87,41 @@ void mk_meshbat(void) {
 
   // set attrib pointers
   glEnableVertexAttribArray(0);
-  glVertexAttribIPointer(
+  glVertexAttribPointer(
     0,
     4,
-    GL_BYTE,
+    GL_BYTE,GL_FALSE,
     sizeof(vertex),
-    NULL
+    (void*) offsetof(vertex,x)
+
+  );
+
+  glEnableVertexAttribArray(1);
+  glVertexAttribPointer(
+    1,
+    4,
+    GL_BYTE,GL_FALSE,
+    sizeof(vertex),
+    (void*) offsetof(vertex,c)
+
+  );
+
+//   ---     ---     ---     ---     ---
+
+  glGenBuffers(1,&batch_ubo);
+  glBindBuffer(GL_UNIFORM_BUFFER,batch_ubo);
+
+  glBufferData(
+    GL_UNIFORM_BUFFER,
+
+    sizeof(camera),
+    (void*) &camera,
+
+    GL_DYNAMIC_DRAW
+
+  );glBindBufferBase(
+    GL_UNIFORM_BUFFER,
+    1,batch_ubo
 
   );
 
@@ -109,7 +160,7 @@ void mk_meshbat(void) {
 
     glBindAttribLocation(
       batch_program,
-       0,params->attribs[attribLoc]);
+       attribLoc,params->attribs[attribLoc]);
 
   };
 
@@ -137,7 +188,48 @@ void mk_meshbat(void) {
 
 //   ---     ---     ---     ---     ---
 
-void dr_meshbat(void) {
+static size_t sel_vertex=0;
+
+void dr_meshbat(int keys) {
+
+  vertex* v=mesh+sel_vertex;
+  v->c=0xC;
+
+  sel_vertex+=
+   -(keys&0x10 && sel_vertex>0)
+   +(keys&0x20 && sel_vertex<vertex_count);
+
+  v=mesh+sel_vertex;
+  v->c=0xF;
+
+  v->x+=0x1*(
+   -(keys&0x1 && v->x>-128)
+   +(keys&0x2 && v->x<127)
+
+  );v->y+=1*(
+   -(keys&0x4 && v->y>-128)
+   +(keys&0x8 && v->y<127)
+
+  );camera[0].x+=1;
+
+  // upload modified geometry
+  glBindBuffer(GL_ARRAY_BUFFER,batch);
+  glBufferSubData(
+    GL_ARRAY_BUFFER,0,
+    3*sizeof(vertex),
+    (void*) mesh
+
+  );
+
+  glBindBuffer(GL_UNIFORM_BUFFER,batch_ubo);
+  glBufferSubData(
+    GL_UNIFORM_BUFFER,0,
+    sizeof(camera),
+    (void*) camera
+
+  );
+
+  // draw
   glUseProgram(batch_program);
   glBindVertexArray(batch_vao);
   glDrawArrays(GL_TRIANGLES,0,3);
@@ -153,7 +245,9 @@ void dl_meshbat(void) {
 
   };
 
+  glDeleteBuffers(1,&batch_ubo);
   glDeleteBuffers(1,&batch);
+
   glDeleteVertexArrays(1,&batch_vao);
 
 };

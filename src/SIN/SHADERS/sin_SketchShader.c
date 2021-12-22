@@ -10,17 +10,27 @@ SIN_GL_VER,
 
 "\
 const float ffr=1.0/32.0;\
-in ivec4 Position;\
+in vec4 Position;\
+in vec4 ShData;\
+\
 out vec4 col;\
+\
+layout(std140, binding=0) uniform Palette {\
+  vec4 color[16];\
+\
+} _Palette;\
+\
+layout(std140, binding=1) uniform Camera {\
+  ivec4 Position;\
+  ivec4 Point;\
+\
+} _Camera;\
 \
 void main() {\
 \
-\
-  float px=float(Position.x)*ffr;\
-  float py=float(Position.y)*ffr;\
-\
-  gl_Position = vec4(px/4,py/4,0,1);\
-  col=vec4(abs(px)/4,abs(py)/4,0,1);\
+  gl_Position=(Position*ffr)/4;\
+  gl_Position.z=0;gl_Position.w=1;\
+  col=_Palette.color[int(ShData.x)&0xF];\
 \
 };\
 "
@@ -52,13 +62,13 @@ const SHDP SIN_SketchShader =
   source_f,
 
   // Attributes
-  { "Position"},
+  { "Position", "ShData" },
 
   // Uniforms
-  { "Transform"},
+  { "" },
 
   // UBOs
-  { "Palette"},
+  { "Palette", "Camera" },
 
   // Samplers
   {},
@@ -70,16 +80,16 @@ const SHDP SIN_SketchShader =
   2,
 
   // Number of attributes
-  1,
+  2,
 
   // Number of uniforms
-  1,
+  0,
 
   // Number of UBOs
-  1,
+  2,
 
   // Number of samplers
-  1,
+  0,
 
   // Flags
   0

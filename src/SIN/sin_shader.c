@@ -177,7 +177,7 @@ uint MKSHD(const SHDP* params)              {
         int uniform_loc = -1;
 
         if  (!strcmp(params->uniforms[i], "Model"                )) {
-            uniform_loc = SIN_MODEL_U;
+            uniform_loc = SIN_LYTM_U;
 
         }
         elif(!strcmp(params->uniforms[i], "ModelInverseTranspose")) {

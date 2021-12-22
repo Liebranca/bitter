@@ -9,7 +9,7 @@ extern "C" {
 
 // make, draw, delete batch
 void mk_meshbat(void);
-void dr_meshbat(void);
+void dr_meshbat(int keys);
 void dl_meshbat(void);
 
 //   ---     ---     ---     ---     ---

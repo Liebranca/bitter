@@ -17,7 +17,7 @@
 import os, datetime;
 today = datetime.datetime.now();
 
-KVR_DEBUG=0x88;
+KVR_DEBUG=0xFFFF;
 
 #   ---     ---     ---     ---     ---
 

@@ -268,5 +268,14 @@ void CLIBUF(void) {
 };
 
 //   ---     ---     ---     ---     ---
+
+int gtkey(void) {
+  int k=curwin->keyb.lv_keys;
+  curwin->keyb.lv_keys^=(curwin->keyb.lv_keys)&0xF0;
+  return k;
+
+};
+
+//   ---     ---     ---     ---     ---
 // #:0x8;>
 

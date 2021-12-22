@@ -265,7 +265,7 @@ void BEGPSH(void) {
 
 void PSHCHR(uint* d, int update) {
 
-  dr_meshbat();
+  dr_meshbat(update);
   return;
 
   if(update) {

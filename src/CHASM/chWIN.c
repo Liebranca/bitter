@@ -281,6 +281,38 @@ int POLWIN(WIN* win) {
         case SDLK_RETURN:
         c=0x0A;goto KUP_INSERT;
 
+        case SDLK_a:
+        win->keyb.lv_keys|=0x1;
+        break;
+
+        case SDLK_d:
+        win->keyb.lv_keys|=0x2;
+        break;
+
+        case SDLK_s:
+        win->keyb.lv_keys|=0x4;
+        break;
+
+        case SDLK_w:
+        win->keyb.lv_keys|=0x8;
+        break;
+
+        case SDLK_j:
+        win->keyb.lv_keys|=0x10;
+        break;
+
+        case SDLK_l:
+        win->keyb.lv_keys|=0x20;
+        break;
+
+        case SDLK_k:
+        win->keyb.lv_keys|=0x40;
+        break;
+
+        case SDLK_i:
+        win->keyb.lv_keys|=0x80;
+        break;
+
         case SDLK_BACKSPACE:
         c=0x08;goto KUP_INSERT;
 
@@ -310,6 +342,45 @@ int POLWIN(WIN* win) {
 //   ---     ---     ---     ---     ---
 
       case SDL_KEYUP:
+
+      k=event.key.keysym.sym;
+      switch(k) {
+        case SDLK_a:
+        win->keyb.lv_keys&=~0x1;
+        break;
+
+        case SDLK_d:
+        win->keyb.lv_keys&=~0x2;
+        break;
+
+        case SDLK_s:
+        win->keyb.lv_keys&=~0x4;
+        break;
+
+        case SDLK_w:
+        win->keyb.lv_keys&=~0x8;
+        break;
+
+        case SDLK_j:
+        win->keyb.lv_keys&=~0x10;
+        break;
+
+        case SDLK_l:
+        win->keyb.lv_keys&=~0x20;
+        break;
+
+        case SDLK_k:
+        win->keyb.lv_keys&=~0x40;
+        break;
+
+        case SDLK_i:
+        win->keyb.lv_keys&=~0x80;
+        break;
+
+
+        default:break;
+
+      };
 
       /*for(uint i=0;i<8;i++) {
 

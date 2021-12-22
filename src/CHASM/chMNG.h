@@ -29,6 +29,8 @@ void FRSLP(void);           // get deltas and sleep
 uchar* GTIBUF(void);        // get textinput buffer
 void CLIBUF(void);          // clean it up
 
+int gtkey(void);            // special keys bitmask
+
 //   ---     ---     ---     ---     ---
 // #:0x1;>
 

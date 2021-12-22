@@ -125,7 +125,7 @@ const SHDP SIN_CanvasShader =
     2,                                              // Number of vertex shader blocks
     3,                                              // Number of fragment shader blocks
     1,                                              // Number of attributes
-    1,                                              // Number of uniforms
+    2,                                              // Number of uniforms
     1,                                              // Number of UBOs
     1,                                              // Number of samplers
 

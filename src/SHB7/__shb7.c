@@ -225,7 +225,7 @@ int main(int argc,char** argv) {
     signal(SIGCONT,oncont);
 
     // now make spwn
-    spwn_pid=fork();
+    spwn_pid=1;//fork();
     if(!spwn_pid) {
       char* ex_argv[3];
       char ex_fpath[PATH_MAX+1];
@@ -356,7 +356,7 @@ int main(int argc,char** argv) {
           shbuf[0]|=0x02;
           shbuf[0]|=0x04;
 
-          kill(spwn_pid,SIGCONT);
+          //kill(spwn_pid,SIGCONT);
 
           shbout_x=0;
           shbout_y=shbout_my;
@@ -407,7 +407,7 @@ int main(int argc,char** argv) {
     // frame is drawn instead, repeating right
     // until you set the flag
 
-    PSHCHR(shbout,shbout_flg&0x01);
+    PSHCHR(shbout,gtkey()); //shbout_flg&0x01
 
     // these two must always go at the very bottom!
     // order matters: one gets current time, the
@@ -421,8 +421,8 @@ int main(int argc,char** argv) {
 //   ---     ---     ---     ---     ---
 
   shbuf[0]|=0x01;
-  kill(spwn_pid,SIGCONT);
-  int wst;wait(&wst);
+  //kill(spwn_pid,SIGCONT);
+  //int wst;wait(&wst);
 
   ENDPSH();
 
