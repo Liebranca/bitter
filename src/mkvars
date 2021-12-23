@@ -1,0 +1,39 @@
+# GNU BUILD ENV BOILERPASTE - VARIABLES
+
+#    ---     ---     ---     ---     ---
+
+DIRS      = $(shell find $(BASE_DIR) -type d)
+HEDS      = $(wildcard $(DIRS:%=%/*.h))
+SRCS      = $(wildcard $(DIRS:%=%/*.c))
+BIN       = $(dir $(abspath ../..)/bin/)
+TRSH      = $(dir $(abspath ../..)/trashcan/$(FSWAT)/)
+
+OBJS      = $(patsubst %.c,$(TRSH)/%.o,$(SRCS))
+DEPS     := $(subst .o,.d,$(OBJS))
+ODIR      = $(patsubst %,$(TRSH)/%,$(DIRS))
+
+INCLUDES  = -I$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
+INCLUDES += -I$(dir $(abspath ..)/)
+LIBS      = -L$(BIN) -lkvrnel -lgl -lglew -lopengl32
+
+MAIN      = $(BIN)/$(MKWAT)
+
+DFLG      = 
+
+ifdef DEBUG
+DFLG     += -D KVR_DEBUG=$(DEBUG)
+else
+DFLG     += $(shell cat $(TRSH)/MKLOG)
+endif
+
+OFLG      = -s -Os -fno-unwind-tables \
+            -fno-asynchronous-unwind-tables \
+            -ffast-math -fsingle-precision-constant \
+            -fno-ident
+
+LFLG      = $(OFLG) -flto -ffunction-sections \
+            -fdata-sections -Wl,--gc-sections \
+            -Wl,-fuse-ld=bfd
+
+PFLG      = -m64
+

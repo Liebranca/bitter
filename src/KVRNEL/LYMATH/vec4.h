@@ -23,23 +23,30 @@ typedef struct {
 
 //   ---     ---     ---     ---     ---
 
+// hehe
+char ftoc(char x);
+vec4 mkv4(char x,char y,char z,char w);
+
 // basic move/scaling
-void addv(vec4* a, vec4* b);
-void subv(vec4* a, vec4* b);
-void mulv(vec4* a, char b);
-void divv(vec4* a, char b);
+vec4 addv(vec4 a, vec4 b);
+vec4 subv(vec4 a, vec4 b);
+vec4 mulv(vec4 a, char b);
+vec4 divv(vec4 a, char b);
+
+// shoot, we cant -vec
+vec4 negv(vec4 a);
 
 // distance stuff
-int lenv(vec4* a);
-vec4 gtvecto(vec4* a,vec4* b);
-
-int distv(vec4* a,vec4* b);
+int lenv(vec4 a);
+int distv(vec4 a,vec4 b);
 
 // brain hurty
-vec4 crossv(vec4* a,vec4* b);
+char dotv(vec4 a,vec4 b);
+vec4 normv(vec4 a);
+vec4 crossv(vec4 a,vec4 b);
 
 // because it's annoying doing it by hand
-char* prv(vec4* a);
+char* prv(vec4 a);
 
 //   ---     ---     ---     ---     ---
 

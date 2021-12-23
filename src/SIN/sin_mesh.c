@@ -5,6 +5,8 @@
 
 #include "SHADERS/sin_SketchShader.h"
 
+#include "KVRNEL/LYMATH/mat4.h"
+
 #include <stdio.h>
 #include <stddef.h>
 
@@ -35,7 +37,7 @@ typedef struct {
 // get your brain around this tri
 static vertex mesh[]={
 
-  0x00,0x80,0x00,0xFF,0x0F,0x00,0x00,0x00,
+  0x80,0x80,0x00,0xFF,0x0F,0x00,0x00,0x00,
 
   0x00,0x7F,0x00,0xFF,0x0C,0x00,0x00,0x00,
 
@@ -58,7 +60,7 @@ enum shader_types {shd_vert,shd_frag,shd_num};
 static int batch_shaders[shd_num]={0,0};
 
 static vertex camera={
-  0x80,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+  0x20,0x20,0x20,0x00,0x00,0x00,0x00,0x00
 
 };
 
@@ -111,8 +113,8 @@ void mk_meshbat(void) {
   glBufferData(
     GL_UNIFORM_BUFFER,
 
-    sizeof(camera),
-    (void*) &camera,
+    sizeof(mat4),
+    NULL,
 
     GL_DYNAMIC_DRAW
 
@@ -190,9 +192,9 @@ static size_t sel_vertex=0;
 void dr_meshbat(int keys) {
 
   vertex* v=mesh+sel_vertex;
-  v->c=0xC;
+  //v->c=0xC;
 
-  sel_vertex+=
+  /*sel_vertex+=
    -(keys&0x10 && sel_vertex>0)
    +(keys&0x20 && sel_vertex<vertex_count);
 
@@ -207,7 +209,37 @@ void dr_meshbat(int keys) {
    -(keys&0x4 && v->y>-128)
    +(keys&0x8 && v->y<127)
 
-  );camera.x+=1;
+  );*/
+
+//   ---     ---     ---     ---     ---
+
+  char cx=camera.x;
+  char cy=camera.y;
+
+  camera.x+=
+   -((keys&0x10) && camera.x>-128)
+   +((keys&0x20) && camera.x<127);
+
+  camera.y+=
+   -((keys&0x40) && camera.y>-128)
+   +((keys&0x80) && camera.y<127);
+
+  vec4 pos={camera.x,camera.y,48,ftoc(1)};
+  vec4 at={0,0,0,ftoc(1)};
+  vec4 up={0,32,0,ftoc(1)};
+
+  mat4 view=lookat(pos,at,up);
+  /*mat4 view={0};
+
+  view.a=(vec4) {32,0,0,0};
+  view.b=(vec4) {0,32,0,0};
+  view.c=(vec4) {0,0,32,0};
+  view.d=(vec4) {0,0,0,32};*/
+
+  if(cx!=camera.x || cy!=camera.y) {
+    prm(&view);
+
+  };
 
   // upload modified geometry
   glBindBuffer(GL_ARRAY_BUFFER,batch);
@@ -221,8 +253,8 @@ void dr_meshbat(int keys) {
   glBindBuffer(GL_UNIFORM_BUFFER,batch_ubo);
   glBufferSubData(
     GL_UNIFORM_BUFFER,0,
-    sizeof(camera),
-    (void*) &camera
+    sizeof(view),
+    (void*) &view
 
   );
 

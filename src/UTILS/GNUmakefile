@@ -1,45 +1,19 @@
 # UTILS GNU MAKEFILE
 
 #   ---     ---     ---     ---     ---
-# platform switch
-
-ifdef x32
-PLAT = x32
-PFLG = -m32
-else
-PLAT = x64
-PFLG = -m64
-endif
-
-#   ---     ---     ---     ---     ---
-# D_FLAGS switches
-
-DFLG  = 
-
-ifdef DEBUG
-DFLG += -D KVR_DEBUG=$(DEBUG)
-else
-DFLG += $(shell cat $(TRSH)/MKLOG)
-endif
-
-#   ---     ---     ---     ---     ---
+# module data
 
 FSWAT     = UTILS
 
-OFLG      = -s -Os -fno-unwind-tables
-OFLG     += -fno-asynchronous-unwind-tables -ffast-math
-OFLG     += -fsingle-precision-constant -fno-ident
-
-LFLG      = $(OFLG)
-LFLG     += -flto -ffunction-sections -fdata-sections
-LFLG     += -Wl,--gc-sections -Wl,-fuse-ld=bfd
+OUTL      = 
+OUTF      = ftest
 
 DIRS      = $(shell find $(BASE_DIR) -type d)
 SRCS      = $(wildcard $(DIRS:%=%/*.c))
 HEDS      = $(wildcard $(DIRS:%=%/*.h))
-BIN       = $(dir $(abspath ../..)/bin/$(PLAT)/)
+BIN       = $(dir $(abspath ../..)/bin/)
 
-TRSH      = $(dir $(abspath ../..)/trashcan/$(PLAT)/$(FSWAT)/)
+TRSH      = $(dir $(abspath ../..)/trashcan/$(FSWAT)/)
 
 OBJS      = $(patsubst %.c,$(TRSH)/%.o,$(SRCS))
 LOBJS     = $(patsubst %.h,$(TRSH)/%.lo,$(HEDS))
@@ -51,9 +25,6 @@ INCLUDES  = -I$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 
 INCLUDES += -I$(dir $(abspath ..)/)
 LIBS      = -L$(BIN) -lkvrnel
-
-OUTL      = 
-OUTF      = ftest
 
 #   ---     ---     ---     ---     ---
 

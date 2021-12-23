@@ -33,6 +33,7 @@ src/AVTOMAT/IDNT.c
 src/AVTOMAT/idntest.c
 *.o
 *test.c
+*ffr.h
 shb7wt
 *flat*.*
 echo_*

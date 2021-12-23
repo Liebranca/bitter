@@ -1,0 +1,36 @@
+# GNU BUILD ENV BOILERPASTE - RECIPEES
+
+#   ---     ---     ---     ---     ---
+
+$(MAIN): $(ODIR) $(HEDS) $(SRCS) $(DEPS) $(OBJS) $(TRSH)/MKLOG
+	@echo $(MAIN)
+	@if ! test -d $(BIN); then mkdir -p $(BIN); fi
+	@if test -f $(MAIN); then rm $(MAIN); fi
+	@gcc $(LMODE) $(LFLG) $(INCLUDES) $(PFLG) $(OBJS) $(LIBS) -o $(MAIN)
+	@if test -f $(MAIN); then make -t -s; fi
+
+#   ---     ---     ---     ---     ---
+
+$(ODIR):
+	@if ! test -d $@; then mkdir -p $@; fi
+
+%.c: %.h $(TRSH)/MKLOG
+	@true
+
+$(TRSH)/%.o: %.c %.h $(TRSH)/MKLOG
+	@echo $<
+	@gcc -MMD $(OFLG) $(INCLUDES) $(DFLG) $(PFLG) -Wa,-a=$(subst .o,.asm,$@) -c $< -o $@
+
+-include $(DEPS)
+
+#   ---     ---     ---     ---     ---
+
+.PHONY: clean
+clean:
+	@rm -rf $(TRSH)/*
+	@if test -f $(MAIN); then rm $(MAIN); fi
+
+$(TRSH)/MKLOG:
+	@echo "$(DFLG)" > $(TRSH)/MKLOG
+
+#   ---     ---     ---     ---     ---

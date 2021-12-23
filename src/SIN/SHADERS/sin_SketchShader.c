@@ -20,16 +20,41 @@ layout(std140, binding=0) uniform Palette {\
 } _Palette;\
 \
 layout(std140, binding=1) uniform Camera {\
-  vec4 Position;\
-  vec4 Point;\
+  ivec4 View;\
 \
 } _Camera;\
 \
+float sin_icast(int x,int mask) {\
+  x=(x&(0xFF<<(mask*8))) >>(mask*8);\
+  return float(-x *(-1*int(x<0x80)) )*ffr;\
+\
+};\
+\
+vec4 sin_ivcast(int x) {\
+\
+  vec4 v=vec4(0,0,0,1);\
+  for(int i=0;i<4;i++) {\
+    v[i]=sin_icast(x,i);\
+\
+  };\
+\
+  return v;\
+\
+};\
+\
 void main() {\
 \
+  mat4 view=mat4(\
+    sin_ivcast(_Camera.View.x),\
+    sin_ivcast(_Camera.View.y),\
+    sin_ivcast(_Camera.View.z),\
+    sin_ivcast(_Camera.View.w)\
+\
+  );\
+\
   gl_Position=(Position*ffr)/4;\
-  gl_Position.x+=(_Camera.Position.x*ffr)/4;\
   gl_Position.z=0;gl_Position.w=1;\
+  gl_Position*=view;\
   col=_Palette.color[int(ShData.x)&0xF];\
 \
 };\

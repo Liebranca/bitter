@@ -1,17 +1,6 @@
 # GRIM GNU MAKEFILE
 
 #   ---     ---     ---     ---     ---
-# platform switch
-
-ifdef x32
-PLAT = x32
-PFLG = -m32
-else
-PLAT = x64
-PFLG = -m64
-endif
-
-#   ---     ---     ---     ---     ---
 
 OFLG      = -s -Os -fno-unwind-tables -fno-asynchronous-unwind-tables
 OFLG     += -fsingle-precision-constant -ffast-math -fno-ident
@@ -24,8 +13,8 @@ MKWAT     = grim.exe
 DIRS      = $(shell find $(BASE_DIR) -type d)
 HEDS      = $(wildcard $(DIRS:%=%/*.h))
 SRCS      = $(wildcard $(DIRS:%=%/*.c))
-BIN       = $(dir $(abspath ../..)/bin/$(PLAT)/)
-TRSH      = $(dir $(abspath ../..)/trashcan/$(PLAT)/$(FSWAT)/)
+BIN       = $(dir $(abspath ../..)/bin/)
+TRSH      = $(dir $(abspath ../..)/trashcan/$(FSWAT)/)
 
 OBJS      = $(patsubst %.c,$(TRSH)/%.o,$(SRCS))
 DEPS     := $(subst .o,.d,$(OBJS))
