@@ -39,13 +39,6 @@ vec4 mkv4(
 };
 
 //   ---     ---     ---     ---     ---
-
-#define mulc(a,b) (((a)*(b))>>ffr_scale)
-#define divc(a,b) ((((a)<<ffr_scale)/(b)))
-#define pow2c(x) (pow(x*ffr,2))
-#define sqrtc(x) (ftoc(sqrt((x))))
-
-//   ---     ---     ---     ---     ---
 // move
 
 vec4 addv(vec4 a, vec4 b) {
@@ -110,7 +103,7 @@ vec4 negv(vec4 a) {
 //   ---     ---     ---     ---     ---
 // length of vector
 
-int lenv(vec4 a) {
+char lenv(vec4 a) {
   return sqrtc(pow2c(a.x)+pow2c(a.y)+pow2c(a.z));
 
 };

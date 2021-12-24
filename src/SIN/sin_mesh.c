@@ -224,8 +224,8 @@ void dr_meshbat(int keys) {
    -((keys&0x40) && camera.y>-128)
    +((keys&0x80) && camera.y<127);
 
-  vec4 pos={camera.x,camera.y,48,ftoc(1)};
-  vec4 at={0,0,0,ftoc(1)};
+  vec4 pos={0,0,48,ftoc(1)};
+  vec4 at={camera.x,camera.y,0,ftoc(1)};
   vec4 up={0,32,0,ftoc(1)};
 
   mat4 view=lookat(pos,at,up);

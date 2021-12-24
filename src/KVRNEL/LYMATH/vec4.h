@@ -37,7 +37,7 @@ vec4 divv(vec4 a, char b);
 vec4 negv(vec4 a);
 
 // distance stuff
-int lenv(vec4 a);
+char lenv(vec4 a);
 int distv(vec4 a,vec4 b);
 
 // brain hurty

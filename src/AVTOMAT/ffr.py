@@ -42,8 +42,9 @@ def coolpr(f,limit):
 print(
 
   f"\nstatic const char ffr_scale={ffr_scale};\n"
+  f"\nstatic const char ffr_mul=1<<{ffr_scale};\n"
   "static const float ffr="\
-  "1.0f/((float) (1<<ffr_scale));\n"
+  "1.0f/((float) ffr_mul);\n"
 
 );
 
@@ -58,7 +59,7 @@ for i in range(32):
 print("\n\n};")
 print(
   "static const size_t SC_TABLE_SZ="\
-  "sizeof(SC_TABLE)/sizeof(SC_TABLE[0]);\n"
+  "sizeof(SC_TABLE)/sizeof(SC_TABLE[0])-1;\n"
 
 );
 
@@ -73,7 +74,7 @@ for i in range(64):
 print("\n\n};");
 print(
   "static const size_t RD_TABLE_SZ="\
-  "sizeof(RD_TABLE)/sizeof(RD_TABLE[0]);\n"
+  "sizeof(RD_TABLE)/sizeof(RD_TABLE[0])-1;\n"
 
 );
 
@@ -88,9 +89,26 @@ for i in range(128):
 print("\n\n};");
 print(
   "static const size_t SQ_TABLE_SZ="\
-  "sizeof(SQ_TABLE)/sizeof(SQ_TABLE[0]);\n"
+  "sizeof(SQ_TABLE)/sizeof(SQ_TABLE[0])-1;\n"
 
 );
+
+#    ---     ---     ---     ---     ---
+
+print(
+
+  "#define mulc(a,b) (((a)*(b))>>ffr_scale)\n"\
+  "#define divc(a,b) ((((a)<<ffr_scale)/(b)))\n"\
+  "#define pow2c(x) (mulc(x,x))\n"\
+
+  "#define sqrtc(x) SQ_TABLE[(x)&(SQ_TABLE_SZ)]\n"\
+
+  "#define sinc(x) SC_TABLE[(x)&(SC_TABLE_SZ)]\n"\
+  "#define cosc(x) SC_TABLE[(SC_TABLE_SZ)-((x)&(SC_TABLE_SZ))]\n"
+
+);
+
+#    ---     ---     ---     ---     ---
 
 print(
   "#ifdef __cplusplus\n\n"\

@@ -14,7 +14,7 @@ ODIR      = $(patsubst %,$(TRSH)/%,$(DIRS))
 
 INCLUDES  = -I$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 INCLUDES += -I$(dir $(abspath ..)/)
-LIBS      = -L$(BIN) -lkvrnel -lgl -lglew -lopengl32
+LIBS      = -L$(BIN)
 
 MAIN      = $(BIN)/$(MKWAT)
 

@@ -15,7 +15,7 @@
 *                                           */
 /*/*//*//*//*//*//*//*//*//*//*//*//*//*//*/"""
 
-import os;
+from avtomat import mknot;
 
 #   ---     ---     ---     ---     ---
 
@@ -31,18 +31,14 @@ base_form=(
 
 #   ---     ---     ---     ---     ---
 
-def gen(hed, pwd):
+fstr=mknot();
 
-    fstr=hed;
+for fam in fams:
+  fstr=fstr+base_form.replace('!', fam);
 
-    for fam in fams:
-        fstr=fstr+base_form.replace('!', fam);
+fstr=fstr+"#define CALOUT(fam, format, ...) ";
+fstr=fstr+"CALOUT_##fam(format, ##__VA_ARGS__)\n\n";
 
-    fstr=fstr+"#define CALOUT(fam, format, ...) ";
-    fstr=fstr+"CALOUT_##fam(format, ##__VA_ARGS__)\n\n";
-
-    fpath=pwd+"/calout.h";
-    with open(fpath, 'w+') as boiler:
-        boiler.write(fstr);
+print(fstr);
 
 #   ---     ---     ---     ---     ---

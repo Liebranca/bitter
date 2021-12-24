@@ -42,9 +42,6 @@ if __name__=="__main__":
 #   ---     ---     ---     ---     ---
 
   print("\n>AVTOMAT"); pwd=os.getcwd();
-  if not os.path.exists(pwd+"/calout.h"):
-    print("->generated calout.h");
-    import mkcalout; mkcalout.gen(pstr, pwd);
 
   for fold in ["KVRNEL","GRIM", "MAMMOTH", "SIN", "CHASM", "UTILS", "SHB7"]:
 

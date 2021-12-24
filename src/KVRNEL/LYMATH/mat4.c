@@ -12,9 +12,28 @@
 
 
 #include "mat4.h"
+#include "AVTOMAT/ffr.h"
+
 #include <stdio.h>
 
+mat4 IDENTITY={
+
+  ffr_mul,0,0,0,
+  0,ffr_mul,0,0,
+  0,0,ffr_mul,0,
+  0,0,0,ffr_mul
+
+};
+
 //   ---     ---     ---     ---     ---
+
+/*
+
+    (cy*cz, sx*sy*cz-cx*sz, cx*sy*cz+sx*sz),
+    (cy*sz, sx*sy*sz+cx*cz, cx*sy*sz-sx*cz),
+    (-sy, sx*cy, cx*cy)
+
+*/
 
 mat4 lookat(
   vec4 pos,
@@ -23,30 +42,21 @@ mat4 lookat(
 
 ) {
 
-  vec4 fwd=normv(subv(pos,at));
-  vec4 rgt=normv(crossv(up,fwd));
+  // byte-sized gluLookAt
+  vec4 F=normv(subv(at,pos));
+  vec4 S=crossv(F,normv(up));
+  vec4 U=crossv(normv(S),F);
 
-  up=normv(crossv(fwd,rgt));
+  mat4 m={
 
-  mat4 m={0};
+    S.x,S.y,S.z,0,
+    U.x,U.y,U.z,0,
 
-  /*m.a=(vec4) {rgt.x,up.x,fwd.x,0};
-  m.b=(vec4) {rgt.y,up.y,fwd.y,0};
-  m.c=(vec4) {rgt.z,up.z,fwd.z,0};
+    -F.x,-F.y,-F.z,0,
 
-  m.d.x=dotv(rgt,negv(pos));
-  m.d.y=dotv(up,negv(pos));
-  m.d.z=dotv(fwd,negv(pos));
-  m.d.w=ftoc(1);*/
+    0,0,0,ffr_mul
 
-  m.a=(vec4) {pos.x,0,0,0};
-  m.b=(vec4) {0,0,0,0};
-
-  m.c=(vec4) {0,0,32,0};// culling planes
-
-  m.d=(vec4) {32-pos.x,32-pos.y,0,32};
-
-  return m;
+  };return m;
 
 };
 
