@@ -46,7 +46,7 @@ static uint CharCount=0;
 
 void NTCANVAS(void) {
 
-  mk_meshbat();
+  //mk_meshbat();
 
                             // just a shorthand
   const SHDP* params=&SIN_CanvasShader;
@@ -265,8 +265,8 @@ void BEGPSH(void) {
 
 void PSHCHR(uint* d, int update) {
 
-  dr_meshbat(update);
-  return;
+  //dr_meshbat(update);
+  //return;
 
   if(update) {
     glBindBuffer(GL_UNIFORM_BUFFER,canvasUBO);
@@ -307,7 +307,7 @@ void DLCANVAS(void) {
   glDeleteBuffers(1,&canvasVBO);
   glDeleteBuffers(1,&canvasVAO);
 
-  dl_meshbat();
+  //dl_meshbat();
 
 };
 

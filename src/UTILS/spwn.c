@@ -48,6 +48,8 @@ void pllout(uint pos) {
   uint x;uint y=0;
   char last=0x00;char c=0x00;
 
+  memset(shbout_str,0,SHM_STEP-16);
+
   for(x=0;x<pos;x++) {
     c=shbout[x]&0xFF;
 
@@ -356,20 +358,18 @@ int main(int argc,char** argv) {
 
 //   ---     ---     ---     ---     ---
 
+    // first token is command
+    char* ex_name=strtok(shbout_str+2," ");
+
     // look for builtins...
-
-    {
-
-      char* token=strtok(shbout_str+2," ");
-
-      for(
+    { for(
         int x=0;
 
         x<sizeof(SHB7_BUILTINS)/sizeof(SHB7_BI);
         x++) {
 
         SHB7_BI* bi=SHB7_BUILTINS+x;
-        if(!strcmp(token,bi->name)) {
+        if(!strcmp(ex_name,bi->name)) {
           bi->fun();goto SPWNSKIP;
 
         };
@@ -400,7 +400,7 @@ int main(int argc,char** argv) {
       {
 
         uint ex_argc=0;uint x=0;
-        char c=*(shbout_str+x);
+        char c=*(ex_name+1+x);
 
         // we need to read the arguments
         // count them first...
@@ -409,16 +409,13 @@ int main(int argc,char** argv) {
           if(c==0x20) {
             ex_argc++;
 
-          };x++;c=*(shbout_str+x);
+          };x++;c=*(ex_name+x);
         };
 
 //   ---     ---     ---     ---     ---
 
         // now alocate a strarr
         char* ex_argv[256]={ex_path+0};
-
-        // first token should be some fpath
-        char* token=strtok(shbout_str+2," ");
 
         // ^validate
         int x_err=1;
@@ -427,7 +424,7 @@ int main(int argc,char** argv) {
           strcpy(ex_path,PATH[x]);
           ex_path[strlen(PATH[x])]=0x00;
 
-          strcat(ex_path,token);
+          strcpy(ex_path+strlen(PATH[x]),ex_name);
           x_err=access(ex_path, X_OK);
 
 //   ---     ---     ---     ---     ---
@@ -445,19 +442,15 @@ int main(int argc,char** argv) {
 
 //   ---     ---     ---     ---     ---
 
-        char* ex_base=(
-          shbout_str+strlen(shbout_str)+1
+        char* token=strtok(NULL," ");
 
-        );token=strtok(NULL," ");
-
-        for(;x<(1+ex_argc);x++) {
-          ex_argv[x]=ex_base;
+        while(token) {
+          ex_argv[x]=token;
           strcpy(ex_argv[x],token);
-          ex_base+=(strlen(token)+1);
 
-          token=strtok(NULL," ");
+          token=strtok(NULL," ");x++;
 
-        };ex_argv[1+ex_argc]=NULL;
+        };ex_argv[1+x]=NULL;
 
 //   ---     ---     ---     ---     ---
 

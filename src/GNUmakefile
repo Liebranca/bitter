@@ -2,7 +2,7 @@
 
 #   ---     ---     ---     ---     ---
 
-.PHONY: kvrnel mamm sin chasm shb7 nrun reb clean all
+.PHONY: kvrnel mamm sin chasm utils shb7 nrun reb clean all
 
 kvrnel:
 	@$(MAKE) -C AVTOMAT all
@@ -17,7 +17,10 @@ sin: kvrnel
 chasm: sin
 	@$(MAKE) -C CHASM
 
-shb7: chasm
+utils:
+	@$(MAKE) -C UTILS
+
+shb7: chasm utils
 	@$(MAKE) -C SHB7
 
 nrun: shb7
@@ -36,6 +39,8 @@ clean:
 	@$(MAKE) -C SIN clean
 	@echo chasm
 	@$(MAKE) -C CHASM clean
+	@echo utils
+	@$(MAKE) -C UTILS clean
 	@echo shb7
 	@$(MAKE) -C SHB7 clean
 	@rm -f $(CURDIR)/AVTO

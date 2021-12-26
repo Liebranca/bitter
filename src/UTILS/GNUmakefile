@@ -6,7 +6,7 @@
 FSWAT     = UTILS
 
 OUTL      = 
-OUTF      = ftest
+OUTF      = spwn msafr j3l
 
 DIRS      = $(shell find $(BASE_DIR) -type d)
 SRCS      = $(wildcard $(DIRS:%=%/*.c))
@@ -47,8 +47,7 @@ $(TRSH)/%.lo: %.h $(TRSH)/MKLOG
 #    ---     ---     ---     ---     ---
 
 $(OUTF): | $(ODIR) $(OBJS)
-	@echo $@
-	@gcc $(LFLG) $(INCLUDES) $(PFLG) $(TRSH)/$@.o $(LIBS) -o $(BIN)/$@;
+	@true
 
 %.c:
 	@true
@@ -56,6 +55,7 @@ $(OUTF): | $(ODIR) $(OBJS)
 $(TRSH)/%.o: %.c $(TRSH)/MKLOG
 	@echo $<
 	@gcc $(OFLG) $(INCLUDES) $(DFLG) $(PFLG) -MMD -Wa,-a=$(subst .o,.asm,$@) -c $< -o $@
+	@gcc $(LFLG) $(INCLUDES) $(PFLG) $@ $(LIBS) -o $(patsubst %.c,$(BIN)/%,$<);
 
 #   ---     ---     ---     ---     ---
 
