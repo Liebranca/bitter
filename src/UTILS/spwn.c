@@ -399,32 +399,17 @@ int main(int argc,char** argv) {
       char ex_path[PATH_MAX+1]={0};
       {
 
-        uint ex_argc=0;uint x=0;
-        char c=*(ex_name+1+x);
-
-        // we need to read the arguments
-        // count them first...
-
-        while(c) {
-          if(c==0x20) {
-            ex_argc++;
-
-          };x++;c=*(ex_name+x);
-        };
-
-//   ---     ---     ---     ---     ---
-
-        // now alocate a strarr
+        // alocate a strarr
         char* ex_argv[256]={ex_path+0};
+        uint x;
 
         // ^validate
         int x_err=1;
         for(x=0;x<PATH_SZ;x++) {
 
           strcpy(ex_path,PATH[x]);
-          ex_path[strlen(PATH[x])]=0x00;
-
           strcpy(ex_path+strlen(PATH[x]),ex_name);
+
           x_err=access(ex_path, X_OK);
 
 //   ---     ---     ---     ---     ---
