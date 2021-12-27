@@ -263,7 +263,7 @@ void BEGPSH(void) {
 
 };
 
-void PSHCHR(uint* d, int update) {
+void PSHCHR(void* d, int update) {
 
   //dr_meshbat(update);
   //return;
@@ -274,7 +274,7 @@ void PSHCHR(uint* d, int update) {
 
     glBufferSubData(
       GL_SHADER_STORAGE_BUFFER,0,
-      CharCount*sizeof(uint),(void*) d
+      CharCount*sizeof(uint),d
 
     );
 

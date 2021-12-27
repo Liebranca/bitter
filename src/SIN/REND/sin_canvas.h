@@ -18,7 +18,7 @@ void DLCANVAS(void);        // kykdel
 void BEGPSH(void);          // frbeg for buff push
 
 // push buff to screen
-void PSHCHR(uint* d, int update);
+void PSHCHR(void* d, int update);
 
 void ENDPSH(void);          // frend for buff push
 

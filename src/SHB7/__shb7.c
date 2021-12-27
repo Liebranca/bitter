@@ -16,6 +16,7 @@
 #include "sh_gbl.h"
 
 #include "KVRNEL/MEM/sh_map.h"
+#include "KVRNEL/TYPES/sh_char.h"
 #include "KVRNEL/fizzel.h"
 
 #include "CHASM/chMNG.h"
@@ -37,28 +38,23 @@
 //   ---     ---     ---     ---     ---
 // #:0x0;>
 
-static uint* shbout=NULL;
-
-static uint shbout_mx=0;
-static uint shbout_my=0;
-
-static uint shbout_x=0;
-static uint shbout_y=0;
-
 static int shbout_flg=0x00;
 
 //   ---     ---     ---     ---     ---
 
 char* pshout(
+
   uchar* str,
+
   uchar col_id,
-  char flg) {
+  char flg
 
-  uint ox=shbout_x;
-  uint oy=shbout_y;
+) {
 
-  uint pos=shbout_x+(shbout_y*shbout_mx);
+  size_t pos[2];gticpos(pos+0);
   uchar sh_ctl=0x1F;
+
+  sticcol(col_id);
 
 //   ---     ---     ---     ---     ---
 
@@ -74,68 +70,53 @@ char* pshout(
       //flg|=0x08;
 
     };
-  };
+
+  };ichar* dr_buff=rfdrbuf();
 
 //   ---     ---     ---     ---     ---
 
   do {
 
+    // skip conditions
+
     if(!(flg&0x08)) {
 
       flg|=(
-       (*str<0x20 && shbout[2]<=0x20)
+       (*str<0x20 && (dr_buff+2)->ch<=0x20)
        *(0x04*(!(flg&0x02)))
 
       );if( (flg&0x04) || !*str) {
         break;
 
+//   ---     ---     ---     ---     ---
+
+      // detect peso escapes
+
       };ushort nc=0x0000;
       if(strlen(str)>2) {
+
         nc=*((ushort*) str);
+
         if(nc==0x3A24) {
-          sh_ctl=0x00;str+=2;
+          sticctl(0x00);str+=2;
 
         } else if(nc==0x3E3B) {
-          sh_ctl=0x1F;str+=2;
+          sticctl(0x1F);str+=2;
 
         };
       };
 
+//   ---     ---     ---     ---     ---
+
+      // regular char append
       if(*str!=0x08) {
-        shbout[pos]=(*str)|(col_id<<8)|(sh_ctl<<16);
-        pos++;shbout_x++;
+        wric(*str);
 
+      // backspace
       } else {
-        shbout[pos]=0x0020;
-        pos--;shbout_x-=1*(pos>=2);
+        bkic();continue;
 
-        if(shbout_x>=shbout_mx) {
-          shbout_x=shbout_mx-1;
-          shbout_y--;
-
-          shbout_y*=0+(shbout_y<shbout_my);
-          pos=shbout_x+(shbout_y*shbout_mx);
-
-        };continue;
       };
-
-//   ---     ---     ---     ---     ---
-
-    } else {
-      shbout[pos]=(*str)|(col_id<<8);
-      pos++;shbout_x++;
-
-    };
-
-//   ---     ---     ---     ---     ---
-
-    if(shbout_x>=shbout_mx
-    || *str==0x0A) {
-      shbout_x=0;
-      shbout_y++;
-
-      pos=shbout_x+(shbout_y*shbout_mx);
-
     };
 
   } while(*str++);
@@ -144,12 +125,10 @@ char* pshout(
 
   shbout_flg|=0x01;
   if(flg&0x01) {
-    shbout_x=ox;
-    shbout_y=oy;
+    sticpos(pos+0);
 
   };if(!(flg&0x02)) {
-    pos=(pos<2) ? 2 : pos;
-    shbout[pos]=0xE2|(6<<8)|(sh_ctl<<16);
+    prompt_cap();
 
   };
 
@@ -252,14 +231,6 @@ int main(int argc,char** argv) {
     };
   };
 
-  // first block of shmem is for console draw
-  // second is IPC flags
-  // third is IPC input (shb7 <- child process)
-
-  shbout=(uint*) *mh;
-  int* shbuf=(int*) (shbout+SHM_STEP);
-  char* c_out=(char*) (shbuf+SHM_STEP);
-
 //   ---     ---     ---     ---     --- window init
 
   // create the window manager
@@ -296,9 +267,25 @@ int main(int argc,char** argv) {
   // characters total a single screen can have
 
   uint CharCount=ws[0]*ws[1];
-  shbout_mx=ws[0];shbout_my=ws[1];
 
-  BEGPSH();
+  // first block of shmem is for console draw
+  // second is IPC flags
+  // third is IPC input (shb7 <- child process)
+
+  int* shbuf;
+  char* c_out;{
+
+    ichar* shbout=(ichar*) *mh;
+    sticsc(shbout,ws[0],ws[1]);
+
+    shbuf=(int*) (shbout+SHM_STEP);
+    c_out=(char*) (shbuf+SHM_STEP);
+
+  };BEGPSH();
+
+//   ---     ---     ---     ---     ---
+
+  // dummy run to drain init garbage on input buff
 
   for(int i=0;i<5;i++) {
 
@@ -312,10 +299,15 @@ int main(int argc,char** argv) {
 
   };CLIBUF();
 
-  pshout("$:",4,0);         // draw prompt
-  PSHCHR(shbout,1);
+//   ---     ---     ---     ---     ---
+
+  pshout("$:",0x04,0);      // draw prompt
+  PSHCHR(rfdrbuf(),1);
 
   shbout_flg&=~0x02;        // lock
+
+  size_t cursor_pos[2];
+  gticpos(cursor_pos);
 
 //   ---     ---     ---     ---     --- loop head
 
@@ -351,46 +343,66 @@ int main(int argc,char** argv) {
       uchar* ibuff=GTIBUF();
       if(ibuff) {
 
+//   ---     ---     ---     ---     ---
+
+        // process command on ret
+
         if(ibuff[strlen(ibuff)-1]==0x0A) {
-          shbuf[1]=shbout_x+(shbout_y*shbout_mx);
+          shbuf[1]=gticposr();
           shbuf[0]|=0x02;
           shbuf[0]|=0x04;
 
           kill(spwn_pid,SIGCONT);
 
-          shbout_x=0;
-          shbout_y=shbout_my;
+          gticpos(cursor_pos);
+
+          cursor_pos[0]=0;
+          cursor_pos[1]=0;
+          sticpos(cursor_pos);
+
+//   ---     ---     ---     ---     ---
+
+        // else append
 
         } else {
-          pshout(ibuff,5,0);
+          pshout(ibuff,0x05,0);
 
         };
       };CLIBUF();
 
+//   ---     ---     ---     ---     ---
+
     } else
+
+    // if !lock, pass commands to spwn
 
     if( (!(shbuf[0]&0x02))
     &&  ( (shbuf[0]&0x04)) ) {
 
-      shbout_x=0;
-      shbout_y=2;
+      cursor_pos[0]=0;
+      cursor_pos[1]=2;
+      sticpos(cursor_pos);
 
       if(*c_out) {
         char* ic=c_out;
-        while(*(ic=pshout(ic,5,0b10))) {;}
+        while(*(ic=pshout(ic,0x05,0b10))) {;}
         memset(c_out,0,SHM_STEP);
 
       };
 
-      shbout_x=0;
-      shbout_y=0;
+      cursor_pos[0]=0;
+      cursor_pos[1]=0;
+      sticpos(cursor_pos);
 
-      pshout("$:",4,0b00);
+      pshout("$:",0x04,0b00);
       shbuf[0]&=~0x04;
 
+//   ---     ---     ---     ---     ---
+
+    // locked, draw clock
     } else {
       char cl[2]={0xA9+(shbuf[2]&0b111),0x00};
-      pshout(cl,6,0b01);shbuf[2]++;
+      pshout(cl,0x06,0b01);shbuf[2]++;
 
     };
 
@@ -407,7 +419,7 @@ int main(int argc,char** argv) {
     // frame is drawn instead, repeating right
     // until you set the flag
 
-    PSHCHR(shbout,shbout_flg&0x01);
+    PSHCHR(rfdrbuf(),shbout_flg&0x01);
 
     // these two must always go at the very bottom!
     // order matters: one gets current time, the

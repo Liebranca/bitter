@@ -2,7 +2,7 @@
 
 #   ---     ---     ---     ---     ---
 
-$(MAIN): $(ODIR) $(HEDS) $(SRCS) $(DEPS) $(OBJS) $(TRSH)/MKLOG
+$(MAIN): $(ODIR) $(HEDS) $(SRCS) $(OBJS) $(TRSH)/MKLOG
 	@echo $(MAIN)
 	@if ! test -d $(BIN); then mkdir -p $(BIN); fi
 	@if test -f $(MAIN); then rm $(MAIN); fi

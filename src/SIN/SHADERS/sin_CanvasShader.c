@@ -44,7 +44,8 @@ layout (std430, binding=1) buffer CharData {\
 out vec2  texCoords;\
 flat out uint  ch;\
 flat out uint  show_ctl;\
-out vec4 col;\
+out vec4 fg_col;\
+out vec4 bg_col;\
 \
 void main() {\
 \
@@ -62,7 +63,8 @@ void main() {\
   texCoords=vec2(px>0,py>0);\
   uint c_id=uint(Position.x)>>1;\
   ch=_CharData.i[c_id];\
-  col=_Palette.color[((ch&0x0000FF00)>>8)&0xF];\
+  fg_col=_Palette.color[((ch&0xFF00)>>8)&0xF];\
+  bg_col=_Palette.color[(((ch&0xFF00)>>8)&0xF0)>>4];\
   show_ctl=(ch&0xFF0000)>>16;\
   ch=ch&0xFF;\
 };\
@@ -84,7 +86,8 @@ FONTS_LYCON,
 in vec2 texCoords;\
 flat in uint ch;\
 flat in uint show_ctl;\
-in vec4 col;\
+in vec4 fg_col;\
+in vec4 bg_col;\
 \
 \
 \
@@ -101,7 +104,9 @@ void main() {\
   bool r = bool(lycon[chidex][z]&(1<<i));\
   r=r&&(chidex>=show_ctl);\
 \
-  gl_FragColor = vec4(col.rgb,col.w*float(r));\
+  vec4 col = vec4(fg_col.rgb,bg_col.w*float(r));\
+  col.rgb += bg_col.rgb*float(col.w<0.04);\
+  gl_FragColor=col;\
 }\
 "
 };
