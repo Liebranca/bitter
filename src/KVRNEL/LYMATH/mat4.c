@@ -12,7 +12,7 @@
 
 
 #include "mat4.h"
-#include "AVTOMAT/ffr.h"
+#include "ffr.h"
 
 #include <stdio.h>
 

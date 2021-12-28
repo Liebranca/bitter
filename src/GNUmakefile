@@ -31,6 +31,8 @@ rrun:
 
 clean:
 	@echo Cleaning up...
+	@echo avtomat
+	@$(MAKE) -C AVTOMAT clean
 	@echo kvrnel
 	@$(MAKE) -C KVRNEL clean
 	@echo mamm

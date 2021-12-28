@@ -2,11 +2,10 @@
 #define __SIN_H__
 
 #ifdef __cplusplus
-
 extern"C" {
-
-
 #endif
+
+#include "KVRNEL/zjc_CommonTypes.h"
 
 //   ---     ---     ---     ---     ---
 // #:0x0;>
@@ -40,9 +39,7 @@ void GTSCRSZ(uint* dst);
 
 
 #ifdef __cplusplus
-
 }
-
 #endif
 
 #endif // __SIN_H__

@@ -9,7 +9,9 @@ BIN       = $(dir $(abspath ../..)/bin/)
 TRSH      = $(dir $(abspath ../..)/trashcan/$(FSWAT)/)
 
 OBJS      = $(patsubst %.c,$(TRSH)/%.o,$(SRCS))
-DEPS     := $(subst .o,.d,$(OBJS))
+PCHS      = $(patsubst %.h,$(TRSH)/%.pch,$(HEDS))
+DEPS      = $(subst .o,.d,$(OBJS))
+DEPS_H    = $(subst .pch,.hd,$(PCHS))
 ODIR      = $(patsubst %,$(TRSH)/%,$(DIRS))
 
 INCLUDES  = -I$(dir $(realpath $(firstword $(MAKEFILE_LIST))))

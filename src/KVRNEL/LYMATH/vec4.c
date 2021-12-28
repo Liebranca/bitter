@@ -11,7 +11,7 @@
 //**************************
 
 #include "vec4.h"
-#include "AVTOMAT/ffr.h"
+#include "ffr.h"
 
 #include <stdio.h>
 #include <math.h>

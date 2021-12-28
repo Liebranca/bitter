@@ -11,7 +11,7 @@
 //**************************
 
 #include "quat.h"
-#include "AVTOMAT/ffr.h"
+#include "ffr.h"
 
 //   ---     ---     ---     ---     ---
 
