@@ -6,7 +6,7 @@
 FSWAT     = UTILS
 
 OUTL      = 
-OUTF      = spwn msafr j3l
+OUTF      = spwn msafr j3l cal
 
 DIRS      = $(shell find $(BASE_DIR) -type d)
 SRCS      = $(wildcard $(DIRS:%=%/*.c))
@@ -37,33 +37,19 @@ $(OUTL): | $(LDIR) $(LOBJS)
 	@echo $@
 	@gcc -shared $(LFLG) $(INCLUDES) $(PFLG) $(TRSH)/LIBS/$@.lo $(LIBS) -o $(BIN)/$@.dll;
 
-%.h:
-	@true
-
 $(TRSH)/%.lo: %.h $(TRSH)/MKLOG
 	@echo $<
 	@gcc $(OFLG) $(INCLUDES) $(DFLG) $(PFLG) -MMD -Wa,-a=$(subst .lo,.asm,$@) -x c -c $< -o $@
 
 #    ---     ---     ---     ---     ---
 
-$(OUTF): | $(ODIR) $(OBJS)
-	@true
-
-%.c:
+$(OUTF): | $(OBJS)
 	@true
 
 $(TRSH)/%.o: %.c $(TRSH)/MKLOG
 	@echo $<
 	@gcc $(OFLG) $(INCLUDES) $(DFLG) $(PFLG) -MMD -Wa,-a=$(subst .o,.asm,$@) -c $< -o $@
 	@gcc $(LFLG) $(INCLUDES) $(PFLG) $@ $(LIBS) -o $(patsubst %.c,$(BIN)/%,$<);
-
-#   ---     ---     ---     ---     ---
-
-$(LDIR):
-	@if ! test -d $@; then mkdir -p $@; fi
-
-$(ODIR):
-	@if ! test -d $@; then mkdir -p $@; fi
 
 #   ---     ---     ---     ---     ---
 

@@ -101,7 +101,7 @@ void __calout     (char fam,              \
 //   ---     ---     ---     ---     ---
 // some bug-tracking macros
 
-#include "AVTOMAT/calout.h"                 /* CALOUT boiler macros                        */
+#include "calout.h"                 /* CALOUT boiler macros                        */
 
 #define ERRLOC                              /* macro paste for error locations             */\
     __shpath(__FILE__), __func__, __LINE__
