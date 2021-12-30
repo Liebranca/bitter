@@ -25,7 +25,7 @@ $ffr=1/$ffr_mul;
 #    ---     ---     ---     ---     ---
 
 $notice=&AVTO::mknot;
-open FH,'+>','../kvrnel/lymath/ffr.h' or die $!;
+open FH,'+>','../KVRNEL/LYMATH/ffr.h' or die $!;
 
 print FH <<EOF
 $notice
@@ -190,13 +190,13 @@ close FH;
 
 #    ---     ---     ---     ---     ---
 
-$trsh='../../trashcan/';
+#$trsh='../../trashcan/';
 
-$dep_s=&AVTO::mkdep(
-  "ffr",$trsh."KVRNEL/LYMATH/"
+#$dep_s=&AVTO::mkdep(
+#  "ffr",$trsh."KVRNEL/LYMATH/"
 
-);open FH,'+>',$trsh.'AVTOMAT/ffr.pmk' or die $!;
-print FH $dep_s;
-close FH;
+#);open FH,'+>',$trsh.'AVTOMAT/ffr.pmk' or die $!;
+#print FH $dep_s;
+#close FH;
 
 #    ---     ---     ---     ---     ---

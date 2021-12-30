@@ -1,0 +1,2 @@
+AVTO_SRCS=calout ffr avtomat
+AVTO_TRSH=$(patsubst %,$(TRSH)/%,$(AVTO_SRCS))

@@ -2,10 +2,12 @@
 
 #   ---     ---     ---     ---     ---
 
-.PHONY: kvrnel mamm sin chasm utils shb7 nrun reb clean all
+.PHONY: avtomat kvrnel mamm sin chasm utils shb7 nrun reb clean all
 
-kvrnel:
+avtomat:
 	@$(MAKE) -C AVTOMAT all
+
+kvrnel: avtomat
 	@$(MAKE) -C KVRNEL
 
 mamm: kvrnel

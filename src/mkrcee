@@ -2,7 +2,7 @@
 
 #   ---     ---     ---     ---     ---
 
-$(MAIN): $(ODIR) $(HEDS) $(SRCS) $(PCHS) $(OBJS) $(TRSH)/MKLOG
+$(MAIN): $(ODIR) $(HEDS) $(SRCS) $(OBJS) #$(PCHS)
 	@echo $(MAIN)
 	@if ! test -d $(BIN); then mkdir -p $(BIN); fi
 	@if test -f $(MAIN); then rm $(MAIN); fi
@@ -14,11 +14,11 @@ $(MAIN): $(ODIR) $(HEDS) $(SRCS) $(PCHS) $(OBJS) $(TRSH)/MKLOG
 $(ODIR):
 	@if ! test -d $@; then mkdir -p $@; fi
 
-$(TRSH)/%.o: %.c $(TRSH)/MKLOG
+$(TRSH)/%.o: %.c
 	@echo $<
 	@gcc -MMD $(OFLG) $(INCLUDES) $(DFLG) $(PFLG) -Wa,-a=$(subst .o,.asm,$@) -c $< -o $@
 
-$(TRSH)/%.pch: %.h $(TRSH)/MKLOG
+$(TRSH)/%.pch: %.h
 	@echo $<
 	@gcc $(OFLG) $(INCLUDES) $(DFLG) $(PFLG) -Wa,-a=$(subst .pch,.h_asm,$@) -x c -c $< -o $@
 

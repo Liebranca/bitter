@@ -5,8 +5,8 @@
 DIRS      = $(shell find $(BASE_DIR) -type d)
 HEDS      = $(wildcard $(DIRS:%=%/*.h))
 SRCS      = $(wildcard $(DIRS:%=%/*.c))
-BIN       = $(dir $(abspath ../..)/bin/)
-TRSH      = $(dir $(abspath ../..)/trashcan/$(FSWAT)/)
+BIN       = $(dir $(abspath ../..)/bin)
+TRSH      = $(dir $(abspath ../..)/trashcan/$(FSWAT))
 
 OBJS      = $(patsubst %.c,$(TRSH)/%.o,$(SRCS))
 PCHS      = $(patsubst %.h,$(TRSH)/%.pch,$(HEDS))
