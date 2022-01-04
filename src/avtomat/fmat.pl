@@ -34,7 +34,7 @@
 # run test file
 my $pe=`cat ./cash/test.px`;
 my $s=cash::pe_rdin($pe);
-print $s;
+print "$s";
 
 # ---   *   ---   *   ---
 1; # ret

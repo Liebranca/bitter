@@ -49,25 +49,25 @@ package cash;
 
 # default palette for $:col;>
   my @DEFPAL=(
-    0x000020,   # defbg 0
-    0x000040,   # curbg 1
-    0x800000,   # selbg 2
-    0x400040,   # hglbg 3
-
-    0x40AE40,   # deffg 4
-    0x00A0A0,   # strfg 5
-    0xB0B000,   # carfg 6
-    0xD09820,   # numfg 7
+    0x000020,   # black
+    0x7F0000,   # red
+    0x208020,   # green
+    0xD09820,   # yellow
     
-    0xB0A040,   # opsfg 8
-    0x8020A0,   # keyfg 9
-    0x0080B0,   # insfg A
-    0xA01020,   # dirfg B
-
-    0x202060,   # shblk C
-    0x404080,   # shdrk D
-    0x6060A0,   # shlgt E
-    0x8080C0,   # shwht F
+    0x004080,   # blue
+    0x40A040,   # magenta
+    0x006060,   # cyan
+    0x8080C0,   # white
+    
+    0x000080,   # black
+    0xA01020,   # red
+    0x40AE40,   # green
+    0xB0B000,   # yellow
+    
+    0x0040D0,   # blue
+    0x8000A0,   # magenta
+    0x00A0A0,   # cyan
+    0xB0A040,   # white
 
   );
 
@@ -150,9 +150,9 @@ sub pex_center_beg {
 
     };
     
-    my $space=($CACHE{-SC_SZX})-length $line;
-    my $pad=(pex_pad (($space/2)-1));
-    $result=$result.$pad.$line.$pad."  \n";
+    my $space=($CACHE{-SC_SZX}-length $line)/2;$space--;
+    $space=sprintf "\e[%iG",$space;
+    $result=$result.$space.$line."\e[1B";
 
   };return $result;
 
@@ -179,18 +179,15 @@ sub pex_pal {
 # set color to use
 sub pex_col {
   my $colid=hex shift;
-  
-  my $palid=$CACHE{-PE_PALID};
-  
-  my @pal=@{ $PALETTES{$palid} };
-  my @fg=rrggbb_decode($pal[$colid & 0x0F]);
 
+  my $fg=$colid&0x0F;
+  my $bg=($colid&0xF0)>>4;
+
+  my $fg_bold=($fg>7) ? 1 : 22;
+  my $bg_bold=($bg>7) ? 5 : 25;
+
+  return sprintf "\e[$fg_bold;$bg_bold;%i;%im",30+($fg&0x7),40+($bg&0x7);
   
-  my @bg=rrggbb_decode($pal[($colid & 0xF0)>>4]);
-
-  return "\e[38;2;$fg[0];$fg[1];$fg[2]m".
-         "\e[48;2;$bg[0];$bg[1];$bg[2]m";
-
 };
 
 # palid=name
@@ -374,7 +371,7 @@ sub pe_rdin {
 
   # replace with file later/add -f option
   my $block=shift;
-  my $s="";
+  my $s="\e[2J\e[H";
   my $ni=0;
 
   # read block and execute
@@ -393,7 +390,7 @@ sub pe_rdin {
   };
 
   # set console defaults on end
-  return "$s\e[0m";
+  return "$s\e[0m\e[1G";
 
 };
 

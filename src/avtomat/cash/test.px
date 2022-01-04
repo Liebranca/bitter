@@ -1,9 +1,9 @@
 $:%peso;>
-$:pal def;>
-$:col 14;>
+
 $:%center;>
-Welcome
-$:col 04;>
-this is a test
+$:col 8A;>
+TITLE
+$:col 02;>
+subtitle
 $:/center;>
 $:/peso;>
