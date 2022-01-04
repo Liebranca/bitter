@@ -16,6 +16,8 @@
   use strict;
   use warnings;
 
+  use Term::ReadKey qw(GetTerminalSize);
+
 package cash;
 
 # ---   *   ---   *   ---
@@ -36,8 +38,8 @@ package cash;
   use constant {
   
     # escape delimiters
-    PE_BEG   =>  '$:'       ,
-    PE_END   =>  ';>'       ,
+    PE_BEG   =>  '$:'         ,
+    PE_END   =>  ';>'         ,
     PE_NIHIL =>  "#:NIHIL;>\n",
 
   };
@@ -45,7 +47,7 @@ package cash;
 # ---   *   ---   *   ---
 # standard and user defined color schemes
 
-# default palette for $:%col;>
+# default palette for $:col;>
   my @DEFPAL=(
     0x000020,   # defbg 0
     0x000040,   # curbg 1
@@ -83,6 +85,9 @@ package cash;
     -SPACE    => SC_W       ,
     -FILE     => ""         ,
     -LINE     => ""         ,
+
+    -SC_SZX   =>          68,
+    -SC_SZY   =>          30,
     
     -PE_PALID => "def"      ,
     -PE_COLID => 0x04       ,
@@ -95,18 +100,20 @@ package cash;
 my %PESO=(
 
   # on/off
-  "peso_beg",      \&pe_beg      ,
-  "peso_end",      \&pe_end      ,
+  "peso_beg"  ,      \&pe_beg         ,
+  "peso_end"  ,      \&pe_end         ,
 
   # formatting
-  "pad"     ,      \&pex_pad     ,
+  "pad"       ,      \&pex_pad        ,
+  "center_beg",      \&pex_center_beg ,
+  "center_end",      \&pex_center_end ,
 
   # coloring
-  "col"     ,      \&pex_col     ,
-  "pal"     ,      \&pex_pal     ,
-  "pal_beg" ,      \&pex_pal_beg ,
-  "pal_def" ,      \&pex_pal_def ,
-  "pal_end" ,      \&pex_pal_end ,
+  "col"       ,      \&pex_col        ,
+  "pal"       ,      \&pex_pal        ,
+  "pal_beg"   ,      \&pex_pal_beg    ,
+  "pal_def"   ,      \&pex_pal_def    ,
+  "pal_end"   ,      \&pex_pal_end    ,
 
 );
 
@@ -114,7 +121,7 @@ my %PESO=(
 # peso commands for cash
 
 # to turn the interpreter on and off
-sub pe_beg {$CACHE{-PE_RUN}=1;return PE_NIHIL;};
+sub pe_beg {$CACHE{-PE_RUN}=1;return pe_strip(shift);};
 sub pe_end {$CACHE{-PE_RUN}=0;return PE_NIHIL;};
 
 # ---   *   ---   *   ---
@@ -127,6 +134,33 @@ sub pex_pad {
   return " "x$n;
 
 };
+
+# body=text in any
+# centers body according to screen width
+sub pex_center_beg {
+
+  my @body=split "\n",shift;
+  my $result="";
+  
+  while(@body) {
+    my $line=shift @body;
+    if((index $line,PE_BEG)>-1) {
+      $result=$result.pe_strip($line);
+      next;
+
+    };
+    
+    my $space=($CACHE{-SC_SZX})-length $line;
+    my $pad=(pex_pad (($space/2)-1));
+    $result=$result.$pad.$line.$pad."  \n";
+
+  };return $result;
+
+};
+
+# dummy
+# terminate centering body
+sub pex_center_end {return PE_NIHIL;};
 
 # ---   *   ---   *   ---
 # coloring functions
@@ -261,20 +295,22 @@ sub pe_scpx {
 # pe_sub=delimited block
 # execute wrapped peso
 sub pe_exec {
+
   my $pe_com=shift;
   my $pe_sub=shift;
 
+  # get tag name
   $pe_com=~s/\$:([%\/]?)([\w|\d]+)//;
 
-  my $md=$1;
-
-  if($md) {
+  # handle on and off switches/body tags
+  my $md=$1;if($md) {
     $md=(ord($md)==ord('%')) ? "_beg" : "_end";
 
   # i love perl
   };my $ex="$2$md";
     my @ar=();
-  
+
+  # fetch args if any
   if(!(index $pe_com,PE_END)==0) {  
     $pe_com=~s/([\w|\d|\,]+);>//;
     @ar=split ',',$1;
@@ -283,27 +319,44 @@ sub pe_exec {
 
     };
 
+  # execute tag/body
   };return $PESO{$ex}->(@ar,$pe_sub);
 
 };
 
 # block=textual input any
-# find wrapped peso
+# find and execute wrapped peso
 sub pe_strip {
   my $block=shift;
   my $sublk="";
 
+  # interpreter is active or is being activated
   if($CACHE{-PE_RUN} || (index $block,"\$:%peso;>")>=0) {
     $block=~ s/(\$:([%|\/]?)[\w|\d|\s|\,]+;>)\s*//;
+    my $opsw=$1;
 
     # for [%|\/] switch ops,
     # we send enclosed text as additional input
     if($2) {
-      $sublk=substr $block,0,(index $block,PE_BEG);
-      $block=~ s/${sublk}\s*//;
 
-    };return (pe_exec $1,$sublk).$block;
+      # on $:%;>find matching $:/;> tag
+      my $sw=(ord $2==ord "%") ? 1 : 0;
+      if($sw) {
+        my $clsw=$1;
+        $clsw=~ s/%/\//;
+        $clsw=~ s/\s+[\w|\d|\s|\,]+;>\s*//;
+        $sublk=substr $block,0,(index $block,$clsw);
 
+      # else simply exec up to next tag
+      } else {
+        $sublk=substr $block,0,(index $block,PE_BEG);
+
+      # remove executed section
+      };$block=substr $block,length $sublk,length $block;
+
+    };return (pe_exec $opsw,$sublk).$block;
+
+  # non-interpreter runs untested
   };$block=~ s/(\$:([%|\/]?)[\w|\d|\s|\,]+;>)\s*//;
   return $block;
 
@@ -315,11 +368,16 @@ sub pe_strip {
 # looping {read until delim, then exec}
 sub pe_rdin {
 
+  # get screen dimentions
+  ($CACHE{-SC_SZX},$CACHE{-SC_SZY})=
+    Term::ReadKey::GetTerminalSize();
+
   # replace with file later/add -f option
   my $block=shift;
   my $s="";
   my $ni=0;
 
+  # read block and execute
   while($block && ($ni=index $block,PE_BEG)>=0) {
   
     $block=pe_strip (
@@ -334,6 +392,7 @@ sub pe_rdin {
 
   };
 
+  # set console defaults on end
   return "$s\e[0m";
 
 };

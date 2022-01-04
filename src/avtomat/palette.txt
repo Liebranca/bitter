@@ -1,20 +1,18 @@
-bg:00 | 0x000020 | default
-bg:01 | 0x000040 | curline
-bg:02 | 0x800000 | select
-bg:03 | 0x400040 | highlight
+0 0x000020 default
+1 0x000040 curline
+2 0x800000 select
+3 0x400040 highlight
 
-------------------------
+4 0x40AE40 default
+5 0x00A0A0 string/comment
+6 0xB0B000 caret/highlight
+7 0xD09820 numbers
+8 0xB0A040 operators
+9 0x8020A0 keys
+A 0x0080B0 ins/type
+B 0xA01020 directive
 
-fg:00 | 0x40AE40 | default
-fg:01 | 0x00A0A0 | string/comment
-fg:02 | 0xB0B000 | caret/highlight
-fg:03 | 0xD09820 | numbers
-fg:04 | 0xB0A040 | operators
-fg:05 | 0x8020A0 | keys
-fg:06 | 0x0080B0 | ins/type
-fg:07 | 0xA01020 | directive
-
-fg:08 | 0x202060 | shade darker
-fg:09 | 0x404080 | shade dark
-fg:0A | 0x6060A0 | shade light
-fg:0B | 0x8080C0 | shade lighter
+C 0x202060 shade darker
+D 0x404080 shade dark
+E 0x6060A0 shade light
+F 0x8080C0 shade lighter
