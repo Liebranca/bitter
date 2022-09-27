@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-//   ---     ---     ---     ---     ---
+// ---   *   ---   *   ---
 
 #include "../KVRNEL/MEM/kvr_bin.h"
 #include "../KVRNEL/TYPES/zjc_BinTypes.h"
@@ -13,36 +13,35 @@ extern "C" {
 #define CRK_ENCODE 0
 #define CRK_DECODE 1
 
-//   ---     ---     ---     ---     ---
+// ---   *   ---   *   ---
 
-typedef struct CRKH {                       // header for bcrk files
+typedef struct CRKH {         // header for bcrk
+                              // files
 
-    char   name[ZJC_IDK_WIDTH];             // id for this mesh
+  char name[ZJC_IDK_WIDTH];   // id for this mesh
 
-    ushort vert_count;                      // mesh dimensions
-    ushort idex_count;
+  ushort vert_count;          // mesh dimensions
+  ushort idex_count;
 
-    uint   fracl;                           // compression level
+  uint fracl;                 // compression level
 
 } CRKH;
 
-//   ---     ---     ---     ---     ---
+// ---   *   ---   *   ---
 
-BIN*     MKCRK   (char* path, uint  mode  );
-CRKVRT*  GTCRK   (BIN* crk                );
+BIN* MKCRK (char* path,uint mode);
+CRKVRT* GTCRK (BIN* crk);
 
-int      NTCRKENG(int mode                );
-int      DLCRKENG(int mode                );
+int NTCRKENG (int mode);
+int DLCRKENG (int mode);
 
-int      ENCCRK  (CRKH* crkh, uint* size_i);
+int ENCCRK (CRKH* crkh,uint* size_i);
 
-int      ZPCRK   (uint size_i, uint count,\
-                  CRKH* crkh              );
+int ZPCRK (uint size_i,uint count,CRKH* crkh);
 
 //   ---     ---     ---     ---     ---
 
 #ifdef __cplusplus
 }
 #endif
-
-#endif //__ZJC_BLCRK_H__
+#endif                          // __ZJC_BLCRK_H__
