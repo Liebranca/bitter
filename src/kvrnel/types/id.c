@@ -27,7 +27,7 @@ ID::ID(
 
   do {
 
-    this->sig[i++]=*sig++;
+    m_sig[i++]=*sig++;
     if(i==SLIMIT || !*sig) {
       break;
 
@@ -36,7 +36,7 @@ ID::ID(
   } while(*sig);
 
   while(i<=SLIMIT) {
-    this->sig[i++]='_';
+    m_sig[i++]='_';
 
   };
 
@@ -46,10 +46,10 @@ ID::ID(
 
   do {
 
-    this->key[i++]=*key;
+    m_key[i++]=*key;
 
     if(i==KLIMIT) {
-      this->key[KLIMIT]='\0';
+      m_key[KLIMIT]='\0';
       break;
 
     }
@@ -59,7 +59,7 @@ ID::ID(
 // ---   *   ---   *   ---
 
   if(i!=KLIMIT) {
-    this->key[i]='\0';
+    m_key[i]='\0';
 
   };
 

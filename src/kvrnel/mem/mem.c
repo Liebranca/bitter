@@ -24,17 +24,19 @@
 // ---   *   ---   *   ---
 // alloc
 
-static Mem* Mem::nit(size_t sz,ID* id) {
+Mem* Mem::nit(size_t sz,ID* id) {
 
   Mem*  out=NULL;
-  void* buff=calloc(sz);
+  void* buff=malloc(sz);
 
   if(buff!=NULL) {
+
+    memset(buff,0,sz);
 
     out=(Mem*) buff;
 
     out->id=*id;
-    out->fsize=size;
+    out->fsize=sz;
 
   };
 
@@ -58,7 +60,7 @@ void Mem::del(void* p) {
 // zero flood buffer
 
 void Mem::cl(void) {
-  memset(m->beg,0,m->bsize);
+  memset(beg,0,bsize);
 
 };
 
@@ -74,11 +76,11 @@ void* Mem::operator[](int64_t idex) {
 
   if(idex >= 0) {
 
-    if(idex < m->bsize) {
+    if(idex < bsize) {
       ptr=idex;
 
     } else {
-      ptr=m->bsize-1;
+      ptr=bsize-1;
 
     };
 
@@ -89,8 +91,8 @@ void* Mem::operator[](int64_t idex) {
 
   else {
 
-    if(-idex <= m->bsize) {
-      ptr=m->bsize+idex;
+    if(-idex <= bsize) {
+      ptr=bsize+idex;
 
     } else {
       ptr=0;
@@ -102,7 +104,38 @@ void* Mem::operator[](int64_t idex) {
 // ---   *   ---   *   ---
 // give buff+ptr
 
-  return ((char*) m->beg) + ptr;
+  return ((char*) beg) + ptr;
+
+};
+
+// ---   *   ---   *   ---
+
+void Mem::prich(int errout) {
+
+  const char* fmat=
+
+    "%-24s %s\n"
+    "\n"
+    "%-24s %016X\n"
+    "%-24s %016X\n"
+    "\n"
+    "%-24s %016X\n"
+
+  ;
+
+// ---   *   ---   *   ---
+// select file handle and spit
+
+  FILE* f=(errout) ? stderr : stdout;
+
+  fprintf(f,fmat,
+
+    "ID",id.as_str(),
+    "FULL_SIZE",fsize,
+    "BUFF_SIZE",bsize,
+    "BUFF_ADDR",beg
+
+  );
 
 };
 

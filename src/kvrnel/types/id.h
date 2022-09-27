@@ -24,7 +24,7 @@ class ID {
 
 // ---   *   ---   *   ---
 
-  cx8 KEYW=20;
+  cx8 KEYW=28;
   cx8 SIGW=4;
 
   cx8 KLIMIT=KEYW-1;
@@ -40,13 +40,13 @@ private:
     // sigil describes the block
     // key is used for hashing
     struct {
-      char sig[SIGW];
-      char key[KEYW];
+      char m_sig[SIGW];
+      char m_key[KEYW];
 
     };
 
     // sigil + key
-    char full[SIGW+KEYW];
+    char m_full[SIGW+KEYW];
 
   };
 
@@ -61,7 +61,23 @@ public:
 
   );
 
-  const char* gfull(void) {return this->full;};
+// ---   *   ---   *   ---
+// getters
+
+  const char* as_str(void) {
+    return m_full;
+
+  };
+
+  const uint32_t sigil(void) {
+    return *((uint32_t*) m_sig);
+
+  };
+
+  const char* key(void) {
+    return m_key;
+
+  };
 
 };
 
