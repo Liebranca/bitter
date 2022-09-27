@@ -7,8 +7,9 @@ class Blk:public Mem {
 
 public:
 
-  uint64_t* buff(int64_t offset) {
-    return Mem::buff<uint64_t>(offset);
+  uint64_t& operator[](int64_t offset) {
+    offset*=sizeof(uint64_t);
+    return Mem::buff<uint64_t&>(offset);
 
   };
 
@@ -17,10 +18,12 @@ public:
 int main(void) {
 
   ID id("$","testy");
-  Blk* m=Mem::poly<Blk>(64,&id);
+  Blk m=Mem::poly<Blk&>(128,&id);
 
-  m->prich(0);
+  m[0]=0x02;
+  m[1]=0x40;
 
-  Mem::del(m);
+  m.prich(0);
+  Mem::del(&m);
 
 };

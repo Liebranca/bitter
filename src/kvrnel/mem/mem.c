@@ -120,6 +120,7 @@ void Mem::prich(int errout) {
     "%-24s %016X\n"
     "\n"
     "%-24s %016X\n"
+    "\n"
 
   ;
 
@@ -137,7 +138,28 @@ void Mem::prich(int errout) {
 
   );
 
+// ---   *   ---   *   ---
+
+  char line[64];
+  char* base=(char*) beg;
+
+  for(size_t i=0;i<bsize;i+=16) {
+
+    int* a=(int*) (base+i+0x00);
+    int* b=(int*) (base+i+0x04);
+    int* c=(int*) (base+i+0x08);
+    int* d=(int*) (base+i+0x0C);
+
+    fmat=(i && !(i%64))
+
+      ? "\n  %08X %08X : %08X %08X %u\n"
+      : "  %08X %08X : %08X %08X %u\n"
+      ;
+
+    fprintf(f,fmat,*a,*b,*c,*d,i);
+
+  };
+
 };
 
 // ---   *   ---   *   ---
-

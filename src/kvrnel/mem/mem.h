@@ -48,8 +48,8 @@ public:
 
   // get type-casted ptr to block @offset
   template<class T>
-  T* buff(int64_t offset=0) {
-    return (T*) ((*this)[offset]);
+  T buff(int64_t offset=0) {
+    return (T) *(char*) ((*this)[offset]);
 
   };
 
@@ -57,7 +57,7 @@ public:
 // create a new block
 
   template<class T>
-  static T* poly(size_t sz,ID* id) {
+  static T poly(size_t sz,ID* id) {
 
     size_t req=(sz)+sizeof(T);
 
@@ -76,7 +76,7 @@ public:
     m->beg=((char*) m)+sizeof(T);
     m->bsize=m->fsize-sizeof(T);
 
-    return (T*) m;
+    return (T) *m;
 
   };
 
