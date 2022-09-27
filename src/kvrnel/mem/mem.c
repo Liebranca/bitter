@@ -12,31 +12,77 @@
 // ---   *   ---   *   ---
 // deps
 
-  #include <stdlib.h>
-  #include <stddef.h>
-  #include <stdint.h>
-  #include <inttypes.h>
-  #include <string.h>
   #include <stdio.h>
-
   #include "mem.h"
+
+// ---   *   ---   *   ---
+// force sz == pow 2
+
+inline static size_t align_pow2(size_t x) {
+
+  size_t y=log2(--x);y++;
+  return pow(2,y);
+
+};
+
+// ---   *   ---   *   ---
+
+char* stirr_p(int* src,int cnt=4) {
+
+  static char buff[64]={0};
+  int i=0;
+
+  while(i<cnt*sizeof(*src)) {
+
+    char* ptr=(char*) src;
+
+    for(int j=0;j<sizeof(*src);j++) {
+      char c=*ptr;
+      c=(c<0x20 || c>0x7E) ? 0x2E : c;
+
+      buff[i++]=c;
+      ptr++;
+
+    };
+
+    src++;
+
+  };
+
+  return buff;
+
+};
 
 // ---   *   ---   *   ---
 // alloc
 
-Mem* Mem::nit(size_t sz,ID* id) {
+template<class H,typename T>
+inline Mem<H,T>* Mem<H,T>::nit(
 
-  Mem*  out=NULL;
-  void* buff=malloc(sz);
+  size_t sz,
+  ID* id
 
+) {
+
+  Mem<H,T>* out;
+  sz=align_pow2(sz);
+
+  size_t fsize=sz+sizeof(Mem<H,T>);
+
+  // get block
+  void* buff=malloc(fsize);
+
+  // errchk done in poly
   if(buff!=NULL) {
 
-    memset(buff,0,sz);
+    memset(buff,0,fsize);
+    out=(Mem<H,T>*) buff;
 
-    out=(Mem*) buff;
+    out->m_id=*id;
+    out->m_fsize=fsize;
 
-    out->id=*id;
-    out->fsize=sz;
+    out->m_beg=((char*) out)+sizeof(Mem<H,T>);
+    out->m_bsize=sz;
 
   };
 
@@ -45,72 +91,46 @@ Mem* Mem::nit(size_t sz,ID* id) {
 };
 
 // ---   *   ---   *   ---
-// ^dealloc
+// ^free
 
-void Mem::del(void* p) {
-
-  if(p!=NULL) {
-    free(p);
-
-  };
+template<class H,typename T>
+void Mem<H,T>::del(Mem<H,T>* m) {
+  free(m);
 
 };
 
 // ---   *   ---   *   ---
 // zero flood buffer
 
-void Mem::cl(void) {
-  memset(beg,0,bsize);
+template<class H,typename T>
+inline void Mem<H,T>::cl(void) {
+  memset(m_beg,0,m_bsize);
 
 };
 
 // ---   *   ---   *   ---
 // subscript
 
-void* Mem::operator[](int64_t idex) {
+template<class H,typename T>
+inline T& Mem<H,T>::operator[](int64_t idex) {
 
-  size_t ptr=0;
+  size_t mask=-1*(idex<0);
+  size_t base=m_bsize&mask;
 
-// ---   *   ---   *   ---
-// positive indexing
+  size_t ptr=((base+idex)&mask) | idex;
 
-  if(idex >= 0) {
+  ptr*=sizeof(T);
+  ptr&=m_bsize-1;
 
-    if(idex < bsize) {
-      ptr=idex;
-
-    } else {
-      ptr=bsize-1;
-
-    };
-
-  }
-
-// ---   *   ---   *   ---
-// negative indexing
-
-  else {
-
-    if(-idex <= bsize) {
-      ptr=bsize+idex;
-
-    } else {
-      ptr=0;
-
-    };
-
-  };
-
-// ---   *   ---   *   ---
-// give buff+ptr
-
-  return ((char*) beg) + ptr;
+  return (T&) *(((char*) m_beg) + ptr);
 
 };
 
 // ---   *   ---   *   ---
+// debug print
 
-void Mem::prich(int errout) {
+template<class H,typename T>
+void Mem<H,T>::prich(int errout) {
 
   const char* fmat=
 
@@ -131,19 +151,19 @@ void Mem::prich(int errout) {
 
   fprintf(f,fmat,
 
-    "ID",id.as_str(),
-    "FULL_SIZE",fsize,
-    "BUFF_SIZE",bsize,
-    "BUFF_ADDR",beg
+    "ID",m_id.as_str(),
+    "FULL_SIZE",m_fsize,
+    "BUFF_SIZE",m_bsize,
+    "BUFF_ADDR",m_beg
 
   );
 
 // ---   *   ---   *   ---
 
   char line[64];
-  char* base=(char*) beg;
+  char* base=(char*) m_beg;
 
-  for(size_t i=0;i<bsize;i+=16) {
+  for(size_t i=0;i<m_bsize;i+=16) {
 
     int* a=(int*) (base+i+0x00);
     int* b=(int*) (base+i+0x04);
@@ -152,11 +172,21 @@ void Mem::prich(int errout) {
 
     fmat=(i && !(i%64))
 
-      ? "\n  %08X %08X : %08X %08X %u\n"
-      : "  %08X %08X : %08X %08X %u\n"
+      ? "\n  %08X %08X : %08X %08X [%04X] | %s\n"
+      : "  %08X %08X : %08X %08X [%04X] | %s\n"
       ;
 
-    fprintf(f,fmat,*a,*b,*c,*d,i);
+    fprintf(
+
+      f,fmat,
+
+      *a,*b,*c,*d,
+
+      i,
+
+      stirr_p(a)
+
+    );
 
   };
 
