@@ -1,18 +1,7 @@
-#ifndef __ZJC_ID_H__
-#define __ZJC_ID_H__
+#ifndef __24_ID_H__
+#define __24_ID_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-//#include "../zjc_CommonTypes.h"
-
-#include <stdint.h>
-
-#define cx8 static constexpr const uint8_t
-
-#define VERSION static constexpr const char* VERSION=
-#define AUTHOR static constexpr const char* AUTHOR=
+#include "../Style.hpp"
 
 // ---   *   ---   *   ---
 // info
@@ -64,17 +53,17 @@ public:
 // ---   *   ---   *   ---
 // getters
 
-  const char* as_str(void) {
+  inline const char* as_str(void) {
     return m_full;
 
   };
 
-  const uint32_t sigil(void) {
-    return *((uint32_t*) m_sig);
+  inline const int sigil(void) {
+    return *((int*) m_sig);
 
   };
 
-  const char* key(void) {
+  inline const char* key(void) {
     return m_key;
 
   };
@@ -83,8 +72,4 @@ public:
 
 //   ---     ---     ---     ---     ---
 
-#ifdef __cplusplus
-}
-#endif
-
-#endif //__ZJC_ID_H__
+#endif //__24_ID_H__

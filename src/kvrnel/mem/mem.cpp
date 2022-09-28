@@ -12,15 +12,20 @@
 // ---   *   ---   *   ---
 // deps
 
-  #include <stdio.h>
-  #include "mem.h"
+  #include <cmath>
+  #include <cstdlib>
+  #include <cstddef>
+  #include <cstring>
+  #include <cstdio>
+
+  #include "mem.hpp"
 
 // ---   *   ---   *   ---
 // force sz == pow 2
 
-inline static size_t align_pow2(size_t x) {
+inline static long align_pow2(long x) {
 
-  size_t y=log2(--x);y++;
+  long y=log2(--x);y++;
   return pow(2,y);
 
 };
@@ -59,15 +64,15 @@ char* stirr_p(int* src,int cnt=4) {
 template<class H,typename T>
 inline Mem<H,T>* Mem<H,T>::nit(
 
-  size_t sz,
-  ID* id
+  long  sz,
+  ID*   id
 
 ) {
 
   Mem<H,T>* out;
   sz=align_pow2(sz);
 
-  size_t fsize=sz+sizeof(Mem<H,T>);
+  long fsize=sz+sizeof(Mem<H,T>);
 
   // get block
   void* buff=malloc(fsize);
@@ -112,12 +117,12 @@ inline void Mem<H,T>::cl(void) {
 // subscript
 
 template<class H,typename T>
-inline T& Mem<H,T>::operator[](int64_t idex) {
+inline T& Mem<H,T>::operator[](long idex) {
 
-  size_t mask=-1*(idex<0);
-  size_t base=m_bsize&mask;
+  long mask=-1*(idex<0);
+  long base=m_bsize&mask;
 
-  size_t ptr=((base+idex)&mask) | idex;
+  long ptr=((base+idex)&mask) | idex;
 
   ptr*=sizeof(T);
   ptr&=m_bsize-1;
@@ -159,34 +164,44 @@ void Mem<H,T>::prich(int errout) {
   );
 
 // ---   *   ---   *   ---
+// print out the buffer
 
   char line[64];
   char* base=(char*) m_beg;
 
-  for(size_t i=0;i<m_bsize;i+=16) {
+  for(long i=0;i<m_bsize;i+=16) {
 
     int* a=(int*) (base+i+0x00);
     int* b=(int*) (base+i+0x04);
     int* c=(int*) (base+i+0x08);
     int* d=(int*) (base+i+0x0C);
 
-    fmat=(i && !(i%64))
+    fmat="\n  "
 
-      ? "\n  %08X %08X : %08X %08X [%04X] | %s\n"
-      : "  %08X %08X : %08X %08X [%04X] | %s\n"
-      ;
+      "%04X %04X %04X %04X . "
+      "%04X %04X %04X %04X | "
+      "%s\n"
+
+    ;
+
+    // conditionally skip newline
+    fmat+=!(i && !(i%64));
+
+// ---   *   ---   *   ---
+// spit it out
 
     fprintf(
 
       f,fmat,
 
-      *a,*b,*c,*d,
-
-      i,
+      *a&0xFFFF,*a>>16,*b&0xFFFF,*b>>16,
+      *c&0xFFFF,*c>>16,*d&0xFFFF,*d>>16,
 
       stirr_p(a)
 
     );
+
+// ---   *   ---   *   ---
 
   };
 
