@@ -1,7 +1,10 @@
 #ifndef __24_ID_H__
 #define __24_ID_H__
 
-#include "../Style.hpp"
+// ---   *   ---   *   ---
+// deps
+
+  #include "Style.hpp"
 
 // ---   *   ---   *   ---
 // info

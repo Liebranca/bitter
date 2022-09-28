@@ -18,7 +18,8 @@
   #include <cstring>
   #include <cstdio>
 
-  #include "mem.hpp"
+  #include "Mem.hpp"
+  #include "Evil.hpp"
 
 // ---   *   ---   *   ---
 // force sz == pow 2
@@ -77,7 +78,7 @@ inline Mem<H,T>* Mem<H,T>::nit(
   // get block
   void* buff=malloc(fsize);
 
-  // errchk done in poly
+  // success
   if(buff!=NULL) {
 
     memset(buff,0,fsize);
@@ -88,6 +89,15 @@ inline Mem<H,T>* Mem<H,T>::nit(
 
     out->m_beg=((char*) out)+sizeof(Mem<H,T>);
     out->m_bsize=sz;
+
+  // or die
+  } else {
+
+    Evil::terminator(
+      Fatal::OOM,
+      id->as_str()
+
+    );
 
   };
 

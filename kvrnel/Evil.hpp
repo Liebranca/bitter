@@ -12,6 +12,55 @@
 #endif
 
 // ---   *   ---   *   ---
+// errcode list: kills process
+
+namespace Fatal {
+
+  enum {
+
+    OOM=0,
+    ACV,
+
+    END_TIMES,
+    ILLEGAL,
+
+    ZLIB,
+
+    ERRCODE_MAX
+
+  };
+
+};
+
+// ---   *   ---   *   ---
+// errcode list: warn rather than kill
+
+namespace Error {
+
+  enum {
+
+    OPEN_FAIL=Fatal::ERRCODE_MAX,
+
+    CLOSE_FAIL,
+    WRITE_FAIL,
+    READ_FAIL,
+
+    BAD_SIG,
+    UNLINK_FAIL,
+
+    FULL_STACK,
+    EMPTY_STACK,
+
+    HASH_INSERT,
+    HASH_FETCH,
+
+    ERRCODE_MAX
+
+  };
+
+};
+
+// ---   *   ---   *   ---
 // records info for calls that __can__ fail
 
 typedef struct {
@@ -24,9 +73,15 @@ typedef struct {
 } Dang;
 
 // ---   *   ---   *   ---
-// debug master
+// info
 
 namespace Evil {
+
+  VERSION     "v2.00.1";
+  AUTHOR      "IBN-3DILA";
+
+// ---   *   ---   *   ---
+// debug master
 
   static int m_depth;   // call depth counter
 

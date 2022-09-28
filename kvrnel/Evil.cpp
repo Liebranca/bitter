@@ -18,7 +18,7 @@
   #include <cstring>
   #include <cmath>
 
-  #include "evil.hpp"
+  #include "Evil.hpp"
 
 // ---   *   ---   *   ---
 // fast check for known errors
@@ -243,7 +243,7 @@ void Evil::terminator (
 
   int color_code;
 
-  if(errcode<0x40) {
+  if(errcode<Fatal::ERRCODE_MAX) {
     snprintf(mstart,255,"%s#:!;> ",PALETTE[6]);
     m_state=AR_FATAL;
 
@@ -284,99 +284,72 @@ void Evil::terminator (
 
   switch(errcode) {
 
-    case  0:
+    case Fatal::OOM:
       mbody="Insuficcient memory %s(%s requested)";
       break;
 
-    case  1:
+    case Fatal::ACV:
       mbody="Access violation %s%s";
       break;
 
-    case  2:
+    case Fatal::END_TIMES:
       mbody="The end times have come %s%s";
       break;
 
-    case  3:
-      mbody="You just did something illegal %s%s";
+    case Fatal::ILLEGAL:
+      mbody="Illegal instruction %s%s";
       break;
 
 // ---   *   ---   *   ---
 // these are real errmesses ;>
 
-    case  4:
+    case Fatal::ZLIB:
       mbody="ZLIB went PLOP %s(status %s)";
       break;
 
-    case 64:
+    case Error::OPEN_FAIL:
       mbody="Couln't open file %s<%s>";
       break;
 
-    case 65:
+    case Error::CLOSE_FAIL:
       mbody="File couldn't be closed %s<%s>";
       break;
 
-    case 66:
+    case Error::WRITE_FAIL:
       mbody="Error writting to file %s<%s>";
       break;
 
-    case 67:
+    case Error::READ_FAIL:
       mbody="Error reading from file %s<%s>.";
       break;
 
-    case 68:
+    case Error::BAD_SIG:
       mbody="Inappropriate file signature %s<%s>";
       break;
 
-    case 69:
+    case Error::UNLINK_FAIL:
       mbody="Error deleting file %s<%s>";
       break;
 
-    case 70:
+    case Error::FULL_STACK:
       mbody="Stack is full; can't push %s%s";
       break;
 
-    case 71:
+    case Error::EMPTY_STACK:
       mbody="Stack is empty; can't pop %s%s";
       break;
 
-    case 72:
+    case Error::HASH_INSERT:
       mbody="Can't insert key %s<%s>";
       break;
 
-    case 73:
+    case Error::HASH_FETCH:
       mbody="Key %s<%s>\x1b[0m not found";
       break;
 
 // ---   *   ---   *   ---
-// 0x010000 onwards is peso debug
-
-    case 0x010001:
-      mbody=
-
-        "Multiple declarations "
-        "of symbol %s'%s'"
-
-      ;
-
-      break;
-
-    case 0x010002:
-      mbody="Oversized value for type %s%s";
-      break;
-
-    case 0x010003:
-      mbody=
-
-        "Element %s%s\e[0m is not "
-        "an address-of"
-
-      ;
-
-      break;
-
-    case 0x010004:
-      mbody="Cannot jump to address %s<%s>";
-      break;
+// be funny rather than admit the
+// errcode is not recognized ;>
 
     default:
 
