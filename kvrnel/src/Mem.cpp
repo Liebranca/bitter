@@ -18,15 +18,17 @@
   #include <cstring>
   #include <cstdio>
 
-  #include "Mem.hpp"
-  #include "Evil.hpp"
+  #include "kvrnel/Evil.hpp"
+  #include "kvrnel/Mem.hpp"
 
 // ---   *   ---   *   ---
 // force sz == pow 2
 
-inline static long align_pow2(long x) {
+inline static size_t align_pow2(size_t x) {
 
-  long y=log2(--x);y++;
+  size_t y=log2(--x);y++;
+  y=(y<4) ? 4 : y;
+
   return pow(2,y);
 
 };
@@ -62,33 +64,35 @@ char* stirr_p(int* src,int cnt=4) {
 // ---   *   ---   *   ---
 // alloc
 
-template<class H,typename T>
-inline Mem<H,T>* Mem<H,T>::nit(
+template<typename T>
+Mem<T>* Mem<T>::nit(
 
-  long  sz,
-  ID*   id
+  size_t  buff_sz,
+  size_t  header_sz,
+
+  ID*     id
 
 ) {
 
-  Mem<H,T>* out;
-  sz=align_pow2(sz);
+  buff_sz=align_pow2(buff_sz);
+  size_t fsize=buff_sz+header_sz;
 
-  long fsize=sz+sizeof(Mem<H,T>);
-
-  // get block
-  void* buff=malloc(fsize);
+  Mem<T>* out=(Mem<T>*) malloc(fsize);
 
   // success
-  if(buff!=NULL) {
+  if(out!=NULL) {
 
-    memset(buff,0,fsize);
-    out=(Mem<H,T>*) buff;
+    memset(out,0,fsize);
 
     out->m_id=*id;
     out->m_fsize=fsize;
 
-    out->m_beg=((char*) out)+sizeof(Mem<H,T>);
-    out->m_bsize=sz;
+    char* raw=(char*) out;
+
+    out->m_base=(void*) raw;
+
+    out->m_beg=(T*) (raw+header_sz);
+    out->m_bsize=buff_sz;
 
   // or die
   } else {
@@ -106,33 +110,62 @@ inline Mem<H,T>* Mem<H,T>::nit(
 };
 
 // ---   *   ---   *   ---
-// ^free
+// ^dealloc
 
-template<class H,typename T>
-void Mem<H,T>::del(Mem<H,T>* m) {
-  free(m);
+template<typename T>
+void Mem<T>::del(void) {
+  free(m_base);
 
 };
 
 // ---   *   ---   *   ---
 // zero flood buffer
 
-template<class H,typename T>
-inline void Mem<H,T>::cl(void) {
+template<typename T>
+inline void Mem<T>::cl(void) {
   memset(m_beg,0,m_bsize);
+
+};
+
+// ---   *   ---   *   ---
+// buffer write from string
+
+template<typename T>
+size_t Mem<T>::write(
+
+  std::string s,
+  size_t ptr
+
+) {
+
+  size_t mask=m_bsize-1;
+
+  ptr*=sizeof(T);
+  ptr&=mask;
+
+  memcpy(
+
+    ((char*) m_beg)+ptr,
+
+    s.c_str(),
+    s.length()&mask
+
+  );
+
+  return 0;
 
 };
 
 // ---   *   ---   *   ---
 // subscript
 
-template<class H,typename T>
-inline T& Mem<H,T>::operator[](long idex) {
+template<typename T>
+inline T& Mem<T>::operator[](long idex) {
 
-  long mask=-1*(idex<0);
-  long base=m_bsize&mask;
+  size_t mask=-1*(idex<0);
+  size_t base=m_bsize&mask;
 
-  long ptr=((base+idex)&mask) | idex;
+  size_t ptr=((base+idex)&mask) | idex;
 
   ptr*=sizeof(T);
   ptr&=m_bsize-1;
@@ -144,8 +177,8 @@ inline T& Mem<H,T>::operator[](long idex) {
 // ---   *   ---   *   ---
 // debug print
 
-template<class H,typename T>
-void Mem<H,T>::prich(int errout) {
+template<typename T>
+void Mem<T>::prich(int errout) {
 
   const char* fmat=
 
@@ -167,8 +200,10 @@ void Mem<H,T>::prich(int errout) {
   fprintf(f,fmat,
 
     "ID",m_id.as_str(),
+
     "FULL_SIZE",m_fsize,
     "BUFF_SIZE",m_bsize,
+
     "BUFF_ADDR",m_beg
 
   );
@@ -179,7 +214,7 @@ void Mem<H,T>::prich(int errout) {
   char line[64];
   char* base=(char*) m_beg;
 
-  for(long i=0;i<m_bsize;i+=16) {
+  for(size_t i=0;i<m_bsize;i+=16) {
 
     int* a=(int*) (base+i+0x00);
     int* b=(int*) (base+i+0x04);

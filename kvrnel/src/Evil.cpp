@@ -18,7 +18,7 @@
   #include <cstring>
   #include <cmath>
 
-  #include "Evil.hpp"
+  #include "kvrnel/Evil.hpp"
 
 // ---   *   ---   *   ---
 // fast check for known errors

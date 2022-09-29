@@ -1,6 +1,6 @@
-#include "kvrnel/Vec.cpp"
-#include "kvrnel/Sprite.cpp"
-#include "kvrnel/Clock.cpp"
+#include "kvrnel/src/Vec.cpp"
+#include "kvrnel/src/Sprite.cpp"
+#include "kvrnel/src/Clock.cpp"
 
 #include <locale.h>
 #include <unistd.h>

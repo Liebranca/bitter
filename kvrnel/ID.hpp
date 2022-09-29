@@ -46,6 +46,10 @@ private:
 
 public:
 
+  // compiler trash
+  ID() {};
+
+  // constructor
   ID(
 
     const char* sig,

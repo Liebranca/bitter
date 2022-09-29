@@ -12,8 +12,9 @@
 // ---   *   ---   *   ---
 // deps
 
-  #include "Vec.hpp"
   #include <iostream>
+
+  #include "kvrnel/Vec.hpp"
 
 // ---   *   ---   *   ---
 // constructor

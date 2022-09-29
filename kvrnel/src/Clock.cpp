@@ -17,7 +17,7 @@
   #include <time.h>
   #include <unistd.h>
 
-  #include "Clock.hpp"
+  #include "kvrnel/Clock.hpp"
 
 // ---   *   ---   *   ---
 // constructor

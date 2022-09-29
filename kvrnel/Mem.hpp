@@ -4,12 +4,15 @@
 // ---   *   ---   *   ---
 // deps
 
+  #include <memory>
+  #include <string>
+
   #include "ID.hpp"
 
 // ---   *   ---   *   ---
 // info
 
-template<class H,typename T>
+template<typename T>
 class Mem {
 
 public:
@@ -22,32 +25,45 @@ public:
 
 private:
 
-  ID      m_id;     // universal block header
+  ID     m_id;     // universal block header
 
-  long    m_fsize;  // total space used
-  long    m_bsize;  // usable, non-header space
+  size_t m_fsize;  // total space used
+  size_t m_bsize;  // usable, non-header space
 
-  void*   m_beg;    // start of non-header memory
-  void*   m_pad;    // 16 aligns the struct
+  void*  m_base;   // evil circular reference
+  T*     m_beg;    // start of usable memory
 
 // ---   *   ---   *   ---
 
 public:
 
-  // alloc
-  static Mem<H,T>* nit(long sz,ID* id);
+  // compiler trash
+  Mem<T>() {};
 
-  // ^free
-  static void del(Mem<H,T>* m);
+  // alloc
+  static Mem<T>* nit(
+
+    size_t buff_sz,
+    size_t header_sz,
+
+    ID* id
+
+  );
+
+  // dealloc
+  inline void del(void);
 
   // flood a block with zeroes
   inline void cl(void);
+
+  // buffer write from string
+  size_t write(std::string s,size_t ptr=0);
 
   // subscript
   inline T& operator[](long idex);
 
   // debug print
-  void prich(int errout);
+  void prich(int errout=0);
 
 };
 

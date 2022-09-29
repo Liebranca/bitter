@@ -15,7 +15,7 @@
   #include <cstring>
   #include <iostream>
 
-  #include "Sprite.hpp"
+  #include "kvrnel/Sprite.hpp"
 
 // ---   *   ---   *   ---
 // constructor
