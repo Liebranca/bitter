@@ -98,7 +98,7 @@ T frac(float x,float step,int nbits) {
   hibit=(hibit>>1)-1;
   b+=hibit;
 
-  return (T) (b&max);
+  return (T) b;
 
 };
 
@@ -126,59 +126,6 @@ float unfrac(
 
 };
 
-//// ---   *   ---   *   ---
-//// move this to lymath later
-//
-//float clampf(float v,
-//float start,
-//float end) {if(v<start) {v
-// =start;}
-//else if(v>end) {v=end;};
-//
-//return v;};
-//
-//// ---   *   ---   *   ---
-//
-//float FRACTOFL(
-//  uint frac,
-//  uint maxval,
-//  float fac,
-//  uint shift) {
-//
-//  if(frac==maxval-1) {frac=maxval;};
-//  return ((int) (frac-shift))* fac;
-//
-//};
-//
-//uchar FLTOFRAC(
-//  float v,
-//  float maxval,
-//  float fraction,
-//  uint fac,
-//  uint shift) {
-//
-//  v=clampf(v,-maxval,maxval-fraction);
-//  return (uchar) roundf(v * fac)+shift;
-//
-//};
-//
-//// ---   *   ---   *   ---
-//
-//static uint CFRAC_L=6;      // default FRAC level
-//                            // for compression
-//
-//static uint CFRAC_D0=2;     // degrade step,
-//                            // reduces precision
-//
-//static uint CFRAC_D1=4;     // further degrade
-//                            // step, destroys
-//                            // precision
-//
-//void STCFRACL(uint level) {
-//  CFRAC_L=clampui(level,0,7);
-//
-//};
-//
 //// ---   *   ---   *   ---
 //
 //void ENCVRT(float* v,CRKVRT* c) {
@@ -234,54 +181,8 @@ float unfrac(
 //};
 //
 //// ---   *   ---   *   ---
-//
-//void ENCNVEC(
-//  float* n,
-//  JOJPIX* j) {
-//
-//
-//  JOJVEC* v=(JOJVEC*) j;
-//
-//  float ff=FRACL_F[CFRAC_L];
-//  uint fi=FRACL_I[CFRAC_L];
-//
-//  v->x=FLTOFRAC((n[0]*2.0)-1.0,1,ff,fi,fi);
-//  v->y=FLTOFRAC((n[1]*2.0)-1.0,1,ff,fi,fi);
-//  v->w=FLTOFRAC(n[3],1,ff,fi,0);
-//
-//  v->sign=n[2]<0;
-//
-//};
-//
-//// ---   *   ---   *   ---
-//
-//void DECNVEC(float* n,JOJPIX* j) {
-//
-//
-//  JOJVEC* v=(JOJVEC*) j;
-//
-//  float ff=FRACL_F[CFRAC_L];
-//  uint fi=FRACL_I[CFRAC_L];
-//
-//  float x=FRACTOFL(v->x,fi,ff,fi);
-//  float y=FRACTOFL(v->y,fi,ff,fi);
-//  float w=FRACTOFL(v->w,fi,ff,0);
-//
-//  int sign=(v->sign)?-1 :
-//  1;
-//  float z=0;
-//
-//  float d=1-(pow(x,2)+pow(y,2));
-//  if(d>0) {z
-//   =sqrt(d)* sign;};
-//
-//  n[0]=(x+1)*0.5;
-//  n[1]=(y+1)*0.5;
-//  n[2]=(z+1)*0.5;
-//  n[3]=w;
-//
-//};
-//
+
+
 //// ---   *   ---   *   ---
 //
 //uchar GREY4STP(float v) {

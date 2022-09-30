@@ -29,7 +29,7 @@ void Evil::errchk(
   int*  retx,
 
   const short errcode,
-  const char* info
+  std::string info
 
 ) {
 
@@ -234,7 +234,7 @@ void Evil::poplog(void) {
 void Evil::terminator (
 
   int errcode,
-  const char* info
+  std::string info
 
 ) {
 

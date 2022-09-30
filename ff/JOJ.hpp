@@ -5,6 +5,12 @@
 // deps
 
   #include "kvrnel/Style.hpp"
+  #include "kvrnel/Bin.hpp"
+
+// ---   *   ---   *   ---
+// defs
+
+  cx64 JOJ_PAL_SZ=16;
 
 // ---   *   ---   *   ---
 // first field is YUV+A color
@@ -15,36 +21,50 @@ typedef struct {
 
   union {
 
-    char chroma_u;
+    struct {
+      union {
 
-    char occlu;
-    char sign;
+        char chroma_u;
+
+        char occlu;
+        char x;
+
+      };
+
+      union {
+
+        char chroma_v;
+
+        char rough;
+        char y;
+
+      };
+
+      union {
+
+        char luma;
+
+        char metal;
+        char sign;
+
+      };
+
+      union {
+        char alpha;
+
+        char edge;
+        char w;
+
+      };
+
+    };
+
+    char arr[4];
 
   };
 
-  union {
-
-    char chroma_v;
-
-    char rough;
-    char x;
-
-  };
-
-  union {
-
-    char luma;
-
-    char metal;
-    char y;
-
-  };
-
-  union {
-    char alpha;
-
-    char edge;
-    char z;
+  inline char& operator[](size_t idex) {
+    return arr[idex];
 
   };
 
@@ -61,25 +81,109 @@ CASSERT(
 );
 
 // ---   *   ---   *   ---
+// from 0 (lowest) to 7(highest)
+// level of precision to use for
+// each field of a material
+
+typedef struct {
+
+  char nvec_xy;
+  char nvec_w;
+
+  char chroma;
+  char luma;
+  char alpha;
+
+  char occlu;
+  char rough;
+  char metal;
+  char edge;
+
+} JOJ_ENCODING;
+
+// ---   *   ---   *   ---
+
+typedef struct {
+
+  uint8_t  mip;
+
+  uint8_t  imcnt;
+  uint16_t imsz;
+
+  JOJ_ENCODING  encoding;
+  JOJ_PIXEL     palette[JOJ_PAL_SZ];
+
+} JOJ_HEADER;
+
+// ---   *   ---   *   ---
 // methods
 
-class JOJ {
+class JOJ: public Bin {
 
-private:
+public:
 
   VERSION   "v2.00.1";
   AUTHOR    "IBN-3DILA";
 
+  CX JOJ_ENCODING ENC_DEFAULT={
+
+    .nvec_xy  = 3,
+    .nvec_w   = 2,
+
+    .chroma   = 6,
+    .luma     = 6,
+    .alpha    = 2,
+
+    .occlu    = 3,
+    .rough    = 3,
+    .metal    = 3,
+    .edge     = 3
+
+  };
+
 // ---   *   ---   *   ---
 
-  // compiler trash
-  JOJ() {};
+private:
+
+  cxstr   m_fsig="%JOJ";
+  cx64    m_header_sz=sizeof(JOJ_HEADER);
+
+  float*  m_pixels;
+
+  JOJ_ENCODING m_enc;
+
+// ---   *   ---   *   ---
+
+public:
 
   // file into memory
-  JOJ(const char* fpath);
+  JOJ(std::string fpath);
 
   // memory into file
-  JOJ(float* pixels,int encoding);
+  JOJ(
+
+    std::string fpath,
+
+    float* pixels,
+    size_t sz,
+
+    JOJ_ENCODING enc=ENC_DEFAULT
+
+  );
+
+  // stores unit vector in joj format
+  void encode_nvec(
+    float* n,
+    JOJ_PIXEL& j
+
+  );
+
+  // ^retrieves unit vector from joj
+  void decode_nvec(
+    float* n,
+    JOJ_PIXEL& j
+
+  );
 
 };
 

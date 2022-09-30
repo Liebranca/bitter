@@ -20,6 +20,9 @@
   #include <cstdint>
   #include <cstddef>
 
+  #include <string>
+  #include <string_view>
+
 // ---   *   ---   *   ---
 // peso types ;>
 
@@ -41,7 +44,7 @@ typedef void*(*signal)(void*);
 #define cxr32 CX float
 #define cxr64 CX double
 
-#define cxstr CX char*
+#define cxstr CX std::string_view
 
 #define VERSION cxstr VERSION=
 #define AUTHOR  cxstr AUTHOR=

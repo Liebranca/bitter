@@ -122,7 +122,7 @@ namespace Evil {
   // goes back in time to save john connor
   static void terminator(
     int errcode,
-    const char* info
+    std::string info
 
   );
 
@@ -144,7 +144,7 @@ namespace Evil {
     int*  retx,
 
     const short errcode,
-    const char* info
+    std::string info
 
   );
 
