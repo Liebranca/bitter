@@ -5,10 +5,14 @@
 int main(void) {
 
 
-  int   nbits = 4;
-  float step  = FRAC3;
+  int   nbits = 2;
+  float step  = FRAC1;
 
-  for(int i=0;i<(1<<nbits);i++) {
+  int   top   = 1<<nbits;
+  int   beg   = (-top)/2;
+  int   end   = (top)/2;
+
+  for(int i=beg;i<end;i++) {
 
     float   x = i*step;
 

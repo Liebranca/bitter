@@ -84,24 +84,32 @@ void JOJ::encode_nvec(
 
 ) {
 
-  float step = FRACL_F[m_enc.nvec_xy];
-  int   bits = m_enc.nvec_xy+1;
-
-  // encode x && y
-  for(int i=0;i<2;i++) {
-    j[i]=frac<char>(n[i],step,bits);
+  char* dst[]={
+    &j.x,&j.z,NULL,
+    &j.y,NULL,
+    &j.curv,NULL
 
   };
 
-  // switch precision level
-  step = FRACL_F[m_enc.nvec_w];
-  bits = m_enc.nvec_w+1;
+  char enc[]={
+    m_enc.nvec_xz,(char) (m_enc.nvec_xz+1),
+    m_enc.nvec_y,(char) (m_enc.nvec_y+1),
+    m_enc.curv,(char) (m_enc.curv+1)
 
-  // encode w
-  j.w=frac<char>(n[3],step,bits);
+  };
 
-  // store handeness
-  j.sign=n[2]<0;
+  float* src[]={n+0,n+2,n+1,n+3};
+
+  struct Frac::Bat<char> batch={
+    .m_dst=dst,
+    .m_enc=enc,
+    .m_src=src,
+
+    .m_sz=3
+
+  };
+
+  batch.encode();
 
 };
 
@@ -115,53 +123,34 @@ void JOJ::decode_nvec(
 
 ) {
 
-  float step = FRACL_F[m_enc.nvec_xy];
-  int   bits = m_enc.nvec_xy+1;
-
-  // decode x && y
-  for(int i=0;i<2;i++) {
-    n[i]=unfrac<char>(j[i],step,bits);
-    n[i]=(n[i]*2.0)-1;
+  char* dst[]={
+    &j.x,&j.z,NULL,
+    &j.y,NULL,
+    &j.curv,NULL
 
   };
 
-  // switch precision level
-  step = FRACL_F[m_enc.nvec_w];
-  bits = m_enc.nvec_w+1;
-
-  // decode w
-  n[3]=unfrac<char>(j.w,step,bits);
-
-  // calc z
-  int sign=(j.sign) ? -1 : 1;
-
-  float z=0;
-  float d=1-(
-
-    pow(n[0],2)
-  + pow(n[1],2)
-
-  );
-
-  if(d>0) {z=sqrt(d)*sign;};
-
-  // transform
-  n[0]=(n[0]+1)*0.5;
-  n[1]=(n[1]+1)*0.5;
-
-  n[2]=(z+1)*0.5;
-
-  // sign check
-  if(
-
-     (!j.sign && n[2]<0)
-  || (j.sign && n[2]>0)
-
-  ) {
-    n[2]*=-1;
+  char enc[]={
+    m_enc.nvec_xz,(char) (m_enc.nvec_xz+1),
+    m_enc.nvec_y,(char) (m_enc.nvec_y+1),
+    m_enc.curv,(char) (m_enc.curv+1)
 
   };
+
+  float* src[]={n+0,n+2,n+1,n+3};
+
+  struct Frac::Bat<char> batch={
+    .m_dst=dst,
+    .m_enc=enc,
+    .m_src=src,
+
+    .m_sz=3,
+
+  };
+
+  batch.decode();
 
 };
 
 // ---   *   ---   *   ---
+

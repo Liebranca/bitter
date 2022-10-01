@@ -13,9 +13,9 @@
   cx64 JOJ_PAL_SZ=16;
 
 // ---   *   ---   *   ---
-// first field is YUV+A color
-// second is ORM+E
-// third is NVEC
+// first field is YUV+alpha color
+// second is ORM+emit
+// third is normal+curv
 
 typedef struct {
 
@@ -45,15 +45,15 @@ typedef struct {
         char luma;
 
         char metal;
-        char sign;
+        char z;
 
       };
 
       union {
         char alpha;
 
-        char edge;
-        char w;
+        char emit;
+        char curv;
 
       };
 
@@ -87,8 +87,9 @@ CASSERT(
 
 typedef struct {
 
-  char nvec_xy;
-  char nvec_w;
+  char nvec_xz;
+  char nvec_y;
+  char curv;
 
   char chroma;
   char luma;
@@ -97,7 +98,7 @@ typedef struct {
   char occlu;
   char rough;
   char metal;
-  char edge;
+  char emit;
 
 } JOJ_ENCODING;
 
@@ -127,8 +128,9 @@ public:
 
   CX JOJ_ENCODING ENC_DEFAULT={
 
-    .nvec_xy  = 3,
-    .nvec_w   = 2,
+    .nvec_xz  = 1,
+    .nvec_y   = 0,
+    .curv     = 3,
 
     .chroma   = 6,
     .luma     = 6,
@@ -137,7 +139,7 @@ public:
     .occlu    = 3,
     .rough    = 3,
     .metal    = 3,
-    .edge     = 3
+    .emit     = 3
 
   };
 

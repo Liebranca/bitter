@@ -7,7 +7,41 @@
   #include "Style.hpp"
   #include "Evil.hpp"
 
-//   ---     ---     ---     ---     ---
+// ---   *   ---   *   ---
+// float encoding helper ;>
+
+namespace Frac {
+
+  template <typename T>
+  struct Bat {
+
+  public:
+    T**     m_dst;
+    T*      m_enc;
+
+    float** m_src;
+    size_t  m_sz;
+
+    void encode(void);
+    void decode(void);
+
+  };
+
+  // unit vectors do better just
+  // over-stretching to higher values
+  cxr32 NVEC=1.25f;
+
+  // regular coords are somewhat the inverse
+  // it seems staying below the mid-point
+  // works a lot better
+  cxr32 CORD=0.64f;
+
+  // always default to normals
+  static float Rounding_Mode=NVEC;
+
+};
+
+// ---   *   ---   *   ---
 
 // get nth bit is set
 template <typename T>
@@ -37,8 +71,8 @@ float unfrac(
 
 );
 
+// ---   *   ---   *   ---
 
-//// ---   *   ---   *   ---
 //// *unpacked* geometry types
 //// ie, how we read it from file on unzip
 //// we'd pack them for actual in-memory usage
@@ -63,27 +97,7 @@ float unfrac(
 //  char v;
 //
 //} CRKVRT;
-//
-////   ---     ---     ---     ---     ---
-//// RGBA will always be four floats
-//// but who knows? one day, maybe...
-//
-//#define ZJC_RAWCOL_ELEMS 4
-//
-//// elemcount for vertdata likely to change
-//#define ZJC_RAWVRT_ELEMS 12
-//
-////   ---     ---     ---     ---     ---
-//
-//// sets frac level
-//void STCFRACL(uint level);
-//
-//// encodes unit vector into joj-like
-//void ENCNVEC(float* n,JOJPIX*j);
-//
-//// decodes joj-like unit vector
-//void DECNVEC(float* n,JOJPIX*j);
-//
+
 //// encodes packed curv/orm into joj-like
 //void ENCGREY(float* p,JOJPIX*j);
 //

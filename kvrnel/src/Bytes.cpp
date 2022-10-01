@@ -95,8 +95,17 @@ T frac(float x,float step,int nbits) {
   size_t hibit=1<<nbits;
   size_t max=hibit-1;
 
-  hibit=(hibit>>1)-1;
+  hibit=(hibit>>1);
+
+  float top_value=step*(max-1);
+
+  bool halfway=x<(top_value-(
+    step*Frac::Rounding_Mode
+
+  ));
+
   b+=hibit;
+  b-=1*(b==max && halfway);
 
   return (T) b;
 
@@ -119,10 +128,78 @@ float unfrac(
   size_t hibit=1<<nbits;
   size_t max=hibit-1;
 
-  hibit=(hibit>>1)-1;
+  hibit=(hibit>>1);
+
+  b+=1*(b==max);
   b-=hibit;
 
   return (b*step);
+
+};
+
+// ---   *   ---   *   ---
+// runs a series of frac operations
+
+template <typename T>
+void Frac::Bat<T>::encode(void) {
+
+  while(m_sz) {
+
+    // switch precision level
+    float step = FRACL_F[*m_enc++];
+    int   bits = FRACL_B[*m_enc++];
+
+    // run through elements
+    while(*m_dst!=NULL) {
+
+      **m_dst=frac<T>(
+        **m_src,step,bits
+
+      );
+
+      m_dst++;
+      m_src++;
+
+    };
+
+    // skip null
+    m_dst++;
+    m_sz--;
+
+  };
+
+};
+
+// ---   *   ---   *   ---
+// ^unfrac'ing
+
+template <typename T>
+void Frac::Bat<T>::decode(void) {
+
+  while(m_sz) {
+
+    // switch precision level
+    float step = FRACL_F[*m_enc++];
+    int   bits = FRACL_B[*m_enc++];
+
+    // run through elements
+    while(*m_dst!=NULL) {
+
+      **m_src=unfrac<T>(
+        **m_dst,step,bits
+
+      );
+
+      m_dst++;
+      m_src++;
+
+    };
+
+    // skip null
+    m_dst++;
+    m_sz--;
+
+  };
 
 };
 

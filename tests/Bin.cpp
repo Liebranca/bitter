@@ -51,7 +51,7 @@ int main(void) {
 
   JOJ j("./out",pixels,1);
 
-//  fnorm(pixels);
+  fnorm(pixels);
   printf(
 
     "%.4f %.4f %.4f %.4f\n",
