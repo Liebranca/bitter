@@ -16,16 +16,44 @@ namespace Frac {
   struct Bat {
 
   public:
-    T**     m_dst;
+    T**     m_bytes;
     T*      m_enc;
 
-    float** m_src;
+    float** m_floats;
     size_t  m_sz;
 
-    void encode(void);
-    void decode(void);
+    bool    m_mode;
+
+    void encoder(void);
+
+// ---   *   ---   *   ---
+// internals
+
+  private:
+
+    // m_bytes to m_floats
+    inline void encode(
+
+      float   step,
+      int     nbits,
+
+      bool    unsig=false
+
+    );
+
+    // ^inverse
+    inline void decode(
+
+      float   step,
+      int     nbits,
+
+      bool    unsig=false
+
+    );
 
   };
+
+// ---   *   ---   *   ---
 
   // unit vectors do better just
   // over-stretching to higher values
@@ -38,6 +66,81 @@ namespace Frac {
 
   // always default to normals
   static float Rounding_Mode=NVEC;
+
+// ---   *   ---   *   ---
+
+  // common fractions
+  cxr32 STEP[]={
+    1.0f/0x00002,1.0f/0x00004,
+    1.0f/0x00008,1.0f/0x00010,
+    1.0f/0x00020,1.0f/0x00040,
+    1.0f/0x00080,1.0f/0x00100,
+
+    1.0f/0x00200,1.0f/0x00400,
+    1.0f/0x00800,1.0f/0x01000,
+    1.0f/0x02000,1.0f/0x04000,
+    1.0f/0x08000,1.0f/0x10000,
+
+  };
+
+  // bit_count-1
+  cx32 BITS[]={
+    0x0,0x1,0x2,0x3,
+    0x4,0x5,0x6,0x7,
+    0x8,0x9,0xA,0xB,
+    0xC,0xD,0xE,0xF
+
+  };
+
+  // ^max value for a bitcount
+  cx16 MAXV[]={
+    0x0001,0x0003,0x0007,
+    0x000F,0x001F,0x003F,
+    0x007F,0x007F,0x01FF,
+    0x03FF,0x07FF,0x0FFF,
+    0x1FFF,0x3FFF,0x7FFF
+
+  };
+
+// ---   *   ---   *   ---
+// syntax dummies ;>
+// these are just so we don't have
+// any "magic number" looking calls
+
+  enum {
+
+    SIZE_1BIT ,SIZE_2BIT,
+    SIZE_3BIT ,SIZE_4BIT,
+
+    SIZE_5BIT ,SIZE_6BIT,
+    SIZE_7BIT ,SIZE_8BIT,
+
+    SIZE_9BIT ,SIZE_10BIT,
+    SIZE_11BIT,SIZE_12BIT,
+
+    SIZE_13BIT,SIZE_14BIT,
+    SIZE_15BIT,SIZE_16BIT
+
+  };
+
+  enum {
+
+    STEP_1BIT ,STEP_2BIT,
+    STEP_3BIT ,STEP_4BIT,
+
+    STEP_5BIT ,STEP_6BIT,
+    STEP_7BIT ,STEP_8BIT,
+
+    STEP_9BIT ,STEP_10BIT,
+    STEP_11BIT,STEP_12BIT,
+
+    STEP_13BIT,STEP_14BIT,
+    STEP_15BIT,STEP_16BIT
+
+  };
+
+  enum {SIGNED,UNSIGNED};
+  enum {ENCODE,DECODE};
 
 };
 
@@ -57,17 +160,27 @@ T bitslice(T b,T iStart,T iEnd);
 
 // quantize and pack float
 template <typename T>
-T frac(float x,float step,int nbits);
+T frac(
+
+  float x,
+
+  float step,
+  int   nbits,
+
+  bool  unsig=false
+
+);
 
 // ^unpack
 template <typename T>
 float unfrac(
-  T b,
+
+  T     b,
 
   float step,
-  int nbits,
+  int   nbits,
 
-  int usig=0
+  bool  unsig=false
 
 );
 

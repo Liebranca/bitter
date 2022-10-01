@@ -88,24 +88,27 @@ T bitslice(
 // encodes them as integers
 
 template <typename T>
-T frac(float x,float step,int nbits) {
+T frac(
 
-  long b=roundf(x/step);
+  float x,
 
-  size_t hibit=1<<nbits;
-  size_t max=hibit-1;
+  float step,
+  int   nbits,
 
-  hibit=(hibit>>1);
+  bool  unsig
 
-  float top_value=step*(max-1);
+) {
 
-  bool halfway=x<(top_value-(
-    step*Frac::Rounding_Mode
+  uint16_t mid = 1<<(nbits);
+  uint16_t max = Frac::MAXV[nbits];
 
-  ));
+  long     b   = roundf(x/step);
+  float    top = step*(max-1);
 
-  b+=hibit;
-  b-=1*(b==max && halfway);
+  top-=step*Frac::Rounding_Mode;
+
+  b+=mid*unsig;
+  b-=1*(b==max && x<top);
 
   return (T) b;
 
@@ -116,92 +119,102 @@ T frac(float x,float step,int nbits) {
 
 template <typename T>
 float unfrac(
-  T b,
+
+  T     b,
 
   float step,
-  int nbits,
+  int   nbits,
 
-  int unsig
+  bool  unsig
 
 ) {
 
-  size_t hibit=1<<nbits;
-  size_t max=hibit-1;
-
-  hibit=(hibit>>1);
+  uint16_t max=Frac::MAXV[nbits];
+  uint16_t mid=1<<(nbits);
 
   b+=1*(b==max);
-  b-=hibit;
+  b-=mid*unsig;
 
   return (b*step);
 
 };
 
 // ---   *   ---   *   ---
-// runs a series of frac operations
+// m_bytes to m_floats
 
 template <typename T>
-void Frac::Bat<T>::encode(void) {
+inline void Frac::Bat<T>::encode(
 
-  while(m_sz) {
+  float   step,
+  int     bits,
 
-    // switch precision level
-    float step = FRACL_F[*m_enc++];
-    int   bits = FRACL_B[*m_enc++];
+  bool    unsig
 
-    // run through elements
-    while(*m_dst!=NULL) {
+) {
 
-      **m_dst=frac<T>(
-        **m_src,step,bits
+  **m_bytes=frac<T>(
+    **m_floats,step,bits,unsig
 
-      );
-
-      m_dst++;
-      m_src++;
-
-    };
-
-    // skip null
-    m_dst++;
-    m_sz--;
-
-  };
+  );
 
 };
 
 // ---   *   ---   *   ---
-// ^unfrac'ing
+// ^inverse
 
 template <typename T>
-void Frac::Bat<T>::decode(void) {
+inline void Frac::Bat<T>::decode(
 
-  while(m_sz) {
+  float   step,
+  int     bits,
 
-    // switch precision level
-    float step = FRACL_F[*m_enc++];
-    int   bits = FRACL_B[*m_enc++];
+  bool    unsig
 
-    // run through elements
-    while(*m_dst!=NULL) {
+) {
 
-      **m_src=unfrac<T>(
-        **m_dst,step,bits
+  **m_floats=unfrac<T>(
+    **m_bytes,step,bits,unsig
 
-      );
+  );
 
-      m_dst++;
-      m_src++;
+};
 
-    };
+// ---   *   ---   *   ---
+// sequential frac or unfrac'ing
 
-    // skip null
-    m_dst++;
-    m_sz--;
+template <typename T>
+void Frac::Bat<T>::encoder(void) {
+
+auto branch_to=(m_mode==Frac::DECODE)
+  ? &Frac::Bat<T>::decode
+  : &Frac::Bat<T>::encode
+  ;
+
+while(m_sz) {
+
+  // switch precision level
+  float step  = STEP[*m_enc++];
+  int   bits  = BITS[*m_enc++];
+
+  // true if field is unsigned
+  bool  unsig = *m_enc++;
+
+  // run through elements
+  while(*m_bytes!=NULL) {
+
+    (this->*branch_to)(step,bits,unsig);
+
+    // go next
+    m_bytes++;
+    m_floats++;
 
   };
 
-};
+  // skip null
+  m_bytes++;
+  m_sz--;
+
+}};
 
 //// ---   *   ---   *   ---
 //

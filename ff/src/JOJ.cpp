@@ -58,13 +58,17 @@ JOJ::JOJ(
 
     this->encode_nvec(
       pixels+(i*4),
-      out_p[i]
+      out_p[i],
+
+      Frac::ENCODE
 
     );
 
-    this->decode_nvec(
+    this->encode_nvec(
       pixels+(i*4),
-      out_p[i]
+      out_p[i],
+
+      Frac::DECODE
 
     );
 
@@ -80,75 +84,32 @@ JOJ::JOJ(
 void JOJ::encode_nvec(
 
   float* n,
-  JOJ_PIXEL& j
+  JOJ_PIXEL& j,
+
+  bool mode
 
 ) {
 
-  char* dst[]={
+  char* bytes[]={
     &j.x,&j.z,NULL,
     &j.y,NULL,
     &j.curv,NULL
 
   };
 
-  char enc[]={
-    m_enc.nvec_xz,(char) (m_enc.nvec_xz+1),
-    m_enc.nvec_y,(char) (m_enc.nvec_y+1),
-    m_enc.curv,(char) (m_enc.curv+1)
-
-  };
-
-  float* src[]={n+0,n+2,n+1,n+3};
+  float* floats[]={n+0,n+2,n+1,n+3};
 
   struct Frac::Bat<char> batch={
-    .m_dst=dst,
-    .m_enc=enc,
-    .m_src=src,
+    .m_bytes  = bytes,
+    .m_enc    = m_enc.normal,
+    .m_floats = floats,
+    .m_sz     = 3,
 
-    .m_sz=3
-
-  };
-
-  batch.encode();
-
-};
-
-// ---   *   ---   *   ---
-// ^retrieve
-
-void JOJ::decode_nvec(
-
-  float* n,
-  JOJ_PIXEL& j
-
-) {
-
-  char* dst[]={
-    &j.x,&j.z,NULL,
-    &j.y,NULL,
-    &j.curv,NULL
+    .m_mode   = mode,
 
   };
 
-  char enc[]={
-    m_enc.nvec_xz,(char) (m_enc.nvec_xz+1),
-    m_enc.nvec_y,(char) (m_enc.nvec_y+1),
-    m_enc.curv,(char) (m_enc.curv+1)
-
-  };
-
-  float* src[]={n+0,n+2,n+1,n+3};
-
-  struct Frac::Bat<char> batch={
-    .m_dst=dst,
-    .m_enc=enc,
-    .m_src=src,
-
-    .m_sz=3,
-
-  };
-
-  batch.decode();
+  batch.encoder();
 
 };
 

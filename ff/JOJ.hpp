@@ -87,18 +87,9 @@ CASSERT(
 
 typedef struct {
 
-  char nvec_xz;
-  char nvec_y;
-  char curv;
-
-  char chroma;
-  char luma;
-  char alpha;
-
-  char occlu;
-  char rough;
-  char metal;
-  char emit;
+  char normal[9];
+  char color[9];
+  char shade[3];
 
 } JOJ_ENCODING;
 
@@ -128,18 +119,52 @@ public:
 
   CX JOJ_ENCODING ENC_DEFAULT={
 
-    .nvec_xz  = 1,
-    .nvec_y   = 0,
-    .curv     = 3,
+    .normal={
 
-    .chroma   = 6,
-    .luma     = 6,
-    .alpha    = 2,
+      // xz
+      Frac::STEP_2BIT,
+      Frac::SIZE_3BIT,
+      Frac::SIGNED,
 
-    .occlu    = 3,
-    .rough    = 3,
-    .metal    = 3,
-    .emit     = 3
+      // y
+      Frac::STEP_2BIT,
+      Frac::SIZE_3BIT,
+      Frac::SIGNED,
+
+      // curv
+      Frac::STEP_3BIT,
+      Frac::SIZE_4BIT,
+      Frac::UNSIGNED
+
+    },
+
+    .color={
+
+      // chroma_v
+      Frac::STEP_5BIT,
+      Frac::SIZE_6BIT,
+      Frac::SIGNED,
+
+      // chroma_u
+      Frac::STEP_3BIT,
+      Frac::SIZE_4BIT,
+      Frac::SIGNED,
+
+      // alpha && luma
+      Frac::STEP_2BIT,
+      Frac::SIZE_3BIT,
+      Frac::UNSIGNED
+
+    },
+
+    .shade={
+
+      // occlu,rough,metal,emit
+      Frac::STEP_3BIT,
+      Frac::STEP_4BIT,
+      Frac::UNSIGNED
+
+    }
 
   };
 
@@ -176,14 +201,9 @@ public:
   // stores unit vector in joj format
   void encode_nvec(
     float* n,
-    JOJ_PIXEL& j
+    JOJ_PIXEL& j,
 
-  );
-
-  // ^retrieves unit vector from joj
-  void decode_nvec(
-    float* n,
-    JOJ_PIXEL& j
+    bool mode=Frac::ENCODE
 
   );
 
