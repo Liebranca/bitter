@@ -7,8 +7,10 @@
   #include <iostream>
   #include <fstream>
   #include <string>
+  #include <memory>
 
   #include "kvrnel/Style.hpp"
+  #include "kvrnel/Evil.hpp"
 
 // ---   *   ---   *   ---
 // info

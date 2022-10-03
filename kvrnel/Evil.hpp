@@ -113,14 +113,14 @@ namespace Evil {
 // ---   *   ---   *   ---
 
   // makes filename nicer to read
-  static char* shpath (const char* path);
+  char* shpath (const char* path);
 
   // manage trace
-  static void printlog(int flush);
-  static void poplog(void);
+  void printlog(int flush);
+  void poplog(void);
 
   // goes back in time to save john connor
-  static void terminator(
+  void terminator(
     int errcode,
     std::string info
 
@@ -129,7 +129,7 @@ namespace Evil {
 // ---   *   ---   *   ---
 
   // gets error location
-  static Dang* geterrloc (
+  Dang* geterrloc (
     const char* p,
     const char* f,
 
@@ -138,7 +138,7 @@ namespace Evil {
   );
 
   // entry point, so to speak
-  static void errchk(
+  void errchk(
     Dang* call,
 
     int*  retx,

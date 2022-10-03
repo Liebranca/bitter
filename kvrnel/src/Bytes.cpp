@@ -216,6 +216,79 @@ while(m_sz) {
 
 }};
 
+// ---   *   ---   *   ---
+// color transform
+
+void rgba2yauv(float* p) {
+
+  // extract for clarity
+  float r=p[0];
+  float g=p[1];
+  float b=p[2];
+  float a=p[3];
+
+  // transform color
+  float yauv[]={
+
+    // luma
+    (0.257f * r)
+   +(0.504f * g)
+   +(0.098f * b),
+
+    // alpha
+    a,
+
+    // chroma_u
+    (-0.148f * r)
+   -(0.291f * g)
+   +(0.439f * b),
+
+    // chroma_v
+    (0.439f * r)
+   -(0.368f * g)
+   -(0.071f * b)
+
+  };
+
+  // overwrite
+  p[0]=yauv[0];
+  p[1]=yauv[1];
+  p[2]=yauv[2];
+  p[3]=yauv[3];
+
+};
+
+// ---   *   ---   *   ---
+// ^inverse
+
+void yauv2rgba(float* p) {
+
+  float luma     = p[0]*1.164000f;
+
+  float alpha    = p[1];
+  float chroma_u = p[2];
+  float chroma_v = p[3];
+
+  p[0]=
+    (luma)
+  + (1.596f * chroma_v)
+  ;
+
+  p[1]=
+    (luma)
+  - (0.392f * chroma_u)
+  - (0.813f * chroma_v)
+  ;
+
+  p[2]=
+    (luma)
+  + (2.017f * chroma_u)
+  ;
+
+  p[3]=alpha;
+
+};
+
 //// ---   *   ---   *   ---
 //
 //void ENCVRT(float* v,CRKVRT* c) {
@@ -343,111 +416,6 @@ while(m_sz) {
 //  vert->frac2=(((nnn&(31
 //    <<8))>>8)|(ttt<<5)|(uvs<<18));*/
 //}
-//
-//// ---   *   ---   *   ---
-//// try encoding four pixels at a time someday
-//
-//void ENCRGBA(float* p,JOJPIX* j) {
-//
-//
-//  float ff=FRACL_F[CFRAC_L];
-//  uint fi=FRACL_I[CFRAC_L];
-//
-//  float r=p[0];
-//  float g=p[1];
-//  float b=p[2];
-//  float a=p[3];
-//
-//  j->luma=FLTOFRAC(
-//    (0.257f * r)
-//   +(0.504f * g)
-//   +(0.098f * b),
-//    1,ff,fi,0
-//
-//  );
-//
-//  // this is wrong: it creates color artifacts
-//  // i just so happen to __LOVE__ the glitchy look
-//
-//  j->chroma_u=FLTOFRAC(
-//    (-0.148f * r)
-//   -(0.291f * g)
-//   +(0.439f * b),
-//    1,ff,fi,fi
-//
-//  );j->chroma_v=FLTOFRAC(
-//    (0.439f * r)
-//   -(0.368f * g)
-//   -(0.071f * b),
-//    1,ff,fi,fi
-//
-//  );
-//
-////  // the 'right way', not nearly as cool
-////
-////  j->chroma_u=FLTOFRAC(
-////    (-0.148f* r)
-////   -(0.291f *g)
-////   +(0.439f * b),
-////    1,ff*CFRAC_D0,
-////    fi/CFRAC_D0,
-////    fi/CFRAC_D0
-////
-////  );j->chroma_v=FLTOFRAC(
-////    (0.439f* r)
-////   -(0.368f *g)
-////   -(0.071f * b),
-////    1,ff*CFRAC_D0,
-////    fi/CFRAC_D0,
-////    fi/CFRAC_D0
-////
-////  );
-//
-//  j->alpha=FLTOFRAC(a,1,ff*CFRAC_D1,fi/CFRAC_D1,0);
-//
-//};
-//
-//// ---   *   ---   *   ---
-//
-//void DECRGBA(float* p,JOJPIX* j) {
-//
-//  float ff=FRACL_F[CFRAC_L];
-//  uint fi=FRACL_I[CFRAC_L];
-//
-//  float luma=FRACTOFL(j->luma,fi,ff,0)* 1.164000f;
-//
-//  // color artifacts 10/10
-//  float chr_u=FRACTOFL(
-//    j->chroma_u,fi,ff,fi
-//
-//  );float chr_v=FRACTOFL(
-//    j->chroma_v,fi,ff,fi
-//
-//  );
-//
-////  // the 'right way'
-////  float chr_u=FRACTOFL(
-////    j->chroma_u,
-////    fi,ff*CFRAC_D0,
-////    fi/CFRAC_D0
-////
-////  );float chr_v=FRACTOFL(
-////    j->chroma_v,
-////    fi,ff*CFRAC_D0,
-////    fi/CFRAC_D0
-////
-////  );
-//
-//  float alpha=FRACTOFL(
-//    j->alpha,fi/CFRAC_D1,ff*CFRAC_D1,0
-//
-//  );p[0]=(luma)+(1.596f * chr_v);
-//  p[1]=(luma)-(0.392f * chr_u)-(0.813f * chr_v);
-//  p[2]=(luma)+(2.017f * chr_u);
-//  p[3]=alpha;
-//
-//};
-//
 ////   ---     ---     ---     ---     ---
 //// #:0xF;>
 

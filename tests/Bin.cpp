@@ -5,6 +5,7 @@
 #include "ff/src/JOJ.cpp"
 
 #include <ctime>
+#include <png++/png.hpp>
 
 float rflut(void) {
 
@@ -33,31 +34,74 @@ void fnorm(float* v) {
 
 int main(void) {
 
-  srand((unsigned int) time(NULL));
+//  srand((unsigned int) time(NULL));
+//
+//  float pixels[]={
+//    rflut(),rflut(),rflut(),rflut()
+//
+//  };
+//
+//  fnorm(pixels);
 
-  float pixels[]={
-    rflut(),rflut(),rflut(),rflut()
+  png::image<png::rgba_pixel> im(
+    "/home/lyeb/Downloads/ElQuds.png"
+
+  );
+
+  size_t width=im.get_width();
+  size_t height=im.get_height();
+
+  size_t sz=width*height;
+
+  std::unique_ptr<float> pixels_p(
+    new float[sz*4]
+
+  );
+
+  size_t i=0;
+
+  float* pixels=pixels_p.get();
+
+  for(size_t y=0;y<height;y++) {
+
+    size_t row=y*width;
+
+    for(size_t x=0;x<width;x++) {
+
+      png::rgba_pixel px=im.get_pixel(x,y);
+
+      pixels[i++]=px.red/255.0f;
+      pixels[i++]=px.green/255.0f;
+      pixels[i++]=px.blue/255.0f;
+      pixels[i++]=px.alpha/255.0f;
+
+    };
 
   };
 
-  fnorm(pixels);
+  JOJ j("./out",pixels,sz);
 
-  printf(
+  i=0;
+  for(size_t y=0;y<height;y++) {
 
-    "%.4f %.4f %.4f %.4f\n",
-    pixels[0],pixels[1],pixels[2],pixels[3]
+    size_t row=y*width;
 
-  );
+    for(size_t x=0;x<width;x++) {
 
-  JOJ j("./out",pixels,1);
+      png::rgba_pixel px=im.get_pixel(x,y);
 
-  fnorm(pixels);
-  printf(
+      px.red   = pixels[i++]*255.0f;
+      px.green = pixels[i++]*255.0f;
+      px.blue  = pixels[i++]*255.0f;
+      px.alpha = pixels[i++]*255.0f;
 
-    "%.4f %.4f %.4f %.4f\n",
-    pixels[0],pixels[1],pixels[2],pixels[3]
+      im[y][x]=px;
 
-  );
+    };
+
+  };
+
+  im.write("./out");
 
   return 0;
 

@@ -15,7 +15,7 @@
   #include <cstdlib>
   #include <cstring>
 
-  #include "Path.hpp"
+  #include "kvrnel/Path.hpp"
   #include "kvrnel/Mem.hpp"
 
 // ---   *   ---   *   ---

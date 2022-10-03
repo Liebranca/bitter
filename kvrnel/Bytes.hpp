@@ -185,6 +185,12 @@ float unfrac(
 );
 
 // ---   *   ---   *   ---
+// color conversions
+
+void rgba2yauv(float* p);
+void yauv2rgba(float* p);
+
+// ---   *   ---   *   ---
 
 //// *unpacked* geometry types
 //// ie, how we read it from file on unzip

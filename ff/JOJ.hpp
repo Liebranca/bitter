@@ -13,7 +13,7 @@
   cx64 JOJ_PAL_SZ=16;
 
 // ---   *   ---   *   ---
-// first field is YUV+alpha color
+// first field is YAUV color
 // second is ORM+emit
 // third is normal+curv
 
@@ -24,7 +24,7 @@ typedef struct {
     struct {
       union {
 
-        char chroma_u;
+        char luma;
 
         char occlu;
         char x;
@@ -33,7 +33,7 @@ typedef struct {
 
       union {
 
-        char chroma_v;
+        char alpha;
 
         char rough;
         char y;
@@ -42,7 +42,7 @@ typedef struct {
 
       union {
 
-        char luma;
+        char chroma_u;
 
         char metal;
         char z;
@@ -50,7 +50,8 @@ typedef struct {
       };
 
       union {
-        char alpha;
+
+        char chroma_v;
 
         char emit;
         char curv;
@@ -140,20 +141,20 @@ public:
 
     .color={
 
-      // chroma_v
-      Frac::STEP_5BIT,
-      Frac::SIZE_6BIT,
-      Frac::SIGNED,
+      // alpha && luma
+      Frac::STEP_3BIT,
+      Frac::SIZE_3BIT,
+      Frac::UNSIGNED,
 
       // chroma_u
-      Frac::STEP_3BIT,
+      Frac::STEP_4BIT,
       Frac::SIZE_4BIT,
       Frac::SIGNED,
 
-      // alpha && luma
-      Frac::STEP_2BIT,
-      Frac::SIZE_3BIT,
-      Frac::UNSIGNED
+      // chroma_v
+      Frac::STEP_4BIT,
+      Frac::SIZE_4BIT,
+      Frac::SIGNED
 
     },
 
@@ -200,6 +201,15 @@ public:
 
   // stores unit vector in joj format
   void encode_nvec(
+    float* n,
+    JOJ_PIXEL& j,
+
+    bool mode=Frac::ENCODE
+
+  );
+
+  // ^color
+  void encode_color(
     float* n,
     JOJ_PIXEL& j,
 

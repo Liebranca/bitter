@@ -1,8 +1,0 @@
-kvr/struct
-  this file outlines the file structure of kvr
-
-$:avtomat;>
-  cash            string lib
-  fq              f i/o lib
-  fmat            formatting app
-  j3l             packaging/building app

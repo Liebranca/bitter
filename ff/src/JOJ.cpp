@@ -53,19 +53,20 @@ JOJ::JOJ(
   );
 
   JOJ_PIXEL* out_p=out.get();
+  Frac::Rounding_Mode=Frac::CORD;
 
-  for(size_t i=0;i<sz;i++) {
+  for(size_t i=0,j=0;i<sz;i++,j+=4) {
 
-    this->encode_nvec(
-      pixels+(i*4),
+    this->encode_color(
+      pixels+j,
       out_p[i],
 
       Frac::ENCODE
 
     );
 
-    this->encode_nvec(
-      pixels+(i*4),
+    this->encode_color(
+      pixels+j,
       out_p[i],
 
       Frac::DECODE
@@ -114,4 +115,47 @@ void JOJ::encode_nvec(
 };
 
 // ---   *   ---   *   ---
+// try encoding four pixels at a time someday
 
+void JOJ::encode_color(
+  float* p,
+  JOJ_PIXEL& j,
+
+  bool mode
+
+) {
+
+  if(mode==Frac::ENCODE) {
+    rgba2yauv(p);
+
+  };
+
+  char* bytes[]={
+    &j.luma,&j.alpha,NULL,
+    &j.chroma_u,NULL,
+    &j.chroma_v,NULL
+
+  };
+
+  float* floats[]={p+0,p+1,p+2,p+3};
+
+  struct Frac::Bat<char> batch={
+    .m_bytes  = bytes,
+    .m_enc    = m_enc.color,
+    .m_floats = floats,
+    .m_sz     = 3,
+
+    .m_mode   = mode,
+
+  };
+
+  batch.encoder();
+
+  if(mode==Frac::DECODE) {
+    yauv2rgba(p);
+
+  };
+
+};
+
+// ---   *   ---   *   ---
