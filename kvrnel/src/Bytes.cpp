@@ -87,6 +87,36 @@ T bitslice(
 };
 
 // ---   *   ---   *   ---
+
+// get first non-zero bit in mask
+inline size_t bsf(size_t x) {
+  return __builtin_ctzll(x);
+
+};
+
+// ^first zero ;>
+inline size_t nbsf(size_t x) {
+  return __builtin_ctzll(~x);
+
+};
+
+// ---   *   ---   *   ---
+// finding/enforcing nearest power of 2
+
+inline size_t fast_log2(size_t x) {
+  return 63-__builtin_clzll(x);
+
+};
+
+inline size_t near_pow2(size_t x) {
+  size_t y=63-__builtin_clzll(x);
+  y+=(x & (x-1))!=0;
+
+  return 1<<y;
+
+};
+
+// ---   *   ---   *   ---
 // clamps floats along a linear range
 // encodes them as integers
 

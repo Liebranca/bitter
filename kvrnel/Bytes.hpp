@@ -158,6 +158,18 @@ T bitsize(T x);
 template <typename T>
 T bitslice(T b,T iStart,T iEnd);
 
+// get first non-zero bit in mask
+inline size_t bsf(size_t x);
+
+// ^first zero ;>
+inline size_t nbsf(size_t x);
+
+// finding/enforcing nearest power of 2
+inline size_t fast_log2(size_t x);
+inline size_t near_pow2(size_t x);
+
+// ---   *   ---   *   ---
+
 // quantize and pack float
 template <typename T>
 T frac(
