@@ -14,8 +14,11 @@
 // deps
 
   #include "kvrnel/Bytes.hpp"
+
   #include <cmath>
   #include <cstdio>
+
+  #include <algorithm>
 
 // ---   *   ---   *   ---
 // get nth bit is set
@@ -99,15 +102,20 @@ T frac(
 
 ) {
 
-  uint16_t mid = 1<<(nbits);
-  uint16_t max = Frac::MAXV[nbits];
+  uint16_t mid  = 1<<(nbits);
+  uint16_t max  = Frac::MAXV[nbits];
+
+  uint16_t midp = (!unsig)
+    ? mid
+    : 1
+    ;
 
   long     b   = roundf(x/step);
-  float    top = step*(max-1);
+  float    top = step*(max-mid);
 
   top-=step*Frac::Rounding_Mode;
 
-  b+=mid*unsig;
+  b+=mid*!unsig;
   b-=1*(b==max && x<top);
 
   return (T) b;
@@ -132,8 +140,13 @@ float unfrac(
   uint16_t max=Frac::MAXV[nbits];
   uint16_t mid=1<<(nbits);
 
+  uint16_t midp = (!unsig)
+    ? mid
+    : 0
+    ;
+
   b+=1*(b==max);
-  b-=mid*unsig;
+  b-=mid*!unsig;
 
   return (b*step);
 
@@ -232,14 +245,14 @@ void rgba2yauv(float* p) {
 
     // luma
     (0.257f * r)
-   +(0.504f * g)
-   +(0.098f * b),
+  + (0.504f * g)
+  + (0.098f * b),
 
     // alpha
     a,
 
     // chroma_u
-    (-0.148f * r)
+   -(0.148f * r)
    -(0.291f * g)
    +(0.439f * b),
 
@@ -251,10 +264,11 @@ void rgba2yauv(float* p) {
   };
 
   // overwrite
-  p[0]=yauv[0];
-  p[1]=yauv[1];
-  p[2]=yauv[2];
-  p[3]=yauv[3];
+  p[0]=std::clamp(yauv[0],0.0,1.0);
+  p[1]=std::clamp(yauv[1],0.0,1.0);
+
+  p[2]=std::clamp(yauv[2],-0.5,0.5);
+  p[3]=std::clamp(yauv[3],-0.5,0.5);
 
 };
 
@@ -286,6 +300,11 @@ void yauv2rgba(float* p) {
   ;
 
   p[3]=alpha;
+
+  p[0]=std::clamp(p[0],0.0,1.0);
+  p[1]=std::clamp(p[1],0.0,1.0);
+  p[2]=std::clamp(p[2],0.0,1.0);
+  p[3]=std::clamp(p[3],0.0,1.0);
 
 };
 

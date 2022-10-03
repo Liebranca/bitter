@@ -1,25 +1,31 @@
 #include "kvrnel/src/Bytes.cpp"
+
 #include <cstdio>
 #include <cmath>
 
 int main(void) {
 
+  int   nbits = Frac::BITS[2];
+  float step  = Frac::STEP[2];
 
-  int   nbits = 2;
-  float step  = FRAC1;
+  bool  unsig = Frac::UNSIGNED;
 
-  int   top   = 1<<nbits;
-  int   beg   = (-top)/2;
-  int   end   = (top)/2;
+printf("MAX %02X\n",Frac::MAXV[nbits]);
+
+  Frac::Rounding_Mode=Frac::CORD;
+
+  int   top   = Frac::MAXV[nbits];
+  int   beg   = 0;//((-top)/2)-1;
+  int   end   = top+1;//((top)/2)+1;
 
   for(int i=beg;i<end;i++) {
 
     float   x = i*step;
 
-    char    y = frac<char>(x,step,nbits);
-    float   z = unfrac<char>(y,step,nbits);
+    char    y = frac<char>(x,step,nbits,unsig);
+    float   z = unfrac<char>(y,step,nbits,unsig);
 
-    printf("%f : %.04X %f\n",x,y&0xF,z);
+    printf("%i : %.04X %f\n",i,y,z);
 
   };
 

@@ -89,7 +89,7 @@ CASSERT(
 typedef struct {
 
   char normal[9];
-  char color[9];
+  char color[6];
   char shade[3];
 
 } JOJ_ENCODING;
@@ -142,19 +142,14 @@ public:
     .color={
 
       // alpha && luma
-      Frac::STEP_3BIT,
-      Frac::SIZE_3BIT,
+      Frac::STEP_4BIT,
+      Frac::SIZE_4BIT,
       Frac::UNSIGNED,
 
-      // chroma_u
+      // chroma uv
       Frac::STEP_4BIT,
       Frac::SIZE_4BIT,
       Frac::SIGNED,
-
-      // chroma_v
-      Frac::STEP_4BIT,
-      Frac::SIZE_4BIT,
-      Frac::SIGNED
 
     },
 

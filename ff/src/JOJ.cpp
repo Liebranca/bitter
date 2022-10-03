@@ -132,8 +132,7 @@ void JOJ::encode_color(
 
   char* bytes[]={
     &j.luma,&j.alpha,NULL,
-    &j.chroma_u,NULL,
-    &j.chroma_v,NULL
+    &j.chroma_u,&j.chroma_v,NULL
 
   };
 
@@ -143,7 +142,7 @@ void JOJ::encode_color(
     .m_bytes  = bytes,
     .m_enc    = m_enc.color,
     .m_floats = floats,
-    .m_sz     = 3,
+    .m_sz     = 2,
 
     .m_mode   = mode,
 
