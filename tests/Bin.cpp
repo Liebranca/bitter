@@ -1,6 +1,7 @@
 #include "kvrnel/src/Evil.cpp"
 #include "kvrnel/src/Bin.cpp"
 #include "kvrnel/src/Bytes.cpp"
+#include "kvrnel/src/Tab.cpp"
 
 #include "ff/src/JOJ.cpp"
 
@@ -81,27 +82,27 @@ int main(void) {
 
   JOJ j("./out",pixels,sz);
 
-  i=0;
-  for(size_t y=0;y<height;y++) {
-
-    size_t row=y*width;
-
-    for(size_t x=0;x<width;x++) {
-
-      png::rgba_pixel px=im.get_pixel(x,y);
-
-      px.red   = pixels[i++]*255.0f;
-      px.green = pixels[i++]*255.0f;
-      px.blue  = pixels[i++]*255.0f;
-      px.alpha = pixels[i++]*255.0f;
-
-      im[y][x]=px;
-
-    };
-
-  };
-
-  im.write("./out");
+//  i=0;
+//  for(size_t y=0;y<height;y++) {
+//
+//    size_t row=y*width;
+//
+//    for(size_t x=0;x<width;x++) {
+//
+//      png::rgba_pixel px=im.get_pixel(x,y);
+//
+//      px.red   = pixels[i++]*255.0f;
+//      px.green = pixels[i++]*255.0f;
+//      px.blue  = pixels[i++]*255.0f;
+//      px.alpha = pixels[i++]*255.0f;
+//
+//      im[y][x]=px;
+//
+//    };
+//
+//  };
+//
+//  im.write("./out");
 
   return 0;
 

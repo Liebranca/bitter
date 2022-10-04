@@ -69,6 +69,31 @@ typedef struct {
 
   };
 
+  // straight numerical repr
+  inline size_t as_key(void) {
+
+    return
+
+      arr[0]
+
+    | (arr[1]<< 8)
+    | (arr[2]<<16)
+    | (arr[3]<<24)
+    ;
+
+  };
+
+  // ^populate from repr
+  inline void from_key(size_t k) {
+
+    arr[0]=k&0xFF;
+
+    arr[1]=(k>>8)&0xFF;
+    arr[2]=(k>>16)&0xFF;
+    arr[3]=(k>>24)&0xFF;
+
+  };
+
 } JOJ_PIXEL;
 
 // ---   *   ---   *   ---

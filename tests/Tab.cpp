@@ -7,14 +7,14 @@
 
 int main(void) {
 
-  Tab<std::string,short> tab(64);
+  Tab<size_t,short> tab(64);
 
-  std::string key="item_a";
+  size_t key=0;
 
   tab.push(key,0xDD);
-  tab.push(key,0xDF);
 
-  short x=tab.pop(key);
+  tab.set(key,0xDF);
+  short x=tab.get(key);
   printf("%04X\n",x);
 
   return 0;

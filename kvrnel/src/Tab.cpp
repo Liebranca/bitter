@@ -12,7 +12,6 @@
 // ---   *   ---   *   ---
 // deps
 
-  #include <functional>
   #include <string>
 
   #include "kvrnel/Bytes.hpp"
@@ -38,10 +37,21 @@ inline bool Tab<K,T>::key_match(
 };
 
 // ---   *   ---   *   ---
+// ^straight number
+
+template <typename K,typename T>
+inline bool Tab<K,T>::key_match(
+  size_t key,
+  size_t idex
+
+) {return m_keys[idex]==key;};
+
+// ---   *   ---   *   ---
 // variations on obtaining a numerical
 // representation of a key
 
-void irep(
+template <typename K,typename T>
+void Tab<K,T>::irep(
   std::string x,
   short* nkey
 
@@ -52,6 +62,32 @@ void irep(
   for(short i=1;i<64;i++) {
     if(i<limit) {
       nkey[i]=x[i];
+
+    } else {
+      nkey[i]=1<<i;
+
+    };
+
+  };
+
+};
+
+// ---   *   ---   *   ---
+// ^straight number
+
+template <typename K,typename T>
+void Tab<K,T>::irep(
+  size_t x,
+  short* nkey
+
+) {
+
+  short limit=sizeof(x);
+
+  for(short i=1;i<64;i++) {
+    if(i<limit) {
+      nkey[i]=x&0xFFFF;
+      x=x>>16;
 
     } else {
       nkey[i]=1<<i;
@@ -75,13 +111,13 @@ size_t Tab<K,T>::hash(
   short  x    = 0;
   short  y    = 0;
 
-  short  nkey[64];
+  short  nkey[64]={0};
   short* nkey_p=&nkey[0];
 
   irep(k,nkey_p);
 
   // rehash teh hash
-  for(int i=0;i<REAL_MULT;i++) {
+  for(int i=0;i<64;i++) {
 
     x=(*nkey_p++);
     x*=++x;
@@ -188,7 +224,7 @@ inline T Tab<K,T>::get(
 
 template <typename K,typename T>
 inline void Tab<K,T>::set(
-  K& k,T v
+  K& k,T& v
 
 ) {
 
@@ -219,20 +255,26 @@ T Tab<K,T>::pop(
 };
 
 // ---   *   ---   *   ---
-// add element
+// get key in table
 
 template <typename K,typename T>
-inline size_t Tab<K,T>::push(
-  K k,T v
+inline Tab_Lookup Tab<K,T>::has(
+  K& k
 
 ) {
 
   Tab_Lookup lkp=get_mask(k);
-  if(lkp.key_match) {
-    m_values[lkp.real]=v;
-    goto TAIL;
+  return lkp;
 
-  };
+};
+
+// ---   *   ---   *   ---
+
+template <typename K,typename T>
+void Tab<K,T>::update_mask(
+  Tab_Lookup& lkp
+
+) {
 
   // get next free slot
   if(lkp.mask) {
@@ -247,12 +289,57 @@ inline size_t Tab<K,T>::push(
 
   };
 
+};
+
+// ---   *   ---   *   ---
+
+template <typename K,typename T>
+inline void Tab<K,T>::update_entry(
+  Tab_Lookup& lkp,
+  K& k,T& v
+
+) {
+
   m_masks[lkp.fake]=lkp.mask;
   m_values[lkp.real]=v;
   m_keys[lkp.real]=k;
 
-TAIL:
+};
+
+// ---   *   ---   *   ---
+// add element
+
+template <typename K,typename T>
+size_t Tab<K,T>::push(
+  K& k,T& v
+
+) {
+
+  Tab_Lookup lkp=get_mask(k);
+
+  if(lkp.key_match) {
+    m_values[lkp.real]=v;
+
+  } else {
+    this->push(lkp,k,v);
+
+  };
+
   return lkp.real;
+
+};
+
+// ---   *   ---   *   ---
+
+template <typename K,typename T>
+inline void Tab<K,T>::push(
+  Tab_Lookup& lkp,
+  K& k,T& v
+
+) {
+
+  this->update_mask(lkp);
+  this->update_entry(lkp,k,v);
 
 };
 

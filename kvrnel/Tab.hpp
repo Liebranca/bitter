@@ -50,7 +50,20 @@ private:
   Tab_Lookup get_mask(K& k);
 
   size_t hash(K& k);
-  inline size_t collide(size_t idex,K& k);
+
+  inline void update_entry(
+    Tab_Lookup& lkp,
+    K& k,T& v
+
+  );
+
+  void update_mask(
+    Tab_Lookup& lkp
+
+  );
+
+// ---   *   ---   *   ---
+// key==string
 
   inline bool key_match(
     std::string& key,
@@ -58,18 +71,48 @@ private:
 
   );
 
+  void irep(std::string x,short* nkey);
+
 // ---   *   ---   *   ---
+// key==unsigned long
+
+  inline bool key_match(
+    size_t key,
+    size_t idex
+
+  );
+
+  void irep(size_t x,short* nkey);
+
+// ---   *   ---   *   ---
+// interface
 
 public:
 
   Tab(size_t fake);
   ~Tab(void);
 
+  // remove entry
   T pop(K& k);
-  size_t push(K k,T v);
 
+  // add entry
+  size_t push(K& k,T& v);
+
+  // ^same, use if key is already hashed
+  inline void push(
+    Tab_Lookup& lkp,
+    K& k,T& v
+
+  );
+
+  // value from key
   inline T get(K& k);
-  inline void set(K& k,T v);
+
+  // true if key in table
+  inline Tab_Lookup has(K& k);
+
+  // assign value to key
+  inline void set(K& k,T& v);
 
 
 };

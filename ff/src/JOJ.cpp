@@ -13,6 +13,8 @@
 // deps
 
   #include "kvrnel/Bytes.hpp"
+  #include "kvrnel/Tab.hpp"
+
   #include "ff/JOJ.hpp"
 
 // ---   *   ---   *   ---
@@ -55,6 +57,9 @@ JOJ::JOJ(
   JOJ_PIXEL* out_p=out.get();
   Frac::Rounding_Mode=Frac::CORD;
 
+  Tab<size_t,size_t> palette(sz);
+  size_t pal_cnt=0;
+
   for(size_t i=0,j=0;i<sz;i++,j+=4) {
 
     this->encode_color(
@@ -65,16 +70,18 @@ JOJ::JOJ(
 
     );
 
-    this->encode_color(
-      pixels+j,
-      out_p[i],
+    size_t k=out_p[i].as_key();
+    Tab_Lookup lkp=palette.has(k);
 
-      Frac::DECODE
+    if(!lkp.key_match) {
+      palette.push(lkp,k,pal_cnt);
+      pal_cnt++;
 
-    );
+    };
 
   };
 
+  printf("Palette size: %u\n",pal_cnt);
   out.reset();
 
 };
