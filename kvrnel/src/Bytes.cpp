@@ -108,6 +108,11 @@ inline size_t fast_log2(size_t x) {
 
 };
 
+inline size_t fast_sqrt2(size_t x) {
+  return 1<<((63-__builtin_clzll(x))>>1);
+
+};
+
 inline size_t near_pow2(size_t x) {
   size_t y=63-__builtin_clzll(x);
   y+=(x & (x-1))!=0;
@@ -195,8 +200,8 @@ inline void Frac::Bat<T>::encode(
 
 ) {
 
-  **m_bytes=frac<T>(
-    **m_floats,step,bits,unsig
+  *m_bytes=frac<T>(
+    *m_floats,step,bits,unsig
 
   );
 
@@ -215,8 +220,8 @@ inline void Frac::Bat<T>::decode(
 
 ) {
 
-  **m_floats=unfrac<T>(
-    **m_bytes,step,bits,unsig
+  *m_floats=unfrac<T>(
+    *m_bytes,step,bits,unsig
 
   );
 
@@ -233,6 +238,9 @@ auto branch_to=(m_mode==Frac::DECODE)
   : &Frac::Bat<T>::encode
   ;
 
+T*   orig_enc = m_enc;
+int* orig_cnt = m_cnt;
+
 while(m_sz) {
 
   // switch precision level
@@ -243,34 +251,48 @@ while(m_sz) {
   bool  unsig = *m_enc++;
 
   // run through elements
-  while(*m_bytes!=NULL) {
+  int limit=*m_cnt;
+  for(int x=0;x<limit;x++) {
 
     (this->*branch_to)(step,bits,unsig);
 
-    // go next
+    // next element
     m_bytes++;
     m_floats++;
+    m_sz--;
 
   };
 
-  // skip null
-  m_bytes++;
-  m_sz--;
+// ---   *   ---   *   ---
+// next round
+
+  m_cnt++;
+
+  // reset
+  if(!*m_cnt) {
+    m_enc=orig_enc;
+    m_cnt=orig_cnt;
+
+  };
 
 }};
 
 // ---   *   ---   *   ---
 // color transform
 
-void rgba2yauv(float* p) {
+void rgba2yauv(float* p,size_t sz) {
+
+for(size_t i=0;i<sz;i+=4) {
 
   // extract for clarity
-  float r=p[0];
-  float g=p[1];
-  float b=p[2];
-  float a=p[3];
+  float r=p[i+0];
+  float g=p[i+1];
+  float b=p[i+2];
+  float a=p[i+3];
 
-  // transform color
+// ---   *   ---   *   ---
+// transform color
+
   float yauv[]={
 
     // luma
@@ -293,50 +315,60 @@ void rgba2yauv(float* p) {
 
   };
 
-  // overwrite
-  p[0]=std::clamp(yauv[0],0.0,1.0);
-  p[1]=std::clamp(yauv[1],0.0,1.0);
+// ---   *   ---   *   ---
+// overwrite
 
-  p[2]=std::clamp(yauv[2],-0.5,0.5);
-  p[3]=std::clamp(yauv[3],-0.5,0.5);
+  p[i+0]=std::clamp(yauv[0],0.0,1.0);
+  p[i+1]=std::clamp(yauv[1],0.0,1.0);
 
-};
+  p[i+2]=std::clamp(yauv[2],-0.5,0.5);
+  p[i+3]=std::clamp(yauv[3],-0.5,0.5);
+
+}};
 
 // ---   *   ---   *   ---
 // ^inverse
 
-void yauv2rgba(float* p) {
+void yauv2rgba(float* p,size_t sz) {
 
-  float luma     = p[0]*1.164000f;
+for(size_t i=0;i<sz;i+=4) {
 
-  float alpha    = p[1];
-  float chroma_u = p[2];
-  float chroma_v = p[3];
+  // extract for clarity
+  float luma     = p[i+0]*1.164000f;
+  float alpha    = p[i+1];
+  float chroma_u = p[i+2];
+  float chroma_v = p[i+3];
 
-  p[0]=
+// ---   *   ---   *   ---
+// convert
+
+  float r=
     (luma)
   + (1.596f * chroma_v)
   ;
 
-  p[1]=
+  float g=
     (luma)
   - (0.392f * chroma_u)
   - (0.813f * chroma_v)
   ;
 
-  p[2]=
+  float b=
     (luma)
   + (2.017f * chroma_u)
   ;
 
-  p[3]=alpha;
+  float a=alpha;
 
-  p[0]=std::clamp(p[0],0.0,1.0);
-  p[1]=std::clamp(p[1],0.0,1.0);
-  p[2]=std::clamp(p[2],0.0,1.0);
-  p[3]=std::clamp(p[3],0.0,1.0);
+// ---   *   ---   *   ---
+// clamp and overwrite
 
-};
+  p[i+0]=std::clamp(r,0.0,1.0);
+  p[i+1]=std::clamp(g,0.0,1.0);
+  p[i+2]=std::clamp(b,0.0,1.0);
+  p[i+3]=std::clamp(a,0.0,1.0);
+
+}};
 
 //// ---   *   ---   *   ---
 //

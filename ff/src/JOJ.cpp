@@ -13,8 +13,6 @@
 // deps
 
   #include "kvrnel/Bytes.hpp"
-  #include "kvrnel/Tab.hpp"
-
   #include "ff/JOJ.hpp"
 
 // ---   *   ---   *   ---
@@ -35,7 +33,7 @@ JOJ::JOJ(
   float* pixels,
   size_t sz,
 
-  JOJ_ENCODING enc
+  JOJ::Encoding enc
 
 )
 
@@ -46,72 +44,130 @@ JOJ::JOJ(
 
 ) {
 
-  m_pixels=pixels;
-  m_enc=enc;
+  m_pixels         = pixels;
+  m_header.enc     = enc;
 
-  std::unique_ptr<JOJ_PIXEL> out(
-    new JOJ_PIXEL[sz]
+  m_header.imsz    = fast_sqrt2(sz);
+  m_header.pal     = Tab<size_t,size_t>(
+    m_header.imsz
 
   );
 
-  JOJ_PIXEL* out_p=out.get();
-  Frac::Rounding_Mode=Frac::CORD;
+  m_header.imsz_sq = sz;
 
-  Tab<size_t,size_t> palette(sz);
-  size_t pal_cnt=0;
+  m_header.palcnt  = 0;
+  m_header.imcnt   = 0;
+  m_header.mip     = 0;
 
-  for(size_t i=0,j=0;i<sz;i++,j+=4) {
+  // allocate secondary buffer
+  m_buff=std::unique_ptr<JOJ::Pixel>(
+    new JOJ::Pixel[sz]
 
-    this->encode_color(
-      pixels+j,
-      out_p[i],
+  );
 
-      Frac::ENCODE
+};
+
+// ---   *   ---   *   ---
+
+void JOJ::pal_push(size_t key) {
+
+  Tab_Lookup lkp=
+    m_header.pal.has(key);
+
+  if(!lkp.key_match) {
+
+    m_header.pal.push(
+      lkp,key,m_header.palcnt
 
     );
 
-    size_t k=out_p[i].as_key();
-    Tab_Lookup lkp=palette.has(k);
+    m_header.palcnt++;
 
-    if(!lkp.key_match) {
-      palette.push(lkp,k,pal_cnt);
-      pal_cnt++;
+  };
+
+};
+
+// ---   *   ---   *   ---
+// to avoid having the switch pasted everywhere
+
+JOJ::SubEncoding JOJ::read_mode(
+  int type,
+  bool mode
+
+) {
+
+  JOJ::SubEncoding out;
+
+  switch(type) {
+
+  case JOJ::NVEC:
+    out=m_header.enc.normal;
+    Frac::Rounding_Mode=Frac::NVEC;
+
+    break;
+
+// ---   *   ---   *   ---
+// rgba is heeeeeeeeeaavy
+
+  case JOJ::YAUV:
+    out=m_header.enc.color;
+    Frac::Rounding_Mode=Frac::CORD;
+
+    if(mode == Frac::ENCODE) {
+      rgba2yauv(
+        m_pixels,
+        m_header.imsz_sq*4
+
+      );
 
     };
 
+    break;
+
+// ---   *   ---   *   ---
+
+  case JOJ::ORME:
+    out=m_header.enc.shade;
+    Frac::Rounding_Mode=Frac::CORD;
+
+    break;
+
+// ---   *   ---   *   ---
+// TODO: throw unrecognized type
+
+  default:
+    ;
+
   };
 
-  printf("Palette size: %u\n",pal_cnt);
-  out.reset();
+  return out;
 
 };
 
 // ---   *   ---   *   ---
-// stores unit vectors
 
-void JOJ::encode_nvec(
-
-  float* n,
-  JOJ_PIXEL& j,
-
+void JOJ::encoder(
+  int imtype,
   bool mode
 
 ) {
 
-  char* bytes[]={
-    &j.x,&j.z,NULL,
-    &j.y,NULL,
-    &j.curv,NULL
+  JOJ::Pixel* buff=m_buff.get();
 
-  };
+  JOJ::SubEncoding enc=
+    this->read_mode(imtype,mode);
 
-  float* floats[]={n+0,n+2,n+1,n+3};
+// ---   *   ---   *   ---
+// transform to and from compressed floats
 
   struct Frac::Bat<char> batch={
-    .m_bytes  = bytes,
-    .m_enc    = m_enc.normal,
-    .m_floats = floats,
-    .m_sz     = 3,
+
+    .m_bytes  = buff[0].as_ptr(),
+    .m_floats = m_pixels,
+    .m_sz     = m_header.imsz_sq*4,
+
+    .m_enc    = (char*) enc.values,
+    .m_cnt    = (int*) enc.cnt,
 
     .m_mode   = mode,
 
@@ -119,46 +175,16 @@ void JOJ::encode_nvec(
 
   batch.encoder();
 
-};
-
 // ---   *   ---   *   ---
-// try encoding four pixels at a time someday
+// should write a post read_mode instead...
 
-void JOJ::encode_color(
-  float* p,
-  JOJ_PIXEL& j,
+  if(mode == Frac::DECODE) {
 
-  bool mode
+    yauv2rgba(
+      m_pixels,
+      m_header.imsz_sq*4
 
-) {
-
-  if(mode==Frac::ENCODE) {
-    rgba2yauv(p);
-
-  };
-
-  char* bytes[]={
-    &j.luma,&j.alpha,NULL,
-    &j.chroma_u,&j.chroma_v,NULL
-
-  };
-
-  float* floats[]={p+0,p+1,p+2,p+3};
-
-  struct Frac::Bat<char> batch={
-    .m_bytes  = bytes,
-    .m_enc    = m_enc.color,
-    .m_floats = floats,
-    .m_sz     = 2,
-
-    .m_mode   = mode,
-
-  };
-
-  batch.encoder();
-
-  if(mode==Frac::DECODE) {
-    yauv2rgba(p);
+    );
 
   };
 

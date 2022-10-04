@@ -16,11 +16,14 @@ namespace Frac {
   struct Bat {
 
   public:
-    T**     m_bytes;
-    T*      m_enc;
 
-    float** m_floats;
+    T*      m_bytes;
+    float*  m_floats;
+
     size_t  m_sz;
+
+    T*      m_enc;
+    int*    m_cnt;
 
     bool    m_mode;
 
@@ -166,6 +169,7 @@ inline size_t nbsf(size_t x);
 
 // finding/enforcing nearest power of 2
 inline size_t fast_log2(size_t x);
+inline size_t fast_sqrt2(size_t x);
 inline size_t near_pow2(size_t x);
 
 // ---   *   ---   *   ---
@@ -199,8 +203,8 @@ float unfrac(
 // ---   *   ---   *   ---
 // color conversions
 
-void rgba2yauv(float* p);
-void yauv2rgba(float* p);
+void rgba2yauv(float* p,size_t sz);
+void yauv2rgba(float* p,size_t sz);
 
 // ---   *   ---   *   ---
 

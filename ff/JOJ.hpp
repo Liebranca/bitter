@@ -6,132 +6,7 @@
 
   #include "kvrnel/Style.hpp"
   #include "kvrnel/Bin.hpp"
-
-// ---   *   ---   *   ---
-// defs
-
-  cx64 JOJ_PAL_SZ=16;
-
-// ---   *   ---   *   ---
-// first field is YAUV color
-// second is ORM+emit
-// third is normal+curv
-
-typedef struct {
-
-  union {
-
-    struct {
-      union {
-
-        char luma;
-
-        char occlu;
-        char x;
-
-      };
-
-      union {
-
-        char alpha;
-
-        char rough;
-        char y;
-
-      };
-
-      union {
-
-        char chroma_u;
-
-        char metal;
-        char z;
-
-      };
-
-      union {
-
-        char chroma_v;
-
-        char emit;
-        char curv;
-
-      };
-
-    };
-
-    char arr[4];
-
-  };
-
-  inline char& operator[](size_t idex) {
-    return arr[idex];
-
-  };
-
-  // straight numerical repr
-  inline size_t as_key(void) {
-
-    return
-
-      arr[0]
-
-    | (arr[1]<< 8)
-    | (arr[2]<<16)
-    | (arr[3]<<24)
-    ;
-
-  };
-
-  // ^populate from repr
-  inline void from_key(size_t k) {
-
-    arr[0]=k&0xFF;
-
-    arr[1]=(k>>8)&0xFF;
-    arr[2]=(k>>16)&0xFF;
-    arr[3]=(k>>24)&0xFF;
-
-  };
-
-} JOJ_PIXEL;
-
-// ---   *   ---   *   ---
-// check struct is tight
-
-CASSERT(
-
-  sizeof(JOJ_PIXEL)==sizeof(float),
-  "Bad JOJ_PIXEL size!"
-
-);
-
-// ---   *   ---   *   ---
-// from 0 (lowest) to 7(highest)
-// level of precision to use for
-// each field of a material
-
-typedef struct {
-
-  char normal[9];
-  char color[6];
-  char shade[3];
-
-} JOJ_ENCODING;
-
-// ---   *   ---   *   ---
-
-typedef struct {
-
-  uint8_t  mip;
-
-  uint8_t  imcnt;
-  uint16_t imsz;
-
-  JOJ_ENCODING  encoding;
-  JOJ_PIXEL     palette[JOJ_PAL_SZ];
-
-} JOJ_HEADER;
+  #include "kvrnel/Tab.hpp"
 
 // ---   *   ---   *   ---
 // methods
@@ -143,64 +18,59 @@ public:
   VERSION   "v2.00.1";
   AUTHOR    "IBN-3DILA";
 
-  CX JOJ_ENCODING ENC_DEFAULT={
+// ---   *   ---   *   ---
+// fat boiler
 
-    .normal={
+  // definition of pixel for this format
+  #include "ff/JOJ_PIXEL.hpp"
 
-      // xz
-      Frac::STEP_2BIT,
-      Frac::SIZE_3BIT,
-      Frac::SIGNED,
-
-      // y
-      Frac::STEP_2BIT,
-      Frac::SIZE_3BIT,
-      Frac::SIGNED,
-
-      // curv
-      Frac::STEP_3BIT,
-      Frac::SIZE_4BIT,
-      Frac::UNSIGNED
-
-    },
-
-    .color={
-
-      // alpha && luma
-      Frac::STEP_4BIT,
-      Frac::SIZE_4BIT,
-      Frac::UNSIGNED,
-
-      // chroma uv
-      Frac::STEP_4BIT,
-      Frac::SIZE_4BIT,
-      Frac::SIGNED,
-
-    },
-
-    .shade={
-
-      // occlu,rough,metal,emit
-      Frac::STEP_3BIT,
-      Frac::STEP_4BIT,
-      Frac::UNSIGNED
-
-    }
-
-  };
+  // pastes in a lot of boring constants
+  #include "ff/JOJ_ENCODINGS.hpp"
 
 // ---   *   ---   *   ---
+// header def for non-pixel data in file
 
 private:
 
+  typedef struct {
+
+    uint8_t             mip;
+    uint8_t             imcnt;
+
+    size_t              imsz;
+    size_t              imsz_sq;
+
+    JOJ::Encoding       enc;
+
+    size_t              palcnt;
+    Tab<size_t,size_t>  pal;
+
+  } Header;
+
   cxstr   m_fsig="%JOJ";
-  cx64    m_header_sz=sizeof(JOJ_HEADER);
-
-  float*  m_pixels;
-
-  JOJ_ENCODING m_enc;
+  cx64    m_header_sz=sizeof(Header);
 
 // ---   *   ---   *   ---
+// attrs
+
+  Header  m_header;
+  float*  m_pixels;
+
+  std::unique_ptr<JOJ::Pixel> m_buff;
+
+// ---   *   ---   *   ---
+// internals
+
+  void pal_push(size_t key);
+
+  SubEncoding read_mode(
+    int type,
+    bool mode
+
+  );
+
+// ---   *   ---   *   ---
+// interface
 
 public:
 
@@ -215,29 +85,28 @@ public:
     float* pixels,
     size_t sz,
 
-    JOJ_ENCODING enc=ENC_DEFAULT
+    JOJ::Encoding enc=ENCDEF
 
   );
 
-  // stores unit vector in joj format
-  void encode_nvec(
-    float* n,
-    JOJ_PIXEL& j,
-
-    bool mode=Frac::ENCODE
-
-  );
-
-  // ^color
-  void encode_color(
-    float* n,
-    JOJ_PIXEL& j,
-
+  // processes loaded buffer
+  void encoder(
+    int imtype,
     bool mode=Frac::ENCODE
 
   );
 
 };
+
+// ---   *   ---   *   ---
+// check structs are tight
+
+CASSERT(
+
+  sizeof(JOJ::Pixel)==4,
+  "JOJ::Pixel must be four bytes in size\n"
+
+);
 
 // ---   *   ---   *   ---
 

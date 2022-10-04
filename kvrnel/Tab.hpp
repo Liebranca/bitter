@@ -89,6 +89,10 @@ private:
 
 public:
 
+  // compiler trash
+  Tab(void) {};
+
+  // nit/del
   Tab(size_t fake);
   ~Tab(void);
 
