@@ -71,10 +71,13 @@ int main(void) {
 
       png::rgba_pixel px=im.get_pixel(x,y);
 
+      size_t orig=i;
       pixels[i++]=px.red/255.0f;
       pixels[i++]=px.green/255.0f;
       pixels[i++]=px.blue/255.0f;
       pixels[i++]=px.alpha/255.0f;
+
+      rgba2yauv(pixels+orig);
 
     };
 
@@ -97,6 +100,8 @@ int main(void) {
     for(size_t x=0;x<width;x++) {
 
       png::rgba_pixel px=im.get_pixel(x,y);
+
+      yauv2rgba(pixels+i);
 
       px.red   = pixels[i++]*255.0f;
       px.green = pixels[i++]*255.0f;

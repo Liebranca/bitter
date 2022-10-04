@@ -61,7 +61,8 @@ private:
 // ---   *   ---   *   ---
 // internals
 
-  void pal_push(size_t key);
+  void build_palette(void);
+  size_t push_palette(JOJ::Pixel* b);
 
   SubEncoding read_mode(
     int type,

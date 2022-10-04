@@ -280,15 +280,13 @@ while(m_sz) {
 // ---   *   ---   *   ---
 // color transform
 
-void rgba2yauv(float* p,size_t sz) {
-
-for(size_t i=0;i<sz;i+=4) {
+void rgba2yauv(float* p) {
 
   // extract for clarity
-  float r=p[i+0];
-  float g=p[i+1];
-  float b=p[i+2];
-  float a=p[i+3];
+  float r=p[0];
+  float g=p[1];
+  float b=p[2];
+  float a=p[3];
 
 // ---   *   ---   *   ---
 // transform color
@@ -318,26 +316,24 @@ for(size_t i=0;i<sz;i+=4) {
 // ---   *   ---   *   ---
 // overwrite
 
-  p[i+0]=std::clamp(yauv[0],0.0,1.0);
-  p[i+1]=std::clamp(yauv[1],0.0,1.0);
+  p[0]=std::clamp(yauv[0],0.0,1.0);
+  p[1]=std::clamp(yauv[1],0.0,1.0);
 
-  p[i+2]=std::clamp(yauv[2],-0.5,0.5);
-  p[i+3]=std::clamp(yauv[3],-0.5,0.5);
+  p[2]=std::clamp(yauv[2],-0.5,0.5);
+  p[3]=std::clamp(yauv[3],-0.5,0.5);
 
-}};
+};
 
 // ---   *   ---   *   ---
 // ^inverse
 
-void yauv2rgba(float* p,size_t sz) {
-
-for(size_t i=0;i<sz;i+=4) {
+void yauv2rgba(float* p) {
 
   // extract for clarity
-  float luma     = p[i+0]*1.164000f;
-  float alpha    = p[i+1];
-  float chroma_u = p[i+2];
-  float chroma_v = p[i+3];
+  float luma     = p[0]*1.164000f;
+  float alpha    = p[1];
+  float chroma_u = p[2];
+  float chroma_v = p[3];
 
 // ---   *   ---   *   ---
 // convert
@@ -363,12 +359,12 @@ for(size_t i=0;i<sz;i+=4) {
 // ---   *   ---   *   ---
 // clamp and overwrite
 
-  p[i+0]=std::clamp(r,0.0,1.0);
-  p[i+1]=std::clamp(g,0.0,1.0);
-  p[i+2]=std::clamp(b,0.0,1.0);
-  p[i+3]=std::clamp(a,0.0,1.0);
+  p[0]=std::clamp(r,0.0,1.0);
+  p[1]=std::clamp(g,0.0,1.0);
+  p[2]=std::clamp(b,0.0,1.0);
+  p[3]=std::clamp(a,0.0,1.0);
 
-}};
+};
 
 //// ---   *   ---   *   ---
 //

@@ -203,8 +203,8 @@ float unfrac(
 // ---   *   ---   *   ---
 // color conversions
 
-void rgba2yauv(float* p,size_t sz);
-void yauv2rgba(float* p,size_t sz);
+void rgba2yauv(float* p);
+void yauv2rgba(float* p);
 
 // ---   *   ---   *   ---
 

@@ -36,13 +36,15 @@ public:
 
 private:
 
-  cx64 REAL_MULT=8;
+  cx64 REAL_MULT=64;
 
   size_t              m_size;
   std::vector<size_t> m_masks;
 
   std::vector<K>      m_keys;
   std::vector<T>      m_values;
+
+  size_t m_used;
 
 // ---   *   ---   *   ---
 // internals
@@ -71,7 +73,11 @@ private:
 
   );
 
-  void irep(std::string x,short* nkey);
+  void irep(
+    std::string& x,
+    std::string& nkey
+
+  );
 
 // ---   *   ---   *   ---
 // key==unsigned long
@@ -82,7 +88,7 @@ private:
 
   );
 
-  void irep(size_t x,short* nkey);
+  void irep(size_t x,std::string& nkey);
 
 // ---   *   ---   *   ---
 // interface
@@ -112,11 +118,20 @@ public:
   // value from key
   inline T get(K& k);
 
+  // ^key already hashed
+  inline T get(Tab_Lookup& lkp);
+
   // true if key in table
   inline Tab_Lookup has(K& k);
 
   // assign value to key
   inline void set(K& k,T& v);
+
+void report(void) {
+
+  printf("%u/%u\n",m_used,m_size);
+
+};
 
 
 };

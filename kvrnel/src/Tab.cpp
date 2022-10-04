@@ -30,7 +30,7 @@ inline bool Tab<K,T>::key_match(
   return
 
      m_keys[idex].length()
-  && m_keys[idex]==key
+  && !m_keys[idex].compare(key)
 
   ;
 
@@ -52,19 +52,21 @@ inline bool Tab<K,T>::key_match(
 
 template <typename K,typename T>
 void Tab<K,T>::irep(
-  std::string x,
-  short* nkey
+  std::string& x,
+  std::string& nkey
 
 ) {
 
   short limit=nkey[0]=x.length();
 
-  for(short i=1;i<64;i++) {
-    if(i<limit) {
-      nkey[i]=x[i];
+  for(short i=0,j=0;i<nkey.length();i++,j++) {
+
+    if(j<limit) {
+      nkey[i]=x[j];
 
     } else {
-      nkey[i]=1<<i;
+      nkey[i]=j&0xFF;
+      j=0;
 
     };
 
@@ -78,19 +80,19 @@ void Tab<K,T>::irep(
 template <typename K,typename T>
 void Tab<K,T>::irep(
   size_t x,
-  short* nkey
+  std::string& nkey
 
 ) {
 
   short limit=sizeof(x);
 
-  for(short i=1;i<64;i++) {
-    if(i<limit) {
-      nkey[i]=x&0xFFFF;
-      x=x>>16;
+  for(short i=0,j=0;i<nkey.length();i++,j++) {
+    if(j<limit) {
+      nkey[i]=(x>>(j*8))&0xFF;
 
     } else {
-      nkey[i]=1<<i;
+      nkey[i]=j&0xFF;
+      j=0;
 
     };
 
@@ -108,26 +110,26 @@ size_t Tab<K,T>::hash(
 ) {
 
   size_t idex = 0;
-  short  x    = 0;
-  short  y    = 0;
+  size_t x    = 0;
+  size_t y    = 0;
 
-  short  nkey[64]={0};
-  short* nkey_p=&nkey[0];
+  std::string nkey(256,'\0');
 
-  irep(k,nkey_p);
+  irep(k,nkey);
 
   // rehash teh hash
-  for(int i=0;i<64;i++) {
+  for(int i=0;i<nkey.length();i++) {
 
-    x=(*nkey_p++);
+    x=nkey[i];
     x*=++x;
 
-    idex^=x+y++;
+    idex+=x+y;
+    y++;
 
   };
 
   idex*=REAL_MULT;
-  idex%=m_size;
+  idex&=m_size-1;
 
   return idex;
 
@@ -146,6 +148,8 @@ Tab<K,T>::Tab(
   // ease up the bitter bitty
   fake   = near_pow2(fake);
   m_size = fake*REAL_MULT;
+
+  m_used = 0;
 
   // claim upfront
   m_keys.reserve(m_size);
@@ -182,6 +186,9 @@ Tab_Lookup Tab<K,T>::get_mask(K& k) {
   Tab_Lookup lkp={0};
 
   lkp.orig   = this->hash(k);
+  size_t f   = lkp.orig;
+
+TOP:
 
   lkp.fake   = lkp.orig/REAL_MULT;
   lkp.mask   = m_masks[lkp.fake];
@@ -189,15 +196,34 @@ Tab_Lookup Tab<K,T>::get_mask(K& k) {
   lkp.real   = lkp.orig;
 
   size_t cpy = lkp.mask;
+  bool   ful = lkp.mask!=0;
 
 // ---   *   ---   *   ---
 // collide
+
+  lkp.key_match=false;
 
   while(cpy) {
     lkp.key_match=key_match(k,lkp.real);
     if(lkp.key_match) {break;};
 
-    lkp.real++;cpy=cpy>>1;
+    lkp.real++;
+    cpy=cpy>>1;
+
+    if(!cpy && ful) {
+      lkp.orig+=REAL_MULT;
+      lkp.orig&=m_size-1;
+
+      // TODO: proper catch
+      if(lkp.orig==f) {
+        fprintf(stderr,"Collapsed tab\n");
+        exit(1);
+
+      };
+
+      goto TOP;
+
+    };
 
   };
 
@@ -218,6 +244,13 @@ inline T Tab<K,T>::get(
   return m_values[lkp.real];
 
 };
+
+// ^already hashed
+template <typename K,typename T>
+inline T Tab<K,T>::get(
+  Tab_Lookup& lkp
+
+) {return m_values[lkp.real];};
 
 // ---   *   ---   *   ---
 // set elem
@@ -248,7 +281,7 @@ T Tab<K,T>::pop(
   out=m_values[lkp.real];
 
   size_t diff=(lkp.real-lkp.orig);
-  m_masks[lkp.fake]^=1<<diff;
+  m_masks[lkp.fake]&=~(1<<diff);
 
   return out;
 
@@ -277,17 +310,18 @@ void Tab<K,T>::update_mask(
 ) {
 
   // get next free slot
-  if(lkp.mask) {
-    size_t x=nbsf(lkp.mask);
+  if(lkp.mask&1) {
 
+    size_t x=nbsf(lkp.mask);
     lkp.mask|=1<<x;
-    lkp.real+=x;
 
   // get first
   } else {
     lkp.mask|=1;
 
   };
+
+m_used++;
 
 };
 
@@ -330,6 +364,7 @@ size_t Tab<K,T>::push(
 };
 
 // ---   *   ---   *   ---
+// ^already hashed
 
 template <typename K,typename T>
 inline void Tab<K,T>::push(
