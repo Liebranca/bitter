@@ -1,62 +1,72 @@
- Source files must include this doc-block:
+Source files must include this doc-block:
 
 ```
-//**************************
-// FILENAME                *
-// descriptor,()           *
-//                         *
-// NOTICE                  *
-// Licenced under          *
-// your clever siggy       *
-//                         *
-// CONTRIBUTORS            *
-// name,(=)                *
-//**************************
+// ---   *   ---   *   ---
+// FILENAME
+// descriptor
+//
+// NOTICE
+// Licenced under
+// your clever siggy
+//
+// CONTRIBUTORS
+// name,(=)
+
+// ---   *   ---   *   ---
 ```
 
- Your line width must be this big:
+Your line width must be this big:
 
 ```
 ------------------------------------------------------
 ```
 
- The indent size is 2. Yes, 2 spaces. You read that right. Tabs are strictly forbidden.
+The indent size is 2 spaces; tabs are strictly forbidden; apologies to uncle Linus.
 
- You'll probably want a charcount per page of around 56x28, at a maximum of 64x32;
+You'll probably want a charcount per page of around 56x28, at a maximum of 64x32;
 
- Utilizing the LyCon font (provided in /KVR/data/ ) is the most immersive way of editing the sources.
+Utilizing the [LyCon 8x8 font](https://github.com/Liebranca/ft8) is the most immersive way of editing the sources.
 
- For additional style points, though this is entirely a matter of preference, you might utilize my awesome color theme: the palette.txt (provided in  /src/avtomat/ ) contains hex codes and names. And it's only 16 colors! Rejoice, simplicity.
+# NAMING
 
-#
+The convention is dead simple:
 
- Please, use separators:
+- `local` is all lower case.
+- `m_local` if it's an attribute/member var.
+- `Static` capitalized if it's visible at file-scope and beyond.
+- `static` lower case if it's local, again.
+- `CONST` if it's a constant, regardless of scope.
 
-```
-//   ---     ---     ---     ---     ---
+Mixed caps are generally disliked, even by me, but they serve a purpose: `This_Value` is external, and `this_value` is, again, local. Following this convention, class names, namespaces and structs are mixed-caps.
 
-Comments are okay like this // but only if you align
-                            // them correctly
+Use pointers when appropiate, declare with star to the side. If you need more than one pointer, write more than one decl.
 
-  // indent them like you would
-  // or you'll have a bad time.
-  Or like this
+# GENERAL ETIQUETTE
 
-```
-
- Cuddling braces/parens is fine:
+Please, use separators:
 
 ```
+// ---   *   ---   *   ---
+// with headers under them
+// whenever needed
 
-long long (
+```
+
+Do not write long lines, I hate them.
+
+```
+
+my $what=(
   0xDEADBEEF
- +0xDDDDDDDD
++ 0xDDDDDDDD
 
-);short x+8;
+);
+
+say $what;
 
 ```
 
- ^that is just perfect.
+^that is just perfect.
 
 ```
 If a line is too long,
@@ -67,16 +77,7 @@ If a line is too long,
 when closing, empty line and go back one indent.
 ```
 
- DO NOT do this:
-
-```
-if(wat)
-{
-
-};
-```
-
- I forbid it. Do this:
+Braces go on the line. Do this:
 
 ```
 if(wat) {
@@ -85,39 +86,112 @@ if(wat) {
 
 ```
 
- Brace on line, people. That's where it's at.
-
-#
-
- Cuddling, like I said, is alright.
+Cuddling is fine.
 
 ```
-
 if(wat) {
+  ...
 
 } else {
+  ...
 
 };
 
 ```
 
- ^I have no problem with that.
+Ternary operators can get too long. I prefer breaking them up like so:
+
+```
+x=(very long expression)
+  ? if_so
+  : else_this
+  ;
+
+```
+
+Longdecls are a mess, and that's just that. Break them up the same.
+
+```
+very long specifier oh my god
+some more specs type name(
+
+  arg,
+  arg...
+
+) {
+
+  ...
+
+};
+```
+
+Same pattern for conditionals and loops
+
+```
+
+while(
+
+   this_condition
+&& that_condition
+
+) {
+
+  ...
+
+};
+
+```
+
+People get confused about the for. Generally, you wouldn't have to break it up, but sometimes you do. So do it.
+
+```
+for(
+
+  very_long_type i=0;
+
+  i!=even_longer_condition;
+  i++
+  
+
+) {
+
+  ...
+
+};
+```
+
+#  CLASSIFY
+
+Use constants. I love magic numbers as much as anybody, but I'd rather not guess what `0b101001101110110110111` or `0xD0921F923FE0CA` means for this particular context when I'm twenty hours into reading code. So I love named constants better.
+
+But better than named constants: putting them inside the classes and namespaces where they're actually being used. If no one else needs to see them, then make it so.
+
+```
+
+class Yes {
+
+  VERSION   "v0.00.0b";
+  AUTHOR    "some-dude";
+
+  cx64 MY_VERY_LONG_LONG=0xD046;
+
+};
+
+```
+
+The macros `VERSION`, `AUTHOR` and `cx[8-64]` (also `cxr[32-64]` and `cxstr`) declare constants. Use them.
+
+Another thing you can do inside classes and namespaces is declare typedefs, structures and unions. Yes. Your class has a helper struct? Make it specific to the class.
+
+If the definition of your helper is too involved however, one thing that is perfectly acceptable in my book is writting it to another file and then pasting it in. Need I remind you that `#include` does exactly this?
+
+```
+class Paste_Here {
+
+  #include "paste-file"
+
+};
+
+```
 
 #
-
- If you get confused:
-```
-python avtomat/avto-fmat.py <filepath>
-```
-
- That prints out a 'good enough' formatting, with the project's preferences in mind.
-
- If fmat doesn't bug out, apply the changes like so:
-```
-python avtomat/avto-fmat.py <filepath> -r
-```
-
- And that'll replace the original with the formatted version. Note that I wrote fmat myself, in less than a week: at the time of this writting, it still requires testing and tweaking.
-
-#
-

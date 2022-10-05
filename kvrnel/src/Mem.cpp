@@ -12,26 +12,14 @@
 // ---   *   ---   *   ---
 // deps
 
-  #include <cmath>
   #include <cstdlib>
   #include <cstddef>
   #include <cstring>
   #include <cstdio>
 
   #include "kvrnel/Evil.hpp"
+  #include "kvrnel/Bytes.hpp"
   #include "kvrnel/Mem.hpp"
-
-// ---   *   ---   *   ---
-// force sz == pow 2
-
-inline static size_t align_pow2(size_t x) {
-
-  size_t y=log2(--x);y++;
-  y=(y<4) ? 4 : y;
-
-  return pow(2,y);
-
-};
 
 // ---   *   ---   *   ---
 
@@ -74,7 +62,7 @@ Mem<T>* Mem<T>::nit(
 
 ) {
 
-  buff_sz=align_pow2(buff_sz);
+  buff_sz=near_pow2(buff_sz);
   size_t fsize=buff_sz+header_sz;
 
   Mem<T>* out=(Mem<T>*) malloc(fsize);

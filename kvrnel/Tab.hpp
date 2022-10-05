@@ -44,8 +44,6 @@ private:
   std::vector<K>      m_keys;
   std::vector<T>      m_values;
 
-  size_t m_used;
-
 // ---   *   ---   *   ---
 // internals
 
@@ -116,10 +114,10 @@ public:
   );
 
   // value from key
-  inline T get(K& k);
+  inline T& get(K& k);
 
   // ^key already hashed
-  inline T get(Tab_Lookup& lkp);
+  inline T& get(Tab_Lookup& lkp);
 
   // true if key in table
   inline Tab_Lookup has(K& k);
@@ -127,11 +125,8 @@ public:
   // assign value to key
   inline void set(K& k,T& v);
 
-void report(void) {
-
-  printf("%u/%u\n",m_used,m_size);
-
-};
+  // ^key hashed
+  inline void set(Tab_Lookup& lkp,T& v);
 
 
 };

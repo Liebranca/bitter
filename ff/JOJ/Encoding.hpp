@@ -3,8 +3,8 @@
 // too long for the casual reader
 // meant to be pasted in!
 
-#ifndef __24_JOJ_ENCODINGS_H__
-#define __24_JOJ_ENCODINGS_H__
+#ifndef __24_JOJ_ENCODING_H__
+#define __24_JOJ_ENCODING_H__
 
 // ---   *   ---   *   ---
 // meant as a helper, don't use directly
@@ -31,6 +31,19 @@ public:
     SubEncoding shade;
 
   } Encoding;
+
+// ---   *   ---   *   ---
+// represents a 2x2 block of pixels
+
+  typedef struct {
+
+    size_t idex;
+    size_t value;
+    size_t freq;
+
+    size_t color_id[4];
+
+  } Pixel_Block;
 
 // ---   *   ---   *   ---
 // normal maps
@@ -126,4 +139,4 @@ public:
 
 // ---   *   ---   *   ---
 
-#endif // __24_JOJ_ENCODINGS_H__
+#endif // __24_JOJ_ENCODING_H__

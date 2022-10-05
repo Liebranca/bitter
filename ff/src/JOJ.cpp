@@ -44,24 +44,41 @@ JOJ::JOJ(
 
 ) {
 
-  m_pixels         = pixels;
+  m_raw            = pixels;
   m_header.enc     = enc;
 
   m_header.imsz    = fast_sqrt2(sz);
+
+  // reserve space for palettes
   m_header.pal     = Tab<size_t,size_t>(
     m_header.imsz
 
   );
 
+  m_header.blkpal  = Tab<
+
+    std::string,
+    JOJ::Pixel_Block
+
+  >(m_header.imsz<<5);
+
+  // remember size squared
   m_header.imsz_sq = sz;
 
+  // counters
   m_header.palcnt  = 0;
   m_header.imcnt   = 0;
   m_header.mip     = 0;
 
-  // allocate secondary buffer
-  m_buff=std::unique_ptr<JOJ::Pixel>(
+  // main data buffer
+  m_pixels=std::unique_ptr<JOJ::Pixel>(
     new JOJ::Pixel[sz]
+
+  );
+
+  // ^compressed version
+  m_blocks=std::unique_ptr<size_t>(
+    new size_t[sz>>1]
 
   );
 
@@ -96,35 +113,72 @@ size_t JOJ::push_palette(JOJ::Pixel* b) {
 };
 
 // ---   *   ---   *   ---
+// calculate 2x2 from leftmost coordinate
 
-typedef struct {
+void JOJ::pixel2x2(
+  JOJ::Pixel* (&pix)[4],
+  size_t base
 
-  size_t idex;
-  size_t freq;
+) {
 
-} Symbol;
+  // get source
+  JOJ::Pixel* buff=m_pixels.get();
+
+  // fetch a slice
+  pix[0]=&buff[base];
+  pix[1]=&buff[base+1];
+  pix[2]=&buff[base+m_header.imsz];
+  pix[3]=&buff[base+m_header.imsz+1];
+
+};
 
 // ---   *   ---   *   ---
 
-void JOJ::build_palette(void) {
+std::string JOJ::pixel_block(
+  JOJ::Pixel_Block& blk,
+  JOJ::Pixel* (&pix)[4]
 
-  JOJ::Pixel* buff=m_buff.get();
+) {
 
-  Tab<std::string,Symbol> out(m_header.imsz<<5);
-  size_t ls_cnt=0;
-  size_t total_blocks=0;
+  std::string key(sizeof(size_t)*4,'\0');
+
+  for(int i=0;i<4;i++) {
+    blk.color_id[i]=
+      this->push_palette(pix[i]);
+
+    *((size_t*) &key[sizeof(size_t)*i])=
+      blk.color_id[i];
+
+  };
+
+  return key;
+
+};
+
+// ---   *   ---   *   ---
+// tight up the buff
+
+void JOJ::compress(void) {
+
+  size_t ls_cnt  = 0;
+  size_t limit   = m_header.imsz_sq/2;
+
+  size_t* blocks = m_blocks.get();
 
   std::vector<std::string> keys;
-size_t ghost_addr=0;
+  keys.reserve(limit);
 
   for(
 
-    size_t base=0;
+    size_t base=0,i=0;
 
     base<m_header.imsz_sq;
-    base+=2
+    base+=2,i++
 
   ) {
+
+// ---   *   ---   *   ---
+// construct pixel block
 
     // skip uneven row
     if(base && !(base%m_header.imsz)) {
@@ -132,118 +186,193 @@ size_t ghost_addr=0;
 
     };
 
-    // down-left
-    JOJ::Pixel* dl = &buff[base];
+    // get hashable 2x2 block
+    JOJ::Pixel_Block blk;
+    JOJ::Pixel* pix[4];
 
-    // down-right
-    JOJ::Pixel* dr = &buff[base+1];
+    this->pixel2x2(pix,base);
 
-    // up-left
-    JOJ::Pixel* ul = &buff[base+m_header.imsz];
-
-    // up-right
-    JOJ::Pixel* ur = &buff[base+m_header.imsz+1];
+    // generate key
+    std::string key=
+      this->pixel_block(blk,pix);
 
 // ---   *   ---   *   ---
-// block-hashing
+// insert new block in table
 
-    size_t i0=this->push_palette(dl);
-    size_t i1=this->push_palette(dr);
-    size_t i2=this->push_palette(ul);
-    size_t i3=this->push_palette(ur);
-
-    std::string blk_s(sizeof(size_t)*4,'\0');
-    *((size_t*) &blk_s[sizeof(size_t)*0])=i0;
-    *((size_t*) &blk_s[sizeof(size_t)*1])=i1;
-    *((size_t*) &blk_s[sizeof(size_t)*2])=i2;
-    *((size_t*) &blk_s[sizeof(size_t)*3])=i3;
-
-    Tab_Lookup lkp=out.has(blk_s);
+    Tab_Lookup lkp=m_header.blkpal.has(key);
 
     if(!lkp.key_match) {
 
-      Symbol s={
+      blk.value=ls_cnt;
+      blk.freq=1;
 
-        .idex=ls_cnt,
-        .freq=1
-
-      };
-
-size_t* A=(size_t*) &blk_s[0];
-if(A[0]==1 && A[1]==1 & A[2]==1 & A[3]==3) {
-  ghost_addr=lkp.real;
-
-};
-
-      out.push(
-        lkp,blk_s,s
-
-      );
-
+      m_header.blkpal.push(lkp,key,blk);
       ls_cnt++;
 
-      keys.push_back(blk_s);
+      // save key for later
+      keys.push_back(key);
+
+// ---   *   ---   *   ---
+// up frequency of repeated block
 
     } else {
 
-      Symbol s=out.get(blk_s);
+      blk=m_header.blkpal.get(lkp);
+      blk.freq++;
 
-      s.freq++;
-      out.set(blk_s,s);
+      m_header.blkpal.set(lkp,blk);
 
     };
-
-    total_blocks++;
 
 // ---   *   ---   *   ---
+// set block to match value for ease
+// of adjusting it later
 
-  };
-
-  printf("%u\n",total_blocks);
-
-  for(std::string key : keys) {
-
-    Tab_Lookup lkp=out.has(key);
-    Symbol s=out.get(lkp);
-
-    if(!s.idex && !s.freq) {
-
-      fprintf(
-        stderr,
-
-        "GHOST %016X ? %016X\n",
-        lkp.real,ghost_addr
-
-      );
-
-      out.report();
-
-      exit(1);
-
-    };
-
-    printf("%u : %u\n",s.idex,s.freq);
+    blocks[i]=blk.value;
 
   };
 
 // ---   *   ---   *   ---
+// process the hashed image
 
-//  printf(
-//    "\n\nPalette size: %u/%u (%.2f)\n",
-//
-//    m_header.palcnt,
-//    m_header.imsz_sq,
-//
-//    1.0f - (
-//
-//      (float) m_header.palcnt
-//    / (float) m_header.imsz_sq
-//
-//    )
-//
-//  );
-//
-//  printf("Total blocks: %u\n",ls_cnt);
+  this->xlate_blocks(keys);
+
+
+};
+
+// ---   *   ---   *   ---
+// transforms blocks according to palette
+
+void JOJ::xlate_blocks(
+  std::vector<std::string>& keys
+
+) {
+
+  size_t* blocks = m_blocks.get();
+
+  // give shorter values to block
+  // with higher frequency
+  this->sort_blocks(keys);
+
+  // walk the image and replace key index
+  // for sorted value of block
+  size_t limit  = m_header.imsz_sq/2;
+  for(size_t i=0;i<limit;i++) {
+
+    size_t marker=blocks[i];
+
+    blocks[i]=m_header.blkpal.get(
+      keys[marker]
+
+    ).idex;
+
+  };
+
+};
+
+// ---   *   ---   *   ---
+// dump to disk
+
+void JOJ::write(void) {
+
+  size_t limit = m_header.imsz_sq/2;
+  int    bits  = fast_sqrt2(near_pow2(limit));
+
+  size_t size  = limit;
+
+  bits/=8;
+  size*=bits;
+
+  std::unique_ptr<char> out(
+    new char[size]
+
+  );
+
+// ---   *   ---   *   ---
+
+  size_t* buff  = m_blocks.get();
+  char*   out_p = out.get();
+
+  for(
+
+    size_t i=0,h=0;
+
+    i<limit;
+    i+=bits,h++
+
+  ) {
+
+    for(int j=0;j<bits;j++) {
+      out_p[i+j]=buff[h]&0xFF;
+      buff[h]=buff[h]>>8;
+
+    };
+
+  };
+
+  Bin::write(out_p,size);
+
+};
+
+// ---   *   ---   *   ---
+// sort blocks by frequency
+
+void JOJ::sort_blocks(
+  std::vector<std::string>& keys
+
+) {
+
+  size_t limit  = keys.size();
+  size_t bottom = limit;
+
+  for(size_t i=0;i<limit;i++) {
+
+    size_t            top     = 0;
+    JOJ::Pixel_Block* top_blk = NULL;
+
+// ---   *   ---   *   ---
+// walk remaining
+
+    for(std::string key : keys) {
+
+      // get entry
+      JOJ::Pixel_Block& blk=
+        m_header.blkpal.get(key);
+
+      // skip already sorted
+      if(!blk.freq) {
+        continue;
+
+      // discard low-frequency blocks
+      // from even being sorted
+      } else if(blk.freq<128) {
+        blk.freq=0;
+        blk.idex=bottom--;
+
+        continue;
+
+      };
+
+      // compare
+      if(blk.freq>top) {
+        top=blk.freq;
+        top_blk=&blk;
+
+      };
+
+    };
+
+// ---   *   ---   *   ---
+// assign idex to result and
+// mark block as sorted
+
+    top_blk->idex=i;
+    top_blk->freq=0;
+
+    bottom--;
+    if(bottom<=i) {break;};
+
+  };
 
 };
 
@@ -296,7 +425,7 @@ void JOJ::encoder(
 
 ) {
 
-  JOJ::Pixel* buff=m_buff.get();
+  JOJ::Pixel* buff=m_pixels.get();
 
   JOJ::SubEncoding enc=
     this->read_mode(imtype,mode);
@@ -307,7 +436,7 @@ void JOJ::encoder(
   struct Frac::Bat<char> batch={
 
     .m_bytes  = buff[0].as_ptr(),
-    .m_floats = m_pixels,
+    .m_floats = m_raw,
     .m_sz     = m_header.imsz_sq*4,
 
     .m_enc    = (char*) enc.values,
@@ -318,14 +447,6 @@ void JOJ::encoder(
   };
 
   batch.encoder();
-
-// ---   *   ---   *   ---
-// post-encode stuff
-
-  if(mode==Frac::ENCODE) {
-    this->build_palette();
-
-  };
 
 };
 

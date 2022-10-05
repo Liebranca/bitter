@@ -149,8 +149,6 @@ Tab<K,T>::Tab(
   fake   = near_pow2(fake);
   m_size = fake*REAL_MULT;
 
-  m_used = 0;
-
   // claim upfront
   m_keys.reserve(m_size);
   m_values.reserve(m_size);
@@ -235,7 +233,7 @@ TOP:
 // find element
 
 template <typename K,typename T>
-inline T Tab<K,T>::get(
+inline T& Tab<K,T>::get(
   K& k
 
 ) {
@@ -247,7 +245,7 @@ inline T Tab<K,T>::get(
 
 // ^already hashed
 template <typename K,typename T>
-inline T Tab<K,T>::get(
+inline T& Tab<K,T>::get(
   Tab_Lookup& lkp
 
 ) {return m_values[lkp.real];};
@@ -265,6 +263,13 @@ inline void Tab<K,T>::set(
   m_values[lkp.real]=v;
 
 };
+
+// ^already hashed
+template <typename K,typename T>
+inline void Tab<K,T>::set(
+  Tab_Lookup& lkp,T& v
+
+) {m_values[lkp.real]=v;};
 
 // ---   *   ---   *   ---
 // remove element
@@ -320,8 +325,6 @@ void Tab<K,T>::update_mask(
     lkp.mask|=1;
 
   };
-
-m_used++;
 
 };
 
