@@ -47,7 +47,7 @@ private:
 
     Tab<
 
-      std::string,
+      size_t,
       JOJ::Pixel_Block
 
     > blkpal;
@@ -77,7 +77,7 @@ private:
   );
 
   // ^hashing helper for the slice
-  std::string pixel_block(
+  size_t pixel_block(
     JOJ::Pixel_Block& blk,
     JOJ::Pixel* (&pix)[4]
 
@@ -88,13 +88,13 @@ private:
 
   // transforms blocks according to palette
   void xlate_blocks(
-    std::vector<std::string>& keys
+    std::vector<size_t>& keys
 
   );
 
   // organizes blocks by frequency
   void sort_blocks(
-    std::vector<std::string>& keys
+    std::vector<size_t>& keys
 
   );
 

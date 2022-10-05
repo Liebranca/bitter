@@ -4,10 +4,12 @@
 
 *.bin
 *.o
+*.out
 
 mig/
-!bin/
 *~
+
+!bin/
 
 avto
 .avto-cache

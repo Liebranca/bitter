@@ -1,0 +1,82 @@
+#!/usr/bin/perl
+
+# ---   *   ---   *   ---
+# deps
+
+  use v5.36.0;
+  use strict;
+  use warnings;
+
+  use English qw(-no_match_vars);
+  use lib $ENV{'ARPATH'}.'/lib/sys/';
+
+  use Style;
+
+  use Arstd::Array;
+  use Arstd::IO;
+
+# ---   *   ---   *   ---
+
+my $file=shift @ARGV;
+
+if(!$file) {
+  say "No file provided";
+  exit 1;
+
+} elsif(!-f $file) {
+  say "Invalid: '$file'";
+  exit 2;
+
+};
+
+# ---   *   ---   *   ---
+
+my $scol_re=qr{\s+:\s+}x;
+my $body=orc($file);
+
+my @entries=();
+my @lines=split $NEWLINE_RE,$body;
+
+my $total=shift @lines;
+
+my $max_idex=0;
+for my $line(@lines) {
+
+  my ($idex,$freq)=split $scol_re,$line;
+  if($idex == 0 && $freq == 0) {
+    $line=undef;
+    next;
+
+  };
+
+  $line={idex=>$idex,freq=>$freq};
+
+  $max_idex=$idex if $idex>$max_idex;
+
+};
+
+array_filter(\@lines);
+
+# ---   *   ---   *   ---
+
+@lines=sort {$a->{freq} <=> $b->{freq}} @lines;
+
+my $bits=log($max_idex)/log(2);
+my $enpy=0;
+
+for my $line(@lines) {
+  $enpy+=(1/$line->{freq});
+
+};
+
+printf "%u/%u (%.1f%%) at %u BPE\n",
+
+  $enpy,$total,
+  (1-($enpy/$total))*100,
+
+  $bits
+
+;
+
+# ---   *   ---   *   ---
+1; # ret

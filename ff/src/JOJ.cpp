@@ -57,7 +57,7 @@ JOJ::JOJ(
 
   m_header.blkpal  = Tab<
 
-    std::string,
+    size_t,
     JOJ::Pixel_Block
 
   >(m_header.imsz<<5);
@@ -133,21 +133,26 @@ void JOJ::pixel2x2(
 };
 
 // ---   *   ---   *   ---
+// create ID to represent four pixels
 
-std::string JOJ::pixel_block(
+size_t JOJ::pixel_block(
   JOJ::Pixel_Block& blk,
   JOJ::Pixel* (&pix)[4]
 
 ) {
 
-  std::string key(sizeof(size_t)*4,'\0');
+  size_t key = 0x00;
+  int    j   = 0x00;
 
   for(int i=0;i<4;i++) {
+
     blk.color_id[i]=
       this->push_palette(pix[i]);
 
-    *((size_t*) &key[sizeof(size_t)*i])=
-      blk.color_id[i];
+    int bits=bitsize(blk.color_id[i]);
+
+    key|=blk.color_id[i]<<j;
+    j+=bits;
 
   };
 
@@ -165,7 +170,7 @@ void JOJ::compress(void) {
 
   size_t* blocks = m_blocks.get();
 
-  std::vector<std::string> keys;
+  std::vector<size_t> keys;
   keys.reserve(limit);
 
   for(
@@ -193,8 +198,7 @@ void JOJ::compress(void) {
     this->pixel2x2(pix,base);
 
     // generate key
-    std::string key=
-      this->pixel_block(blk,pix);
+    size_t key=this->pixel_block(blk,pix);
 
 // ---   *   ---   *   ---
 // insert new block in table
@@ -244,7 +248,7 @@ void JOJ::compress(void) {
 // transforms blocks according to palette
 
 void JOJ::xlate_blocks(
-  std::vector<std::string>& keys
+  std::vector<size_t>& keys
 
 ) {
 
@@ -276,7 +280,7 @@ void JOJ::xlate_blocks(
 void JOJ::write(void) {
 
   size_t limit = m_header.imsz_sq/2;
-  int    bits  = fast_sqrt2(near_pow2(limit));
+  int    bits  = bitsize(limit);
 
   size_t size  = limit;
 
@@ -318,7 +322,7 @@ void JOJ::write(void) {
 // sort blocks by frequency
 
 void JOJ::sort_blocks(
-  std::vector<std::string>& keys
+  std::vector<size_t>& keys
 
 ) {
 
@@ -333,7 +337,7 @@ void JOJ::sort_blocks(
 // ---   *   ---   *   ---
 // walk remaining
 
-    for(std::string key : keys) {
+    for(size_t key : keys) {
 
       // get entry
       JOJ::Pixel_Block& blk=

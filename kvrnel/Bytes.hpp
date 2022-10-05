@@ -155,7 +155,7 @@ inline bool nthbit(T b,T n);
 
 // count N bits needed for value
 template <typename T>
-T bitsize(T x);
+inline T bitsize(T x);
 
 // give portion of a value's bits
 template <typename T>

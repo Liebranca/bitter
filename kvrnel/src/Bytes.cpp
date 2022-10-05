@@ -33,25 +33,8 @@ inline bool nthbit(T b,T n) {
 // count N bits needed for value
 
 template <typename T>
-T bitsize(T x) {
-
-  T bsize=0;
-  T trail=0;
-
-  for(T b=0;b<8;b++) {
-
-    T bitset=nthbit<T>(x,b);
-
-    if(bitset) {
-
-      bsize+=trail+1;
-      trail=0;
-
-    } else {trail++;};
-
-  };
-
-  return bsize;
+inline T bitsize(T x) {
+  return fast_sqrt2(near_pow2(x));
 
 };
 
@@ -316,11 +299,11 @@ void rgba2yauv(float* p) {
 // ---   *   ---   *   ---
 // overwrite
 
-  p[0]=std::clamp(yauv[0],0.0,1.0);
-  p[1]=std::clamp(yauv[1],0.0,1.0);
+  p[0]=std::clamp(yauv[0],0.0f,1.0f);
+  p[1]=std::clamp(yauv[1],0.0f,1.0f);
 
-  p[2]=std::clamp(yauv[2],-0.5,0.5);
-  p[3]=std::clamp(yauv[3],-0.5,0.5);
+  p[2]=std::clamp(yauv[2],-0.5f,0.5f);
+  p[3]=std::clamp(yauv[3],-0.5f,0.5f);
 
 };
 
@@ -359,10 +342,10 @@ void yauv2rgba(float* p) {
 // ---   *   ---   *   ---
 // clamp and overwrite
 
-  p[0]=std::clamp(r,0.0,1.0);
-  p[1]=std::clamp(g,0.0,1.0);
-  p[2]=std::clamp(b,0.0,1.0);
-  p[3]=std::clamp(a,0.0,1.0);
+  p[0]=std::clamp(r,0.0f,1.0f);
+  p[1]=std::clamp(g,0.0f,1.0f);
+  p[2]=std::clamp(b,0.0f,1.0f);
+  p[3]=std::clamp(a,0.0f,1.0f);
 
 };
 

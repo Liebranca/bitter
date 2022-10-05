@@ -22,6 +22,18 @@ typedef struct {
 } Tab_Lookup;
 
 // ---   *   ---   *   ---
+
+typedef struct {
+
+  size_t idex;
+  size_t x;
+  size_t y;
+
+  char nkey[64];
+
+} Tab_Hash;
+
+// ---   *   ---   *   ---
 // info
 
 template <typename K,typename T>
@@ -37,6 +49,7 @@ public:
 private:
 
   cx64 REAL_MULT=64;
+  cx64 NKEY_SZ=64;
 
   size_t              m_size;
   std::vector<size_t> m_masks;
@@ -50,6 +63,11 @@ private:
   Tab_Lookup get_mask(K& k);
 
   size_t hash(K& k);
+
+  inline void hash_f(
+    Tab_Hash* h
+
+  );
 
   inline void update_entry(
     Tab_Lookup& lkp,
@@ -73,7 +91,7 @@ private:
 
   void irep(
     std::string& x,
-    std::string& nkey
+    Tab_Hash* h
 
   );
 
@@ -86,7 +104,7 @@ private:
 
   );
 
-  void irep(size_t x,std::string& nkey);
+  void irep(size_t x,Tab_Hash* h);
 
 // ---   *   ---   *   ---
 // interface

@@ -53,22 +53,16 @@ inline bool Tab<K,T>::key_match(
 template <typename K,typename T>
 void Tab<K,T>::irep(
   std::string& x,
-  std::string& nkey
+  Tab_Hash* h
 
 ) {
 
-  short limit=nkey[0]=x.length();
+  short limit=x.length()&(NKEY_SZ-1);
 
-  for(short i=0,j=0;i<nkey.length();i++,j++) {
+  for(h->y=0;h->y<limit;h->y++) {
 
-    if(j<limit) {
-      nkey[i]=x[j];
-
-    } else {
-      nkey[i]=j&0xFF;
-      j=0;
-
-    };
+    h->nkey[h->y]=x[h->y];
+    this->hash_f(h);
 
   };
 
@@ -80,23 +74,33 @@ void Tab<K,T>::irep(
 template <typename K,typename T>
 void Tab<K,T>::irep(
   size_t x,
-  std::string& nkey
+  Tab_Hash* h
 
 ) {
 
-  short limit=sizeof(x);
+  short limit=sizeof(x)&(NKEY_SZ-1);
 
-  for(short i=0,j=0;i<nkey.length();i++,j++) {
-    if(j<limit) {
-      nkey[i]=(x>>(j*8))&0xFF;
+  for(h->y=0;h->y<limit;h->y++) {
 
-    } else {
-      nkey[i]=j&0xFF;
-      j=0;
-
-    };
+    h->nkey[h->y]=(x>>(h->y*8))&0xFF;
+    this->hash_f(h);
 
   };
+
+};
+
+// ---   *   ---   *   ---
+
+template <typename K,typename T>
+inline void Tab<K,T>::hash_f(
+  Tab_Hash* h
+
+) {
+
+  h->x=h->nkey[h->y];
+  h->x*=++h->x;
+
+  h->idex+=h->x+h->y;
 
 };
 
@@ -109,29 +113,13 @@ size_t Tab<K,T>::hash(
 
 ) {
 
-  size_t idex = 0;
-  size_t x    = 0;
-  size_t y    = 0;
+  Tab_Hash h={0};
+  irep(k,&h);
 
-  std::string nkey(256,'\0');
+  h.idex*=REAL_MULT;
+  h.idex&=m_size-1;
 
-  irep(k,nkey);
-
-  // rehash teh hash
-  for(int i=0;i<nkey.length();i++) {
-
-    x=nkey[i];
-    x*=++x;
-
-    idex+=x+y;
-    y++;
-
-  };
-
-  idex*=REAL_MULT;
-  idex&=m_size-1;
-
-  return idex;
+  return h.idex;
 
 };
 

@@ -1,0 +1,95 @@
+#!/usr/bin/perl
+
+# ---   *   ---   *   ---
+# deps
+
+  use v5.36.0;
+  use strict;
+  use warnings;
+
+  use English qw(-no_match_vars);
+  use lib $ENV{'ARPATH'}.'/lib/sys/';
+
+  use Style;
+
+  use Arstd::Array;
+  use Arstd::IO;
+
+# ---   *   ---   *   ---
+
+my $file=shift @ARGV;
+
+if(!defined $file || !(-f $file)) {
+  say "Bad file";
+  exit;
+
+};
+
+# ---   *   ---   *   ---
+
+my $body=orc($file);
+my @lines=split $NEWLINE_RE,$body;
+
+for my $i(0..3) {shift @lines;};
+
+my @keys=split m[\s+],(shift @lines);
+array_filter(\@keys);
+
+# ---   *   ---   *   ---
+
+push @keys,'name';
+
+my @entries=();
+
+for my $line(@lines) {
+
+  last if $line=~ m[\s+%];
+
+  $line=~ s[^\s][];
+
+  my $ref={};
+  my @data=split m[\s\s+],$line;
+  array_filter(\@data);
+
+  for my $key(@keys) {
+
+    last if !defined $key || !@data;
+    $ref->{$key}=(shift @data);
+
+  };
+
+  my $ar=[%$ref];
+  array_filter($ar);
+
+  push @entries,{@$ar};
+
+};
+
+# ---   *   ---   *   ---
+
+for my $entry(@entries) {
+
+  if(
+
+     !defined $entry->{'time'}
+  || !defined $entry->{'name'}
+  || $entry->{'time'} < 5.0
+
+  ) {next};
+
+
+  say
+
+    'N:',$entry->{'calls'},q{ },
+
+    '(',$entry->{'s/call'},' each) ',
+
+    $entry->{'time'}," total\n",
+    $entry->{'name'},"\n\n";
+
+  ;
+
+};
+
+# ---   *   ---   *   ---
+1; # ret
