@@ -18,35 +18,6 @@
   #include "kvrnel/Tab.hpp"
 
 // ---   *   ---   *   ---
-// series of compares
-
-template <typename K,typename T>
-inline bool Tab<K,T>::key_match(
-  std::string& key,
-  size_t idex
-
-) {
-
-  return
-
-     m_keys[idex].length()
-  && !m_keys[idex].compare(key)
-
-  ;
-
-};
-
-// ---   *   ---   *   ---
-// ^straight number
-
-template <typename K,typename T>
-inline bool Tab<K,T>::key_match(
-  size_t key,
-  size_t idex
-
-) {return m_keys[idex]==key;};
-
-// ---   *   ---   *   ---
 // variations on obtaining a numerical
 // representation of a key
 
@@ -116,7 +87,7 @@ size_t Tab<K,T>::hash(
   Tab_Hash h={0};
   irep(k,&h);
 
-  h.idex*=REAL_MULT;
+  h.idex=h.idex<<REAL_MULT_B;
   h.idex&=m_size-1;
 
   return h.idex;
@@ -135,7 +106,7 @@ Tab<K,T>::Tab(
   // force a power of two to
   // ease up the bitter bitty
   fake   = near_pow2(fake);
-  m_size = fake*REAL_MULT;
+  m_size = fake<<REAL_MULT_B;
 
   // claim upfront
   m_keys.reserve(m_size);
@@ -174,9 +145,7 @@ Tab_Lookup Tab<K,T>::get_mask(K& k) {
   lkp.orig   = this->hash(k);
   size_t f   = lkp.orig;
 
-TOP:
-
-  lkp.fake   = lkp.orig/REAL_MULT;
+  lkp.fake   = lkp.orig>>REAL_MULT_B;
   lkp.mask   = m_masks[lkp.fake];
 
   lkp.real   = lkp.orig;
@@ -189,27 +158,11 @@ TOP:
 
   lkp.key_match=false;
 
-  while(cpy) {
-    lkp.key_match=key_match(k,lkp.real);
-    if(lkp.key_match) {break;};
+  while(cpy && !lkp.key_match) {
+    lkp.key_match=m_keys[lkp.real]==k;
 
-    lkp.real++;
-    cpy=cpy>>1;
-
-    if(!cpy && ful) {
-      lkp.orig+=REAL_MULT;
-      lkp.orig&=m_size-1;
-
-      // TODO: proper catch
-      if(lkp.orig==f) {
-        fprintf(stderr,"Collapsed tab\n");
-        exit(1);
-
-      };
-
-      goto TOP;
-
-    };
+    lkp.real+=!lkp.key_match;
+    cpy=cpy>>!lkp.key_match;
 
   };
 

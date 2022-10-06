@@ -48,8 +48,9 @@ public:
 
 private:
 
-  cx64 REAL_MULT=64;
-  cx64 NKEY_SZ=64;
+  cx8  REAL_MULT_B = 6;
+  cx64 REAL_MULT   = 1<<REAL_MULT_B;
+  cx64 NKEY_SZ     = 64;
 
   size_t              m_size;
   std::vector<size_t> m_masks;
@@ -81,26 +82,10 @@ private:
   );
 
 // ---   *   ---   *   ---
-// key==string
-
-  inline bool key_match(
-    std::string& key,
-    size_t idex
-
-  );
 
   void irep(
     std::string& x,
     Tab_Hash* h
-
-  );
-
-// ---   *   ---   *   ---
-// key==unsigned long
-
-  inline bool key_match(
-    size_t key,
-    size_t idex
 
   );
 
