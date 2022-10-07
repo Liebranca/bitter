@@ -186,14 +186,14 @@ Bin::~Bin(void) {
 // ---   *   ---   *   ---
 // open, read, close
 
-std::unique_ptr<char[]> Bin::orc(
+std::unique_ptr<char> Bin::orc(
   std::string fpath
 
 ) {
 
   Bin b(fpath,READ);
 
-  std::unique_ptr<char[]> buff(
+  std::unique_ptr<char> buff(
     new char[b.m_size]
 
   );
@@ -207,14 +207,14 @@ std::unique_ptr<char[]> Bin::orc(
 // ---   *   ---   *   ---
 // read from cursor up to size
 
-std::unique_ptr<char[]> Bin::read(
+std::unique_ptr<char> Bin::read(
   size_t sz
 
 ) {
 
   sz+=m_size*(sz==0);
 
-  std::unique_ptr<char[]> buff(
+  std::unique_ptr<char> buff(
     new char[sz]
 
   );
@@ -279,7 +279,7 @@ bool Bin::transfer(Bin* other,size_t sz) {
 
   sz+=m_size*(sz==0);
 
-  std::unique_ptr<char[]> buff=
+  std::unique_ptr<char> buff=
     this->read(sz);
 
   other->write(buff.get(),sz);

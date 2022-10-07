@@ -21,50 +21,56 @@ public:
 // ---   *   ---   *   ---
 // fat boiler
 
-  // definition of pixel for this format
-  #include "ff/JOJ/Pixel.hpp"
-
   // pastes in a lot of boring constants
   #include "ff/JOJ/Encoding.hpp"
 
+  // definition of pixel for this format
+  #include "ff/JOJ/Pixel.hpp"
+
 // ---   *   ---   *   ---
 // header def for non-pixel data in file
+// used for quick read/write
 
 private:
 
   typedef struct {
 
-    uint8_t             mip;
-    uint8_t             imcnt;
-
-    size_t              imsz;
-    size_t              imsz_sq;
-
-    JOJ::Encoding       enc;
-
-    size_t              palcnt;
-    Tab<size_t,size_t>  pal;
-
-    Tab<
-
-      size_t,
-      JOJ::Pixel_Block
-
-    > blkpal;
+    uint64_t palcnt;
+    uint64_t imsz;
+    uint64_t blksz;
 
   } Header;
 
   cxstr   m_fsig="%JOJ";
-  cx64    m_header_sz=sizeof(Header);
+  cx64    m_header_sz=sizeof(JOJ::Header);
+
+// ---   *   ---   *   ---
+// runtime attrs
+
+  typedef struct {
+
+    uint8_t  mip;
+    uint8_t  imcnt;
+
+    uint64_t imsz;
+    uint64_t imsz_sq;
+
+    JOJ::Encoding enc;
+    JOJ::SubEncoding c_enc;
+
+    std::vector<uint64_t> pal;
+    uint64_t palcnt;
+
+  } Meta;
 
 // ---   *   ---   *   ---
 // attrs
 
-  Header  m_header;
-  float*  m_raw;
+  JOJ::Meta m_meta;
+  float*    m_raw;
 
   std::unique_ptr<JOJ::Pixel> m_pixels;
-  std::unique_ptr<size_t>     m_blocks;
+  std::unique_ptr<uint64_t>   m_blocks;
 
 // ---   *   ---   *   ---
 // internals
@@ -72,29 +78,28 @@ private:
   // slices m_buff
   void pixel2x2(
     JOJ::Pixel* (&pix)[4],
-    size_t base
+    uint64_t base
 
   );
 
   // ^hashing helper for the slice
-  size_t pixel_block(
+  uint64_t pixel_block(
     JOJ::Pixel_Block& blk,
     JOJ::Pixel* (&pix)[4]
 
   );
 
-  // registers colors
-  size_t push_palette(JOJ::Pixel* b);
-
   // transforms blocks according to palette
   void xlate_blocks(
-    std::vector<size_t>& keys
+    std::vector<uint64_t>& keys,
+    Tab<uint64_t,JOJ::Pixel_Block>& tab
 
   );
 
   // organizes blocks by frequency
   void sort_blocks(
-    std::vector<size_t>& keys
+    std::vector<uint64_t>& keys,
+    Tab<uint64_t,JOJ::Pixel_Block>& tab
 
   );
 
@@ -104,13 +109,26 @@ private:
 
   );
 
+  void write_header(void);
+  JOJ::Header read_header(void);
+
 // ---   *   ---   *   ---
 // interface
 
 public:
 
-  // file into memory
+  // compiler trash
   JOJ(std::string fpath);
+
+  // file into memory
+  JOJ(
+
+    std::string fpath,
+    float* pixels,
+
+    JOJ::Encoding enc=ENCDEF
+
+  );
 
   // memory into file
   JOJ(
@@ -118,7 +136,7 @@ public:
     std::string fpath,
 
     float* pixels,
-    size_t sz,
+    uint64_t sz,
 
     JOJ::Encoding enc=ENCDEF
 
@@ -137,6 +155,9 @@ public:
 
   // write image contents
   void write(void);
+
+  // read image from file
+  void read(void);
 
 };
 

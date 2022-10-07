@@ -80,7 +80,7 @@ typedef struct {
 // methods
 
   // for using as an array
-  inline char& operator[](size_t idex) {
+  inline char& operator[](uint64_t idex) {
     return arr[idex];
 
   };
@@ -91,30 +91,53 @@ typedef struct {
 
   };
 
+  // blank out the pixel
+  void clear(void) {
+    arr[0]^=arr[0];
+    arr[1]^=arr[1];
+    arr[2]^=arr[2];
+    arr[3]^=arr[3];
+
+  };
+
 // ---   *   ---   *   ---
 
   // straight numerical repr
-  inline size_t as_key(void) {
+  inline uint64_t as_key(
+    JOJ::SubEncoding& enc
 
-    return
+  ) {
 
-      arr[0]
+    return bitpack<char>(
 
-    | (arr[1]<< 8)
-    | (arr[2]<<16)
-    | (arr[3]<<24)
-    ;
+      &arr[0],
+
+      (char*) enc.values,
+      (int*)  enc.cnt
+
+    );
 
   };
 
   // ^recover values from repr
-  inline void from_key(size_t k) {
+  inline void from_key(
+    uint64_t k,
+    JOJ::SubEncoding& enc
 
-    arr[0]=k&0xFF;
+  ) {
 
-    arr[1]=(k>>8)&0xFF;
-    arr[2]=(k>>16)&0xFF;
-    arr[3]=(k>>24)&0xFF;
+    this->clear();
+
+    bitunpack<char>(
+
+      k,
+
+      &arr[0],
+
+      (char*) enc.values,
+      (int*)  enc.cnt
+
+    );
 
   };
 
@@ -125,3 +148,4 @@ typedef struct {
 // ---   *   ---   *   ---
 
 #endif // __24_JOJ_PIXEL_H__
+

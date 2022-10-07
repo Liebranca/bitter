@@ -70,15 +70,127 @@ T bitslice(
 };
 
 // ---   *   ---   *   ---
+// serialization helper
+
+template <typename T>
+uint64_t bitpack(T* b,T* enc,int* cnt) {
+
+  uint64_t out   = 0;
+  int      total = 0;
+
+  uint64_t word  = *((uint64_t*) b);
+
+printf("***!\n");
+
+  while(*cnt) {
+
+    // elem size && count
+    int bits   = Frac::BITS[enc[1]]+1;
+    int limit  = *cnt;
+
+    int mask   = (1<<bits)-1;
+
+    // append masked bits to output
+    for(int x=0;x<limit;x++) {
+      out|=(word&mask)<<total;
+      total+=bits;
+
+printf("(%02u) %lX\n",bits,word);
+
+      word>>=bits;
+
+    };
+
+printf("(%02u) %lX\n\n",bits,word);
+
+    // go next
+    enc+=3;
+    cnt++;
+
+  };
+
+  return out;
+
+};
+
+// ---   *   ---   *   ---
+// ^recover
+
+template <typename T>
+void bitunpack(
+
+  uint64_t  src,
+
+  T*      b,
+
+  T*      enc,
+  int*    cnt
+
+) {
+
+  int       total = 0;
+  uint64_t* word  = (uint64_t*) b;
+
+  while(*cnt) {
+
+    // elem size && count
+    int bits   = Frac::BITS[enc[1]]+1;
+    int limit  = *cnt;
+
+    int mask   = (1<<bits)-1;
+
+    // append masked bits to dst
+    for(int x=0;x<limit;x++) {
+
+      *word|=(src&mask)<<total;
+      total+=bits;
+      src>>=bits;
+
+    };
+
+    // go next
+    enc+=3;
+    cnt++;
+
+  };
+
+printf("%lX\n",*word);
+
+};
+
+// ---   *   ---   *   ---
+
+template <typename T>
+int enc_bitsize(T* enc,int* cnt) {
+
+  int out=0;
+
+  while(*cnt) {
+
+    int bits   = Frac::BITS[enc[1]]+1;
+    int limit  = *cnt;
+
+    out+=bits*limit;
+
+    enc+=3;
+    cnt++;
+
+  };
+
+  return out;
+
+};
+
+// ---   *   ---   *   ---
 
 // get first non-zero bit in mask
-inline size_t bsf(size_t x) {
+inline uint64_t bsf(uint64_t x) {
   return __builtin_ctzll(x);
 
 };
 
 // ^first zero ;>
-inline size_t nbsf(size_t x) {
+inline uint64_t nbsf(uint64_t x) {
   return __builtin_ctzll(~x);
 
 };
@@ -86,18 +198,18 @@ inline size_t nbsf(size_t x) {
 // ---   *   ---   *   ---
 // finding/enforcing nearest power of 2
 
-inline size_t fast_log2(size_t x) {
+inline uint64_t fast_log2(uint64_t x) {
   return 63-__builtin_clzll(x);
 
 };
 
-inline size_t fast_sqrt2(size_t x) {
+inline uint64_t fast_sqrt2(uint64_t x) {
   return 1<<((63-__builtin_clzll(x))>>1);
 
 };
 
-inline size_t near_pow2(size_t x) {
-  size_t y=63-__builtin_clzll(x);
+inline uint64_t near_pow2(uint64_t x) {
+  uint64_t y=63-__builtin_clzll(x);
   y+=(x & (x-1))!=0;
 
   return 1<<y;
@@ -188,6 +300,8 @@ inline void Frac::Bat<T>::encode(
 
   );
 
+printf("%02X %.2f\n",*m_bytes,*m_floats);
+
 };
 
 // ---   *   ---   *   ---
@@ -207,6 +321,8 @@ inline void Frac::Bat<T>::decode(
     *m_bytes,step,bits,unsig
 
   );
+
+printf("%02X %.2f\n",*m_bytes,*m_floats);
 
 };
 

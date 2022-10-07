@@ -20,7 +20,7 @@ namespace Frac {
     T*      m_bytes;
     float*  m_floats;
 
-    size_t  m_sz;
+    uint64_t  m_sz;
 
     T*      m_enc;
     int*    m_cnt;
@@ -161,16 +161,38 @@ inline T bitsize(T x);
 template <typename T>
 T bitslice(T b,T iStart,T iEnd);
 
+// serialization helper
+template <typename T>
+uint64_t bitpack(T* b,T* enc,int* cnt);
+
+// ^recover
+template <typename T>
+void bitunpack(
+
+  uint64_t  src,
+
+  T*      b,
+
+  T*      enc,
+  int*    cnt
+
+);
+
+template <typename T>
+int enc_bitsize(T* enc,int* cnt);
+
+// ---   *   ---   *   ---
+
 // get first non-zero bit in mask
-inline size_t bsf(size_t x);
+inline uint64_t bsf(uint64_t x);
 
 // ^first zero ;>
-inline size_t nbsf(size_t x);
+inline uint64_t nbsf(uint64_t x);
 
 // finding/enforcing nearest power of 2
-inline size_t fast_log2(size_t x);
-inline size_t fast_sqrt2(size_t x);
-inline size_t near_pow2(size_t x);
+inline uint64_t fast_log2(uint64_t x);
+inline uint64_t fast_sqrt2(uint64_t x);
+inline uint64_t near_pow2(uint64_t x);
 
 // ---   *   ---   *   ---
 

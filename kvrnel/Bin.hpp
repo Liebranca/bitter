@@ -94,13 +94,13 @@ public:
   bool match_sig(void);
 
   // open, read && close
-  static std::unique_ptr<char[]> orc(
+  static std::unique_ptr<char> orc(
     std::string fpath
 
   );
 
   // read from cursor up to size
-  std::unique_ptr<char[]> read(
+  std::unique_ptr<char> read(
     size_t sz=0
 
   );

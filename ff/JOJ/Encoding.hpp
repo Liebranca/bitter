@@ -37,11 +37,11 @@ public:
 
   typedef struct {
 
-    size_t idex;
-    size_t value;
-    size_t freq;
+    uint64_t   idex;
+    uint64_t   value;
+    uint64_t   freq;
 
-    size_t color_id[4];
+    uint64_t color_id[4];
 
   } Pixel_Block;
 

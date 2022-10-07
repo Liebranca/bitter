@@ -44,55 +44,103 @@ int main(void) {
 //
 //  fnorm(pixels);
 
-  png::image<png::rgba_pixel> im(
-    "/home/lyeb/Downloads/ElQuds.png"
-
-  );
-
-  size_t width=im.get_width();
-  size_t height=im.get_height();
-
-  size_t sz=width*height;
-
-  std::unique_ptr<float> pixels_p(
-    new float[sz*4]
-
-  );
-
-  size_t i=0;
-
-  float* pixels=pixels_p.get();
-
-  for(size_t y=0;y<height;y++) {
-
-    size_t row=y*width;
-
-    for(size_t x=0;x<width;x++) {
-
-      png::rgba_pixel px=im.get_pixel(x,y);
-
-      size_t orig=i;
-      pixels[i++]=px.red/255.0f;
-      pixels[i++]=px.green/255.0f;
-      pixels[i++]=px.blue/255.0f;
-      pixels[i++]=px.alpha/255.0f;
-
-      rgba2yauv(pixels+orig);
-
-    };
-
-  };
+//  png::image<png::rgba_pixel> im(
+//    "/home/lyeb/Downloads/ElQuds.png"
+//
+//  );
+//
+//  size_t width=im.get_width();
+//  size_t height=im.get_height();
+//
+//  size_t sz=width*height;
+//
+//  std::unique_ptr<float> pixels_p(
+//    new float[sz*4]
+//
+//  );
+//
+//  size_t i=0;
+//
+//  float* pixels=pixels_p.get();
+//
+//  for(size_t y=0;y<height;y++) {
+//
+//    size_t row=y*width;
+//
+//    for(size_t x=0;x<width;x++) {
+//
+//      png::rgba_pixel px=im.get_pixel(x,y);
+//
+//      size_t orig=i;
+//      pixels[i++]=px.red/255.0f;
+//      pixels[i++]=px.green/255.0f;
+//      pixels[i++]=px.blue/255.0f;
+//      pixels[i++]=px.alpha/255.0f;
+//
+//      rgba2yauv(pixels+orig);
+//
+//    };
+//
+//  };
 
 // ---   *   ---   *   ---
 
-  JOJ j("./out",pixels,sz);
+  float pixels[]={
 
-  j.encoder(JOJ::YAUV,Frac::ENCODE);
-  j.compress();
-  j.write();
+    0.66f,0.77f,0.1f,1.0f,
+    0.66f,0.77f,0.1f,1.0f,
+    0.66f,0.77f,0.1f,1.0f,
+    0.66f,0.77f,0.1f,1.0f,
 
-//  j.encoder(JOJ::YAUV,Frac::DECODE);
+  };
+
+//  printf(
+//    "%.2f %.2f %.2f %.2f\n",
 //
+//    pixels[0],pixels[1],
+//    pixels[2],pixels[3]
+//
+//  );
+
+  rgba2yauv(pixels);
+
+  { JOJ j(
+
+      "./out",
+
+      &pixels[0],
+      arrsize(pixels)>>2
+
+    );
+
+    j.encoder(JOJ::YAUV,Frac::ENCODE);
+
+    j.compress();
+    j.write();
+
+  };
+
+printf("_______________\n\n");
+
+  JOJ j(
+
+    "./out",
+    &pixels[0]
+
+  );
+
+  j.read();
+  j.encoder(JOJ::YAUV,Frac::DECODE);
+
+  yauv2rgba(pixels);
+//  printf(
+//    "%.2f %.2f %.2f %.2f\n",
+//
+//    pixels[0],pixels[1],
+//    pixels[2],pixels[3]
+//
+//  );
+
 //// ---   *   ---   *   ---
 //
 //  i=0;
