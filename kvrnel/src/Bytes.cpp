@@ -111,12 +111,12 @@ uint64_t bitpack(T* b,T* enc,int* cnt) {
 template <typename T>
 void bitunpack(
 
-  uint64_t  src,
+  uint64_t src,
 
-  T*      b,
+  T*       b,
 
-  T*      enc,
-  int*    cnt
+  T*       enc,
+  int*     cnt
 
 ) {
 
@@ -131,10 +131,8 @@ void bitunpack(
     // append masked bits to dst
     for(int x=0;x<limit;x++) {
 
-      *b|=(src&mask);
+      *b++=src&mask;
       src>>=bits;
-
-      b++;
 
     };
 

@@ -108,11 +108,11 @@ typedef struct {
 
   ) {
 
-    return bitpack<char>(
+    return bitpack<uint8_t>(
 
-      &arr[0],
+      (uint8_t*) &arr[0],
 
-      (char*) enc.values,
+      (uint8_t*) enc.values,
       (int*)  enc.cnt
 
     );
@@ -128,13 +128,13 @@ typedef struct {
 
     this->clear();
 
-    bitunpack<char>(
+    bitunpack<uint8_t>(
 
       k,
 
-      &arr[0],
+      (uint8_t*) &arr[0],
 
-      (char*) enc.values,
+      (uint8_t*) enc.values,
       (int*)  enc.cnt
 
     );

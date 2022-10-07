@@ -49,8 +49,8 @@ int main(void) {
 
   );
 
-  size_t width=im.get_width();
-  size_t height=im.get_height();
+  size_t width=im.get_width()>>1;
+  size_t height=im.get_height()>>1;
 
   size_t sz=width*height;
 
@@ -85,33 +85,6 @@ int main(void) {
 
 // ---   *   ---   *   ---
 
-//  float pixels[]={
-//
-//    1.00f,1.00f,1.00f,1.00f,
-//    0.00f,0.00f,0.00f,1.00f,
-//    1.00f,1.00f,1.00f,1.00f,
-//    0.00f,0.00f,0.00f,1.00f,
-//
-//  };
-//
-//  size_t sz=arrsize(pixels)>>2;
-//
-//  for(int i=0;i<sz;i++) {
-//
-//    float* f=pixels+(i*4);
-//
-//    printf(
-//      "%2u: %.2f %.2f %.2f %.2f\n",
-//      i,f[0],f[1],f[2],f[3]
-//
-//    );
-//
-//    rgba2yauv(f);
-//
-//  };
-
-// ---   *   ---   *   ---
-
   { JOJ j(
 
       "./out",
@@ -130,8 +103,6 @@ int main(void) {
 
 // ---   *   ---   *   ---
 
-  printf("__________________\n\n");
-
   JOJ j(
 
     "./out",
@@ -141,21 +112,6 @@ int main(void) {
 
   j.read();
   j.encoder(JOJ::YAUV,Frac::DECODE);
-
-// ---   *   ---   *   ---
-
-//  for(int i=0;i<sz;i++) {
-//
-//    float* f=pixels+(i*4);
-//    yauv2rgba(f);
-//
-//    printf(
-//      "%2u: %.2f %.2f %.2f %.2f\n",
-//      i,f[0],f[1],f[2],f[3]
-//
-//    );
-//
-//  };
 
 // ---   *   ---   *   ---
 

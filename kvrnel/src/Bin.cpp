@@ -230,12 +230,12 @@ std::unique_ptr<char> Bin::read(
 // write size bytes from buff
 
 void Bin::write(
-  char* buff,size_t sz
+  void* buff,size_t sz
 
 ) {
 
   sz+=m_size*(sz==0);
-  this->m_fh.write(buff,sz);
+  this->m_fh.write((char*) buff,sz);
 
   m_ptr+=sz;
 

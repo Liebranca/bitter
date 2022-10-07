@@ -126,11 +126,13 @@ uint64_t JOJ::pixel_block(
   uint64_t key  = 0x00;
   uint64_t j    = 0x00;
 
-  int      bits = enc_bitsize<char>(
+  int      bits = near_pow2(
+
+  enc_bitsize<char>(
     (char*) m_meta.c_enc.values,
     (int*) m_meta.c_enc.cnt
 
-  );
+  ));
 
   for(int i=0;i<4;i++) {
 
@@ -139,9 +141,7 @@ uint64_t JOJ::pixel_block(
 
     );
 
-    blk.color_id[i]<<=j;
-
-    key|=blk.color_id[i];
+    key|=blk.color_id[i]<<=j;
     j+=bits;
 
   };
@@ -272,20 +272,24 @@ void JOJ::xlate_blocks(
 void JOJ::write_header(void) {
 
   // pixel size * block size
-  int bits=enc_bitsize<char>(
+  uint64_t bits=near_pow2(enc_bitsize<char>(
     (char*) m_meta.c_enc.values,
     (int*) m_meta.c_enc.cnt
 
-  )*4;
+  ))*4;
 
-  int bytes=bits>>3;
+  uint64_t bytes=bits>>3;
 
   // size of palette in bytes
   uint64_t palsz=(m_meta.palcnt*bytes);
 
   // size of 2x2 block
-  uint64_t blksz=bitsize(m_meta.palcnt)>>3;
-  blksz=(!blksz) ? 1 : blksz;
+  uint64_t idexsz=near_pow2(
+    bitsize(m_meta.palcnt)
+
+  )>>3;
+
+  idexsz=(!idexsz) ? 1 : idexsz;
 
 // ---   *   ---   *   ---
 // use helper struct for convenience
@@ -295,7 +299,8 @@ void JOJ::write_header(void) {
     .palcnt = m_meta.palcnt,
     .imsz   = m_meta.imsz,
 
-    .blksz  = blksz
+    .keysz  = bytes,
+    .idexsz = idexsz
 
   };
 
@@ -306,7 +311,7 @@ void JOJ::write_header(void) {
   );
 
   // write header
-  char* out_p=out.get();
+  uint8_t* out_p=(uint8_t*) out.get();
   *((JOJ::Header*) out_p)=hed;
   out_p+=sizeof(hed);
 
@@ -343,20 +348,25 @@ void JOJ::write(void) {
 
   this->write_header();
 
-  int      bits  = bitsize(m_meta.palcnt);
-  uint64_t size  = m_meta.imsz_sq>>2;
+  int      bits  = near_pow2(
+    bitsize(m_meta.palcnt)
 
-  int      bytes = std::max(bits>>3,1);
+  );
+
+  uint64_t size  = m_meta.imsz_sq>>2;
+  uint64_t bytes = std::max(bits>>3,1);
 
   size*=bytes;
 
   std::unique_ptr<char> out(
-    new char[size+8]
+    new char[size]
 
   );
 
+// ---   *   ---   *   ---
+
   uint64_t* buff  = m_blocks.get();
-  char*     out_p = out.get();
+  uint8_t*  out_p = (uint8_t*) out.get();
 
   for(
 
@@ -396,13 +406,27 @@ JOJ::Header JOJ::read_header(void) {
 
   buff.reset();
 
-  m_meta.pal.reserve(m_meta.palcnt);
-  buff=Bin::read(m_meta.palcnt<<3);
+// ---   *   ---   *   ---
 
-  uint64_t* keys=(uint64_t*) buff.get();
+  m_meta.pal.reserve(m_meta.palcnt);
+
+  buff=Bin::read(
+    m_meta.palcnt*hed.keysz
+
+  );
+
+  uint8_t* keys=(uint8_t*) buff.get();
 
   for(uint64_t i=0;i<m_meta.palcnt;i++) {
-    m_meta.pal.push_back(*keys++);
+
+    uint64_t key=0;
+
+    for(uint64_t j=0;j<hed.keysz;j++) {
+      key|=uint64_t(*keys++)<<(j*8);
+
+    };
+
+    m_meta.pal.push_back(key);
 
   };
 
@@ -419,7 +443,8 @@ void JOJ::read(void) {
   JOJ::Header hed=this->read_header();
 
   uint64_t blkcnt=m_meta.imsz_sq>>2;
-  auto buff=Bin::read(hed.blksz*blkcnt);
+
+  auto buff=Bin::read(hed.idexsz*blkcnt);
 
   // get mem
   m_pixels=std::unique_ptr<JOJ::Pixel>(
@@ -433,21 +458,20 @@ void JOJ::read(void) {
   JOJ::Pixel* pix_p = m_pixels.get();
   uint64_t*   data  = (uint64_t*) buff.get();
 
-  int bits=enc_bitsize<char>(
-    (char*) m_meta.c_enc.values,
-    (int*) m_meta.c_enc.cnt
+  uint64_t bits=(hed.keysz<<3)>>2;
 
-  );
+// ---   *   ---   *   ---
 
-  int bcnt=0;
-  int mask=(1<<bits)-1;
+  uint64_t mask=(1LL<<bits)-1;
+  mask-=1*!mask;
 
-  int idex_sz=near_pow2(
-    bitsize(m_meta.palcnt)
+  uint64_t idex_sz=hed.idexsz<<3;
+  uint64_t idex_mask=(1LL<<idex_sz)-1;
+  idex_mask-=1*!idex_mask;
 
-  );
+  uint64_t bcnt=0;
 
-  int idex_mask=(1<<idex_sz)-1;
+// ---   *   ---   *   ---
 
   for(
 
@@ -473,6 +497,8 @@ void JOJ::read(void) {
 
     );
 
+// ---   *   ---   *   ---
+
     JOJ::Pixel* pix[4];
     this->pixel2x2(pix,base);
 
@@ -487,6 +513,8 @@ void JOJ::read(void) {
       key>>=bits;
 
     };
+
+// ---   *   ---   *   ---
 
   };
 

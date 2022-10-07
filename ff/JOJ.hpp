@@ -37,7 +37,8 @@ private:
 
     uint64_t palcnt;
     uint64_t imsz;
-    uint64_t blksz;
+    uint64_t keysz;
+    uint64_t idexsz;
 
   } Header;
 

@@ -106,7 +106,7 @@ public:
   );
 
   // write from cursor
-  void write(char* buff,size_t sz);
+  void write(void* buff,size_t sz);
 
   // move bytes from file A to B
   bool transfer(Bin* other,size_t sz=0);
