@@ -34,7 +34,7 @@ inline bool nthbit(T b,T n) {
 
 template <typename T>
 inline T bitsize(T x) {
-  return fast_sqrt2(near_pow2(x));
+  return fast_log2(near_pow2(x));
 
 };
 
@@ -78,10 +78,6 @@ uint64_t bitpack(T* b,T* enc,int* cnt) {
   uint64_t out   = 0;
   int      total = 0;
 
-  uint64_t word  = *((uint64_t*) b);
-
-printf("***!\n");
-
   while(*cnt) {
 
     // elem size && count
@@ -92,16 +88,12 @@ printf("***!\n");
 
     // append masked bits to output
     for(int x=0;x<limit;x++) {
-      out|=(word&mask)<<total;
+      out|=(*b&mask)<<total;
       total+=bits;
 
-printf("(%02u) %lX\n",bits,word);
-
-      word>>=bits;
+      b++;
 
     };
-
-printf("(%02u) %lX\n\n",bits,word);
 
     // go next
     enc+=3;
@@ -128,9 +120,6 @@ void bitunpack(
 
 ) {
 
-  int       total = 0;
-  uint64_t* word  = (uint64_t*) b;
-
   while(*cnt) {
 
     // elem size && count
@@ -142,9 +131,10 @@ void bitunpack(
     // append masked bits to dst
     for(int x=0;x<limit;x++) {
 
-      *word|=(src&mask)<<total;
-      total+=bits;
+      *b|=(src&mask);
       src>>=bits;
+
+      b++;
 
     };
 
@@ -153,8 +143,6 @@ void bitunpack(
     cnt++;
 
   };
-
-printf("%lX\n",*word);
 
 };
 
@@ -248,6 +236,9 @@ T frac(
   b+=mid*!unsig;
   b-=1*(b==max && x<top);
 
+  bool over=b>max;
+  b=(max*over)+(b*!over);
+
   return (T) b;
 
 };
@@ -300,8 +291,6 @@ inline void Frac::Bat<T>::encode(
 
   );
 
-printf("%02X %.2f\n",*m_bytes,*m_floats);
-
 };
 
 // ---   *   ---   *   ---
@@ -321,8 +310,6 @@ inline void Frac::Bat<T>::decode(
     *m_bytes,step,bits,unsig
 
   );
-
-printf("%02X %.2f\n",*m_bytes,*m_floats);
 
 };
 

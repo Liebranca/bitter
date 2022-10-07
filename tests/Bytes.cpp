@@ -5,10 +5,10 @@
 
 int main(void) {
 
-  int   nbits = Frac::BITS[2];
-  float step  = Frac::STEP[2];
+  int   nbits = Frac::BITS[3];
+  float step  = Frac::STEP[3];
 
-  bool  unsig = Frac::UNSIGNED;
+  bool  unsig = Frac::SIGNED;
 
 printf("MAX %02X\n",Frac::MAXV[nbits]);
 
@@ -25,7 +25,7 @@ printf("MAX %02X\n",Frac::MAXV[nbits]);
     char    y = frac<char>(x,step,nbits,unsig);
     float   z = unfrac<char>(y,step,nbits,unsig);
 
-    printf("%i : %.04X %f\n",i,y,z);
+    printf("%2i : %.04X %f\n",i,y,z);
 
   };
 

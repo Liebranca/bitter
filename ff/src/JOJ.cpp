@@ -442,6 +442,13 @@ void JOJ::read(void) {
   int bcnt=0;
   int mask=(1<<bits)-1;
 
+  int idex_sz=near_pow2(
+    bitsize(m_meta.palcnt)
+
+  );
+
+  int idex_mask=(1<<idex_sz)-1;
+
   for(
 
     uint64_t i=0,base=0;
@@ -451,15 +458,15 @@ void JOJ::read(void) {
 
   ) {
 
-    uint64_t key=m_meta.pal[
-      *data&(bits-1)
+    uint64_t idex=*data;
+    idex>>=bcnt;
+    idex&=idex_mask;
 
-    ];
+    uint64_t key=m_meta.pal[idex];
 
-    bcnt+=bits;
-    *data>>=bits;
+    bcnt+=idex_sz;
 
-    if(bcnt==64) {data++;};
+    if(bcnt==64) {bcnt=0;data++;};
 
     base+=m_meta.imsz*(
       base && !(base%m_meta.imsz)

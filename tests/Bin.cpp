@@ -44,72 +44,80 @@ int main(void) {
 //
 //  fnorm(pixels);
 
-//  png::image<png::rgba_pixel> im(
-//    "/home/lyeb/Downloads/ElQuds.png"
+  png::image<png::rgba_pixel> im(
+    "/home/lyeb/Downloads/ElQuds.png"
+
+  );
+
+  size_t width=im.get_width();
+  size_t height=im.get_height();
+
+  size_t sz=width*height;
+
+  std::unique_ptr<float> pixels_p(
+    new float[sz*4]
+
+  );
+
+  size_t i=0;
+
+  float* pixels=pixels_p.get();
+
+  for(size_t y=0;y<height;y++) {
+
+    size_t row=y*width;
+
+    for(size_t x=0;x<width;x++) {
+
+      png::rgba_pixel px=im.get_pixel(x,y);
+
+      size_t orig=i;
+      pixels[i++]=px.red/255.0f;
+      pixels[i++]=px.green/255.0f;
+      pixels[i++]=px.blue/255.0f;
+      pixels[i++]=px.alpha/255.0f;
+
+      rgba2yauv(pixels+orig);
+
+    };
+
+  };
+
+// ---   *   ---   *   ---
+
+//  float pixels[]={
 //
-//  );
+//    1.00f,1.00f,1.00f,1.00f,
+//    0.00f,0.00f,0.00f,1.00f,
+//    1.00f,1.00f,1.00f,1.00f,
+//    0.00f,0.00f,0.00f,1.00f,
 //
-//  size_t width=im.get_width();
-//  size_t height=im.get_height();
+//  };
 //
-//  size_t sz=width*height;
+//  size_t sz=arrsize(pixels)>>2;
 //
-//  std::unique_ptr<float> pixels_p(
-//    new float[sz*4]
+//  for(int i=0;i<sz;i++) {
 //
-//  );
+//    float* f=pixels+(i*4);
 //
-//  size_t i=0;
+//    printf(
+//      "%2u: %.2f %.2f %.2f %.2f\n",
+//      i,f[0],f[1],f[2],f[3]
 //
-//  float* pixels=pixels_p.get();
+//    );
 //
-//  for(size_t y=0;y<height;y++) {
-//
-//    size_t row=y*width;
-//
-//    for(size_t x=0;x<width;x++) {
-//
-//      png::rgba_pixel px=im.get_pixel(x,y);
-//
-//      size_t orig=i;
-//      pixels[i++]=px.red/255.0f;
-//      pixels[i++]=px.green/255.0f;
-//      pixels[i++]=px.blue/255.0f;
-//      pixels[i++]=px.alpha/255.0f;
-//
-//      rgba2yauv(pixels+orig);
-//
-//    };
+//    rgba2yauv(f);
 //
 //  };
 
 // ---   *   ---   *   ---
-
-  float pixels[]={
-
-    0.66f,0.77f,0.1f,1.0f,
-    0.66f,0.77f,0.1f,1.0f,
-    0.66f,0.77f,0.1f,1.0f,
-    0.66f,0.77f,0.1f,1.0f,
-
-  };
-
-//  printf(
-//    "%.2f %.2f %.2f %.2f\n",
-//
-//    pixels[0],pixels[1],
-//    pixels[2],pixels[3]
-//
-//  );
-
-  rgba2yauv(pixels);
 
   { JOJ j(
 
       "./out",
 
       &pixels[0],
-      arrsize(pixels)>>2
+      sz
 
     );
 
@@ -120,7 +128,9 @@ int main(void) {
 
   };
 
-printf("_______________\n\n");
+// ---   *   ---   *   ---
+
+  printf("__________________\n\n");
 
   JOJ j(
 
@@ -132,40 +142,46 @@ printf("_______________\n\n");
   j.read();
   j.encoder(JOJ::YAUV,Frac::DECODE);
 
-  yauv2rgba(pixels);
-//  printf(
-//    "%.2f %.2f %.2f %.2f\n",
-//
-//    pixels[0],pixels[1],
-//    pixels[2],pixels[3]
-//
-//  );
+// ---   *   ---   *   ---
 
-//// ---   *   ---   *   ---
+//  for(int i=0;i<sz;i++) {
 //
-//  i=0;
-//  for(size_t y=0;y<height;y++) {
+//    float* f=pixels+(i*4);
+//    yauv2rgba(f);
 //
-//    size_t row=y*width;
+//    printf(
+//      "%2u: %.2f %.2f %.2f %.2f\n",
+//      i,f[0],f[1],f[2],f[3]
 //
-//    for(size_t x=0;x<width;x++) {
-//
-//      png::rgba_pixel px=im.get_pixel(x,y);
-//
-//      yauv2rgba(pixels+i);
-//
-//      px.red   = pixels[i++]*255.0f;
-//      px.green = pixels[i++]*255.0f;
-//      px.blue  = pixels[i++]*255.0f;
-//      px.alpha = pixels[i++]*255.0f;
-//
-//      im[y][x]=px;
-//
-//    };
+//    );
 //
 //  };
-//
-//  im.write("./out");
+
+// ---   *   ---   *   ---
+
+  i=0;
+  for(size_t y=0;y<height;y++) {
+
+    size_t row=y*width;
+
+    for(size_t x=0;x<width;x++) {
+
+      png::rgba_pixel px=im.get_pixel(x,y);
+
+      yauv2rgba(pixels+i);
+
+      px.red   = pixels[i++]*255.0f;
+      px.green = pixels[i++]*255.0f;
+      px.blue  = pixels[i++]*255.0f;
+      px.alpha = pixels[i++]*255.0f;
+
+      im[y][x]=px;
+
+    };
+
+  };
+
+  im.write("./out_im");
 
   return 0;
 
