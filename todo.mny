@@ -1,0 +1,16 @@
+>blkmgk v2.00.1
+
+*>JOJ
+~ Multi-image palette
+~ Saving decode data to header
+
+*>CRK
+~ Vertex classes
+~ Vertex data compression
+~ ^ Coords
+~ ^ Normals
+
+*>DAF
+~ Building files by blocks
+~ Block insert/pop/replace
+~ Passing buffers through zlib

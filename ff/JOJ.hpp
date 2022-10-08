@@ -50,7 +50,6 @@ private:
 
   typedef struct {
 
-    uint8_t  mip;
     uint8_t  imcnt;
 
     uint64_t imsz;
@@ -117,9 +116,6 @@ private:
 // interface
 
 public:
-
-  // compiler trash
-  JOJ(std::string fpath);
 
   // file into memory
   JOJ(

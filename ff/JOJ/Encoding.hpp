@@ -77,13 +77,13 @@ private:
   CX char ENCDEF_COLOR[]={
 
     // alpha && luma
-    Frac::STEP_4BIT,
-    Frac::SIZE_4BIT,
+    Frac::STEP_3BIT,
+    Frac::SIZE_3BIT,
     Frac::UNSIGNED,
 
     // chroma uv
-    Frac::STEP_4BIT,
-    Frac::SIZE_4BIT,
+    Frac::STEP_3BIT,
+    Frac::SIZE_3BIT,
     Frac::SIGNED,
 
   };

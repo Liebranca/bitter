@@ -49,8 +49,8 @@ int main(void) {
 
   );
 
-  size_t width=im.get_width()>>1;
-  size_t height=im.get_height()>>1;
+  size_t width=im.get_width();
+  size_t height=im.get_height();
 
   size_t sz=width*height;
 

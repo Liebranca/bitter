@@ -168,6 +168,39 @@ int enc_bitsize(T* enc,int* cnt) {
 };
 
 // ---   *   ---   *   ---
+// copy to same-sized buffer of smaller type
+
+template <typename T>
+void xfer(
+
+  uint8_t*  dst,
+  T         src,
+
+  uint64_t  size,
+  uint64_t  step
+
+) {
+
+  for(
+
+    uint64_t i=0,h=0;
+
+    i<size;
+    i+=step,h++
+
+  ) {
+
+    for(int j=0;j<step;j++) {
+      dst[i+j]=src[h]&0xFF;
+      src[h]>>=8;
+
+    };
+
+  };
+
+};
+
+// ---   *   ---   *   ---
 
 // get first non-zero bit in mask
 inline uint64_t bsf(uint64_t x) {

@@ -16,14 +16,6 @@
   #include "ff/JOJ.hpp"
 
 // ---   *   ---   *   ---
-// *.joj to float buffer
-
-JOJ::JOJ(std::string fpath)
-:Bin(fpath,Bin::READ) {
-
-};
-
-// ---   *   ---   *   ---
 // float buffer to *.joj
 
 JOJ::JOJ(
@@ -55,7 +47,6 @@ JOJ::JOJ(
   // counters
   m_meta.palcnt  = 0;
   m_meta.imcnt   = 0;
-  m_meta.mip     = 0;
 
   // main data buffer
   m_pixels=std::unique_ptr<JOJ::Pixel>(
@@ -72,6 +63,7 @@ JOJ::JOJ(
 };
 
 // ---   *   ---   *   ---
+// ^from file to *.joj
 
 JOJ::JOJ(
 
@@ -89,8 +81,8 @@ JOJ::JOJ(
 
 ) {
 
-  m_raw          = pixels;
-  m_meta.enc     = enc;
+  m_raw      = pixels;
+  m_meta.enc = enc;
 
 };
 
@@ -133,6 +125,9 @@ uint64_t JOJ::pixel_block(
     (int*) m_meta.c_enc.cnt
 
   ));
+
+// ---   *   ---   *   ---
+// build block key from pixel data
 
   for(int i=0;i<4;i++) {
 
@@ -318,31 +313,19 @@ void JOJ::write_header(void) {
 // ---   *   ---   *   ---
 // write palette to file
 
-  for(
+  xfer<typeof(m_meta.pal)>(
+    out_p,m_meta.pal,
+    palsz,bytes
 
-    uint64_t i=0,k=0;
 
-    i<palsz;
-    i+=bytes,k++
-
-  ) {
-
-    uint64_t val=m_meta.pal[k];
-
-    // break value into chars
-    for(int j=0;j<bytes;j++) {
-      out_p[i+j]=val&0xFF;
-      val>>=8;
-
-    };
-
-  };
+  );
 
   Bin::write(out.get(),palsz+sizeof(hed));
 
 };
 
 // ---   *   ---   *   ---
+// ^file body
 
 void JOJ::write(void) {
 
@@ -364,32 +347,23 @@ void JOJ::write(void) {
   );
 
 // ---   *   ---   *   ---
+// pass block data to char*
 
   uint64_t* buff  = m_blocks.get();
   uint8_t*  out_p = (uint8_t*) out.get();
 
-  for(
+  xfer<uint64_t*>(
+    out_p,buff,
+    size,bytes
 
-    uint64_t i=0,h=0;
-
-    i<size;
-    i+=bytes,h++
-
-  ) {
-
-    for(int j=0;j<bytes;j++) {
-      out_p[i+j]=buff[h]&0xFF;
-      buff[h]>>=8;
-
-    };
-
-  };
+  );
 
   Bin::write(out_p,size);
 
 };
 
 // ---   *   ---   *   ---
+// get file body descriptor
 
 JOJ::Header JOJ::read_header(void) {
 
@@ -407,6 +381,7 @@ JOJ::Header JOJ::read_header(void) {
   buff.reset();
 
 // ---   *   ---   *   ---
+// fill out palette
 
   m_meta.pal.reserve(m_meta.palcnt);
 
@@ -418,7 +393,6 @@ JOJ::Header JOJ::read_header(void) {
   uint8_t* keys=(uint8_t*) buff.get();
 
   for(uint64_t i=0;i<m_meta.palcnt;i++) {
-
     uint64_t key=0;
 
     for(uint64_t j=0;j<hed.keysz;j++) {
@@ -437,14 +411,14 @@ JOJ::Header JOJ::read_header(void) {
 };
 
 // ---   *   ---   *   ---
+// ^read body
 
 void JOJ::read(void) {
 
-  JOJ::Header hed=this->read_header();
+  JOJ::Header hed = this->read_header();
 
-  uint64_t blkcnt=m_meta.imsz_sq>>2;
-
-  auto buff=Bin::read(hed.idexsz*blkcnt);
+  uint64_t blkcnt = m_meta.imsz_sq>>2;
+  auto     buff   = Bin::read(hed.idexsz*blkcnt);
 
   // get mem
   m_pixels=std::unique_ptr<JOJ::Pixel>(
@@ -458,9 +432,10 @@ void JOJ::read(void) {
   JOJ::Pixel* pix_p = m_pixels.get();
   uint64_t*   data  = (uint64_t*) buff.get();
 
-  uint64_t bits=(hed.keysz<<3)>>2;
+  uint64_t    bits  = (hed.keysz<<3)>>2;
 
 // ---   *   ---   *   ---
+// get key && idex size values
 
   uint64_t mask=(1LL<<bits)-1;
   mask-=1*!mask;
@@ -472,6 +447,7 @@ void JOJ::read(void) {
   uint64_t bcnt=0;
 
 // ---   *   ---   *   ---
+// walk the buff
 
   for(
 
@@ -482,22 +458,27 @@ void JOJ::read(void) {
 
   ) {
 
+    // idex of current block
     uint64_t idex=*data;
     idex>>=bcnt;
     idex&=idex_mask;
 
+    // ^fetch from palette
     uint64_t key=m_meta.pal[idex];
 
+    // idex is variable-sized
+    // adjust buffer accto it
     bcnt+=idex_sz;
-
     if(bcnt==64) {bcnt=0;data++;};
 
+    // skip uneven rows
     base+=m_meta.imsz*(
       base && !(base%m_meta.imsz)
 
     );
 
 // ---   *   ---   *   ---
+// decode pixels from block
 
     JOJ::Pixel* pix[4];
     this->pixel2x2(pix,base);
@@ -631,6 +612,7 @@ JOJ::SubEncoding JOJ::read_mode(
 };
 
 // ---   *   ---   *   ---
+// does/undoes frac'ing of floats
 
 void JOJ::encoder(
   int imtype,

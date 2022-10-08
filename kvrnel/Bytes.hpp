@@ -182,6 +182,20 @@ template <typename T>
 int enc_bitsize(T* enc,int* cnt);
 
 // ---   *   ---   *   ---
+// copy to same-sized buffer of smaller type
+
+template <typename T>
+void xfer(
+
+  uint8_t*  dst,
+  T         src,
+
+  uint64_t  size,
+  uint64_t  step
+
+);
+
+// ---   *   ---   *   ---
 
 // get first non-zero bit in mask
 inline uint64_t bsf(uint64_t x);
