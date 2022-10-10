@@ -8,6 +8,41 @@
   #include "Evil.hpp"
 
 // ---   *   ---   *   ---
+
+// get first non-zero bit in mask
+inline uint64_t bsf(uint64_t x) {
+  return __builtin_ctzll(x);
+
+};
+
+// ^first zero ;>
+inline uint64_t nbsf(uint64_t x) {
+  return __builtin_ctzll(~x);
+
+};
+
+// ---   *   ---   *   ---
+// finding/enforcing nearest power of 2
+
+inline uint64_t fast_log2(uint64_t x) {
+  return 63-__builtin_clzll(x);
+
+};
+
+inline uint64_t fast_sqrt2(uint64_t x) {
+  return 1<<((63-__builtin_clzll(x))>>1);
+
+};
+
+inline uint64_t near_pow2(uint64_t x) {
+  uint64_t y=63-__builtin_clzll(x);
+  y+=(x & (x-1))!=0;
+
+  return 1<<y;
+
+};
+
+// ---   *   ---   *   ---
 // float encoding helper ;>
 
 namespace Frac {
@@ -35,7 +70,7 @@ namespace Frac {
   private:
 
     // m_bytes to m_floats
-    inline void encode(
+    void encode(
 
       float   step,
       int     nbits,
@@ -45,7 +80,7 @@ namespace Frac {
     );
 
     // ^inverse
-    inline void decode(
+    void decode(
 
       float   step,
       int     nbits,
@@ -148,14 +183,24 @@ namespace Frac {
 };
 
 // ---   *   ---   *   ---
-
 // get nth bit is set
-template <typename T>
-inline bool nthbit(T b,T n);
 
-// count N bits needed for value
 template <typename T>
-inline T bitsize(T x);
+inline bool nthbit(T b,T n) {
+  return (b&(1<<n))!=0;
+
+};
+
+// ---   *   ---   *   ---
+// count N bits needed for value
+
+template <typename T>
+inline T bitsize(T x) {
+  return fast_log2(near_pow2(x));
+
+};
+
+// ---   *   ---   *   ---
 
 // give portion of a value's bits
 template <typename T>
@@ -194,19 +239,6 @@ void xfer(
   uint64_t  step
 
 );
-
-// ---   *   ---   *   ---
-
-// get first non-zero bit in mask
-inline uint64_t bsf(uint64_t x);
-
-// ^first zero ;>
-inline uint64_t nbsf(uint64_t x);
-
-// finding/enforcing nearest power of 2
-inline uint64_t fast_log2(uint64_t x);
-inline uint64_t fast_sqrt2(uint64_t x);
-inline uint64_t near_pow2(uint64_t x);
 
 // ---   *   ---   *   ---
 

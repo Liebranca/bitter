@@ -47,8 +47,8 @@ private:
   cxstr     m_fsig="";
   cx64      m_header_sz=0;
 
-  size_t    m_size;
-  size_t    m_ptr;
+  uint64_t  m_size;
+  uint64_t  m_ptr;
 
   std::string m_fpath;
 
@@ -94,22 +94,25 @@ public:
   bool match_sig(void);
 
   // open, read && close
-  static std::unique_ptr<char> orc(
+  static std::unique_ptr<uint8_t> orc(
     std::string fpath
 
   );
 
   // read from cursor up to size
-  std::unique_ptr<char> read(
-    size_t sz=0
+  std::unique_ptr<uint8_t> read(
+    uint64_t sz=0
 
   );
 
+  // ^same, you provide the buff
+  void read(uint8_t* dst,uint64_t sz);
+
   // write from cursor
-  void write(void* buff,size_t sz);
+  void write(void* buff,uint64_t sz);
 
   // move bytes from file A to B
-  bool transfer(Bin* other,size_t sz=0);
+  bool transfer(Bin* other,uint64_t sz=0);
 
   // move cursor
   void seek(
@@ -125,7 +128,7 @@ public:
 // ---   *   ---   *   ---
 // getters
 
-  inline size_t tell(void) {
+  inline uint64_t tell(void) {
     return m_ptr;
 
   };

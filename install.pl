@@ -20,7 +20,7 @@ Avt::set_config(
   build=>'ar:bitter',
 
 #  xprt=>[qw(TODO)],
-  libs=>[qw(stdc++ m)],
+  libs=>[qw(stdc++ m png)],
 
 #  post_build=>q(
 #

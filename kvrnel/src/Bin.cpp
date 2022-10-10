@@ -88,7 +88,7 @@ int Bin::open(std::string fpath,char mode) {
 bool Bin::match_sig(void) {
 
   bool out=true;
-  size_t sig_len=m_fsig.length();
+  uint64_t sig_len=m_fsig.length();
 
   this->rewind();
 
@@ -129,7 +129,7 @@ void Bin::set_ptr(
 
 ) {
 
-  size_t skip=m_fsig.length()+m_header_sz;
+  uint64_t skip=m_fsig.length()+m_header_sz;
   skip*=ignore_header;
 
   // update ptr
@@ -186,15 +186,15 @@ Bin::~Bin(void) {
 // ---   *   ---   *   ---
 // open, read, close
 
-std::unique_ptr<char> Bin::orc(
+std::unique_ptr<uint8_t> Bin::orc(
   std::string fpath
 
 ) {
 
   Bin b(fpath,READ);
 
-  std::unique_ptr<char> buff(
-    new char[b.m_size]
+  std::unique_ptr<uint8_t> buff(
+    new uint8_t[b.m_size]
 
   );
 
@@ -207,15 +207,15 @@ std::unique_ptr<char> Bin::orc(
 // ---   *   ---   *   ---
 // read from cursor up to size
 
-std::unique_ptr<char> Bin::read(
-  size_t sz
+std::unique_ptr<uint8_t> Bin::read(
+  uint64_t sz
 
 ) {
 
   sz+=m_size*(sz==0);
 
-  std::unique_ptr<char> buff(
-    new char[sz]
+  std::unique_ptr<uint8_t> buff(
+    new uint8_t[sz]
 
   );
 
@@ -227,15 +227,27 @@ std::unique_ptr<char> Bin::read(
 };
 
 // ---   *   ---   *   ---
+// ^buff provided by user
+
+void Bin::read(void* dst,uint64_t sz) {
+
+  sz+=m_size*(sz==0);
+
+  this->m_fh.read(dst,sz);
+  m_ptr+=sz;
+
+};
+
+// ---   *   ---   *   ---
 // write size bytes from buff
 
 void Bin::write(
-  void* buff,size_t sz
+  void* buff,uint64_t sz
 
 ) {
 
   sz+=m_size*(sz==0);
-  this->m_fh.write((char*) buff,sz);
+  this->m_fh.write((uint8_t*) buff,sz);
 
   m_ptr+=sz;
 
@@ -275,11 +287,11 @@ inline void Bin::rewind(void) {
 // ---   *   ---   *   ---
 // read from A, write to B
 
-bool Bin::transfer(Bin* other,size_t sz) {
+bool Bin::transfer(Bin* other,uint64_t sz) {
 
   sz+=m_size*(sz==0);
 
-  std::unique_ptr<char> buff=
+  std::unique_ptr<uint8_t> buff=
     this->read(sz);
 
   other->write(buff.get(),sz);
