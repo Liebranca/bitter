@@ -12,7 +12,7 @@
 // ---   *   ---   *   ---
 // deps
 
-  #include "ff/Zwrap.h"
+  #include "ff/Zwrap.hpp"
 
   #include <cstring>
   #include <cstdio>
@@ -55,9 +55,6 @@ std::string Zwrap::get_status(void) {
 #define CALL_ZLIB(x) {\
   m_status=x;\
   if (m_status < 0) {\
-    if(KVR_DEBUG) {\
-      fprintf(stderr,"FAILED %s\n\b",#x);\
-    };\
     Evil::terminator(\
       Fatal::ZLIB,\
       this->get_status()\
@@ -70,9 +67,12 @@ std::string Zwrap::get_status(void) {
 
 Zwrap::Zwrap(int mode) {
 
-  m_mode=mode;
-  m_buff=NULL;
+  m_mode          = mode;
+  m_buff          = NULL;
+  m_readsize      = DAFPAGE;
+  m_remain        = 0x00;
 
+  m_strm          = {0};
   m_strm.zalloc   = Z_NULL;
   m_strm.zfree    = Z_NULL;
   m_strm.opaque   = Z_NULL;
@@ -82,7 +82,7 @@ Zwrap::Zwrap(int mode) {
   if(m_mode&Zwrap::INFLATE) {
 
     CALL_ZLIB(inflateInit2(
-      strm,
+      &m_strm,
 
       WINDOW_BITS
     | ENABLE_ZLIB_GZIP
@@ -93,7 +93,7 @@ Zwrap::Zwrap(int mode) {
 
     CALL_ZLIB(deflateInit2(
 
-      strm,
+      &m_strm,
 
       Z_BEST_COMPRESSION,
       Z_DEFLATED,
@@ -130,8 +130,8 @@ Zwrap::~Zwrap(void) {
 
 inline void Zwrap::get_readsize(void) {
 
-  m_readsize=(DAFPAGE > m_remain)
-    ? DAFPAGE
+  m_readsize=(m_readsize > m_remain)
+    ? m_remain
     : m_readsize
     ;
 
@@ -143,7 +143,7 @@ inline void Zwrap::get_readsize(void) {
 void Zwrap::next_chunk(void) {
 
   // cap chunk size
-  get_readsize();
+  this->get_readsize();
 
   // get chunk
   uint8_t* src;
@@ -174,11 +174,15 @@ void Zwrap::next_chunk(void) {
 // ---   *   ---   *   ---
 // ^invokes zlib on current chunk
 
-uint64_t Zwrap::process(uint8_t* dst) {
+uint64_t Zwrap::process(
+  uint8_t* dst,
+  uint64_t avail
+
+) {
 
   uint64_t have;
 
-  m_strm.avail_out = m_readsize;
+  m_strm.avail_out = avail;
   m_strm.next_out  = dst;
 
   if(m_mode&Zwrap::INFLATE) {
@@ -226,16 +230,25 @@ void Zwrap::dump(void) {
     if(m_mode&Zwrap::OUTPUT_BIN) {
 
       uint8_t* dst  = m_buff.get()+m_readsize;
-      uint64_t have = this->process(dst);
+      uint64_t have = this->process(
+        dst,DAFPAGE
+
+      );
 
       m_dst.bin->write(dst,have);
 
     // from mem
     } else {
-      m_dst.bytes+=this->process(
-        m_dst.bytes
+
+      uint64_t j=this->process(
+        m_dst.bytes,m_dst.size
 
       );
+
+      m_dst.bytes+=j;
+      m_dst.size-=j;
+
+      if(!j) {break;};
 
     };
 
@@ -290,10 +303,10 @@ inline void Zwrap::set_src(
 ) {
 
   if(m_mode&Zwrap::INPUT_BIN) {
-    m_dst.set((Bin*) src,size,offset);
+    m_src.set((Bin*) src,size,offset);
 
   } else {
-    m_dst.set((uint8_t*) src,size,offset);
+    m_src.set((uint8_t*) src,size,offset);
 
   };
 

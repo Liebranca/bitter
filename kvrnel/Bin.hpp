@@ -106,7 +106,7 @@ public:
   );
 
   // ^same, you provide the buff
-  void read(uint8_t* dst,uint64_t sz);
+  void read(void* dst,uint64_t sz);
 
   // write from cursor
   void write(void* buff,uint64_t sz);

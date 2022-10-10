@@ -91,20 +91,24 @@ private:
 // ---   *   ---   *   ---
 // internals
 
-  inline uint64_t get_readsize(void);
+  inline void get_readsize(void);
   std::string get_status(void);
 
   void dump(void);
   void next_chunk(void);
 
-  uint64_t process(uint8_t* dst);
+  uint64_t process(
+    uint8_t* dst,
+    uint64_t avail
+
+  );
 
 // ---   *   ---   *   ---
 // iface
 
 public:
 
-  Zwrap(int mode);
+  Zwrap(int mode=0x00);
   ~Zwrap(void);
 
   int flate(void);

@@ -12,7 +12,7 @@
 // ---   *   ---   *   ---
 // info
 
-template<typename T>
+template<typename T,uint64_t SZ>
 class Mem {
 
 public:
@@ -21,43 +21,39 @@ public:
   AUTHOR    "IBN-3DILA";
 
 // ---   *   ---   *   ---
-// generic holding dynamic memory
+// generic bytearray
 
 private:
 
-  ID     m_id;     // universal block header
+  ID       m_id;      // universal block header
 
-  size_t m_fsize;  // total space used
-  size_t m_bsize;  // usable, non-header space
+  uint64_t m_fsize;   // total space used
+  uint64_t m_bsize;   // usable, non-header space
 
-  void*  m_base;   // evil circular reference
-  T*     m_beg;    // start of usable memory
+  void*    m_base;    // evil circular reference
+
+  T        m_beg[SZ]; // start of usable memory
 
 // ---   *   ---   *   ---
 
 public:
 
   // compiler trash
-  Mem<T>() {};
+  Mem<T,SZ>() {};
 
   // alloc
-  static Mem<T>* nit(
+  Mem<T,SZ>(
 
-    size_t buff_sz,
-    size_t header_sz,
-
-    ID* id
+    ID*    id,
+    uint64_t header_sz=0x00
 
   );
-
-  // dealloc
-  inline void del(void);
 
   // flood a block with zeroes
   inline void cl(void);
 
   // buffer write from string
-  size_t write(std::string s,size_t ptr=0);
+  uint64_t write(std::string s,uint64_t ptr=0);
 
   // subscript
   inline T& operator[](long idex);

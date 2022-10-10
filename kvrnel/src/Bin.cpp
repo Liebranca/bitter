@@ -198,7 +198,7 @@ std::unique_ptr<uint8_t> Bin::orc(
 
   );
 
-  b.m_fh.read(buff.get(),b.m_size);
+  b.m_fh.read((char*) buff.get(),b.m_size);
 
   return buff;
 
@@ -219,7 +219,7 @@ std::unique_ptr<uint8_t> Bin::read(
 
   );
 
-  this->m_fh.read(buff.get(),sz);
+  this->m_fh.read((char*) buff.get(),sz);
   m_ptr+=sz;
 
   return buff;
@@ -233,7 +233,7 @@ void Bin::read(void* dst,uint64_t sz) {
 
   sz+=m_size*(sz==0);
 
-  this->m_fh.read(dst,sz);
+  this->m_fh.read((char*) dst,sz);
   m_ptr+=sz;
 
 };
@@ -247,7 +247,7 @@ void Bin::write(
 ) {
 
   sz+=m_size*(sz==0);
-  this->m_fh.write((uint8_t*) buff,sz);
+  this->m_fh.write((char*) buff,sz);
 
   m_ptr+=sz;
 
@@ -294,7 +294,7 @@ bool Bin::transfer(Bin* other,uint64_t sz) {
   std::unique_ptr<uint8_t> buff=
     this->read(sz);
 
-  other->write(buff.get(),sz);
+  other->write((char*) buff.get(),sz);
 
   buff.reset();
 

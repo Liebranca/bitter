@@ -52,88 +52,55 @@ char* stirr_p(int* src,int cnt=4) {
 // ---   *   ---   *   ---
 // alloc
 
-template<typename T>
-Mem<T>* Mem<T>::nit(
+template<typename T,uint64_t SZ>
+Mem<T,SZ>::Mem(
 
-  size_t  buff_sz,
-  size_t  header_sz,
-
-  ID*     id
+  ID*     id,
+  uint64_t  header_sz
 
 ) {
 
-  buff_sz=near_pow2(buff_sz);
-  size_t fsize=buff_sz+header_sz;
+  uint64_t buff_sz=near_pow2(SZ);
+  uint64_t fsize=buff_sz+header_sz;
 
-  Mem<T>* out=(Mem<T>*) malloc(fsize);
+  m_id=*id;
+  m_fsize=fsize;
 
-  // success
-  if(out!=NULL) {
+  m_base=(void*) this;
+  m_bsize=buff_sz;
 
-    memset(out,0,fsize);
-
-    out->m_id=*id;
-    out->m_fsize=fsize;
-
-    char* raw=(char*) out;
-
-    out->m_base=(void*) raw;
-
-    out->m_beg=(T*) (raw+header_sz);
-    out->m_bsize=buff_sz;
-
-  // or die
-  } else {
-
-    Evil::terminator(
-      Fatal::OOM,
-      id->as_str()
-
-    );
-
-  };
-
-  return out;
-
-};
-
-// ---   *   ---   *   ---
-// ^dealloc
-
-template<typename T>
-void Mem<T>::del(void) {
-  free(m_base);
+  this->cl();
 
 };
 
 // ---   *   ---   *   ---
 // zero flood buffer
 
-template<typename T>
-inline void Mem<T>::cl(void) {
-  memset(m_beg,0,m_bsize);
+template<typename T,uint64_t SZ>
+inline void Mem<T,SZ>::cl(void) {
+  memset(&m_beg[0],0,m_bsize);
 
 };
 
 // ---   *   ---   *   ---
 // buffer write from string
 
-template<typename T>
-size_t Mem<T>::write(
+template<typename T,uint64_t SZ>
+uint64_t Mem<T,SZ>::write(
 
   std::string s,
-  size_t ptr
+  uint64_t ptr
 
 ) {
 
-  size_t mask=m_bsize-1;
+  uint64_t mask=m_bsize-1;
 
   ptr*=sizeof(T);
   ptr&=mask;
 
   memcpy(
 
-    ((char*) m_beg)+ptr,
+    ((char*) &m_beg[0])+ptr,
 
     s.c_str(),
     s.length()&mask
@@ -147,26 +114,26 @@ size_t Mem<T>::write(
 // ---   *   ---   *   ---
 // subscript
 
-template<typename T>
-inline T& Mem<T>::operator[](long idex) {
+template<typename T,uint64_t SZ>
+inline T& Mem<T,SZ>::operator[](long idex) {
 
-  size_t mask=-1*(idex<0);
-  size_t base=m_bsize&mask;
+  uint64_t mask=-1*(idex<0);
+  uint64_t base=m_bsize&mask;
 
-  size_t ptr=((base+idex)&mask) | idex;
+  uint64_t ptr=((base+idex)&mask) | idex;
 
   ptr*=sizeof(T);
   ptr&=m_bsize-1;
 
-  return (T&) *(((char*) m_beg) + ptr);
+  return (T&) *(((char*) &m_beg[0]) + ptr);
 
 };
 
 // ---   *   ---   *   ---
 // debug print
 
-template<typename T>
-void Mem<T>::prich(int errout) {
+template<typename T,uint64_t SZ>
+void Mem<T,SZ>::prich(int errout) {
 
   const char* fmat=
 
@@ -175,6 +142,7 @@ void Mem<T>::prich(int errout) {
     "%-24s %016X\n"
     "%-24s %016X\n"
     "\n"
+    "%-24s %016X\n"
     "%-24s %016X\n"
     "\n"
 
@@ -192,7 +160,8 @@ void Mem<T>::prich(int errout) {
     "FULL_SIZE",m_fsize,
     "BUFF_SIZE",m_bsize,
 
-    "BUFF_ADDR",m_beg
+    "BASE_ADDR",m_base,
+    "BUFF_ADDR",&m_beg[0]
 
   );
 
@@ -200,9 +169,9 @@ void Mem<T>::prich(int errout) {
 // print out the buffer
 
   char line[64];
-  char* base=(char*) m_beg;
+  char* base=(char*) &m_beg[0];
 
-  for(size_t i=0;i<m_bsize;i+=16) {
+  for(uint64_t i=0;i<m_bsize;i+=16) {
 
     int* a=(int*) (base+i+0x00);
     int* b=(int*) (base+i+0x04);
@@ -227,8 +196,11 @@ void Mem<T>::prich(int errout) {
 
       f,fmat,
 
-      *a&0xFFFF,*a>>16,*b&0xFFFF,*b>>16,
-      *c&0xFFFF,*c>>16,*d&0xFFFF,*d>>16,
+      *a&0xFFFF,(*a>>16)&0xFFFF,
+      *b&0xFFFF,(*b>>16)&0xFFFF,
+
+      *c&0xFFFF,(*c>>16)&0xFFFF,
+      *d&0xFFFF,(*d>>16)&0xFFFF,
 
       stirr_p(a)
 
