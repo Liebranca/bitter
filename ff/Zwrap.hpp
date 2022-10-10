@@ -20,7 +20,11 @@ public:
   VERSION   "v2.00.1";
   AUTHOR    "IBN-3DILA";
 
-  enum {INFLATE,DEFLATE};
+
+  cx8 INFLATE     = 0x01;
+
+  cx8 INPUT_BIN   = 0x02;
+  cx8 OUTPUT_BIN  = 0x04;
 
 // ---   *   ---   *   ---
 // helpers
@@ -65,14 +69,15 @@ private:
   Target    m_dst;
   Target    m_src;
 
+  z_stream  m_strm;
+
   uint64_t  m_readsize;
   uint64_t  m_remain;
 
   uint64_t  m_flush;
-  uint64_t  m_mode;
 
-  z_stream  m_strm;
   int       m_status;
+  int       m_mode;
 
   std::unique_ptr<uint8_t> m_buff;
 
@@ -89,35 +94,34 @@ private:
   inline uint64_t get_readsize(void);
   std::string get_status(void);
 
-  void dump_i(uint8_t* dst,uint8_t* src);
-  void next_chunk(uint8_t* src);
+  void dump(void);
+  void next_chunk(void);
+
+  uint64_t process(uint8_t* dst);
 
 // ---   *   ---   *   ---
 // iface
 
 public:
 
-  Zwrap(bool mode);
+  Zwrap(int mode);
   ~Zwrap(void);
 
-  template <typename dst_t,typename src_t>
-  int inflate<dst_t,src_t>(void);
+  int flate(void);
 
 // ---   *   ---   *   ---
 // setters
 
-  template <typename T>
   inline void set_src(
-    T*       src,
+    void*    src,
 
     uint64_t size,
     uint64_t offset=0
 
   );
 
-  template <typename T>
   inline void set_dst(
-    T*       dst,
+    void*    dst,
 
     uint64_t size,
     uint64_t offset=0

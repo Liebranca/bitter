@@ -66,10 +66,12 @@ std::string Zwrap::get_status(void) {
 }
 
 // ---   *   ---   *   ---
+// constructor
 
-Zwrap::Zwrap(bool mode) {
+Zwrap::Zwrap(int mode) {
 
   m_mode=mode;
+  m_buff=NULL;
 
   m_strm.zalloc   = Z_NULL;
   m_strm.zfree    = Z_NULL;
@@ -77,38 +79,39 @@ Zwrap::Zwrap(bool mode) {
   m_strm.next_in  = Z_NULL;
   m_strm.avail_in = 0;
 
-  // get mem
-  m_buff=std::unique_ptr<uint8_t>(
-    new uint8_t[DAFPAGE*2]
-
-  );
-
-// ---   *   ---   *   ---
-
-  if(m_mode==Zwrap::INFLATE) {
+  if(m_mode&Zwrap::INFLATE) {
 
     CALL_ZLIB(inflateInit2(
-      strm,windowBits|ENABLE_ZLIB_GZIP
+      strm,
+
+      WINDOW_BITS
+    | ENABLE_ZLIB_GZIP
 
     ));
-
-// ---   *   ---   *   ---
 
   } else {
 
     CALL_ZLIB(deflateInit2(
 
-      strm,Z_BEST_COMPRESSION,Z_DEFLATED,
-      windowBits|GZIP_ENCODING,8,
-      Z_DEFAULT_STRATEGY)
+      strm,
 
-    );
+      Z_BEST_COMPRESSION,
+      Z_DEFLATED,
+
+      WINDOW_BITS
+    | GZIP_ENCODING,
+
+      8,
+      Z_DEFAULT_STRATEGY
+
+    ));
 
   };
 
-// ---   *   ---   *   ---
-
 };
+
+// ---   *   ---   *   ---
+// destructor
 
 Zwrap::~Zwrap(void) {
 
@@ -123,11 +126,12 @@ Zwrap::~Zwrap(void) {
 };
 
 // ---   *   ---   *   ---
+// caps next read to remaining bytes
 
 inline void Zwrap::get_readsize(void) {
 
-  m_readsize=(m_readsize > m_remain)
-    ? m_remain
+  m_readsize=(DAFPAGE > m_remain)
+    ? DAFPAGE
     : m_readsize
     ;
 
@@ -136,25 +140,80 @@ inline void Zwrap::get_readsize(void) {
 // ---   *   ---   *   ---
 // buff read
 
-uint8_t* next_chunk(uint8_t* src) {
+void Zwrap::next_chunk(void) {
 
   // cap chunk size
   get_readsize();
 
-  // read next chunk from file
+  // get chunk
+  uint8_t* src;
+
+  // from file
+  if(m_mode&Zwrap::INPUT_BIN) {
+    src=m_buff.get();
+    m_src.bin->read(src,m_readsize);
+
+  // from mem
+  } else {
+    src=m_src.bytes;
+    m_src.bytes+=m_readsize;
+
+  };
+
+  // ^point to it
   m_strm.avail_in = m_readsize;
   m_strm.next_in  = src;
 
   m_remain-=m_readsize;
 
-  return src;
+  // ^spit it out
+  this->dump();
+
+};
+
+// ---   *   ---   *   ---
+// ^invokes zlib on current chunk
+
+uint64_t Zwrap::process(uint8_t* dst) {
+
+  uint64_t have;
+
+  m_strm.avail_out = m_readsize;
+  m_strm.next_out  = dst;
+
+  if(m_mode&Zwrap::INFLATE) {
+    CALL_ZLIB(inflate(
+      &m_strm,m_flush
+
+    ));
+
+  } else {
+    CALL_ZLIB(deflate(
+      &m_strm,m_flush
+
+    ));
+
+  };
+
+  have=m_readsize-m_strm.avail_out;
+  return have;
 
 };
 
 // ---   *   ---   *   ---
 // inflate buff2buff
 
-void dump_i(uint8_t* dst,uint8_t* src) {
+void Zwrap::dump(void) {
+
+  if(!(m_mode&Zwrap::INFLATE)) {
+    m_flush=(m_remain)
+      ? Z_NO_FLUSH
+      : Z_FINISH
+      ;
+
+  } else {m_flush=Z_NO_FLUSH;};
+
+// ---   *   ---   *   ---
 
   while(
 
@@ -163,18 +222,22 @@ void dump_i(uint8_t* dst,uint8_t* src) {
 
   ) {
 
-    uint64_t have;
+    // from file
+    if(m_mode&Zwrap::OUTPUT_BIN) {
 
-    m_strm.avail_out = m_readsize;
-    m_strm.next_out  = src;
+      uint8_t* dst  = m_buff.get()+m_readsize;
+      uint64_t have = this->process(dst);
 
-    CALL_ZLIB(inflate(
-      &m_strm,Z_NO_FLUSH
+      m_dst.bin->write(dst,have);
 
-    ));
+    // from mem
+    } else {
+      m_dst.bytes+=this->process(
+        m_dst.bytes
 
-    have=m_readsize-m_strm.avail_out;
-    std::memcpy(dst,src,have);
+      );
+
+    };
 
   };
 
@@ -218,102 +281,75 @@ inline void Zwrap::Target::set(
 // ---   *   ---   *   ---
 // ^single entry
 
-template <typename T>
-inline void Zwrap::set_src<T>(
-  T*       src,
+inline void Zwrap::set_src(
+  void*    src,
 
   uint64_t size,
   uint64_t offset
 
-) {m_src->set(src,size,offset);};
+) {
 
-template <typename T>
-inline void Zwrap::set_dst<T>(
-  T*       dst,
+  if(m_mode&Zwrap::INPUT_BIN) {
+    m_dst.set((Bin*) src,size,offset);
 
-  uint64_t size,
-  uint64_t offset
+  } else {
+    m_dst.set((uint8_t*) src,size,offset);
 
-) {m_dst->set(dst,size,offset);};
+  };
+
+};
 
 // ---   *   ---   *   ---
-// decodes a deflated buff or bin
+// ^clutter-copy
 
-template <typename dst_t,typename src_t>
-int Zwrap::inflate<dst_t,src_t>(void) {
+inline void Zwrap::set_dst(
+  void*    dst,
 
-  m_remain=m_src.size;
+  uint64_t size,
+  uint64_t offset
 
-  while(m_remain) {
+) {
 
-    this->dump_i(
-      (dst_t*) m_dst,
-      this->next_chunk((src_t*) m_src)
+  if(m_mode&Zwrap::OUTPUT_BIN) {
+    m_dst.set((Bin*) dst,size,offset);
+
+  } else {
+    m_dst.set((uint8_t*) dst,size,offset);
+
+  };
+
+};
+
+// ---   *   ---   *   ---
+// grows a compressed buff or bin
+// shrinks a raw buffer or bin
+
+int Zwrap::flate(void) {
+
+  // get read/write buffer for bins
+  if(
+
+  (  (m_mode&Zwrap::INPUT_BIN)
+  || (m_mode&Zwrap::OUTPUT_BIN)
+
+  ) && m_buff==NULL
+
+  ) {
+
+    m_buff=std::unique_ptr<uint8_t>(
+      new uint8_t[m_readsize*2]
 
     );
 
   };
 
-  return AR_DONE;
-
-};
-
 // ---   *   ---   *   ---
+// consume input
 
-int Zwrap::deflate(void) {
-
-  // fetch locs
-  uint8_t* in  = m_buff.get();
-  uint8_t* out = m_buff.get()+DAFPAGE;
-
-  // rewind and skip
-  ((Bin*) dst)->seek(m_offs_d,Bin::BEG);
-  rewind(dst->file);
-
-  uint64_t flush;
-
-  m_remain=m_size_i;
-
-// ---   *   ---   *   ---
+  m_remain=m_src.size;
 
   while(m_remain) {
-
-    // cap chunk size
-    uint64_t readsize = get_readsize(remain);
-
-    m_strm.next_in    = in;
-    m_strm.avail_in   = readsize;
-
-    remain-=readsize;
-    flush=(remain) ? Z_NO_FLUSH : Z_FINISH;
-
-// ---   *   ---   *   ---
-
-    while(
-       m_strm.avail_in
-    || !m_strm.avail_out
-
-    ) {
-
-      uint64_t have;
-
-      m_strm.avail_out = DAFPAGE;
-      m_strm.next_out  = out;
-
-      CALL_ZLIB(deflate(&m_strm,flush));
-
-      have=DAFPAGE-m_strm.avail_out;
-      m_size_d+=have;
-
-      fseek(dst->file,0,SEEK_CUR);
-      BINWRITE(dst,wb,uchar,have,out);
-      fseek(dst->file,0,SEEK_CUR);
-
-    };
-
-// ---   *   ---   *   ---
-
-    in+=readsize;
+    this->next_chunk();
 
   };
 
