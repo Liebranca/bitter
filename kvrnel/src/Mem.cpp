@@ -52,22 +52,26 @@ char* stirr_p(int* src,int cnt=4) {
 // ---   *   ---   *   ---
 // alloc
 
-template<typename T,uint64_t SZ>
-Mem<T,SZ>::Mem(
+template<typename T>
+Mem<T>::Mem(
 
-  ID*     id,
-  uint64_t  header_sz
+  ID*      id,
+  uint64_t buff_sz,
+  uint64_t header_sz
 
 ) {
 
-  uint64_t buff_sz=near_pow2(SZ);
-  uint64_t fsize=buff_sz+header_sz;
+  buff_sz        = near_pow2(buff_sz);
+  uint64_t fsize = buff_sz+header_sz;
 
-  m_id=*id;
-  m_fsize=fsize;
+  m_id           = *id;
+  m_fsize        = fsize;
 
-  m_base=(void*) this;
-  m_bsize=buff_sz;
+  m_bsize        = buff_sz;
+  m_buff         = std::unique_ptr<T>(
+    new T[buff_sz]
+
+  );
 
   this->cl();
 
@@ -76,17 +80,17 @@ Mem<T,SZ>::Mem(
 // ---   *   ---   *   ---
 // zero flood buffer
 
-template<typename T,uint64_t SZ>
-inline void Mem<T,SZ>::cl(void) {
-  memset(&m_beg[0],0,m_bsize);
+template<typename T>
+inline void Mem<T>::cl(void) {
+  memset(m_buff.get(),0,m_bsize);
 
 };
 
 // ---   *   ---   *   ---
 // buffer write from string
 
-template<typename T,uint64_t SZ>
-uint64_t Mem<T,SZ>::write(
+template<typename T>
+uint64_t Mem<T>::write(
 
   std::string s,
   uint64_t ptr
@@ -100,7 +104,7 @@ uint64_t Mem<T,SZ>::write(
 
   memcpy(
 
-    ((char*) &m_beg[0])+ptr,
+    ((uint8_t*) m_buff.get())+ptr,
 
     s.c_str(),
     s.length()&mask
@@ -114,8 +118,8 @@ uint64_t Mem<T,SZ>::write(
 // ---   *   ---   *   ---
 // subscript
 
-template<typename T,uint64_t SZ>
-inline T& Mem<T,SZ>::operator[](long idex) {
+template<typename T>
+inline T& Mem<T>::operator[](long idex) {
 
   uint64_t mask=-1*(idex<0);
   uint64_t base=m_bsize&mask;
@@ -125,15 +129,15 @@ inline T& Mem<T,SZ>::operator[](long idex) {
   ptr*=sizeof(T);
   ptr&=m_bsize-1;
 
-  return (T&) *(((char*) &m_beg[0]) + ptr);
+  return (T&) *(((uint8_t*) m_buff.get()) + ptr);
 
 };
 
 // ---   *   ---   *   ---
 // debug print
 
-template<typename T,uint64_t SZ>
-void Mem<T,SZ>::prich(int errout) {
+template<typename T>
+void Mem<T>::prich(int errout) {
 
   const char* fmat=
 
@@ -160,8 +164,8 @@ void Mem<T,SZ>::prich(int errout) {
     "FULL_SIZE",m_fsize,
     "BUFF_SIZE",m_bsize,
 
-    "BASE_ADDR",m_base,
-    "BUFF_ADDR",&m_beg[0]
+    "BASE_ADDR",this,
+    "BUFF_ADDR",m_buff.get()
 
   );
 
@@ -169,7 +173,7 @@ void Mem<T,SZ>::prich(int errout) {
 // print out the buffer
 
   char line[64];
-  char* base=(char*) &m_beg[0];
+  char* base=(char*) m_buff.get();
 
   for(uint64_t i=0;i<m_bsize;i+=16) {
 

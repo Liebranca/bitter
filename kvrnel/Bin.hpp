@@ -133,6 +133,11 @@ public:
 
   };
 
+  inline uint64_t get_size(void) {
+    return m_size;
+
+  };
+
 // ---   *   ---   *   ---
 
 };

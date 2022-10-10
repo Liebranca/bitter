@@ -180,10 +180,14 @@ uint64_t Zwrap::process(
 
 ) {
 
-  uint64_t have;
+  uint64_t have    = 0;
 
   m_strm.avail_out = avail;
   m_strm.next_out  = dst;
+
+  if(!avail) {goto TAIL;};
+
+// ---   *   ---   *   ---
 
   if(m_mode&Zwrap::INFLATE) {
     CALL_ZLIB(inflate(
@@ -199,7 +203,11 @@ uint64_t Zwrap::process(
 
   };
 
-  have=m_readsize-m_strm.avail_out;
+// ---   *   ---   *   ---
+
+TAIL:
+
+  have=avail-m_strm.avail_out;
   return have;
 
 };
@@ -226,31 +234,36 @@ void Zwrap::dump(void) {
 
   ) {
 
-    // from file
+    uint64_t have=0x00;
+
+// ---   *   ---   *   ---
+// from file
+
     if(m_mode&Zwrap::OUTPUT_BIN) {
 
-      uint8_t* dst  = m_buff.get()+m_readsize;
-      uint64_t have = this->process(
-        dst,DAFPAGE
+      uint8_t* dst   = m_buff.get()+m_readsize;
+      uint64_t avail = DAFPAGE;
 
-      );
-
+      have=this->process(dst,avail);
       m_dst.bin->write(dst,have);
 
-    // from mem
+// ---   *   ---   *   ---
+// from mem
+
     } else {
 
-      uint64_t j=this->process(
-        m_dst.bytes,m_dst.size
+      have=this->process(m_dst.bytes,m_dst.size);
 
-      );
-
-      m_dst.bytes+=j;
-      m_dst.size-=j;
-
-      if(!j) {break;};
+      m_dst.bytes+=have;
+      m_dst.size-=have;
 
     };
+
+// ---   *   ---   *   ---
+// early exit
+
+    if(!have || !m_remain) {break;};
+
 
   };
 
@@ -267,7 +280,11 @@ inline void Zwrap::Target::set(
 
 ) {
 
-  this->size   = size;
+  this->size   = (!size)
+    ? src->get_size()-offset
+    : size
+    ;
+
   this->offset = offset;
 
   this->bin    = src;

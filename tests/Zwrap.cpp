@@ -7,34 +7,37 @@
 int main(void) {
 
   ID id("$","testy");
+  Mem<uint8_t> m(&id,256);
 
-  Mem<uint8_t,256> in(&id);
-  Mem<uint8_t,256> out(&id);
+  { Zwrap z(Zwrap::DEFLATE
 
-  in.write("HLOWRLD!");
+    | Zwrap::INPUT_BIN
+    | Zwrap::OUTPUT_BIN
 
-  { Zwrap z(0x00);
+    );
 
-    z.set_src(&in[0],256);
-    z.set_dst(&out[0],256);
+    Bin in("./ztest_in",Bin::READ);
+    Bin out("./ztest_out",Bin::WRITE|Bin::TRUNC);
 
-    z.flate();
-
-  };
-
-  out.prich();
-  in.cl();
-
-  { Zwrap z(Zwrap::INFLATE);
-
-    z.set_src(&out[0],256);
-    z.set_dst(&in[0],256);
+    z.set_src(&in);
+    z.set_dst(&out);
 
     z.flate();
 
   };
 
-  in.prich();
+  { Zwrap z(Zwrap::INFLATE|Zwrap::INPUT_BIN);
+
+    Bin in("./ztest_out",Bin::READ);
+
+    z.set_src(&in);
+    z.set_dst(&m[0],256);
+
+    z.flate();
+
+  };
+
+  m.prich();
 
   return 0;
 

@@ -20,7 +20,7 @@ public:
   VERSION   "v2.00.1";
   AUTHOR    "IBN-3DILA";
 
-
+  cx8 DEFLATE     = 0x00;
   cx8 INFLATE     = 0x01;
 
   cx8 INPUT_BIN   = 0x02;
@@ -119,7 +119,7 @@ public:
   inline void set_src(
     void*    src,
 
-    uint64_t size,
+    uint64_t size=0,
     uint64_t offset=0
 
   );
@@ -127,7 +127,7 @@ public:
   inline void set_dst(
     void*    dst,
 
-    uint64_t size,
+    uint64_t size=0,
     uint64_t offset=0
 
   );

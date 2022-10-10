@@ -7,12 +7,12 @@
   #include <memory>
   #include <string>
 
-  #include "ID.hpp"
+  #include "kvrnel/ID.hpp"
 
 // ---   *   ---   *   ---
 // info
 
-template<typename T,uint64_t SZ>
+template<typename T>
 class Mem {
 
 public:
@@ -30,21 +30,20 @@ private:
   uint64_t m_fsize;   // total space used
   uint64_t m_bsize;   // usable, non-header space
 
-  void*    m_base;    // evil circular reference
-
-  T        m_beg[SZ]; // start of usable memory
+  std::unique_ptr<T> m_buff;
 
 // ---   *   ---   *   ---
 
 public:
 
   // compiler trash
-  Mem<T,SZ>() {};
+  Mem<T>() {};
 
   // alloc
-  Mem<T,SZ>(
+  Mem<T>(
 
-    ID*    id,
+    ID*      id,
+    uint64_t buff_sz,
     uint64_t header_sz=0x00
 
   );
