@@ -36,10 +36,10 @@ typedef void*(*signal)(void*);
 
 #define CX static constexpr const
 
-#define cx8   CX char
-#define cx16  CX short
-#define cx32  CX int
-#define cx64  CX long
+#define cx8   CX uint8_t
+#define cx16  CX uint16_t
+#define cx32  CX uint32_t
+#define cx64  CX uint64_t
 
 #define cxr32 CX float
 #define cxr64 CX double
@@ -48,6 +48,28 @@ typedef void*(*signal)(void*);
 
 #define VERSION cxstr VERSION=
 #define AUTHOR  cxstr AUTHOR=
+
+// ---   *   ---   *   ---
+// can't override inherited constants?
+//
+// what kind of mediocre programming cookbook
+// does one have to smoke the pages of in
+// order to think that is smart in any way,
+// shape or form... ?
+//
+// oh right! this is C++...
+
+#define VIC virtual inline const
+
+#define vic8  VIC uint8_t
+#define vic16 VIC uint16_t
+#define vic32 VIC uint32_t
+#define vic64 VIC uint64_t
+
+#define vicr32 VIC float
+#define vicr64 VIC double
+
+#define vicstr VIC std::string_view
 
 cx16 DAFPAGE=0x4000;
 cx16 DAFSIZE=256;

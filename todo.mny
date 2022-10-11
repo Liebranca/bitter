@@ -13,4 +13,5 @@
 *>DAF
 ~ Building files by blocks
 ~ Block insert/pop/replace
-~ Passing buffers through zlib
+x Passing buffers through zlib
+x Fix the Bin header boiler-trouble

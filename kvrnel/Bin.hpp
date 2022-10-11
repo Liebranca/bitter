@@ -44,16 +44,26 @@ public:
 
 private:
 
-  cxstr     m_fsig="";
-  cx64      m_header_sz=0;
-
-  uint64_t  m_size;
-  uint64_t  m_ptr;
+  uint64_t    m_size;
+  uint64_t    m_ptr;
 
   std::string m_fpath;
 
   std::ios_base::openmode m_mode;
   std::fstream m_fh;
+
+// ---   *   ---   *   ---
+// virtual constants
+
+  vicstr m_fsig(void) {
+    return "";
+
+  };
+
+  vic64 m_header_sz(void) {
+    return 0;
+
+  };
 
 // ---   *   ---   *   ---
 
@@ -76,6 +86,9 @@ private:
 // ---   *   ---   *   ---
 
 public:
+
+  // compiler trash
+  Bin(void) {};
 
   // create object (implicit open)
   Bin(std::string fpath,char mode=READ);
@@ -111,6 +124,12 @@ public:
   // write from cursor
   void write(void* buff,uint64_t sz);
 
+  // get filebeg
+  void read_header(void* buff);
+
+  // overwrites filebeg
+  void write_header(void* buff);
+
   // move bytes from file A to B
   bool transfer(Bin* other,uint64_t sz=0);
 
@@ -118,7 +137,8 @@ public:
   void seek(
 
     long to,
-    std::ios_base::seekdir from=CUR
+    std::ios_base::seekdir from=CUR,
+    bool ignore_header=1
 
   );
 

@@ -13,6 +13,8 @@
 // deps
 
   #include "kvrnel/Bytes.hpp"
+
+  #include "ff/Zwrap.hpp"
   #include "ff/JOJ.hpp"
 
 // ---   *   ---   *   ---
@@ -36,17 +38,17 @@ JOJ::JOJ(
 
 ) {
 
-  m_raw          = pixels;
-  m_meta.enc     = enc;
+  m_raw            = pixels;
+  m_meta.enc       = enc;
 
-  m_meta.imsz    = fast_sqrt2(sz);
+  m_meta.img_sz    = fast_sqrt2(sz);
 
   // remember size squared
-  m_meta.imsz_sq = sz;
+  m_meta.img_sz_sq = sz;
 
   // counters
-  m_meta.palcnt  = 0;
-  m_meta.imcnt   = 0;
+  m_meta.pal_cnt   = 0;
+  m_meta.imcnt     = 0;
 
   // main data buffer
   m_pixels=std::unique_ptr<JOJ::Pixel>(
@@ -101,8 +103,8 @@ void JOJ::pixel2x2(
   // fetch a slice
   pix[0]=&buff[base];
   pix[1]=&buff[base+1];
-  pix[2]=&buff[base+m_meta.imsz];
-  pix[3]=&buff[base+m_meta.imsz+1];
+  pix[2]=&buff[base+m_meta.img_sz];
+  pix[3]=&buff[base+m_meta.img_sz+1];
 
 };
 
@@ -150,11 +152,11 @@ uint64_t JOJ::pixel_block(
 
 void JOJ::compress(void) {
 
-  uint64_t limit   = m_meta.imsz_sq>>1;
+  uint64_t limit   = m_meta.img_sz_sq>>1;
   uint64_t* blocks = m_blocks.get();
 
   Tab<uint64_t,JOJ::Pixel_Block> tab(
-    m_meta.imsz<<5
+    m_meta.img_sz<<5
 
   );
 
@@ -165,7 +167,7 @@ void JOJ::compress(void) {
 
     uint64_t base=0,i=0;
 
-    base<m_meta.imsz_sq-m_meta.imsz;
+    base<m_meta.img_sz_sq-m_meta.img_sz;
     base+=2,i++
 
   ) {
@@ -174,8 +176,8 @@ void JOJ::compress(void) {
 // construct pixel block
 
     // skip uneven row
-    base+=m_meta.imsz*(
-      base && !(base%m_meta.imsz)
+    base+=m_meta.img_sz*(
+      base && !(base%m_meta.img_sz)
 
     );
 
@@ -196,12 +198,12 @@ void JOJ::compress(void) {
     if(!lkp.key_match) {
 
       blk.value=key;
-      blk.idex=m_meta.palcnt;
+      blk.idex=m_meta.pal_cnt;
 
       blk.freq=1;
 
       tab.push(lkp,key,blk);
-      m_meta.palcnt++;
+      m_meta.pal_cnt++;
 
       // save key for later
       keys.push_back(key);
@@ -229,7 +231,7 @@ void JOJ::compress(void) {
 // ---   *   ---   *   ---
 // process the hashed image
 
-  m_meta.pal.resize(m_meta.palcnt);
+  m_meta.pal.resize(m_meta.pal_cnt);
   this->xlate_blocks(keys,tab);
 
 };
@@ -251,7 +253,7 @@ void JOJ::xlate_blocks(
 
   // walk the image and replace key index
   // for sorted value of block
-  uint64_t limit  = m_meta.imsz_sq>>2;
+  uint64_t limit  = m_meta.img_sz_sq>>2;
   for(uint64_t i=0;i<limit;i++) {
 
     uint64_t marker=blocks[i];
@@ -264,7 +266,10 @@ void JOJ::xlate_blocks(
 // ---   *   ---   *   ---
 // dump to disk
 
-void JOJ::write_header(void) {
+void JOJ::write_header(
+  uint64_t body_sz
+
+) {
 
   // pixel size * block size
   uint64_t bits=near_pow2(enc_bitsize<char>(
@@ -276,32 +281,35 @@ void JOJ::write_header(void) {
   uint64_t bytes=bits>>3;
 
   // size of palette in bytes
-  uint64_t palsz=(m_meta.palcnt*bytes);
+  uint64_t pal_sz=(m_meta.pal_cnt*bytes);
 
   // size of 2x2 block
-  uint64_t idexsz=near_pow2(
-    bitsize(m_meta.palcnt)
+  uint64_t idex_sz=near_pow2(
+    bitsize(m_meta.pal_cnt)
 
   )>>3;
 
-  idexsz=(!idexsz) ? 1 : idexsz;
+  idex_sz=(!idex_sz) ? 1 : idex_sz;
 
 // ---   *   ---   *   ---
 // use helper struct for convenience
 
   JOJ::Header hed={
 
-    .palcnt = m_meta.palcnt,
-    .imsz   = m_meta.imsz,
+    .pal_sz  = pal_sz,
+    .pal_cnt = m_meta.pal_cnt,
+    .img_sz  = m_meta.img_sz,
 
-    .keysz  = bytes,
-    .idexsz = idexsz
+    .key_sz  = bytes,
+    .idex_sz = idex_sz,
+
+    .body_sz = body_sz
 
   };
 
   // get mem
   std::unique_ptr<char> out(
-    new char[palsz+sizeof(hed)]
+    new char[pal_sz+sizeof(hed)]
 
   );
 
@@ -315,12 +323,12 @@ void JOJ::write_header(void) {
 
   xfer<typeof(m_meta.pal)>(
     out_p,m_meta.pal,
-    palsz,bytes
+    pal_sz,bytes
 
 
   );
 
-  Bin::write(out.get(),palsz+sizeof(hed));
+  Bin::write(out.get(),pal_sz+sizeof(hed));
 
 };
 
@@ -329,28 +337,28 @@ void JOJ::write_header(void) {
 
 void JOJ::write(void) {
 
-  this->write_header();
-
   int      bits  = near_pow2(
-    bitsize(m_meta.palcnt)
+    bitsize(m_meta.pal_cnt)
 
   );
 
-  uint64_t size  = m_meta.imsz_sq>>2;
+  uint64_t size  = m_meta.img_sz_sq>>2;
   uint64_t bytes = std::max(bits>>3,1);
 
   size*=bytes;
 
-  std::unique_ptr<char> out(
-    new char[size]
+  std::unique_ptr<uint8_t> out(
+    new uint8_t[size]
 
   );
+
+  this->write_header(size);
 
 // ---   *   ---   *   ---
 // pass block data to char*
 
   uint64_t* buff  = m_blocks.get();
-  uint8_t*  out_p = (uint8_t*) out.get();
+  uint8_t*  out_p = out.get();
 
   xfer<uint64_t*>(
     out_p,buff,
@@ -358,7 +366,15 @@ void JOJ::write(void) {
 
   );
 
-  Bin::write(out_p,size);
+// ---   *   ---   *   ---
+// pass through zlib
+
+  Zwrap z(Zwrap::DEFLATE|Zwrap::OUTPUT_BIN);
+
+  z.set_src(out_p,size);
+  z.set_dst(this,0,get_header_sz());
+
+  z.flate();
 
 };
 
@@ -372,30 +388,40 @@ JOJ::Header JOJ::read_header(void) {
   auto buff=Bin::read(sizeof(hed));
   hed=*((JOJ::Header*) buff.get());
 
-  m_meta.palcnt=hed.palcnt;
-  m_meta.imsz=hed.imsz;
+  m_meta.pal_cnt=hed.pal_cnt;
+  m_meta.img_sz=hed.img_sz;
 
-  m_meta.imsz_sq=
-    m_meta.imsz*m_meta.imsz;
+  m_meta.img_sz_sq=
+    m_meta.img_sz*m_meta.img_sz;
 
   buff.reset();
 
 // ---   *   ---   *   ---
-// fill out palette
 
-  m_meta.pal.reserve(m_meta.palcnt);
-
-  buff=Bin::read(
-    m_meta.palcnt*hed.keysz
+  uint64_t keys_sz=m_meta.pal_cnt*hed.key_sz;
+  buff=std::unique_ptr<uint8_t>(
+    new uint8_t[keys_sz]
 
   );
 
   uint8_t* keys=(uint8_t*) buff.get();
 
-  for(uint64_t i=0;i<m_meta.palcnt;i++) {
+  Zwrap z(Zwrap::INFLATE|Zwrap::INPUT_BIN);
+
+  z.set_src(this,hed.body_sz,get_header_sz());
+  z.set_dst(keys,keys_sz);
+
+  z.flate();
+
+// ---   *   ---   *   ---
+// fill out palette
+
+  m_meta.pal.reserve(m_meta.pal_cnt);
+
+  for(uint64_t i=0;i<m_meta.pal_cnt;i++) {
     uint64_t key=0;
 
-    for(uint64_t j=0;j<hed.keysz;j++) {
+    for(uint64_t j=0;j<hed.key_sz;j++) {
       key|=uint64_t(*keys++)<<(j*8);
 
     };
@@ -417,12 +443,12 @@ void JOJ::read(void) {
 
   JOJ::Header hed = this->read_header();
 
-  uint64_t blkcnt = m_meta.imsz_sq>>2;
-  auto     buff   = Bin::read(hed.idexsz*blkcnt);
+  uint64_t blkcnt = m_meta.img_sz_sq>>2;
+  auto     buff   = Bin::read(hed.idex_sz*blkcnt);
 
   // get mem
   m_pixels=std::unique_ptr<JOJ::Pixel>(
-    new JOJ::Pixel[m_meta.imsz_sq]
+    new JOJ::Pixel[m_meta.img_sz_sq]
 
   );
 
@@ -432,7 +458,7 @@ void JOJ::read(void) {
   JOJ::Pixel* pix_p = m_pixels.get();
   uint64_t*   data  = (uint64_t*) buff.get();
 
-  uint64_t    bits  = (hed.keysz<<3)>>2;
+  uint64_t    bits  = (hed.key_sz<<3)>>2;
 
 // ---   *   ---   *   ---
 // get key && idex size values
@@ -440,7 +466,7 @@ void JOJ::read(void) {
   uint64_t mask=(1LL<<bits)-1;
   mask-=1*!mask;
 
-  uint64_t idex_sz=hed.idexsz<<3;
+  uint64_t idex_sz=hed.idex_sz<<3;
   uint64_t idex_mask=(1LL<<idex_sz)-1;
   idex_mask-=1*!idex_mask;
 
@@ -472,8 +498,8 @@ void JOJ::read(void) {
     if(bcnt==64) {bcnt=0;data++;};
 
     // skip uneven rows
-    base+=m_meta.imsz*(
-      base && !(base%m_meta.imsz)
+    base+=m_meta.img_sz*(
+      base && !(base%m_meta.img_sz)
 
     );
 
@@ -634,7 +660,7 @@ void JOJ::encoder(
 
     .m_bytes  = buff[0].as_ptr(),
     .m_floats = m_raw,
-    .m_sz     = m_meta.imsz_sq*4,
+    .m_sz     = m_meta.img_sz_sq*4,
 
     .m_enc    = (char*) enc.values,
     .m_cnt    = (int*) enc.cnt,

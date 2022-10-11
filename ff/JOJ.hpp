@@ -35,31 +35,45 @@ private:
 
   typedef struct {
 
-    uint64_t palcnt;
-    uint64_t imsz;
-    uint64_t keysz;
-    uint64_t idexsz;
+    uint64_t pal_cnt;
+    uint64_t pal_sz;
+
+    uint64_t img_sz;
+    uint64_t key_sz;
+    uint64_t idex_sz;
+
+    // for zwrap
+    uint64_t body_sz;
 
   } Header;
 
-  cxstr   m_fsig="%JOJ";
-  cx64    m_header_sz=sizeof(JOJ::Header);
+// ---   *   ---   *   ---
+
+  vicstr m_fsig(void) {
+    return "%JOJ";
+
+  };
+
+  vic64 m_header_sz(void) {
+    return sizeof(JOJ::Header);
+
+  };
 
 // ---   *   ---   *   ---
 // runtime attrs
 
   typedef struct {
 
-    uint8_t  imcnt;
+    uint8_t  img_cnt;
 
-    uint64_t imsz;
-    uint64_t imsz_sq;
+    uint64_t img_sz;
+    uint64_t img_sz_sq;
 
     JOJ::Encoding enc;
     JOJ::SubEncoding c_enc;
 
     std::vector<uint64_t> pal;
-    uint64_t palcnt;
+    uint64_t pal_cnt;
 
   } Meta;
 
@@ -109,7 +123,7 @@ private:
 
   );
 
-  void write_header(void);
+  void write_header(uint64_t body_sz);
   JOJ::Header read_header(void);
 
 // ---   *   ---   *   ---

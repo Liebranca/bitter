@@ -3,6 +3,7 @@
 #include "kvrnel/src/Bytes.cpp"
 #include "kvrnel/src/Tab.cpp"
 
+#include "ff/src/Zwrap.cpp"
 #include "ff/src/JOJ.cpp"
 
 #include <ctime>
