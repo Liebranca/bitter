@@ -35,6 +35,8 @@ private:
 
   typedef struct {
 
+    char sig[8];
+
     uint64_t pal_cnt;
     uint64_t pal_sz;
 
@@ -50,7 +52,7 @@ private:
 // ---   *   ---   *   ---
 
   vicstr m_fsig(void) {
-    return "%JOJ";
+    return "%JOJ\0\0\0\0";
 
   };
 
@@ -106,18 +108,11 @@ private:
   // transforms blocks according to palette
   void xlate_blocks(
     std::vector<uint64_t>& keys,
-    Tab<uint64_t,JOJ::Pixel_Block>& tab
+    Tab<uint64_t,TAB::Symbol>& tab
 
   );
 
-  // organizes blocks by frequency
-  void sort_blocks(
-    std::vector<uint64_t>& keys,
-    Tab<uint64_t,JOJ::Pixel_Block>& tab
-
-  );
-
-  SubEncoding read_mode(
+  JOJ::SubEncoding read_mode(
     int type,
     bool mode
 

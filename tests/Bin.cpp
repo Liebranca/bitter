@@ -6,44 +6,9 @@
 #include "ff/src/Zwrap.cpp"
 #include "ff/src/JOJ.cpp"
 
-#include <ctime>
 #include <png++/png.hpp>
 
-//float rflut(void) {
-//
-//  return ((float) rand()
-//  / (((float) RAND_MAX)/2)
-//
-//  )-1;
-//
-//};
-//
-//void fnorm(float* v) {
-//
-//  float mag=sqrt(
-//
-//    (v[0]*v[0])
-//  + (v[1]*v[1])
-//  + (v[2]*v[2])
-//
-//  );
-//
-//  v[0]/=mag;
-//  v[1]/=mag;
-//  v[2]/=mag;
-//
-//};
-
 int main(void) {
-
-//  srand((unsigned int) time(NULL));
-//
-//  float pixels[]={
-//    rflut(),rflut(),rflut(),rflut()
-//
-//  };
-//
-//  fnorm(pixels);
 
   png::image<png::rgba_pixel> im(
     "/home/lyeb/Downloads/ElQuds.png"

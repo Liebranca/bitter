@@ -15,6 +15,8 @@
   #include <string>
 
   #include "kvrnel/Bytes.hpp"
+  #include "kvrnel/Bin.hpp"
+
   #include "kvrnel/Tab.hpp"
 
 // ---   *   ---   *   ---
@@ -24,7 +26,7 @@
 template <typename K,typename T>
 void Tab<K,T>::irep(
   std::string& x,
-  Tab_Hash* h
+  TAB::Hash* h
 
 ) {
 
@@ -44,8 +46,8 @@ void Tab<K,T>::irep(
 
 template <typename K,typename T>
 void Tab<K,T>::irep(
-  size_t x,
-  Tab_Hash* h
+  uint64_t x,
+  TAB::Hash* h
 
 ) {
 
@@ -64,7 +66,7 @@ void Tab<K,T>::irep(
 
 template <typename K,typename T>
 inline void Tab<K,T>::hash_f(
-  Tab_Hash* h
+  TAB::Hash* h
 
 ) {
 
@@ -79,12 +81,12 @@ inline void Tab<K,T>::hash_f(
 // create idex from key
 
 template <typename K,typename T>
-size_t Tab<K,T>::hash(
+uint64_t Tab<K,T>::hash(
   K& k
 
 ) {
 
-  Tab_Hash h={0};
+  TAB::Hash h={0};
   irep(k,&h);
 
   h.idex=h.idex<<REAL_MULT_B;
@@ -99,7 +101,7 @@ size_t Tab<K,T>::hash(
 
 template <typename K,typename T>
 Tab<K,T>::Tab(
-  size_t fake
+  uint64_t fake
 
 ) {
 
@@ -114,14 +116,14 @@ Tab<K,T>::Tab(
   m_masks.reserve(fake);
 
   // cast the stones in their place
-  for(size_t i=0;i<m_size;i++) {
+  for(uint64_t i=0;i<m_size;i++) {
     m_keys.push_back(K());
     m_values.push_back(T());
 
   };
 
   // speak of the devil
-  for(size_t i=0;i<fake;i++) {
+  for(uint64_t i=0;i<fake;i++) {
     m_masks.push_back(0x00);
 
   };
@@ -138,20 +140,20 @@ Tab<K,T>::~Tab(void) {};
 // essentially a constructor :B
 
 template <typename K,typename T>
-Tab_Lookup Tab<K,T>::get_mask(K& k) {
+TAB::Lookup Tab<K,T>::get_mask(K& k) {
 
-  Tab_Lookup lkp={0};
+  TAB::Lookup lkp={0};
 
-  lkp.orig   = this->hash(k);
-  size_t f   = lkp.orig;
+  lkp.orig     = this->hash(k);
+  uint64_t f   = lkp.orig;
 
-  lkp.fake   = lkp.orig>>REAL_MULT_B;
-  lkp.mask   = m_masks[lkp.fake];
+  lkp.fake     = lkp.orig>>REAL_MULT_B;
+  lkp.mask     = m_masks[lkp.fake];
 
-  lkp.real   = lkp.orig;
+  lkp.real     = lkp.orig;
 
-  size_t cpy = lkp.mask;
-  bool   ful = lkp.mask!=0;
+  uint64_t cpy = lkp.mask;
+  bool     ful = lkp.mask!=0;
 
 // ---   *   ---   *   ---
 // collide
@@ -179,7 +181,7 @@ inline T& Tab<K,T>::get(
 
 ) {
 
-  Tab_Lookup lkp=get_mask(k);
+  TAB::Lookup lkp=get_mask(k);
   return m_values[lkp.real];
 
 };
@@ -187,7 +189,7 @@ inline T& Tab<K,T>::get(
 // ^already hashed
 template <typename K,typename T>
 inline T& Tab<K,T>::get(
-  Tab_Lookup& lkp
+  TAB::Lookup& lkp
 
 ) {return m_values[lkp.real];};
 
@@ -200,7 +202,7 @@ inline void Tab<K,T>::set(
 
 ) {
 
-  Tab_Lookup lkp=get_mask(k);
+  TAB::Lookup lkp=get_mask(k);
   m_values[lkp.real]=v;
 
 };
@@ -208,7 +210,7 @@ inline void Tab<K,T>::set(
 // ^already hashed
 template <typename K,typename T>
 inline void Tab<K,T>::set(
-  Tab_Lookup& lkp,T& v
+  TAB::Lookup& lkp,T& v
 
 ) {m_values[lkp.real]=v;};
 
@@ -222,11 +224,11 @@ T Tab<K,T>::pop(
 ) {
 
   T out=T();
-  Tab_Lookup lkp=get_mask(k);
+  TAB::Lookup lkp=get_mask(k);
 
   out=m_values[lkp.real];
 
-  size_t diff=(lkp.real-lkp.orig);
+  uint64_t diff=(lkp.real-lkp.orig);
   m_masks[lkp.fake]&=~(1<<diff);
 
   return out;
@@ -237,12 +239,12 @@ T Tab<K,T>::pop(
 // get key in table
 
 template <typename K,typename T>
-inline Tab_Lookup Tab<K,T>::has(
+inline TAB::Lookup Tab<K,T>::has(
   K& k
 
 ) {
 
-  Tab_Lookup lkp=get_mask(k);
+  TAB::Lookup lkp=get_mask(k);
   return lkp;
 
 };
@@ -251,14 +253,14 @@ inline Tab_Lookup Tab<K,T>::has(
 
 template <typename K,typename T>
 void Tab<K,T>::update_mask(
-  Tab_Lookup& lkp
+  TAB::Lookup& lkp
 
 ) {
 
   // get next free slot
   if(lkp.mask&1) {
 
-    size_t x=nbsf(lkp.mask);
+    uint64_t x=nbsf(lkp.mask);
     lkp.mask|=1<<x;
 
   // get first
@@ -273,7 +275,7 @@ void Tab<K,T>::update_mask(
 
 template <typename K,typename T>
 inline void Tab<K,T>::update_entry(
-  Tab_Lookup& lkp,
+  TAB::Lookup& lkp,
   K& k,T& v
 
 ) {
@@ -288,12 +290,12 @@ inline void Tab<K,T>::update_entry(
 // add element
 
 template <typename K,typename T>
-size_t Tab<K,T>::push(
+uint64_t Tab<K,T>::push(
   K& k,T& v
 
 ) {
 
-  Tab_Lookup lkp=get_mask(k);
+  TAB::Lookup lkp=get_mask(k);
 
   if(lkp.key_match) {
     m_values[lkp.real]=v;
@@ -312,13 +314,159 @@ size_t Tab<K,T>::push(
 
 template <typename K,typename T>
 inline void Tab<K,T>::push(
-  Tab_Lookup& lkp,
+  TAB::Lookup& lkp,
   K& k,T& v
 
 ) {
 
   this->update_mask(lkp);
   this->update_entry(lkp,k,v);
+
+};
+
+// ---   *   ---   *   ---
+// sort symbols by frequency
+
+template <>
+void Tab<uint64_t,TAB::Symbol>::sort(
+
+  std::vector<uint64_t>& keys,
+  std::vector<uint64_t>& values,
+
+  uint64_t hi_freq
+
+) {
+
+// ---   *   ---   *   ---
+// get highest freq for each run
+//
+// 'sorted' symbols have a freq of 0
+// and will be skipped
+
+  uint64_t limit  = keys.size();
+  uint64_t bottom = limit-1;
+
+  values.resize(limit);
+
+  for(uint64_t i=0;i<limit;i++) {
+
+    uint64_t     top     = 0;
+    TAB::Symbol* top_sym = NULL;
+
+// ---   *   ---   *   ---
+// walk remaining
+
+    for(uint64_t key : keys) {
+
+      // get entry
+      TAB::Symbol& sym=this->get(key);
+
+      // skip already sorted
+      if(!sym.freq) {
+        continue;
+
+      // discard low-frequency blocks
+      // from even being sorted
+      } else if(sym.freq<hi_freq) {
+        sym.freq=0;
+        sym.idex=bottom--;
+
+        values[sym.idex]=sym.value;
+
+        continue;
+
+      };
+
+      // compare
+      if(sym.freq>top) {
+        top=sym.freq;
+        top_sym=&sym;
+
+      };
+
+    };
+
+// ---   *   ---   *   ---
+// assign idex to result and
+// mark symbol as sorted
+
+    if(top_sym==NULL) {break;};
+
+    top_sym->idex=i;
+    top_sym->freq=0;
+
+    values[i]=top_sym->value;
+
+    if(bottom<=i) {break;};
+
+  };
+
+};
+
+// ---   *   ---   *   ---
+
+template <>
+void Tab<uint64_t,TAB::Symbol>::dump(
+  std::string fpath
+
+) {
+
+  // number of occupied slots
+  uint64_t elem_cnt=0;
+
+  // get mem
+  std::vector<uint64_t> buff;
+  buff.reserve(m_size<<REAL_MULT_B);
+
+  for(
+
+    uint64_t fake=0;
+
+    fake < (m_size>>REAL_MULT_B);
+    fake++
+
+  ) {
+
+// ---   *   ---   *   ---
+// skip unused slots
+
+    uint64_t mask=m_masks[fake];
+    if(!mask) {continue;};
+
+// ---   *   ---   *   ---
+// push elems to buff
+
+    // bits in mask is number of
+    // elems in this slot
+    uint64_t cnt=popcount(mask);
+
+    // get idex of value
+    uint64_t real=fake<<REAL_MULT_B;
+
+    // walk the inner array
+    for(uint64_t j=0;j<cnt;j++) {
+
+      // get elem
+      TAB::Symbol sym=m_values[real+j];
+
+      // skip unused
+      if(!sym.freq) {continue;};
+
+      elem_cnt++;
+
+      // save values
+      buff.push_back(sym.value);
+      buff.push_back(sym.freq);
+
+    };
+
+// ---   *   ---   *   ---
+// write elems to disk
+
+  };
+
+  Bin b(fpath,Bin::NEW);
+  b.write(buff.data(),elem_cnt*2*sizeof(uint64_t));
 
 };
 

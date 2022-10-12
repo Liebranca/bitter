@@ -8,30 +8,49 @@
   #include "kvrnel/Style.hpp"
 
 // ---   *   ---   *   ---
+// helpers
 
-typedef struct {
+namespace TAB {
 
-  size_t orig;
+  typedef struct {
 
-  size_t real;
-  size_t fake;
-  size_t mask;
+    uint64_t orig;
 
-  bool   key_match;
+    uint64_t real;
+    uint64_t fake;
+    uint64_t mask;
 
-} Tab_Lookup;
+    bool   key_match;
+
+  } Lookup;
 
 // ---   *   ---   *   ---
 
-typedef struct {
+  typedef struct {
 
-  size_t idex;
-  size_t x;
-  size_t y;
+    uint64_t   idex;
+    uint64_t   value;
 
-  char nkey[64];
+    uint64_t   freq;
 
-} Tab_Hash;
+  } Symbol;
+
+// ---   *   ---   *   ---
+
+  typedef struct {
+
+    uint64_t idex;
+    uint64_t x;
+    uint64_t y;
+
+    char nkey[64];
+
+  } Hash;
+
+// ---   *   ---   *   ---
+// namespace TAB
+
+};
 
 // ---   *   ---   *   ---
 // info
@@ -52,32 +71,32 @@ private:
   cx64 REAL_MULT   = 1<<REAL_MULT_B;
   cx64 NKEY_SZ     = 64;
 
-  size_t              m_size;
-  std::vector<size_t> m_masks;
+  uint64_t              m_size;
+  std::vector<uint64_t> m_masks;
 
-  std::vector<K>      m_keys;
-  std::vector<T>      m_values;
+  std::vector<K>        m_keys;
+  std::vector<T>        m_values;
 
 // ---   *   ---   *   ---
 // internals
 
-  Tab_Lookup get_mask(K& k);
+  TAB::Lookup get_mask(K& k);
 
-  size_t hash(K& k);
+  uint64_t hash(K& k);
 
   inline void hash_f(
-    Tab_Hash* h
+    TAB::Hash* h
 
   );
 
   inline void update_entry(
-    Tab_Lookup& lkp,
+    TAB::Lookup& lkp,
     K& k,T& v
 
   );
 
   void update_mask(
-    Tab_Lookup& lkp
+    TAB::Lookup& lkp
 
   );
 
@@ -85,11 +104,11 @@ private:
 
   void irep(
     std::string& x,
-    Tab_Hash* h
+    TAB::Hash* h
 
   );
 
-  void irep(size_t x,Tab_Hash* h);
+  void irep(uint64_t x,TAB::Hash* h);
 
 // ---   *   ---   *   ---
 // interface
@@ -100,18 +119,18 @@ public:
   Tab(void) {};
 
   // nit/del
-  Tab(size_t fake);
+  Tab(uint64_t fake);
   ~Tab(void);
 
   // remove entry
   T pop(K& k);
 
   // add entry
-  size_t push(K& k,T& v);
+  uint64_t push(K& k,T& v);
 
   // ^same, use if key is already hashed
   inline void push(
-    Tab_Lookup& lkp,
+    TAB::Lookup& lkp,
     K& k,T& v
 
   );
@@ -120,17 +139,33 @@ public:
   inline T& get(K& k);
 
   // ^key already hashed
-  inline T& get(Tab_Lookup& lkp);
+  inline T& get(TAB::Lookup& lkp);
 
   // true if key in table
-  inline Tab_Lookup has(K& k);
+  inline TAB::Lookup has(K& k);
 
   // assign value to key
   inline void set(K& k,T& v);
 
   // ^key hashed
-  inline void set(Tab_Lookup& lkp,T& v);
+  inline void set(TAB::Lookup& lkp,T& v);
 
+// ---   *   ---   *   ---
+// specialized
+
+  // given a table of symbols,
+  // sort them into a vector by frequency
+  void sort(
+    std::vector<uint64_t>& keys,
+    std::vector<uint64_t>& values,
+
+    uint64_t hi_freq=128
+
+  );
+
+  // given a table of symbols,
+  // write it to disk
+  void dump(std::string fpath);
 
 };
 

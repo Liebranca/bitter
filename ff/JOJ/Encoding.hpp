@@ -33,19 +33,6 @@ public:
   } Encoding;
 
 // ---   *   ---   *   ---
-// represents a 2x2 block of pixels
-
-  typedef struct {
-
-    uint64_t   idex;
-    uint64_t   value;
-    uint64_t   freq;
-
-    uint64_t color_id[4];
-
-  } Pixel_Block;
-
-// ---   *   ---   *   ---
 // normal maps
 
 private:

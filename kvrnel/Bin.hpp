@@ -27,6 +27,8 @@ public:
   cx8       TRUNC  = 0x04;
   cx8       APPEND = 0x08;
 
+  cx8       NEW    = WRITE|TRUNC;
+
   cx8       SLIMIT = 0x80;
 
 // ---   *   ---   *   ---

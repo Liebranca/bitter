@@ -42,6 +42,11 @@ inline uint64_t near_pow2(uint64_t x) {
 
 };
 
+inline uint64_t popcount(uint64_t x) {
+  return __builtin_popcountll(x);
+
+};
+
 // ---   *   ---   *   ---
 // float encoding helper ;>
 

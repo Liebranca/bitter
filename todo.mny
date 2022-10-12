@@ -2,6 +2,8 @@
 
 *>JOJ
 ~ Multi-image palette
+~ ^ Per-width palettes
+~ ^ Writting palettes to disk
 ~ Saving decode data to header
 
 *>CRK

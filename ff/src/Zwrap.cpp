@@ -286,7 +286,6 @@ inline void Zwrap::Target::set(
     ;
 
   this->offset = offset;
-
   this->bin    = src;
 
   src->seek(offset,Bin::BEG);

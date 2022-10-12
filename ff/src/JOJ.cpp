@@ -112,7 +112,7 @@ void JOJ::pixel2x2(
 // create ID to represent four pixels
 
 uint64_t JOJ::pixel_block(
-  JOJ::Pixel_Block& blk,
+  TAB::Symbol& blk,
   JOJ::Pixel* (&pix)[4]
 
 ) {
@@ -133,12 +133,12 @@ uint64_t JOJ::pixel_block(
 
   for(int i=0;i<4;i++) {
 
-    blk.color_id[i]=pix[i]->as_key(
+    uint64_t color=pix[i]->as_key(
       m_meta.c_enc
 
     );
 
-    key|=blk.color_id[i]<<=j;
+    key|=color<<=j;
     j+=bits;
 
   };
@@ -155,7 +155,7 @@ void JOJ::compress(void) {
   uint64_t limit   = m_meta.img_sz_sq>>1;
   uint64_t* blocks = m_blocks.get();
 
-  Tab<uint64_t,JOJ::Pixel_Block> tab(
+  Tab<uint64_t,TAB::Symbol> tab(
     m_meta.img_sz<<5
 
   );
@@ -182,7 +182,7 @@ void JOJ::compress(void) {
     );
 
     // get hashable 2x2 block
-    JOJ::Pixel_Block blk;
+    TAB::Symbol blk;
     JOJ::Pixel* pix[4];
 
     this->pixel2x2(pix,base);
@@ -193,7 +193,7 @@ void JOJ::compress(void) {
 // ---   *   ---   *   ---
 // insert new block in table
 
-    Tab_Lookup lkp=tab.has(key);
+    TAB::Lookup lkp=tab.has(key);
 
     if(!lkp.key_match) {
 
@@ -231,7 +231,6 @@ void JOJ::compress(void) {
 // ---   *   ---   *   ---
 // process the hashed image
 
-  m_meta.pal.resize(m_meta.pal_cnt);
   this->xlate_blocks(keys,tab);
 
 };
@@ -241,7 +240,7 @@ void JOJ::compress(void) {
 
 void JOJ::xlate_blocks(
   std::vector<uint64_t>& keys,
-  Tab<uint64_t,JOJ::Pixel_Block>& tab
+  Tab<uint64_t,TAB::Symbol>& tab
 
 ) {
 
@@ -249,11 +248,11 @@ void JOJ::xlate_blocks(
 
   // give shorter values to block
   // with higher frequency
-  this->sort_blocks(keys,tab);
+  tab->sort(keys,m_meta.pal);
 
   // walk the image and replace key index
   // for sorted value of block
-  uint64_t limit  = m_meta.img_sz_sq>>2;
+  uint64_t limit=m_meta.img_sz_sq>>2;
   for(uint64_t i=0;i<limit;i++) {
 
     uint64_t marker=blocks[i];
@@ -522,75 +521,6 @@ void JOJ::read(void) {
     };
 
 // ---   *   ---   *   ---
-
-  };
-
-};
-
-// ---   *   ---   *   ---
-// sort blocks by frequency
-
-void JOJ::sort_blocks(
-  std::vector<uint64_t>& keys,
-  Tab<uint64_t,JOJ::Pixel_Block>& tab
-
-) {
-
-  uint64_t limit  = keys.size();
-  uint64_t bottom = limit-1;
-
-  for(uint64_t i=0;i<limit;i++) {
-
-    uint64_t            top     = 0;
-    JOJ::Pixel_Block* top_blk = NULL;
-
-// ---   *   ---   *   ---
-// walk remaining
-
-    for(uint64_t key : keys) {
-
-      // get entry
-      JOJ::Pixel_Block& blk=
-        tab.get(key);
-
-      // skip already sorted
-      if(!blk.freq) {
-        continue;
-
-      // discard low-frequency blocks
-      // from even being sorted
-      } else if(blk.freq<128) {
-        blk.freq=0;
-        blk.idex=bottom--;
-
-        m_meta.pal[blk.idex]=
-          blk.value;
-
-        continue;
-
-      };
-
-      // compare
-      if(blk.freq>top) {
-        top=blk.freq;
-        top_blk=&blk;
-
-      };
-
-    };
-
-// ---   *   ---   *   ---
-// assign idex to result and
-// mark block as sorted
-
-    if(top_blk==NULL) {break;};
-
-    top_blk->idex=i;
-    top_blk->freq=0;
-
-    m_meta.pal[i]=top_blk->value;
-
-    if(bottom<=i) {break;};
 
   };
 
