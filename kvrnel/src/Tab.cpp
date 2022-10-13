@@ -128,6 +128,8 @@ Tab<K,T>::Tab(
 
   };
 
+  m_sorted=false;
+
 };
 
 // ---   *   ---   *   ---
@@ -329,10 +331,6 @@ inline void Tab<K,T>::push(
 
 template <>
 void Tab<uint64_t,TAB::Symbol>::sort(
-
-  std::vector<uint64_t>& keys,
-  std::vector<uint64_t>& values,
-
   uint64_t hi_freq
 
 ) {
@@ -343,10 +341,10 @@ void Tab<uint64_t,TAB::Symbol>::sort(
 // 'sorted' symbols have a freq of 0
 // and will be skipped
 
-  uint64_t limit  = keys.size();
+  uint64_t limit  = m_keys_s.size();
   uint64_t bottom = limit-1;
 
-  values.resize(limit);
+  m_values_s.resize(limit);
 
   for(uint64_t i=0;i<limit;i++) {
 
@@ -356,7 +354,7 @@ void Tab<uint64_t,TAB::Symbol>::sort(
 // ---   *   ---   *   ---
 // walk remaining
 
-    for(uint64_t key : keys) {
+    for(uint64_t key : m_keys_s) {
 
       // get entry
       TAB::Symbol& sym=this->get(key);
@@ -371,7 +369,7 @@ void Tab<uint64_t,TAB::Symbol>::sort(
         sym.freq=0;
         sym.idex=bottom--;
 
-        values[sym.idex]=sym.value;
+        m_values_s[sym.idex]=sym.value;
 
         continue;
 
@@ -395,11 +393,54 @@ void Tab<uint64_t,TAB::Symbol>::sort(
     top_sym->idex=i;
     top_sym->freq=0;
 
-    values[i]=top_sym->value;
+    m_values_s[i]=top_sym->value;
 
     if(bottom<=i) {break;};
 
   };
+
+  m_sorted=true;
+
+};
+
+// ---   *   ---   *   ---
+
+template <>
+TAB::Symbol Tab<uint64_t,TAB::Symbol>::cpush(
+  uint64_t key
+
+) {
+
+  TAB::Lookup lkp=this->has(key);
+  TAB::Symbol sym;
+
+// ---   *   ---   *   ---
+
+  if(!lkp.key_match) {
+
+    sym=(TAB::Symbol) {
+
+      .idex  = m_keys_s.size(),
+      .value = key,
+
+      .freq  = 1
+
+    };
+
+    m_keys_s.push_back(key);
+    this->push(lkp,key,sym);
+
+// ---   *   ---   *   ---
+
+  } else {
+    sym=this->get(lkp);
+    sym.freq++;
+
+    this->set(lkp,sym);
+
+  };
+
+  return sym;
 
 };
 
@@ -411,63 +452,19 @@ void Tab<uint64_t,TAB::Symbol>::dump(
 
 ) {
 
-  // number of occupied slots
-  uint64_t elem_cnt=0;
-
-  // get mem
-  std::vector<uint64_t> buff;
-  buff.reserve(m_size<<REAL_MULT_B);
-
-  for(
-
-    uint64_t fake=0;
-
-    fake < (m_size>>REAL_MULT_B);
-    fake++
-
-  ) {
-
-// ---   *   ---   *   ---
-// skip unused slots
-
-    uint64_t mask=m_masks[fake];
-    if(!mask) {continue;};
-
-// ---   *   ---   *   ---
-// push elems to buff
-
-    // bits in mask is number of
-    // elems in this slot
-    uint64_t cnt=popcount(mask);
-
-    // get idex of value
-    uint64_t real=fake<<REAL_MULT_B;
-
-    // walk the inner array
-    for(uint64_t j=0;j<cnt;j++) {
-
-      // get elem
-      TAB::Symbol sym=m_values[real+j];
-
-      // skip unused
-      if(!sym.freq) {continue;};
-
-      elem_cnt++;
-
-      // save values
-      buff.push_back(sym.value);
-      buff.push_back(sym.freq);
-
-    };
-
-// ---   *   ---   *   ---
-// write elems to disk
-
-  };
-
   Bin b(fpath,Bin::NEW);
-  b.write(buff.data(),elem_cnt*2*sizeof(uint64_t));
+
+  b.write(
+    m_values_s.data(),
+    m_values_s.size()*sizeof(uint64_t)
+
+  );
 
 };
+
+// ---   *   ---   *   ---
+// instantiations
+
+template class Tab<uint64_t,TAB::Symbol>;
 
 // ---   *   ---   *   ---

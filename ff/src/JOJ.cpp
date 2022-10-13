@@ -48,7 +48,7 @@ JOJ::JOJ(
 
   // counters
   m_meta.pal_cnt   = 0;
-  m_meta.imcnt     = 0;
+  m_meta.img_cnt   = 0;
 
   // main data buffer
   m_pixels=std::unique_ptr<JOJ::Pixel>(
@@ -112,7 +112,6 @@ void JOJ::pixel2x2(
 // create ID to represent four pixels
 
 uint64_t JOJ::pixel_block(
-  TAB::Symbol& blk,
   JOJ::Pixel* (&pix)[4]
 
 ) {
@@ -148,20 +147,163 @@ uint64_t JOJ::pixel_block(
 };
 
 // ---   *   ---   *   ---
+
+std::vector<uint64_t> JOJ::get_enc_sz(void) {
+
+  // get mem
+  std::vector<uint64_t> out;
+  out.resize(4);
+
+  // break encoding
+  char* sizes = (char*) m_meta.c_enc.values;
+  int*  cnt   = (int*) m_meta.c_enc.cnt;
+
+  // fill vector
+  while(*cnt) {
+
+    for(int i=0;i<*cnt;i++) {
+      out.push_back((uint64_t) sizes[1]);
+
+    };
+
+    sizes+=3;
+    cnt++;
+
+  };
+
+  return out;
+
+};
+
+// ---   *   ---   *   ---
+
+void JOJ::palette_pixels(void) {
+
+  JOJ::Pixel* buff=m_pixels.get();
+  std::vector<uint64_t> sizes=this->get_enc_sz();
+
+  Symtab tab_a(256);
+  Symtab tab_b(256);
+  Symtab tab_c(256);
+  Symtab tab_d(256);
+
+  Tab<uint64_t,Symtab*> tabs(4);
+
+  for(int i=0;i<4;i++) {
+
+    Symtab* t;
+
+    switch(i) {
+    case 0:
+      t=&tab_a;
+      break;
+
+    case 1:
+      t=&tab_b;
+      break;
+
+    case 2:
+      t=&tab_c;
+      break;
+
+    default:
+      t=&tab_d;
+
+    };
+
+    uint64_t k=sizes[i];
+    tabs.push(k,t);
+
+  };
+
+// ---   *   ---   *   ---
+
+  for(
+
+    uint64_t i=0;
+
+    i<m_meta.img_sz_sq;
+    i++
+
+  ) {
+
+    JOJ::Pixel pix=buff[i];
+    for(int j=0;j<4;j++) {
+
+      uint8_t  key = pix[j];
+      uint64_t sz  = sizes[j];
+
+      Symtab*  tab = tabs.get(sz);
+
+      TAB::Symbol sym=tab->cpush(key);
+      pix[j]=sym.idex&0xFF;
+
+    };
+
+  };
+
+// ---   *   ---   *   ---
+
+  for(uint64_t sz : sizes) {
+
+    Symtab* tab=tabs.get(sz);
+
+    if(!tab->sorted()) {
+
+      tab->sort(m_meta.img_sz>>3);
+
+      tab->dump(
+        "./tab_"
+
+      + std::to_string(sz)
+      + "bit"
+
+      );
+
+    };
+
+  };
+
+// ---   *   ---   *   ---
+
+  for(
+
+    uint64_t i=0;
+
+    i<m_meta.img_sz_sq;
+    i++
+
+  ) {
+
+    JOJ::Pixel pix=buff[i];
+    for(int j=0;j<4;j++) {
+
+      uint8_t  marker = pix[j];
+      uint64_t sz     = sizes[j];
+      Symtab*  tab    = tabs.get(sz);
+
+      pix[j]=tab->iget(marker).idex;
+
+    };
+
+  };
+
+};
+
+// ---   *   ---   *   ---
 // tight up the buff
 
 void JOJ::compress(void) {
 
-  uint64_t limit   = m_meta.img_sz_sq>>1;
+  this->palette_pixels();
+
+  uint64_t  limit  = m_meta.img_sz_sq>>1;
   uint64_t* blocks = m_blocks.get();
 
-  Tab<uint64_t,TAB::Symbol> tab(
-    m_meta.img_sz<<5
+  Symtab tab(m_meta.img_sz<<5);
 
-  );
-
-  std::vector<uint64_t> keys;
-  keys.reserve(limit);
+// ---   *   ---   *   ---
+// walk by 2x2 blocks
 
   for(
 
@@ -182,56 +324,24 @@ void JOJ::compress(void) {
     );
 
     // get hashable 2x2 block
-    TAB::Symbol blk;
     JOJ::Pixel* pix[4];
-
     this->pixel2x2(pix,base);
 
     // generate key
-    uint64_t key=this->pixel_block(blk,pix);
+    uint64_t key=this->pixel_block(pix);
 
-// ---   *   ---   *   ---
-// insert new block in table
+    printf("%X\n",key);
 
-    TAB::Lookup lkp=tab.has(key);
-
-    if(!lkp.key_match) {
-
-      blk.value=key;
-      blk.idex=m_meta.pal_cnt;
-
-      blk.freq=1;
-
-      tab.push(lkp,key,blk);
-      m_meta.pal_cnt++;
-
-      // save key for later
-      keys.push_back(key);
-
-// ---   *   ---   *   ---
-// up frequency of repeated block
-
-    } else {
-
-      blk=tab.get(lkp);
-      blk.freq++;
-
-      tab.set(lkp,blk);
-
-    };
-
-// ---   *   ---   *   ---
-// set block to match value for ease
-// of adjusting it later
-
-    blocks[i]=blk.idex;
+    // insert new blocks in table
+    TAB::Symbol sym=tab.cpush(key);
+    blocks[i]=sym.idex;
 
   };
 
 // ---   *   ---   *   ---
 // process the hashed image
 
-  this->xlate_blocks(keys,tab);
+  this->xlate_blocks(tab);
 
 };
 
@@ -239,16 +349,15 @@ void JOJ::compress(void) {
 // transforms blocks according to palette
 
 void JOJ::xlate_blocks(
-  std::vector<uint64_t>& keys,
-  Tab<uint64_t,TAB::Symbol>& tab
+  Symtab& tab
 
 ) {
 
   uint64_t* blocks = m_blocks.get();
 
-  // give shorter values to block
+  // give shorter values to blocks
   // with higher frequency
-  tab->sort(keys,m_meta.pal);
+  tab.sort();
 
   // walk the image and replace key index
   // for sorted value of block
@@ -256,7 +365,7 @@ void JOJ::xlate_blocks(
   for(uint64_t i=0;i<limit;i++) {
 
     uint64_t marker=blocks[i];
-    blocks[i]=tab.get(keys[marker]).idex;
+    blocks[i]=tab.iget(marker).idex;
 
   };
 
@@ -295,8 +404,9 @@ void JOJ::write_header(
 
   JOJ::Header hed={
 
-    .pal_sz  = pal_sz,
     .pal_cnt = m_meta.pal_cnt,
+    .pal_sz  = pal_sz,
+
     .img_sz  = m_meta.img_sz,
 
     .key_sz  = bytes,
@@ -371,7 +481,7 @@ void JOJ::write(void) {
   Zwrap z(Zwrap::DEFLATE|Zwrap::OUTPUT_BIN);
 
   z.set_src(out_p,size);
-  z.set_dst(this,0,get_header_sz());
+  z.set_dst(this,0,m_header_sz());
 
   z.flate();
 
@@ -407,7 +517,7 @@ JOJ::Header JOJ::read_header(void) {
 
   Zwrap z(Zwrap::INFLATE|Zwrap::INPUT_BIN);
 
-  z.set_src(this,hed.body_sz,get_header_sz());
+  z.set_src(this,hed.body_sz,m_header_sz());
   z.set_dst(keys,keys_sz);
 
   z.flate();

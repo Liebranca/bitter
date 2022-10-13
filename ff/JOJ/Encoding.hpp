@@ -50,7 +50,7 @@ private:
     Frac::SIGNED,
 
     // curv
-    Frac::STEP_3BIT,
+    Frac::STEP_4BIT,
     Frac::SIZE_4BIT,
     Frac::UNSIGNED
 
@@ -84,7 +84,7 @@ private:
   CX char ENCDEF_SHADE[]={
 
     // occlu,rough,metal,emit
-    Frac::STEP_3BIT,
+    Frac::STEP_4BIT,
     Frac::STEP_4BIT,
     Frac::UNSIGNED
 

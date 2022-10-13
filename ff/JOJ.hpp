@@ -91,6 +91,14 @@ private:
 // ---   *   ---   *   ---
 // internals
 
+  // get vector of sizes for
+  // current sub-encoding
+  std::vector<uint64_t> get_enc_sz(void);
+
+  // replace pixel data for indices
+  // on a per-componet basis
+  void palette_pixels(void);
+
   // slices m_buff
   void pixel2x2(
     JOJ::Pixel* (&pix)[4],
@@ -100,15 +108,13 @@ private:
 
   // ^hashing helper for the slice
   uint64_t pixel_block(
-    JOJ::Pixel_Block& blk,
     JOJ::Pixel* (&pix)[4]
 
   );
 
   // transforms blocks according to palette
   void xlate_blocks(
-    std::vector<uint64_t>& keys,
-    Tab<uint64_t,TAB::Symbol>& tab
+    Symtab& tab
 
   );
 

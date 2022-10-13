@@ -77,6 +77,11 @@ private:
   std::vector<K>        m_keys;
   std::vector<T>        m_values;
 
+  // used for symtabs
+  std::vector<K>        m_keys_s;
+  std::vector<K>        m_values_s;
+  bool                  m_sorted;
+
 // ---   *   ---   *   ---
 // internals
 
@@ -151,14 +156,24 @@ public:
   inline void set(TAB::Lookup& lkp,T& v);
 
 // ---   *   ---   *   ---
+// getters
+
+  inline bool sorted(void) {
+    return m_sorted;
+
+  };
+
+  inline T iget(uint64_t idex) {
+    return this->get(m_keys_s[idex]);
+
+  };
+
+// ---   *   ---   *   ---
 // specialized
 
   // given a table of symbols,
   // sort them into a vector by frequency
   void sort(
-    std::vector<uint64_t>& keys,
-    std::vector<uint64_t>& values,
-
     uint64_t hi_freq=128
 
   );
@@ -167,7 +182,15 @@ public:
   // write it to disk
   void dump(std::string fpath);
 
+  // conditional push for sorted symtab
+  TAB::Symbol cpush(uint64_t key);
+
 };
+
+// ---   *   ---   *   ---
+// sugar
+
+typedef Tab<uint64_t,TAB::Symbol> Symtab;
 
 // ---   *   ---   *   ---
 
