@@ -152,7 +152,7 @@ std::vector<uint64_t> JOJ::get_enc_sz(void) {
 
   // get mem
   std::vector<uint64_t> out;
-  out.resize(4);
+  out.reserve(4);
 
   // break encoding
   char* sizes = (char*) m_meta.c_enc.values;
@@ -162,7 +162,10 @@ std::vector<uint64_t> JOJ::get_enc_sz(void) {
   while(*cnt) {
 
     for(int i=0;i<*cnt;i++) {
-      out.push_back((uint64_t) sizes[1]);
+      out.push_back(uint64_t(
+        Frac::BITS[sizes[1]]+1
+
+      ));
 
     };
 
@@ -227,16 +230,16 @@ void JOJ::palette_pixels(void) {
 
   ) {
 
-    JOJ::Pixel pix=buff[i];
+    JOJ::Pixel* pix=&buff[i];
     for(int j=0;j<4;j++) {
 
-      uint8_t  key = pix[j];
+      uint8_t  key = (*pix)[j];
       uint64_t sz  = sizes[j];
 
       Symtab*  tab = tabs.get(sz);
 
       TAB::Symbol sym=tab->cpush(key);
-      pix[j]=sym.idex&0xFF;
+      (*pix)[j]=sym.idex&0xFF;
 
     };
 
@@ -252,13 +255,14 @@ void JOJ::palette_pixels(void) {
 
       tab->sort(m_meta.img_sz>>3);
 
-      tab->dump(
-        "./tab_"
+      // the """power""" of C++
+      char fpath[]={
+        '.','/','t','a','b','_',
+        char(0x30+sz),'b','i','t','\0'
 
-      + std::to_string(sz)
-      + "bit"
+      };
 
-      );
+      tab->dump(std::string(fpath));
 
     };
 
@@ -275,14 +279,14 @@ void JOJ::palette_pixels(void) {
 
   ) {
 
-    JOJ::Pixel pix=buff[i];
+    JOJ::Pixel* pix=&buff[i];
     for(int j=0;j<4;j++) {
 
-      uint8_t  marker = pix[j];
+      uint8_t  marker = (*pix)[j];
       uint64_t sz     = sizes[j];
       Symtab*  tab    = tabs.get(sz);
 
-      pix[j]=tab->iget(marker).idex;
+      (*pix)[j]=tab->iget(marker).idex;
 
     };
 
@@ -330,8 +334,6 @@ void JOJ::compress(void) {
     // generate key
     uint64_t key=this->pixel_block(pix);
 
-    printf("%X\n",key);
-
     // insert new blocks in table
     TAB::Symbol sym=tab.cpush(key);
     blocks[i]=sym.idex;
@@ -358,6 +360,7 @@ void JOJ::xlate_blocks(
   // give shorter values to blocks
   // with higher frequency
   tab.sort();
+  tab.dump("./img_pal");
 
   // walk the image and replace key index
   // for sorted value of block
