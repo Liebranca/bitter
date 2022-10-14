@@ -133,7 +133,8 @@ public:
   void write_header(void* buff);
 
   // move bytes from file A to B
-  bool transfer(Bin* other,uint64_t sz=0);
+  void transfer(Bin* other,uint64_t sz=0);
+  void f_transfer(Bin* other);
 
   // move cursor
   void seek(
@@ -157,6 +158,11 @@ public:
 
   inline uint64_t get_size(void) {
     return m_size;
+
+  };
+
+  inline uint64_t get_fullsize(void) {
+    return m_size+m_header_sz();
 
   };
 

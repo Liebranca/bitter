@@ -25,6 +25,7 @@ namespace Fatal {
     ILLEGAL,
 
     ZLIB,
+    ARCHIVE_FULL,
 
     ERRCODE_MAX
 

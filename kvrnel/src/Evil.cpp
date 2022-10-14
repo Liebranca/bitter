@@ -307,6 +307,12 @@ void Evil::terminator (
       mbody="ZLIB went PLOP %s(status %s)";
       break;
 
+    case Fatal::ARCHIVE_FULL:
+      mbody="Full DAF %s<%s>";
+      break;
+
+// ---   *   ---   *   ---
+
     case Error::OPEN_FAIL:
       mbody="Couln't open file %s<%s>";
       break;

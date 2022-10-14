@@ -354,18 +354,30 @@ inline void Bin::rewind(void) {
 // ---   *   ---   *   ---
 // read from A, write to B
 
-bool Bin::transfer(Bin* other,uint64_t sz) {
+void Bin::transfer(Bin* other,uint64_t sz) {
 
   sz+=m_size*(sz==0);
 
   std::unique_ptr<uint8_t> buff=
     this->read(sz);
 
-  other->write((char*) buff.get(),sz);
+  other->write(buff.get(),sz);
 
   buff.reset();
 
-  return true;
+};
+
+void Bin::f_transfer(Bin* other) {
+
+  this->rewind();
+  uint64_t sz=this->get_fullsize();
+
+  std::unique_ptr<uint8_t> buff=
+    this->read(sz);
+
+  other->write(buff.get(),sz);
+
+  buff.reset();
 
 };
 

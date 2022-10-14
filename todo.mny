@@ -17,3 +17,4 @@
 ~ Block insert/pop/replace
 x Passing buffers through zlib
 x Fix the Bin header boiler-trouble
+~ "Outsource" compression of all filetypes to DAF
