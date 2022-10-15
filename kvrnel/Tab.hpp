@@ -201,7 +201,7 @@ public:
   void dump(std::string fpath);
 
   // conditional push for sorted symtab
-  TAB::Symbol cpush(uint64_t key);
+  TAB::Symbol* cpush(uint64_t key);
 
 };
 

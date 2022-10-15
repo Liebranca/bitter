@@ -71,7 +71,14 @@ private:
 
 public:
 
-  PAL(std::string fpath,char mode=Bin::READ);
+  PAL(
+    std::string fpath,
+    char mode=Bin::READ,
+    uint64_t sz=0
+
+  );
+
+  void cpush(uint64_t key);
   void write(void);
 
 };

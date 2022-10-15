@@ -20,11 +20,18 @@
 
 PAL::PAL(
   std::string fpath,
-  char mode
+  char mode,
+
+  uint64_t sz
 
 ):Bin() {
 
   this->defopen<PAL::Header>(fpath,mode);
+
+  if(sz) {
+    m_hed.elem_cnt=sz;
+
+  };
 
   m_tab=Symtab(m_hed.elem_cnt);
   m_values.reserve(m_hed.elem_cnt);
@@ -45,12 +52,9 @@ void PAL::write(void) {
 
 void PAL::encode(void) {
 
-  // initialize zlib
-  Zwrap z(Zwrap::DEFLATE|Zwrap::OUTPUT_BIN);
-
   // calculate size
   uint64_t size_i=
-    sizeof(TAB::Symbol)*m_hed.elem_cnt;
+    sizeof(uint64_t)*m_hed.elem_cnt;
 
   // get mem
   std::unique_ptr<uint8_t> buff(
@@ -62,10 +66,14 @@ void PAL::encode(void) {
 
   // ^deref pointers unto buff
   for(TAB::Symbol* sym : m_values) {
-    *((TAB::Symbol*) buff_p)=*sym;
+
+    *((uint64_t*) buff_p)=sym->value;
     buff_p+=sizeof(TAB::Symbol);
 
   };
+
+  // initialize zlib
+  Zwrap z(Zwrap::DEFLATE|Zwrap::OUTPUT_BIN);
 
   // set targets
   z.set_src(buff.get(),size_i);
@@ -120,6 +128,19 @@ void PAL::from_buff(uint8_t* buff) {
 
     m_tab.push(sym.value,sym);
     m_values.push_back(&sym);
+
+  };
+
+};
+
+// ---   *   ---   *   ---
+
+void PAL::cpush(uint64_t key) {
+
+  TAB::Symbol* sym=m_tab.cpush(key);
+
+  if(sym->freq==1) {
+    m_values.push_back(sym);
 
   };
 

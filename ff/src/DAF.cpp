@@ -60,6 +60,8 @@ uint64_t* DAF::get_avail(void) {
 
 };
 
+// ---   *   ---   *   ---
+
 inline uint64_t DAF::avail_idex(
   uint64_t* avail
 

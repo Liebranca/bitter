@@ -238,8 +238,8 @@ void JOJ::palette_pixels(void) {
 
       Symtab*  tab = tabs.get(sz);
 
-      TAB::Symbol sym=tab->cpush(key);
-      (*pix)[j]=sym.idex&0xFF;
+      TAB::Symbol* sym=tab->cpush(key);
+      (*pix)[j]=sym->idex&0xFF;
 
     };
 
@@ -335,8 +335,8 @@ void JOJ::compress(void) {
     uint64_t key=this->pixel_block(pix);
 
     // insert new blocks in table
-    TAB::Symbol sym=tab.cpush(key);
-    blocks[i]=sym.idex;
+    TAB::Symbol* sym=tab.cpush(key);
+    blocks[i]=sym->idex;
 
   };
 

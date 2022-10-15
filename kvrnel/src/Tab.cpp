@@ -206,8 +206,8 @@ void Tab<K,T>::update_mask(
   uint64_t i=0;
 
   // get next free slot
-  if(lkp.mask) {
-    uint64_t i=nbsf(lkp.mask);
+  if(lkp.mask!=0) {
+    i=nbsf(lkp.mask);
 
   };
 
@@ -349,7 +349,7 @@ void Tab<uint64_t,TAB::Symbol>::sort(
 // ---   *   ---   *   ---
 
 template <>
-TAB::Symbol Tab<uint64_t,TAB::Symbol>::cpush(
+TAB::Symbol* Tab<uint64_t,TAB::Symbol>::cpush(
   uint64_t key
 
 ) {
@@ -376,14 +376,11 @@ TAB::Symbol Tab<uint64_t,TAB::Symbol>::cpush(
 // ---   *   ---   *   ---
 
   } else {
-    sym=this->get(lkp);
-    sym.freq++;
-
-    this->set(lkp,sym);
+    m_values[lkp.real].freq++;
 
   };
 
-  return sym;
+  return &m_values[lkp.real];
 
 };
 
