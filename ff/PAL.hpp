@@ -8,11 +8,12 @@
 
   #include "kvrnel/Style.hpp"
   #include "kvrnel/Bin.hpp"
+  #include "kvrnel/Tab.hpp"
 
 // ---   *   ---   *   ---
 // info
 
-class Pal: public Bin {
+class PAL: public Bin {
 
 public:
 
@@ -27,11 +28,17 @@ private:
   typedef struct {
 
     char     sig[8];
-
-    uint64_t elem_sz;
     uint64_t elem_cnt;
 
   } Header;
+
+// ---   *   ---   *   ---
+// attrs
+
+  Header m_hed;
+  Symtab m_tab;
+
+  std::vector<TAB::Symbol*> m_values;
 
 // ---   *   ---   *   ---
 // virtual constants
@@ -46,13 +53,10 @@ private:
 
   };
 
-// ---   *   ---   *   ---
-// attrs
+  VIC void* get_header(void) {
+    return &m_hed;
 
-  Header m_hed;
-
-  std::vector<uint64_t> m_keys;
-  std::vector<uint64_t> m_values;
+  };
 
 // ---   *   ---   *   ---
 // internals
@@ -67,7 +71,7 @@ private:
 
 public:
 
-  Pal(std::string fpath,char mode=Bin::READ);
+  PAL(std::string fpath,char mode=Bin::READ);
   void write(void);
 
 };

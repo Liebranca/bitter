@@ -65,7 +65,7 @@ void Tab<K,T>::irep(
 // ---   *   ---   *   ---
 
 template <typename K,typename T>
-inline void Tab<K,T>::hash_f(
+void Tab<K,T>::hash_f(
   TAB::Hash* h
 
 ) {
@@ -175,48 +175,6 @@ TAB::Lookup Tab<K,T>::get_mask(K& k) {
 };
 
 // ---   *   ---   *   ---
-// find element
-
-template <typename K,typename T>
-inline T& Tab<K,T>::get(
-  K& k
-
-) {
-
-  TAB::Lookup lkp=get_mask(k);
-  return m_values[lkp.real];
-
-};
-
-// ^already hashed
-template <typename K,typename T>
-inline T& Tab<K,T>::get(
-  TAB::Lookup& lkp
-
-) {return m_values[lkp.real];};
-
-// ---   *   ---   *   ---
-// set elem
-
-template <typename K,typename T>
-inline void Tab<K,T>::set(
-  K& k,T& v
-
-) {
-
-  TAB::Lookup lkp=get_mask(k);
-  m_values[lkp.real]=v;
-
-};
-
-// ^already hashed
-template <typename K,typename T>
-inline void Tab<K,T>::set(
-  TAB::Lookup& lkp,T& v
-
-) {m_values[lkp.real]=v;};
-
-// ---   *   ---   *   ---
 // remove element
 
 template <typename K,typename T>
@@ -238,20 +196,6 @@ T Tab<K,T>::pop(
 };
 
 // ---   *   ---   *   ---
-// get key in table
-
-template <typename K,typename T>
-inline TAB::Lookup Tab<K,T>::has(
-  K& k
-
-) {
-
-  TAB::Lookup lkp=get_mask(k);
-  return lkp;
-
-};
-
-// ---   *   ---   *   ---
 
 template <typename K,typename T>
 void Tab<K,T>::update_mask(
@@ -259,24 +203,23 @@ void Tab<K,T>::update_mask(
 
 ) {
 
+  uint64_t i=0;
+
   // get next free slot
-  if(lkp.mask&1) {
-
-    uint64_t x=nbsf(lkp.mask);
-    lkp.mask|=1<<x;
-
-  // get first
-  } else {
-    lkp.mask|=1;
+  if(lkp.mask) {
+    uint64_t i=nbsf(lkp.mask);
 
   };
+
+  // occupy
+  lkp.mask|=1<<i;
 
 };
 
 // ---   *   ---   *   ---
 
 template <typename K,typename T>
-inline void Tab<K,T>::update_entry(
+void Tab<K,T>::update_entry(
   TAB::Lookup& lkp,
   K& k,T& v
 
@@ -315,7 +258,7 @@ uint64_t Tab<K,T>::push(
 // ^already hashed
 
 template <typename K,typename T>
-inline void Tab<K,T>::push(
+void Tab<K,T>::push(
   TAB::Lookup& lkp,
   K& k,T& v
 
@@ -466,5 +409,6 @@ void Tab<uint64_t,TAB::Symbol>::dump(
 // instantiations
 
 template class Tab<uint64_t,TAB::Symbol>;
+template class Tab<uint64_t,TAB::Symbol*>;
 
 // ---   *   ---   *   ---

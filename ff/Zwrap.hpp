@@ -45,7 +45,7 @@ private:
 
 // ---   *   ---   *   ---
 
-    inline void set(
+    void set(
       Bin*     src,
 
       uint64_t size,
@@ -53,7 +53,7 @@ private:
 
     );
 
-    inline void set(
+    void set(
       uint8_t* src,
 
       uint64_t size,
@@ -91,7 +91,16 @@ private:
 // ---   *   ---   *   ---
 // internals
 
-  inline void get_readsize(void);
+  // caps next read to remaining bytes
+  inline void get_readsize(void) {
+
+    m_readsize=(m_readsize > m_remain)
+      ? m_remain
+      : m_readsize
+      ;
+
+  };
+
   std::string get_status(void);
 
   void dump(void);
@@ -116,7 +125,7 @@ public:
 // ---   *   ---   *   ---
 // setters
 
-  inline void set_src(
+  void set_src(
     void*    src,
 
     uint64_t size=0,
@@ -124,7 +133,7 @@ public:
 
   );
 
-  inline void set_dst(
+  void set_dst(
     void*    dst,
 
     uint64_t size=0,

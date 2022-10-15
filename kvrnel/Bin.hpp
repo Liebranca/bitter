@@ -7,6 +7,7 @@
   #include <iostream>
   #include <fstream>
   #include <string>
+  #include <cstring>
   #include <memory>
 
   #include "kvrnel/Style.hpp"
@@ -46,11 +47,19 @@ public:
 
 private:
 
+  // override dummy
+  uint64_t    m_hed;
+
+// ---   *   ---   *   ---
+// attrs
+
   uint64_t    m_size;
   uint64_t    m_ptr;
 
+protected:
   std::string m_fpath;
 
+private:
   std::ios_base::openmode m_mode;
   std::fstream m_fh;
 
@@ -64,6 +73,11 @@ private:
 
   vic64 m_header_sz(void) {
     return 0;
+
+  };
+
+  VIC void* get_header(void) {
+    return &m_hed;
 
   };
 
@@ -104,6 +118,41 @@ public:
     char mode=READ
 
   );
+
+  // ^let go of fd
+  void close(void);
+
+// ---   *   ---   *   ---
+
+  template <typename T>
+  void defopen(
+    std::string fpath,
+    char mode
+
+  ) {
+
+    T* h=(T*) this->get_header();
+    memset(h,0,sizeof(T));
+
+    if(
+
+       !(mode&Bin::READ)
+    && !(mode&Bin::TRUNC)
+
+    ) {
+
+      this->open(fpath,Bin::READ);
+      this->read_header(h);
+
+      this->close();
+
+    };
+
+    this->open(fpath,mode);
+
+  };
+
+// ---   *   ---   *   ---
 
   // current file has correct signature
   bool match_sig(void);

@@ -89,12 +89,12 @@ private:
 
   uint64_t hash(K& k);
 
-  inline void hash_f(
+  void hash_f(
     TAB::Hash* h
 
   );
 
-  inline void update_entry(
+  void update_entry(
     TAB::Lookup& lkp,
     K& k,T& v
 
@@ -134,26 +134,44 @@ public:
   uint64_t push(K& k,T& v);
 
   // ^same, use if key is already hashed
-  inline void push(
+  void push(
     TAB::Lookup& lkp,
     K& k,T& v
 
   );
 
   // value from key
-  inline T& get(K& k);
+  inline T& get(K& k) {
+    TAB::Lookup lkp=get_mask(k);
+    return m_values[lkp.real];
+
+  };
 
   // ^key already hashed
-  inline T& get(TAB::Lookup& lkp);
+  inline T& get(TAB::Lookup& lkp) {
+    return m_values[lkp.real];
+
+  };
 
   // true if key in table
-  inline TAB::Lookup has(K& k);
+  inline TAB::Lookup has(K& k) {
+    TAB::Lookup lkp=get_mask(k);
+    return lkp;
+
+  };
 
   // assign value to key
-  inline void set(K& k,T& v);
+  inline void set(K& k,T& v) {
+    TAB::Lookup lkp=get_mask(k);
+    m_values[lkp.real]=v;
+
+  };
 
   // ^key hashed
-  inline void set(TAB::Lookup& lkp,T& v);
+  inline void set(TAB::Lookup& lkp,T& v) {
+    m_values[lkp.real]=v;
+
+  };
 
 // ---   *   ---   *   ---
 // getters

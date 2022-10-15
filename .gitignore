@@ -5,6 +5,9 @@
 *.bin
 *.o
 *.out
+*.daf
+*.joj
+*.crk
 
 mig/
 *~

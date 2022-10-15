@@ -42,6 +42,11 @@ private:
   } Header;
 
 // ---   *   ---   *   ---
+// attrs
+
+  Header m_hed;
+
+// ---   *   ---   *   ---
 // virtual const
 
   vicstr m_fsig(void) {
@@ -51,6 +56,11 @@ private:
 
   vic64 m_header_sz(void) {
     return sizeof(Header);
+
+  };
+
+  VIC void* get_header(void) {
+    return &m_hed;
 
   };
 
@@ -65,23 +75,20 @@ private:
   );
 
 // ---   *   ---   *   ---
-// attrs
-
-  Header m_hed;
-  std::string m_fpath;
-
-// ---   *   ---   *   ---
 
 public:
 
   // compiler trash
   DAF(void) {};
+  ~DAF(void);
 
   // constructor
   DAF(std::string fpath,char mode=Bin::READ);
 
   // add new element
   void push(Bin& src);
+
+  void close(void);
 
 };
 

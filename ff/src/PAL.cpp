@@ -13,31 +13,28 @@
 // deps
 
   #include "ff/Zwrap.hpp"
-  #include "ff/Pal.hpp"
+  #include "ff/PAL.hpp"
 
 // ---   *   ---   *   ---
 // constructor
 
-Pal::Pal(
+PAL::PAL(
   std::string fpath,
-  char mode=Bin::READ
+  char mode
 
 ):Bin() {
 
-  this->open(fpath,mode);
+  this->defopen<PAL::Header>(fpath,mode);
 
-  if(mode&Bin::READ) {
-    this->read_header(&m_hed);
-    this->decode();
-
-  };
+  m_tab=Symtab(m_hed.elem_cnt);
+  m_values.reserve(m_hed.elem_cnt);
 
 };
 
 // ---   *   ---   *   ---
 // dump to disk
 
-void Pal::write(void) {
+void PAL::write(void) {
   this->write_header(&m_hed);
   this->encode();
 
@@ -46,19 +43,32 @@ void Pal::write(void) {
 // ---   *   ---   *   ---
 // pass raw file through zlib
 
-void Pal::encode(void) {
+void PAL::encode(void) {
 
   // initialize zlib
   Zwrap z(Zwrap::DEFLATE|Zwrap::OUTPUT_BIN);
 
   // calculate size
-  uint64_t size_i=m_hed.elem_sz*m_hed.elem_cnt;
+  uint64_t size_i=
+    sizeof(TAB::Symbol)*m_hed.elem_cnt;
 
   // get mem
-  uint8_t* buff=(uint8_t*) m_values.data();
+  std::unique_ptr<uint8_t> buff(
+    new uint8_t[size_i]
+
+  );
+
+  uint8_t* buff_p=buff.get();
+
+  // ^deref pointers unto buff
+  for(TAB::Symbol* sym : m_values) {
+    *((TAB::Symbol*) buff_p)=*sym;
+    buff_p+=sizeof(TAB::Symbol);
+
+  };
 
   // set targets
-  z.set_src(buff,size_i);
+  z.set_src(buff.get(),size_i);
   z.set_dst(this);
 
   // decompress
@@ -69,13 +79,14 @@ void Pal::encode(void) {
 // ---   *   ---   *   ---
 // pass compressed file through zlib
 
-void Pal::decode(void) {
+void PAL::decode(void) {
 
   // initialize zlib
   Zwrap z(Zwrap::INFLATE|Zwrap::INPUT_BIN);
 
   // calculate size after decompression
-  uint64_t size_i=m_hed.elem_sz*m_hed.elem_cnt;
+  uint64_t size_i=
+    sizeof(TAB::Symbol)*m_hed.elem_cnt;
 
   // get mem
   std::unique_ptr<uint8_t> buff(
@@ -92,7 +103,7 @@ void Pal::decode(void) {
   // decompress
   z.flate();
 
-  // pass buffer into vector
+  // pass buffer to tab
   this->from_buff(buff_p);
 
 };
@@ -100,23 +111,15 @@ void Pal::decode(void) {
 // ---   *   ---   *   ---
 // uses buffer to populate values
 
-void Pal::from_buff(uint8_t* buff) {
-
-  // get mem
-  m_values.reserve(m_hed.elem_cnt);
-
-  // byte mask to elem size
-  uint64_t mask=(1<<m_hed.elem_sz)-1;
-  mask=(!mask) ? -1 : mask;
+void PAL::from_buff(uint8_t* buff) {
 
   // assemble bytes from buff into vector
   for(uint64_t i=0;i<m_hed.elem_cnt;i++) {
-    m_values.push_back(*(
 
-      (uint64_t*)
-      (buff+i*m_hed.elem_sz)
+    TAB::Symbol sym=*((TAB::Symbol*) buff);
 
-    )&mask);
+    m_tab.push(sym.value,sym);
+    m_values.push_back(&sym);
 
   };
 

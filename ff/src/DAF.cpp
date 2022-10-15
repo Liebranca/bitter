@@ -12,6 +12,7 @@
 // ---   *   ---   *   ---
 // deps
 
+  #include "kvrnel/Bytes.hpp"
   #include "ff/DAF.hpp"
 
 // ---   *   ---   *   ---
@@ -19,18 +20,19 @@
 
 DAF::DAF(
   std::string fpath,
-  char mode=Bin::READ
+  char mode
 
 ):Bin() {
 
-  this->open(fpath,mode);
+  this->defopen<DAF::Header>(fpath,mode);
 
-  if(mode&Bin::READ) {
-    this->read_header(&m_hed);
+};
 
-  };
+// ---   *   ---   *   ---
+// ^destroy
 
-  m_fpath=fpath;
+DAF::~DAF(void) {
+  this->close();
 
 };
 
@@ -62,6 +64,7 @@ inline uint64_t DAF::avail_idex(
   uint64_t* avail
 
 ) {
+
   return uint64_t(
     avail-&m_hed.blk_mask[0]
 
@@ -121,7 +124,15 @@ void DAF::push(Bin& src) {
   blk->sz=src.get_fullsize();
 
   this->seek(blk->off,Bin::BEG);
-  src->f_transfer(this);
+  src.f_transfer(this);
+
+};
+
+// ---   *   ---   *   ---
+
+void DAF::close(void) {
+  this->write_header(&m_hed);
+  Bin::close();
 
 };
 

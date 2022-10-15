@@ -126,18 +126,6 @@ Zwrap::~Zwrap(void) {
 };
 
 // ---   *   ---   *   ---
-// caps next read to remaining bytes
-
-inline void Zwrap::get_readsize(void) {
-
-  m_readsize=(m_readsize > m_remain)
-    ? m_remain
-    : m_readsize
-    ;
-
-};
-
-// ---   *   ---   *   ---
 // buff read
 
 void Zwrap::next_chunk(void) {
@@ -272,7 +260,7 @@ void Zwrap::dump(void) {
 // ---   *   ---   *   ---
 // configure target to mem or disk
 
-inline void Zwrap::Target::set(
+void Zwrap::Target::set(
   Bin*      src,
 
   uint64_t  size,
@@ -288,11 +276,9 @@ inline void Zwrap::Target::set(
   this->offset = offset;
   this->bin    = src;
 
-  src->seek(offset,Bin::BEG);
-
 };
 
-inline void Zwrap::Target::set(
+void Zwrap::Target::set(
   uint8_t*  src,
 
   uint64_t  size,
@@ -310,7 +296,7 @@ inline void Zwrap::Target::set(
 // ---   *   ---   *   ---
 // ^single entry
 
-inline void Zwrap::set_src(
+void Zwrap::set_src(
   void*    src,
 
   uint64_t size,
@@ -331,7 +317,7 @@ inline void Zwrap::set_src(
 // ---   *   ---   *   ---
 // ^clutter-copy
 
-inline void Zwrap::set_dst(
+void Zwrap::set_dst(
   void*    dst,
 
   uint64_t size,

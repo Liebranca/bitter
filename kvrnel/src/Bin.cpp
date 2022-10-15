@@ -66,7 +66,7 @@ int Bin::open(std::string fpath,char mode) {
 
     Evil::terminator(
       Error::OPEN_FAIL,
-      fpath.c_str()
+      fpath
 
     );
 
@@ -74,14 +74,27 @@ int Bin::open(std::string fpath,char mode) {
 
   // update filepath only on success
   } else {
+
     m_fpath=fpath;
+
+    this->set_fsize();
+    this->match_sig();
 
   };
 
-  this->set_fsize();
-  this->match_sig();
-
   return out;
+
+};
+
+// ---   *   ---   *   ---
+// ^letgo
+
+void Bin::close(void) {
+
+  if(m_fh.is_open()) {
+    m_fh.close();
+
+  };
 
 };
 
@@ -203,11 +216,7 @@ Bin::Bin(std::string fpath,char mode) {
 // ---   *   ---   *   ---
 
 Bin::~Bin(void) {
-
-  if(m_fh.is_open()) {
-    m_fh.close();
-
-  };
+  this->close();
 
 };
 
