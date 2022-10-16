@@ -38,7 +38,7 @@ private:
   Header m_hed;
   Symtab m_tab;
 
-  std::vector<TAB::Symbol*> m_values;
+  std::vector<uint64_t> m_values;
 
 // ---   *   ---   *   ---
 // virtual constants
@@ -59,14 +59,6 @@ private:
   };
 
 // ---   *   ---   *   ---
-// internals
-
-  void encode(void);
-  void decode(void);
-
-  void from_buff(uint8_t* buff_p);
-
-// ---   *   ---   *   ---
 // iface
 
 public:
@@ -78,8 +70,23 @@ public:
 
   );
 
-  void cpush(uint64_t key);
+  inline TAB::Symbol* cpush(uint64_t key) {
+    return m_tab.cpush(key);
+
+  };
+
   void write(void);
+  void read(void);
+
+  uint64_t get(uint64_t idex) {
+    return m_values[idex];
+
+  };
+
+  TAB::Symbol iget(uint64_t idex) {
+    return m_tab.iget(idex);
+
+  };
 
 };
 

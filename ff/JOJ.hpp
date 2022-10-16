@@ -35,24 +35,23 @@ private:
 
   typedef struct {
 
-    char sig[8];
-
-    uint64_t pal_cnt;
-    uint64_t pal_sz;
+    char sig[7];
+    char enc[1];
 
     uint64_t img_sz;
+    uint64_t img_sz_sq;
+
+    uint64_t img_cnt;
+
     uint64_t key_sz;
     uint64_t idex_sz;
-
-    // for zwrap
-    uint64_t body_sz;
 
   } Header;
 
 // ---   *   ---   *   ---
 
   vicstr m_fsig(void) {
-    return "%JOJ\0\0\0\0";
+    return "%JOJ\0\0\0";
 
   };
 
@@ -62,28 +61,15 @@ private:
   };
 
 // ---   *   ---   *   ---
-// runtime attrs
-
-  typedef struct {
-
-    uint8_t  img_cnt;
-
-    uint64_t img_sz;
-    uint64_t img_sz_sq;
-
-    JOJ::Encoding enc;
-    JOJ::SubEncoding c_enc;
-
-    std::vector<uint64_t> pal;
-    uint64_t pal_cnt;
-
-  } Meta;
-
-// ---   *   ---   *   ---
 // attrs
 
-  JOJ::Meta m_meta;
+  Header    m_hed;
   float*    m_raw;
+
+  PAL       m_pal[4];
+
+  JOJ::Encoding    m_enc;
+  JOJ::SubEncoding m_c_enc;
 
   std::unique_ptr<JOJ::Pixel> m_pixels;
   std::unique_ptr<uint64_t>   m_blocks;
@@ -95,9 +81,14 @@ private:
   // current sub-encoding
   std::vector<uint64_t> get_enc_sz(void);
 
-  // replace pixel data for indices
-  // on a per-componet basis
+  // get palette for a given bit-depth
+  PAL& get_pal(uint64_t sz);
+
+  // builds palettes from pixel components
   void palette_pixels(void);
+
+  // swaps values of pixels for palette indices
+  void xlate_pixels(void);
 
   // slices m_buff
   void pixel2x2(
@@ -112,11 +103,11 @@ private:
 
   );
 
-  // transforms blocks according to palette
-  void xlate_blocks(
-    Symtab& tab
+  // build palette by hashing blocks of pixels
+  void palette_blocks(void);
 
-  );
+  // transforms blocks according to palette
+  void xlate_blocks(void);
 
   JOJ::SubEncoding read_mode(
     int type,
@@ -124,8 +115,7 @@ private:
 
   );
 
-  void write_header(uint64_t body_sz);
-  JOJ::Header read_header(void);
+  void write_header(void);
 
 // ---   *   ---   *   ---
 // interface

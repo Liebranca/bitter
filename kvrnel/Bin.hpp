@@ -134,12 +134,7 @@ public:
     T* h=(T*) this->get_header();
     memset(h,0,sizeof(T));
 
-    if(
-
-       !(mode&Bin::READ)
-    && !(mode&Bin::TRUNC)
-
-    ) {
+    if(!(mode&Bin::TRUNC)) {
 
       this->open(fpath,Bin::READ);
       this->read_header(h);

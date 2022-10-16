@@ -80,6 +80,7 @@ private:
   // used for symtabs
   std::vector<K>        m_keys_s;
   std::vector<K>        m_values_s;
+
   bool                  m_sorted;
 
 // ---   *   ---   *   ---
@@ -183,6 +184,11 @@ public:
 
   inline T iget(uint64_t idex) {
     return this->get(m_keys_s[idex]);
+
+  };
+
+  inline std::vector<K>& sorted_buff(void) {
+    return m_values_s;
 
   };
 
