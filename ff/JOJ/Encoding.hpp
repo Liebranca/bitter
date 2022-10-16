@@ -97,9 +97,9 @@ private:
 public:
 
   // flags for encoder branching
-  cx8 NVEC=0b001;
-  cx8 YAUV=0b010;
-  cx8 ORME=0b100;
+  cx8 NVEC=0b00;
+  cx8 YAUV=0b01;
+  cx8 ORME=0b10;
 
   // the intended JOJ experience
   CX Encoding ENCDEF={
@@ -121,6 +121,13 @@ public:
       ENCDEF_SHADE_CNT
 
     }
+
+  };
+
+// ---   *   ---   *   ---
+
+  CX char* IMG_TYPES[]={
+    "_n","_a","_o"
 
   };
 

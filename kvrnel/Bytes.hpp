@@ -4,6 +4,10 @@
 // ---   *   ---   *   ---
 // deps
 
+  #include <cmath>
+  #include <cstdio>
+  #include <algorithm>
+
   #include "Style.hpp"
   #include "Evil.hpp"
 
@@ -209,13 +213,65 @@ inline T bitsize(T x) {
 
 // give portion of a value's bits
 template <typename T>
-T bitslice(T b,T iStart,T iEnd);
+T bitslice(T b,T iStart,T iEnd) {
 
+  int x=0b0;
+  int bit;
+
+  for(T i=iStart;i<iEnd+1;i++) {
+
+    bit=nthbit<T>(b,i);
+
+    if(bit) {
+      x|=bit<<(i-iStart);
+
+    };
+
+  };
+
+  return x;
+
+};
+
+// ---   *   ---   *   ---
 // serialization helper
-template <typename T>
-uint64_t bitpack(T* b,T* enc,int* cnt);
 
+template <typename T>
+uint64_t bitpack(T* b,T* enc,int* cnt) {
+
+  uint64_t out   = 0;
+  int      total = 0;
+
+  while(*cnt) {
+
+    // elem size && count
+    int bits   = Frac::BITS[enc[1]]+1;
+    int limit  = *cnt;
+
+    int mask   = (1<<bits)-1;
+
+    // append masked bits to output
+    for(int x=0;x<limit;x++) {
+      out|=(*b&mask)<<total;
+      total+=bits;
+
+      b++;
+
+    };
+
+    // go next
+    enc+=3;
+    cnt++;
+
+  };
+
+  return out;
+
+};
+
+// ---   *   ---   *   ---
 // ^recover
+
 template <typename T>
 void bitunpack(
 
@@ -226,10 +282,54 @@ void bitunpack(
   T*      enc,
   int*    cnt
 
-);
+) {
+
+  while(*cnt) {
+
+    // elem size && count
+    int bits   = Frac::BITS[enc[1]]+1;
+    int limit  = *cnt;
+
+    int mask   = (1<<bits)-1;
+
+    // append masked bits to dst
+    for(int x=0;x<limit;x++) {
+
+      *b++=src&mask;
+      src>>=bits;
+
+    };
+
+    // go next
+    enc+=3;
+    cnt++;
+
+  };
+
+};
+
+// ---   *   ---   *   ---
 
 template <typename T>
-int enc_bitsize(T* enc,int* cnt);
+int enc_bitsize(T* enc,int* cnt) {
+
+  int out=0;
+
+  while(*cnt) {
+
+    int bits   = Frac::BITS[enc[1]]+1;
+    int limit  = *cnt;
+
+    out+=bits*limit;
+
+    enc+=3;
+    cnt++;
+
+  };
+
+  return out;
+
+};
 
 // ---   *   ---   *   ---
 // copy to same-sized buffer of smaller type
@@ -243,7 +343,26 @@ void xfer(
   uint64_t  size,
   uint64_t  step
 
-);
+) {
+
+  for(
+
+    uint64_t i=0,h=0;
+
+    i<size;
+    i+=step,h++
+
+  ) {
+
+    for(int j=0;j<step;j++) {
+      dst[i+j]=src[h]&0xFF;
+      src[h]>>=8;
+
+    };
+
+  };
+
+};
 
 // ---   *   ---   *   ---
 
@@ -258,9 +377,34 @@ T frac(
 
   bool  unsig=false
 
-);
+) {
 
+  uint16_t mid  = 1<<(nbits);
+  uint16_t max  = Frac::MAXV[nbits];
+
+  uint16_t midp = (!unsig)
+    ? mid
+    : 1
+    ;
+
+  long     b   = roundf(x/step);
+  float    top = step*(max-mid);
+
+  top-=step*Frac::Rounding_Mode;
+
+  b+=mid*!unsig;
+  b-=1*(b==max && x<top);
+
+  bool over=b>max;
+  b=(max*over)+(b*!over);
+
+  return (T) b;
+
+};
+
+// ---   *   ---   *   ---
 // ^unpack
+
 template <typename T>
 float unfrac(
 
@@ -271,7 +415,22 @@ float unfrac(
 
   bool  unsig=false
 
-);
+) {
+
+  uint16_t max=Frac::MAXV[nbits];
+  uint16_t mid=1<<(nbits);
+
+  uint16_t midp = (!unsig)
+    ? mid
+    : 0
+    ;
+
+  b+=1*(b==max);
+  b-=mid*!unsig;
+
+  return (b*step);
+
+};
 
 // ---   *   ---   *   ---
 // color conversions

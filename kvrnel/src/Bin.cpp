@@ -12,7 +12,7 @@
 // ---   *   ---   *   ---
 // deps
 
-#include <cstring>
+#include <unistd.h>
 #include <filesystem>
 
 #include "kvrnel/Evil.hpp"
@@ -77,7 +77,7 @@ int Bin::open(std::string fpath,char mode) {
 
     m_fpath=fpath;
 
-    this->set_fsize();
+    this->stat();
     this->match_sig();
 
   };
@@ -198,7 +198,7 @@ void Bin::set_ptr(
 // ---   *   ---   *   ---
 // gets filesize minus (sig+header)
 
-void Bin::set_fsize(void) {
+void Bin::stat(void) {
 
   m_size=std::filesystem::file_size(m_fpath);
   m_size-=m_header_sz();
@@ -387,6 +387,15 @@ void Bin::f_transfer(Bin* other) {
   other->write(buff.get(),sz);
 
   buff.reset();
+
+};
+
+// ---   *   ---   *   ---
+
+void Bin::nuke(void) {
+
+  this->close();
+  unlink(m_fpath.c_str());
 
 };
 

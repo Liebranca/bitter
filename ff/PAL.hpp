@@ -63,7 +63,19 @@ private:
 
 public:
 
+  // compiler trash
+  PAL(void) {};
+
+  // constructor
   PAL(
+    std::string fpath,
+    char mode=Bin::READ,
+    uint64_t sz=0
+
+  );
+
+  // ^in your face bjarne
+  void anti_cpp(
     std::string fpath,
     char mode=Bin::READ,
     uint64_t sz=0
@@ -85,6 +97,11 @@ public:
 
   TAB::Symbol iget(uint64_t idex) {
     return m_tab.iget(idex);
+
+  };
+
+  inline void sort(void) {
+    m_tab.sort();
 
   };
 

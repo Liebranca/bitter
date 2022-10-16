@@ -229,11 +229,15 @@ void Zwrap::dump(void) {
 
     if(m_mode&Zwrap::OUTPUT_BIN) {
 
-      uint8_t* dst   = m_buff.get()+m_readsize;
+      uint8_t* dst   = m_buff.get()+DAFPAGE;
       uint64_t avail = DAFPAGE;
 
       have=this->process(dst,avail);
-      m_dst.bin->write(dst,have);
+
+      if(have) {
+        m_dst.bin->write(dst,have);
+
+      };
 
 // ---   *   ---   *   ---
 // from mem
@@ -352,7 +356,7 @@ int Zwrap::flate(void) {
   ) {
 
     m_buff=std::unique_ptr<uint8_t>(
-      new uint8_t[m_readsize*2]
+      new uint8_t[DAFPAGE*2]
 
     );
 

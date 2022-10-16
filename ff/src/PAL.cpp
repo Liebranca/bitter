@@ -44,6 +44,34 @@ PAL::PAL(
 };
 
 // ---   *   ---   *   ---
+// bypass ineptitude
+
+void PAL::anti_cpp(
+  std::string fpath,
+  char mode,
+
+  uint64_t sz
+
+) {
+
+  this->defopen<PAL::Header>(fpath,mode);
+
+  if(sz) {
+    m_hed.elem_cnt=sz;
+
+  };
+
+  if(mode&Bin::READ) {
+    this->read();
+
+  } else {
+    m_tab=Symtab(m_hed.elem_cnt);
+
+  };
+
+};
+
+// ---   *   ---   *   ---
 // dump to disk
 
 void PAL::write(void) {

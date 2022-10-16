@@ -96,9 +96,6 @@ private:
 
   );
 
-  // stat current fpath
-  void set_fsize(void);
-
 // ---   *   ---   *   ---
 
 public:
@@ -121,6 +118,9 @@ public:
 
   // ^let go of fd
   void close(void);
+
+  // sync header with file
+  void stat(void);
 
 // ---   *   ---   *   ---
 
@@ -191,6 +191,9 @@ public:
 
   // seek to beggining
   inline void rewind(void);
+
+  // remove file
+  void nuke(void);
 
 // ---   *   ---   *   ---
 // getters

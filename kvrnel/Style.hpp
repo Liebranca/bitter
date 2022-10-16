@@ -23,6 +23,8 @@
   #include <string>
   #include <string_view>
 
+  #include <vector>
+
 // ---   *   ---   *   ---
 // peso types ;>
 
@@ -94,6 +96,11 @@ cx16 DAFSIZE=256;
 cx8 AR_DONE  = 0x00;
 cx8 AR_ERROR = 0xFE;
 cx8 AR_FATAL = 0xFF;
+
+// ---   *   ---   *   ---
+// shortening horrible C++ names
+
+typedef std::vector<std::string> strvec;
 
 // ---   *   ---   *   ---
 

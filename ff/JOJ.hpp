@@ -5,8 +5,12 @@
 // deps
 
   #include "kvrnel/Style.hpp"
+  #include "kvrnel/Bytes.hpp"
+
   #include "kvrnel/Bin.hpp"
   #include "kvrnel/Tab.hpp"
+
+  #include "ff/PAL.hpp"
 
 // ---   *   ---   *   ---
 // info
@@ -35,23 +39,19 @@ private:
 
   typedef struct {
 
-    char sig[7];
-    char enc[1];
+    char sig[8];
 
     uint64_t img_sz;
     uint64_t img_sz_sq;
 
     uint64_t img_cnt;
 
-    uint64_t key_sz;
-    uint64_t idex_sz;
-
   } Header;
 
 // ---   *   ---   *   ---
 
   vicstr m_fsig(void) {
-    return "%JOJ\0\0\0";
+    return "%JOJ\0\0\0\0";
 
   };
 
@@ -60,106 +60,96 @@ private:
 
   };
 
+  VIC void* get_header(void) {
+    return &m_hed;
+
+  };
+
 // ---   *   ---   *   ---
 // attrs
 
-  Header    m_hed;
-  float*    m_raw;
+  Header m_hed;
+  PAL    m_pal[3];
 
-  PAL       m_pal[4];
+  std::string      m_src_path;
+  strvec           m_img_names;
+
+  uint64_t         m_next_img;
+  char             m_next_type;
 
   JOJ::Encoding    m_enc;
   JOJ::SubEncoding m_c_enc;
 
+  std::unique_ptr<float>      m_raw;
   std::unique_ptr<JOJ::Pixel> m_pixels;
-  std::unique_ptr<uint64_t>   m_blocks;
 
 // ---   *   ---   *   ---
 // internals
 
-  // get vector of sizes for
-  // current sub-encoding
-  std::vector<uint64_t> get_enc_sz(void);
+  JOJ::SubEncoding read_mode(char type);
 
-  // get palette for a given bit-depth
-  PAL& get_pal(uint64_t sz);
+  // buffer init/errme on bad open
+  void chk_img_sz(
 
-  // builds palettes from pixel components
-  void palette_pixels(void);
+    std::string fpath,
 
-  // swaps values of pixels for palette indices
-  void xlate_pixels(void);
-
-  // slices m_buff
-  void pixel2x2(
-    JOJ::Pixel* (&pix)[4],
-    uint64_t base
+    uint64_t width,
+    uint64_t height
 
   );
 
-  // ^hashing helper for the slice
-  uint64_t pixel_block(
-    JOJ::Pixel* (&pix)[4]
+  // gets raw yauv buffer from png
+  void from_png(
+    std::string name,
+    char* type
 
   );
 
-  // build palette by hashing blocks of pixels
-  void palette_blocks(void);
+  // get next "queued" read
+  void read_next_img(void);
 
-  // transforms blocks according to palette
-  void xlate_blocks(void);
+  // processes loaded buffer
+  void encode(bool mode=Frac::ENCODE);
 
-  JOJ::SubEncoding read_mode(
-    int type,
-    bool mode
+// ---   *   ---   *   ---
+// buff to disk stuff
 
-  );
+  // makes dump id
+  std::string get_dump_f(int idex);
 
-  void write_header(void);
+  // save/load to/from dump
+  void swap_to(int idex,char mode);
+
+  // write packed
+  void write(void);
+
+  // read unpacked
+  void read(void);
 
 // ---   *   ---   *   ---
 // interface
 
 public:
 
-  // file into memory
+  // png to joj
   JOJ(
-
     std::string fpath,
-    float* pixels,
-
-    JOJ::Encoding enc=ENCDEF
+    std::string src_path
 
   );
 
-  // memory into file
-  JOJ(
+  // load joj
+  JOJ(std::string fpath);
 
-    std::string fpath,
+  // joins image list into single file
+  void pack(void);
 
-    float* pixels,
-    uint64_t sz,
+  // "enqueue" an image set in src path
+  inline void add_img_set(std::string name) {
+    m_img_names.push_back(name);
+    m_hed.img_cnt++;
 
-    JOJ::Encoding enc=ENCDEF
-
-  );
-
-  // processes loaded buffer
-  void encoder(
-    int imtype,
-    bool mode=Frac::ENCODE
-
-  );
-
-  // tightens the bits in an
-  // already encoded image
-  void compress(void);
-
-  // write image contents
-  void write(void);
-
-  // read image from file
-  void read(void);
+  };
 
 };
 
