@@ -346,6 +346,50 @@ void JOJ::chk_img_sz(
 };
 
 // ---   *   ---   *   ---
+// because overloading operator ==
+// on a struct was too much of a hassle
+
+bool JOJ::enc_compare(
+  JOJ::SubEncoding& x
+
+) {
+
+  return
+
+      m_c_enc.values == x.values
+  &&  m_c_enc.cnt    == x.cnt
+
+  ;
+
+};
+
+// ---   *   ---   *   ---
+// handles color conversions
+
+void JOJ::color(float* pixel,bool mode) {
+
+  if(mode==Frac::ENCODE) {
+
+    if(this->enc_compare(m_enc.color)) {
+      rgba2yauv(pixel);
+
+    };
+
+  } else {
+
+    if(this->enc_compare(m_enc.color)) {
+      yauv2rgba(pixel);
+
+    } else if(this->enc_compare(m_enc.normal)) {
+      fnorm(pixel);
+
+    };
+
+  };
+
+};
+
+// ---   *   ---   *   ---
 // gets raw yauv buffer from png
 
 void JOJ::from_png(
@@ -394,7 +438,7 @@ void JOJ::from_png(
       pixels[i++]=px.blue/255.0f;
       pixels[i++]=px.alpha/255.0f;
 
-      rgba2yauv(pixels+orig);
+      this->color(pixels+orig,Frac::ENCODE);
 
     };
 
@@ -429,7 +473,7 @@ JOJ::to_buff(int idex) {
   for(uint64_t y=0;y<m_hed.img_sz;y++) {
     for(uint64_t x=0;x<m_hed.img_sz;x++) {
 
-      yauv2rgba(src+i);
+      this->color(src+i,Frac::DECODE);
 
       pixels[i]=src[i++];
       pixels[i]=src[i++];
@@ -478,7 +522,7 @@ void JOJ::to_png(
 
       png::rgba_pixel px;
 
-      yauv2rgba(pixels+i);
+      this->color(pixels+i,Frac::DECODE);
 
       px.red   = pixels[i++]*255.0f;
       px.green = pixels[i++]*255.0f;

@@ -84,6 +84,11 @@ private:
 
   JOJ::SubEncoding read_mode(char type);
 
+  bool enc_compare(
+    JOJ::SubEncoding& x
+
+  );
+
   // buffer init/errme on bad open
   void chk_img_sz(
 
@@ -106,6 +111,9 @@ private:
 
   // processes loaded buffer
   void encoder(bool mode=Frac::ENCODE);
+
+  // per-pixel color conversion
+  void color(float* pixel,bool mode);
 
 // ---   *   ---   *   ---
 // buff to disk stuff

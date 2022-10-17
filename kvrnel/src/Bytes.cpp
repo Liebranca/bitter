@@ -195,6 +195,24 @@ void yauv2rgba(float* p) {
 };
 
 // ---   *   ---   *   ---
+// normalizes normal map pixel
+
+void fnorm(float* p) {
+
+  float mag=sqrt(
+    pow(p[0],2)
+  + pow(p[1],2)
+  + pow(p[2],2)
+
+  );
+
+  p[0]/=mag;
+  p[1]/=mag;
+  p[2]/=mag;
+
+};
+
+// ---   *   ---   *   ---
 // instantiations
 
 template struct Frac::Bat<char>;

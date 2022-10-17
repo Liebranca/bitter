@@ -438,6 +438,8 @@ float unfrac(
 void rgba2yauv(float* p);
 void yauv2rgba(float* p);
 
+void fnorm(float* p);
+
 // ---   *   ---   *   ---
 
 //// *unpacked* geometry types
