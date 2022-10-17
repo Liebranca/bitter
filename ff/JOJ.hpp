@@ -8,9 +8,6 @@
   #include "kvrnel/Bytes.hpp"
 
   #include "kvrnel/Bin.hpp"
-  #include "kvrnel/Tab.hpp"
-
-  #include "ff/PAL.hpp"
 
 // ---   *   ---   *   ---
 // info
@@ -69,7 +66,6 @@ private:
 // attrs
 
   Header m_hed;
-  PAL    m_pal[3];
 
   std::string      m_src_path;
   strvec           m_img_names;
@@ -109,7 +105,7 @@ private:
   void read_next_img(void);
 
   // processes loaded buffer
-  void encode(bool mode=Frac::ENCODE);
+  void encoder(bool mode=Frac::ENCODE);
 
 // ---   *   ---   *   ---
 // buff to disk stuff
@@ -126,6 +122,9 @@ private:
   // read unpacked
   void read(void);
 
+  // removes joj dumps
+  void rmdump(void);
+
 // ---   *   ---   *   ---
 // interface
 
@@ -141,8 +140,20 @@ public:
   // load joj
   JOJ(std::string fpath);
 
+  // destroy
+  ~JOJ(void);
+
   // joins image list into single file
   void pack(void);
+
+  // ^dumps out packed
+  void unpack(void);
+
+  // ^raw joj to float*
+  std::unique_ptr<float> to_buff(int idex);
+
+  // ^raw joj to png
+  void to_png(int idex,std::string name);
 
   // "enqueue" an image set in src path
   inline void add_img_set(std::string name) {

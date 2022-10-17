@@ -61,11 +61,38 @@ JOJ::JOJ(
 
   );
 
+// ---   *   ---   *   ---
+
   m_enc=ENCDEF;
+
+  // native format
+  m_pixels=std::unique_ptr<JOJ::Pixel>(
+    new JOJ::Pixel[m_hed.img_sz_sq]
+
+  );
+
+  // ^to png/glbuff
+  m_raw=std::unique_ptr<float>(
+    new float[m_hed.img_sz_sq*4]
+
+  );
 
 };
 
 // ---   *   ---   *   ---
+// destroy
+
+JOJ::~JOJ(void) {
+
+  if(m_src_path=="NON") {
+    this->rmdump();
+
+  };
+
+};
+
+// ---   *   ---   *   ---
+// gets generic dump id
 
 std::string JOJ::get_dump_f(int idex) {
 
@@ -148,91 +175,41 @@ void JOJ::write(void) {
 };
 
 // ---   *   ---   *   ---
-// ^read body
+// ^retrieve
 
-void JOJ::read(void) {
+void JOJ::unpack(void) {
 
-//  uint64_t blkcnt = m_meta.img_sz_sq>>2;
-//  auto     buff   = Bin::read(hed.idex_sz*blkcnt);
-//
-//  // get mem
-//  m_pixels=std::unique_ptr<JOJ::Pixel>(
-//    new JOJ::Pixel[m_meta.img_sz_sq]
-//
-//  );
-//
-//// ---   *   ---   *   ---
-//// translate palette to color
-//
-//  JOJ::Pixel* pix_p = m_pixels.get();
-//  uint64_t*   data  = (uint64_t*) buff.get();
-//
-//  uint64_t    bits  = (hed.key_sz<<3)>>2;
-//
-//// ---   *   ---   *   ---
-//// get key && idex size values
-//
-//  uint64_t mask=(1LL<<bits)-1;
-//  mask-=1*!mask;
-//
-//  uint64_t idex_sz=hed.idex_sz<<3;
-//  uint64_t idex_mask=(1LL<<idex_sz)-1;
-//  idex_mask-=1*!idex_mask;
-//
-//  uint64_t bcnt=0;
-//
-//// ---   *   ---   *   ---
-//// walk the buff
-//
-//  for(
-//
-//    uint64_t i=0,base=0;
-//
-//    i<blkcnt;
-//    i++,base+=2
-//
-//  ) {
-//
-//    // idex of current block
-//    uint64_t idex=*data;
-//    idex>>=bcnt;
-//    idex&=idex_mask;
-//
-//    // ^fetch from palette
-//    uint64_t key=m_meta.pal[idex];
-//
-//    // idex is variable-sized
-//    // adjust buffer accto it
-//    bcnt+=idex_sz;
-//    if(bcnt==64) {bcnt=0;data++;};
-//
-//    // skip uneven rows
-//    base+=m_meta.img_sz*(
-//      base && !(base%m_meta.img_sz)
-//
-//    );
-//
-//// ---   *   ---   *   ---
-//// decode pixels from block
-//
-//    JOJ::Pixel* pix[4];
-//    this->pixel2x2(pix,base);
-//
-//    for(int j=0;j<4;j++) {
-//
-//      pix[j]->from_key(
-//        key&mask,
-//        m_meta.enc.color
-//
-//      );
-//
-//      key>>=bits;
-//
-//    };
-//
-//// ---   *   ---   *   ---
-//
-//  };
+  uint64_t sz=
+    m_hed.img_sz_sq
+  * sizeof(JOJ::Pixel)
+  ;
+
+  for(int i=0;i<m_hed.img_cnt*3;i++) {
+
+    std::string path=this->get_dump_f(i);
+
+    Bin dst(path,Bin::NEW);
+    this->transfer(&dst,sz);
+
+  };
+
+  m_src_path="NON";
+
+};
+
+// ---   *   ---   *   ---
+// ^get rid of retrieved
+
+void JOJ::rmdump(void) {
+
+  for(int i=0;i<m_hed.img_cnt*3;i++) {
+
+    std::string path=this->get_dump_f(i);
+
+    Bin dst(path,Bin::READ);
+    dst.nuke();
+
+  };
 
 };
 
@@ -301,6 +278,8 @@ void JOJ::encoder(bool mode) {
 };
 
 // ---   *   ---   *   ---
+// ensures you fools don't pass non-square
+// images through a square image format
 
 void JOJ::chk_img_sz(
 
@@ -420,6 +399,100 @@ void JOJ::from_png(
     };
 
   };
+
+};
+
+// ---   *   ---   *   ---
+// from joj format to float
+
+std::unique_ptr<float>
+JOJ::to_buff(int idex) {
+
+  std::unique_ptr<float> out(
+    new float[m_hed.img_sz_sq<<2]
+
+  );
+
+  char type=idex%3;
+  m_c_enc=this->read_mode(type);
+
+  this->swap_to(idex,Bin::READ);
+  this->encoder(Frac::DECODE);
+
+// ---   *   ---   *   ---
+
+  float*   src    = m_raw.get();
+  float*   pixels = out.get();
+
+  uint64_t i      = 0;
+
+  for(uint64_t y=0;y<m_hed.img_sz;y++) {
+    for(uint64_t x=0;x<m_hed.img_sz;x++) {
+
+      yauv2rgba(src+i);
+
+      pixels[i]=src[i++];
+      pixels[i]=src[i++];
+      pixels[i]=src[i++];
+      pixels[i]=src[i++];
+
+    };
+
+  };
+
+  return out;
+
+};
+
+// ---   *   ---   *   ---
+// from joj format to png
+
+void JOJ::to_png(
+  int idex,
+  std::string name
+
+) {
+
+  // make image
+  png::image<png::rgba_pixel> im(
+    m_hed.img_sz,m_hed.img_sz
+
+  );
+
+  char type=idex%3;
+  m_c_enc=this->read_mode(type);
+
+  // decode joj
+  this->swap_to(idex,Bin::READ);
+  this->encoder(Frac::DECODE);
+
+  float* pixels=m_raw.get();
+
+// ---   *   ---   *   ---
+// transform color
+
+  uint64_t i=0;
+
+  for(uint64_t y=0;y<m_hed.img_sz;y++) {
+    for(uint64_t x=0;x<m_hed.img_sz;x++) {
+
+      png::rgba_pixel px;
+
+      yauv2rgba(pixels+i);
+
+      px.red   = pixels[i++]*255.0f;
+      px.green = pixels[i++]*255.0f;
+      px.blue  = pixels[i++]*255.0f;
+      px.alpha = pixels[i++]*255.0f;
+
+      im[y][x]=px;
+
+    };
+
+  };
+
+  // dump it out
+  im.write(name);
 
 };
 
