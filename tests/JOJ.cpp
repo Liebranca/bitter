@@ -2,22 +2,24 @@
 
 int main(void) {
 
-  { JOJ j(
-
-      "./out",
-      "/home/lyeb/Cruelty/Medi/"
-
-    );
-
-    j.add_img_set("test");
-    j.pack();
-
-  };
+//  { JOJ j(
+//
+//      "./out",
+//      "/home/lyeb/Cruelty/Medi/"
+//
+//    );
+//
+//    j.add_img_set("test");
+//    j.pack();
+//
+//  };
 
   JOJ j("./out");
 
   j.unpack();
-  j.to_png(2,"./out_im");
+
+  auto buff=j.to_buff(1,255.0f);
+  j.to_png(buff.get(),"./out_im");
 
   return 0;
 

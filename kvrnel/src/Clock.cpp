@@ -40,12 +40,17 @@ Clock::Clock(float fps) {
   m_fBy=0.0;
   m_uBy=0;
 
+  glm::uvec4 pos;
+
+  pos.x=0;
+  pos.y=-1;
+
   m_gf=Sprite(
 
     L"\x01A9\x01AA\x01AB\x01AC"
     L"\x01AD\x01AE\x01AF\x01B0",
 
-    Vec<short,2>(0,-1)
+    pos
 
   );
 

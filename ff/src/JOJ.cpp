@@ -447,38 +447,51 @@ void JOJ::from_png(
 };
 
 // ---   *   ---   *   ---
+// fill out internal buffer
+// give back ptr to buff
+
+float* JOJ::read_pixels(int idex) {
+
+  char type=idex%3;
+  m_c_enc=this->read_mode(type);
+
+  // decode joj
+  this->swap_to(idex,Bin::READ);
+  this->encoder(Frac::DECODE);
+
+  return m_raw.get();
+
+};
+
+// ---   *   ---   *   ---
 // from joj format to float
 
 std::unique_ptr<float>
-JOJ::to_buff(int idex) {
+JOJ::to_buff(int idex,float mult) {
 
   std::unique_ptr<float> out(
     new float[m_hed.img_sz_sq<<2]
 
   );
 
-  char type=idex%3;
-  m_c_enc=this->read_mode(type);
-
-  this->swap_to(idex,Bin::READ);
-  this->encoder(Frac::DECODE);
+  float* pixels = this->read_pixels(idex);
+  float* out_p  = out.get();
 
 // ---   *   ---   *   ---
 
-  float*   src    = m_raw.get();
-  float*   pixels = out.get();
-
-  uint64_t i      = 0;
+  uint64_t i=0;
 
   for(uint64_t y=0;y<m_hed.img_sz;y++) {
     for(uint64_t x=0;x<m_hed.img_sz;x++) {
 
-      this->color(src+i,Frac::DECODE);
+      this->color(pixels+i,Frac::DECODE);
 
-      pixels[i]=src[i++];
-      pixels[i]=src[i++];
-      pixels[i]=src[i++];
-      pixels[i]=src[i++];
+      out_p[i+0] = pixels[i+0]*mult;
+      out_p[i+1] = pixels[i+1]*mult;
+      out_p[i+2] = pixels[i+2]*mult;
+      out_p[i+3] = pixels[i+3]*mult;
+
+      i+=4;
 
     };
 
@@ -503,14 +516,7 @@ void JOJ::to_png(
 
   );
 
-  char type=idex%3;
-  m_c_enc=this->read_mode(type);
-
-  // decode joj
-  this->swap_to(idex,Bin::READ);
-  this->encoder(Frac::DECODE);
-
-  float* pixels=m_raw.get();
+  float* pixels=this->read_pixels(idex);
 
 // ---   *   ---   *   ---
 // transform color
@@ -528,6 +534,46 @@ void JOJ::to_png(
       px.green = pixels[i++]*255.0f;
       px.blue  = pixels[i++]*255.0f;
       px.alpha = pixels[i++]*255.0f;
+
+      im[y][x]=px;
+
+    };
+
+  };
+
+  // dump it out
+  im.write(name);
+
+};
+
+// ---   *   ---   *   ---
+
+void JOJ::to_png(
+  float* pixels,
+  std::string name
+
+) {
+
+  // make image
+  png::image<png::rgba_pixel> im(
+    m_hed.img_sz,m_hed.img_sz
+
+  );
+
+// ---   *   ---   *   ---
+// transform color
+
+  uint64_t i=0;
+
+  for(uint64_t y=0;y<m_hed.img_sz;y++) {
+    for(uint64_t x=0;x<m_hed.img_sz;x++) {
+
+      png::rgba_pixel px;
+
+      px.red   = pixels[i++];
+      px.green = pixels[i++];
+      px.blue  = pixels[i++];
+      px.alpha = pixels[i++];
 
       im[y][x]=px;
 

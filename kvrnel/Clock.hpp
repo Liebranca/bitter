@@ -4,7 +4,8 @@
 // ---   *   ---   *   ---
 // deps
 
-  #include "Sprite.hpp"
+  #include "kvrnel/Style.hpp"
+  #include "kvrnel/Sprite.hpp"
 
 // ---   *   ---   *   ---
 // info

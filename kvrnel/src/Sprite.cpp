@@ -22,7 +22,7 @@
 
 Sprite::Sprite(
   const wchar_t* anim,
-  Vec<short,2> co
+  glm::uvec4& co
 
 ) {
 

@@ -143,7 +143,7 @@ namespace Frac {
   cx16 MAXV[]={
     0x0001,0x0003,0x0007,
     0x000F,0x001F,0x003F,
-    0x007F,0x007F,0x01FF,
+    0x007F,0x00FF,0x01FF,
     0x03FF,0x07FF,0x0FFF,
     0x1FFF,0x3FFF,0x7FFF
 
@@ -417,13 +417,8 @@ float unfrac(
 
 ) {
 
-  uint16_t max=Frac::MAXV[nbits];
-  uint16_t mid=1<<(nbits);
-
-  uint16_t midp = (!unsig)
-    ? mid
-    : 0
-    ;
+  uint16_t max  = Frac::MAXV[nbits];
+  uint16_t mid  = 1<<nbits;
 
   b+=1*(b==max);
   b-=mid*!unsig;

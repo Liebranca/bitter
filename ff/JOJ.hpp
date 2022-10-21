@@ -16,7 +16,7 @@ class JOJ: public Bin {
 
 public:
 
-  VERSION   "v2.00.1";
+  VERSION   "v2.00.2";
   AUTHOR    "IBN-3DILA";
 
 // ---   *   ---   *   ---
@@ -115,6 +115,8 @@ private:
   // per-pixel color conversion
   void color(float* pixel,bool mode);
 
+  float* read_pixels(int idex);
+
 // ---   *   ---   *   ---
 // buff to disk stuff
 
@@ -158,15 +160,31 @@ public:
   void unpack(void);
 
   // ^raw joj to float*
-  std::unique_ptr<float> to_buff(int idex);
+  std::unique_ptr<float> to_buff(
+    int   idex,
+    float mult=1.0f
+
+  );
 
   // ^raw joj to png
   void to_png(int idex,std::string name);
+  void to_png(
+    float* buff,
+    std::string name
+
+  );
 
   // "enqueue" an image set in src path
   inline void add_img_set(std::string name) {
     m_img_names.push_back(name);
     m_hed.img_cnt++;
+
+  };
+
+// ---   *   ---   *   ---
+
+  inline uint64_t get_img_sz(void) {
+    return m_hed.img_sz;
 
   };
 

@@ -5,7 +5,7 @@
 // deps
 
   #include <cwchar>
-  #include "Vec.hpp"
+  #include <glm/vec4.hpp>
 
 // ---   *   ---   *   ---
 
@@ -13,7 +13,7 @@ class Sprite {
 
 private:
 
-  Vec<short,2>    m_co;
+  glm::vec4       m_co;
 
   short           m_len;
   short           m_frame;
@@ -30,7 +30,7 @@ public:
   // constructor
   Sprite(
     const wchar_t* anim,
-    Vec<short,2> co
+    glm::uvec4& co
 
   );
 
