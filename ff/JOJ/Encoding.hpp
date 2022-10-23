@@ -131,6 +131,11 @@ public:
 
   };
 
+  CX char DEFCOMP[]={
+    NVEC,YAUV,ORME,0x7F
+
+  };
+
 // ---   *   ---   *   ---
 
 #endif // __24_JOJ_ENCODING_H__

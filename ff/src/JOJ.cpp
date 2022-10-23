@@ -22,7 +22,9 @@
 
 JOJ::JOJ(
   std::string fpath,
-  std::string src_path
+  std::string src_path,
+
+  const char* comp
 
 )
 
@@ -42,6 +44,18 @@ JOJ::JOJ(
   m_next_img       = 0;
 
   m_src_path       = src_path;
+
+// ---   *   ---   *   ---
+// count image components
+
+  for(int i=0;i<4;i++) {
+
+    if(comp[i]==0x7F) {break;};
+
+    m_hed.img_comp[i]=comp[i];
+    m_hed.img_comp_cnt++;
+
+  };
 
 };
 
@@ -140,7 +154,14 @@ void JOJ::pack(void) {
 
   // run encoder on list of images
   // dumps resulting buff for each
-  for(int i=0;i<m_hed.img_cnt*3;i++) {
+  for(
+
+    int i=0;
+
+    i<m_hed.img_cnt*m_hed.img_comp_cnt;
+    i++
+
+  ) {
 
     this->read_next_img();
 
@@ -161,7 +182,14 @@ void JOJ::write(void) {
 
   this->write_header(&m_hed);
 
-  for(int i=0;i<m_hed.img_cnt*3;i++) {
+  for(
+
+    int i=0;
+
+    i<m_hed.img_cnt*m_hed.img_comp_cnt;
+    i++
+
+  ) {
 
     std::string path=this->get_dump_f(i);
 
@@ -184,7 +212,14 @@ void JOJ::unpack(void) {
   * sizeof(JOJ::Pixel)
   ;
 
-  for(int i=0;i<m_hed.img_cnt*3;i++) {
+  for(
+
+    int i=0;
+
+    i<m_hed.img_cnt*m_hed.img_comp_cnt;
+    i++
+
+  ) {
 
     std::string path=this->get_dump_f(i);
 
@@ -202,7 +237,14 @@ void JOJ::unpack(void) {
 
 void JOJ::rmdump(void) {
 
-  for(int i=0;i<m_hed.img_cnt*3;i++) {
+  for(
+
+    int i=0;
+
+    i<m_hed.img_cnt*m_hed.img_comp_cnt;
+    i++
+
+  ) {
 
     std::string path=this->get_dump_f(i);
 
@@ -452,7 +494,11 @@ void JOJ::from_png(
 
 float* JOJ::read_pixels(int idex) {
 
-  char type=idex%3;
+  char type=m_hed.img_comp[
+    idex%m_hed.img_comp_cnt
+
+  ];
+
   m_c_enc=this->read_mode(type);
 
   // decode joj
@@ -516,6 +562,7 @@ void JOJ::to_png(
 
   );
 
+  return;
   float* pixels=this->read_pixels(idex);
 
 // ---   *   ---   *   ---
@@ -591,16 +638,19 @@ void JOJ::to_png(
 
 void JOJ::read_next_img(void) {
 
-  m_c_enc=this->read_mode(m_next_type);
+  uint8_t comp_idex=
+    m_hed.img_comp[m_next_type++];
+
+  m_c_enc=this->read_mode(comp_idex);
 
   this->from_png(
     m_img_names[m_next_img],
-    (char*) IMG_TYPES[m_next_type++]
+    (char*) IMG_TYPES[comp_idex]
 
   );
 
   // move to next image set
-  if(m_next_type==3) {
+  if(m_next_type==m_hed.img_comp_cnt) {
     m_next_type=0;
     m_next_img++;
 

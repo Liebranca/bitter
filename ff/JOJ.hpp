@@ -43,6 +43,9 @@ private:
 
     uint64_t img_cnt;
 
+    uint8_t  img_comp_cnt;
+    char     img_comp[3];
+
   } Header;
 
 // ---   *   ---   *   ---
@@ -143,7 +146,9 @@ public:
   // png to joj
   JOJ(
     std::string fpath,
-    std::string src_path
+    std::string src_path,
+
+    const char* comp=JOJ::DEFCOMP
 
   );
 
