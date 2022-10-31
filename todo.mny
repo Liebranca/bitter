@@ -1,10 +1,9 @@
 >blkmgk v2.00.1
 
 *>JOJ
-~ Multi-image palette
-~ ^ Per-width palettes
-~ ^ Writting palettes to disk
-~ Saving decode data to header
+x Saving decode data to header
+x Cutting into square tiles
+~ Tile palettes
 
 *>CRK
 ~ Vertex classes

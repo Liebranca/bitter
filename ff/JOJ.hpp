@@ -5,6 +5,7 @@
 // deps
 
   #include "kvrnel/Style.hpp"
+  #include "kvrnel/Square.hpp"
   #include "kvrnel/Bytes.hpp"
 
   #include "kvrnel/Bin.hpp"
@@ -28,11 +29,31 @@ public:
   // definition of pixel for this format
   #include "ff/JOJ/Pixel.hpp"
 
+  // used for sprite-packing
+  #include "ff/JOJ/Tiles.hpp"
+
+// ---   *   ---   *   ---
+
+private:
+
+  void get_tile(
+    JOJ::Tiles& tiles,
+    uint64_t    offset
+
+  );
+
+  void set_tile(
+    JOJ::Tiles& tiles,
+    uint64_t    offset
+
+  );
+
+  JOJ::Tiles to_tiles(uint64_t sz);
+  void from_tiles(JOJ::Tiles& tiles);
+
 // ---   *   ---   *   ---
 // header def for non-pixel data in file
 // used for quick read/write
-
-private:
 
   typedef struct {
 

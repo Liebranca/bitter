@@ -23,7 +23,7 @@ public:
 // second   ORM+emit
 // third    normal+curv
 
-typedef struct {
+typedef struct FwdPixel {
   union {
     struct {
 
@@ -140,6 +140,30 @@ typedef struct {
     );
 
   };
+
+// ---   *   ---   *   ---
+// dirty quick cmp
+
+  inline bool operator==(
+    struct FwdPixel& other
+
+  ) {
+
+    return
+
+       this->arr[0]==other.arr[0]
+    && this->arr[1]==other.arr[1]
+    && this->arr[2]==other.arr[2]
+    && this->arr[3]==other.arr[3]
+    ;
+
+  };
+
+  inline bool operator!=(
+    struct FwdPixel& other
+
+  ) {return !(*this==other);};
+
 
 // ---   *   ---   *   ---
 
