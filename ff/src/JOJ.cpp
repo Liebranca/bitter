@@ -194,24 +194,14 @@ void JOJ::get_tile(
 
 JOJ::Tiles JOJ::to_tiles(uint64_t sz) {
 
-  JOJ::Tiles out={
+  JOJ::Tiles out={0};
 
-    .x      = 0,
-    .y      = 0,
+  out.nit(
+    sz,
+    m_hed.img_sz,
+    m_hed.img_sz_sq
 
-    .sz     = sz,
-    .sz_sq  = sz*sz,
-    .sz_i   = sz-1,
-
-    .cnt    = m_hed.img_sz/sz,
-    .cnt_sq = m_hed.img_sz_sq/sz,
-
-    .data   = std::unique_ptr<JOJ::Pixel>(
-      new JOJ::Pixel[m_hed.img_sz_sq]
-
-    )
-
-  };
+  );
 
 // ---   *   ---   *   ---
 
@@ -327,16 +317,30 @@ void JOJ::pack(void) {
 
     JOJ::Tiles t=this->to_tiles(16);
 
+    std::vector<JOJ::Tile_Desc> td_vec;
+    td_vec.resize(t.cnt_sq);
+
     for(int y=0;y<t.cnt;y++) {
     for(int x=0;x<t.cnt;x++) {
 
-      printf("AT [%u,%u]\n",x,y);
-      t.ror(x,y);
+      uint64_t idex=t.tile_idex(x,y);
+      JOJ::Tile_Desc td=t.match(x,y);
+
+      td_vec[idex]=td;
+
+    }};
+
+    for(int y=0;y<t.cnt;y++) {
+    for(int x=0;x<t.cnt;x++) {
+
+      uint64_t idex=t.tile_idex(x,y);
+      JOJ::Tile_Desc td=td_vec[idex];
+
+      t.reloc(td);
 
     }};
 
     this->from_tiles(t);
-
     this->swap_to(i,Bin::NEW);
 
   };

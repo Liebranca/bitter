@@ -20,6 +20,19 @@ typedef struct {
 } Tile_Fetch;
 
 // ---   *   ---   *   ---
+// comparison/reconstruction helper
+
+typedef struct {
+
+  uint8_t  rotated  : 2;
+  uint8_t  mirrored : 2;
+
+  uint64_t x;
+  uint64_t y;
+
+} Tile_Desc;
+
+// ---   *   ---   *   ---
 
 public:
 
@@ -36,27 +49,148 @@ typedef struct {
   uint64_t cnt_sq;
 
   std::unique_ptr<JOJ::Pixel> data;
+  std::vector<uint64_t>       cleared;
 
 // ---   *   ---   *   ---
-// true if chunks are identical
+// default constructor doesn't want to work
 
-  bool cmp(
-    uint64_t idex_a,
-    uint64_t idex_b
+  void nit(
+
+    uint64_t sz,
+    uint64_t img_sz,
+    uint64_t img_sz_sq
+
+  ) {
+
+    this->x      = 0;
+    this->y      = 0;
+
+    this->sz     = sz;
+    this->sz_sq  = sz*sz;
+    this->sz_i   = sz-1;
+
+    this->cnt    = img_sz/sz;
+    this->cnt_sq = img_sz_sq/sz;
+
+    this->data   = std::unique_ptr<JOJ::Pixel>(
+      new JOJ::Pixel[img_sz_sq]
+
+    );
+
+    this->cleared.resize(this->cnt_sq);
+
+  };
+
+// ---   *   ---   *   ---
+
+  // discard contents of tile
+  void clear(
+    uint64_t x,
+    uint64_t y
 
   );
 
-// ---   *   ---   *   ---
-// return ptr to tile at [x,y]
+  // true if tiles are identical
+  bool cmp(
+    JOJ::Pixel* a,
+    JOJ::Pixel* b
 
-  inline JOJ::Pixel* get(
+  );
+
+  // attempt matching with previous tiles
+  JOJ::Tile_Desc match(
+    uint64_t x,
+    uint64_t y
+
+  );
+
+  enum {
+
+    MIRROR_NONE,
+    MIRROR_X,
+    MIRROR_Y,
+    MIRROR_XY
+
+  };
+
+  enum {
+
+    ROT_0,
+    ROT_90,
+    ROT_180,
+    ROT_240
+
+  };
+
+  // ^attempts mirroring
+  bool match_mirror(
+    JOJ::Tile_Desc& td
+
+  );
+
+  // ^attemps rotation
+  bool match_rotate(
+    JOJ::Tile_Desc& td
+
+  );
+
+  // walks back mirrors in descriptor
+  void undo_mirror(
+    JOJ::Tile_Desc& td
+
+  );
+
+  // walks back rotations in descriptor
+  void undo_rotation(
+    JOJ::Tile_Desc& td
+
+  );
+
+  // ^undoes failed attempts
+  inline void match_undo(
+    JOJ::Tile_Desc& td
+
+  ) {
+
+    this->undo_rotation(td);
+    this->undo_mirror(td);
+
+  };
+
+  // send duplicate of tile to buffer
+  std::unique_ptr<JOJ::Pixel> copy(
+    JOJ::Pixel* pixel
+
+  );
+
+  // replace tile with another
+  void mov(
+    JOJ::Pixel* dst,
+    JOJ::Pixel* src
+
+  );
+
+  // move tile to first empty one
+  void reloc(
+    JOJ::Tile_Desc& td
+
+  );
+
+  // get tile number
+  inline uint64_t tile_idex(
+    uint64_t x,
+    uint64_t y
+
+  ) {return sq_idex(x,y,this->cnt);};
+
+  // get index of tile in buffer
+  inline uint64_t real_idex(
     uint64_t x,
     uint64_t y
 
   ) {
 
-    JOJ::Pixel* out=this->data.get();
-    uint64_t offset=sq_idex(
+    return sq_idex(
 
       x*this->sz_sq,
       y*this->cnt,
@@ -65,17 +199,19 @@ typedef struct {
 
     );
 
-    return out+offset;
-
   };
 
-// ---   *   ---   *   ---
-// send duplicate of tile to buffer
+  // return ptr to tile at [x,y]
+  inline JOJ::Pixel* get(
+    uint64_t x,
+    uint64_t y
 
-  std::unique_ptr<JOJ::Pixel> copy(
-    JOJ::Pixel* pixel
+  ) {
 
-  );
+    JOJ::Pixel* out=this->data.get();
+    return out+this->real_idex(x,y);
+
+  };
 
 // ---   *   ---   *   ---
 // under the hood
@@ -135,22 +271,22 @@ private:
 public:
 
   inline void ror(uint64_t x,uint64_t y) {
-    this->xform(x,y,JOJ::Tiles::XFORM_ROR);
+    this->xform(x,y,XFORM_ROR);
 
   };
 
   inline void rol(uint64_t x,uint64_t y) {
-    this->xform(x,y,JOJ::Tiles::XFORM_ROL);
+    this->xform(x,y,XFORM_ROL);
 
   };
 
   inline void xmir(uint64_t x,uint64_t y) {
-    this->xform(x,y,JOJ::Tiles::XFORM_XMIR);
+    this->xform(x,y,XFORM_XMIR);
 
   };
 
   inline void ymir(uint64_t x,uint64_t y) {
-    this->xform(x,y,JOJ::Tiles::XFORM_YMIR);
+    this->xform(x,y,XFORM_YMIR);
 
   };
 
