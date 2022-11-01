@@ -6,9 +6,22 @@
 #ifndef __24_JOJ_TILES_H__
 #define __24_JOJ_TILES_H__
 
-public:
+// ---   *   ---   *   ---
+// xform/fetch helper
+
+private:
+
+typedef struct {
+  uint64_t src_x;
+  uint64_t src_y;
+  uint64_t dst_x;
+  uint64_t dst_y;
+
+} Tile_Fetch;
 
 // ---   *   ---   *   ---
+
+public:
 
 typedef struct {
 
@@ -31,42 +44,28 @@ typedef struct {
     uint64_t idex_a,
     uint64_t idex_b
 
-  ) {
-
-    bool out=true;
-
-    idex_a*=this->sz_sq;
-    idex_b*=this->sz_sq;
-
-    JOJ::Pixel* pixel=this->data.get();
-
-    for(uint64_t i=0;i<this->sz_sq;i++) {
-
-      if(pixel[idex_a++]!=pixel[idex_b++]) {
-        out=false;
-        break;
-
-      };
-
-    };
-
-    return out;
-
-  };
+  );
 
 // ---   *   ---   *   ---
 // return ptr to tile at [x,y]
 
-  JOJ::Pixel* get(uint64_t x,uint64_t y) {
+  inline JOJ::Pixel* get(
+    uint64_t x,
+    uint64_t y
 
-    return this->data.get()+sq_idex(
+  ) {
+
+    JOJ::Pixel* out=this->data.get();
+    uint64_t offset=sq_idex(
 
       x*this->sz_sq,
-      y,
+      y*this->cnt,
 
-      this->sz_sq*this->sz
+      this->sz_sq
 
     );
+
+    return out+offset;
 
   };
 
@@ -76,101 +75,82 @@ typedef struct {
   std::unique_ptr<JOJ::Pixel> copy(
     JOJ::Pixel* pixel
 
-  ) {
+  );
 
-    std::unique_ptr<JOJ::Pixel> out(
-      new JOJ::Pixel[this->sz_sq]
+// ---   *   ---   *   ---
+// under the hood
 
-    );
+private:
 
-    JOJ::Pixel* out_p=out.get();
+  enum {
 
-    memcpy(
-      out_p,pixel,
+    XFORM_ROR,
+    XFORM_ROL,
 
-      this->sz_sq
-    * sizeof(JOJ::Pixel)
+    XFORM_XMIR,
+    XFORM_YMIR
 
-    );
+  };
 
-    return out;
+  // generic
+  void xform(
+    uint64_t off_x,
+    uint64_t off_y,
+
+    uint64_t fn_idex
+
+  );
+
+  // 90 degrees, clockwise rotation
+  void xform_ror(Tile_Fetch& co) {
+    co.dst_x=this->sz_i-co.src_y;
+    co.dst_y=co.src_x;
+
+  };
+
+  // ^anti-clockwise
+  void xform_rol(Tile_Fetch& co) {
+    co.dst_x=co.src_y;
+    co.dst_y=this->sz_i-co.src_x;
+
+  };
+
+  // invert on X
+  void xform_xmir(Tile_Fetch& co) {
+    co.dst_x=this->sz_i-co.src_x;
+    co.dst_y=co.src_y;
+
+  };
+
+  // ^on Y
+  void xform_ymir(Tile_Fetch& co) {
+    co.dst_x=co.src_x;
+    co.dst_y=this->sz_i-co.src_y;
 
   };
 
 // ---   *   ---   *   ---
-// rotates tile 90 degrees clockwise
+// ^entry points
 
-  void ror(uint64_t off_x,uint64_t off_y) {
+public:
 
-    auto pixel = this->get(off_x,off_y);
-    auto buff  = this->copy(pixel);
-
-    JOJ::Pixel* buff_p=buff.get();
-
-    for(uint64_t y=0;y<this->sz;y++) {
-    for(uint64_t x=0;x<this->sz;x++) {
-      pixel[sq_idex(this->sz_i-y,x,this->sz)]=
-        buff_p[sq_idex(x,y,this->sz)];
-
-    }};
+  inline void ror(uint64_t x,uint64_t y) {
+    this->xform(x,y,JOJ::Tiles::XFORM_ROR);
 
   };
 
-// ---   *   ---   *   ---
-// ^anti-clockwise
-
-  void rol(uint64_t off_x,uint64_t off_y) {
-
-    auto pixel = this->get(off_x,off_y);
-    auto buff  = this->copy(pixel);
-
-    JOJ::Pixel* buff_p=buff.get();
-
-    for(uint64_t y=0;y<this->sz;y++) {
-    for(uint64_t x=0;x<this->sz;x++) {
-      pixel[sq_idex(y,this->sz_i-x,this->sz)]=
-        buff_p[sq_idex(x,y,this->sz)];
-
-
-    }};
+  inline void rol(uint64_t x,uint64_t y) {
+    this->xform(x,y,JOJ::Tiles::XFORM_ROL);
 
   };
 
-// ---   *   ---   *   ---
-// invert on X
-
-  void x_mirror(uint64_t off_x,uint64_t off_y) {
-
-    auto pixel = this->get(off_x,off_y);
-    auto buff  = this->copy(pixel);
-
-    JOJ::Pixel* buff_p=buff.get();
-
-    for(uint64_t y=0;y<this->sz;y++) {
-    for(uint64_t x=0;x<this->sz;x++) {
-      pixel[sq_idex(this->sz_i-x,y,this->sz)]=
-        buff_p[sq_idex(x,y,this->sz)];
-
-    }};
+  inline void xmir(uint64_t x,uint64_t y) {
+    this->xform(x,y,JOJ::Tiles::XFORM_XMIR);
 
   };
 
-// ---   *   ---   *   ---
-// ^on Y
-
-  void y_mirror(uint64_t off_x,uint64_t off_y) {
-
-    auto pixel = this->get(off_x,off_y);
-    auto buff  = this->copy(pixel);
-
-    JOJ::Pixel* buff_p=buff.get();
-
-    for(uint64_t y=0;y<this->sz;y++) {
-    for(uint64_t x=0;x<this->sz;x++) {
-      pixel[sq_idex(x,this->sz_i-y,this->sz)]=
-        buff_p[sq_idex(x,y,this->sz)];
-
-    }};
+  inline void ymir(uint64_t x,uint64_t y) {
+    this->xform(x,y,JOJ::Tiles::XFORM_YMIR);
 
   };
 

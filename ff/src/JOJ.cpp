@@ -326,6 +326,15 @@ void JOJ::pack(void) {
     this->encoder(Frac::ENCODE);
 
     JOJ::Tiles t=this->to_tiles(16);
+
+    for(int y=0;y<t.cnt;y++) {
+    for(int x=0;x<t.cnt;x++) {
+
+      printf("AT [%u,%u]\n",x,y);
+      t.ror(x,y);
+
+    }};
+
     this->from_tiles(t);
 
     this->swap_to(i,Bin::NEW);
