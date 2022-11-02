@@ -44,6 +44,7 @@ JOJ::JOJ(
   m_next_img       = 0;
 
   m_src_path       = src_path;
+  m_next_type      = 0;
 
 // ---   *   ---   *   ---
 // count image components
@@ -91,6 +92,14 @@ JOJ::JOJ(
 
   );
 
+  m_tiles.nit(
+    JOJ::STD_TILE_SZ,
+
+    m_hed.img_sz,
+    m_hed.img_sz_sq
+
+  );
+
 };
 
 // ---   *   ---   *   ---
@@ -126,11 +135,10 @@ std::string JOJ::get_dump_f(int idex) {
 
 void JOJ::swap_to(int idex,char mode) {
 
-  std::string path=this->get_dump_f(idex);
+  std::string path = this->get_dump_f(idex);
+  void*       src  = (void*) m_tiles.get(0,0);
 
   Bin out(path,mode);
-
-  void* dst=(void*) m_pixels.get();
 
   uint64_t sz=
     sizeof(JOJ::Pixel)
@@ -138,10 +146,18 @@ void JOJ::swap_to(int idex,char mode) {
   ;
 
   if(mode==Bin::READ) {
-    out.read(dst,sz);
+
+    Mem<JOJ::Tile_Desc> m(m_tiles.cnt_sq);
+    out.read(&m[0],m.bytesz());
+    m_tiles.from_buff(m);
+
+    out.read(src,sz);
 
   } else {
-    out.write(dst,sz);
+
+    Mem<JOJ::Tile_Desc> m=m_tiles.to_buff();
+    out.write(&m[0],m.bytesz());
+    out.write(src,sz);
 
   };
 
@@ -150,22 +166,18 @@ void JOJ::swap_to(int idex,char mode) {
 // ---   *   ---   *   ---
 // get NxN chunk
 
-void JOJ::get_tile(
-  JOJ::Tiles& tiles,
-  uint64_t offset
+void JOJ::get_tile(uint64_t offset) {
 
-) {
-
-  JOJ::Pixel* dst=tiles.data.get()+offset;
+  JOJ::Pixel* dst=m_tiles.data.get()+offset;
   JOJ::Pixel* src=m_pixels.get();
 
 // ---   *   ---   *   ---
 
-  for(uint64_t y=0;y<tiles.sz;y++) {
+  for(uint64_t y=0;y<m_tiles.sz;y++) {
 
     uint64_t idex=sq_idex(
-      tiles.x,
-      y+tiles.y,
+      m_tiles.x,
+      y+m_tiles.y,
 
       m_hed.img_sz
 
@@ -178,12 +190,12 @@ void JOJ::get_tile(
       dst,
       src+idex,
 
-      tiles.sz
+      m_tiles.sz
     * sizeof(JOJ::Pixel)
 
     );
 
-    dst+=tiles.sz;
+    dst+=m_tiles.sz;
 
   };
 
@@ -192,59 +204,42 @@ void JOJ::get_tile(
 // ---   *   ---   *   ---
 // ^whole image
 
-JOJ::Tiles JOJ::to_tiles(uint64_t sz) {
-
-  JOJ::Tiles out={0};
-
-  out.nit(
-    sz,
-    m_hed.img_sz,
-    m_hed.img_sz_sq
-
-  );
-
-// ---   *   ---   *   ---
+void JOJ::to_tiles(void) {
 
   uint64_t offset=0;
 
-  for(uint64_t y=0;y<out.cnt;y++) {
-    for(uint64_t x=0;x<out.cnt;x++) {
+  for(uint64_t y=0;y<m_tiles.cnt;y++) {
+    for(uint64_t x=0;x<m_tiles.cnt;x++) {
 
-      this->get_tile(out,offset);
-      offset+=out.sz_sq;
+      this->get_tile(offset);
+      offset+=m_tiles.sz_sq;
 
-      out.x+=sz;
+      m_tiles.x+=m_tiles.sz;
 
     };
 
-    out.x=0;
-    out.y+=sz;
+    m_tiles.x=0;
+    m_tiles.y+=m_tiles.sz;
 
   };
-
-  return out;
 
 };
 
 // ---   *   ---   *   ---
 // set NxN chunk
 
-void JOJ::set_tile(
-  JOJ::Tiles& tiles,
-  uint64_t    offset
+void JOJ::set_tile(uint64_t offset) {
 
-) {
-
-  JOJ::Pixel* src=tiles.data.get()+offset;
+  JOJ::Pixel* src=m_tiles.data.get()+offset;
   JOJ::Pixel* dst=m_pixels.get();
 
 // ---   *   ---   *   ---
 
-  for(uint64_t y=0;y<tiles.sz;y++) {
+  for(uint64_t y=0;y<m_tiles.sz;y++) {
 
     uint64_t idex=sq_idex(
-      tiles.x,
-      y+tiles.y,
+      m_tiles.x,
+      y+m_tiles.y,
 
       m_hed.img_sz
 
@@ -257,12 +252,12 @@ void JOJ::set_tile(
       dst+idex,
       src,
 
-      tiles.sz
+      m_tiles.sz
     * sizeof(JOJ::Pixel)
 
     );
 
-    src+=tiles.sz;
+    src+=m_tiles.sz;
 
   };
 
@@ -271,25 +266,25 @@ void JOJ::set_tile(
 // ---   *   ---   *   ---
 // ^copies tiles array to pixel buffer
 
-void JOJ::from_tiles(JOJ::Tiles& tiles) {
+void JOJ::from_tiles(void) {
 
-  tiles.x=0;
-  tiles.y=0;
+  m_tiles.x=0;
+  m_tiles.y=0;
 
   uint64_t offset=0;
 
-  for(uint64_t y=0;y<tiles.cnt;y++) {
-    for(uint64_t x=0;x<tiles.cnt;x++) {
+  for(uint64_t y=0;y<m_tiles.cnt;y++) {
+    for(uint64_t x=0;x<m_tiles.cnt;x++) {
 
-      this->set_tile(tiles,offset);
-      offset+=tiles.sz_sq;
+      this->set_tile(offset);
+      offset+=m_tiles.sz_sq;
 
-      tiles.x+=tiles.sz;
+      m_tiles.x+=m_tiles.sz;
 
     };
 
-    tiles.x=0;
-    tiles.y+=tiles.sz;
+    m_tiles.x=0;
+    m_tiles.y+=m_tiles.sz;
 
   };
 
@@ -315,18 +310,9 @@ void JOJ::pack(void) {
 
     this->encoder(Frac::ENCODE);
 
-    JOJ::Tiles t=this->to_tiles(16);
+    this->to_tiles();
+    m_tiles.pack();
 
-    for(int y=0;y<t.cnt;y++) {
-    for(int x=0;x<t.cnt;x++) {
-      t.match(x,y);
-
-    }};
-
-    t.reloc_all();
-    t.restore();
-
-    this->from_tiles(t);
     this->swap_to(i,Bin::NEW);
 
   };
@@ -369,8 +355,13 @@ void JOJ::write(void) {
 void JOJ::unpack(void) {
 
   uint64_t sz=
-    m_hed.img_sz_sq
+
+    m_tiles.cnt_sq
+  * sizeof(JOJ::Tile_Desc)
+
+  + m_hed.img_sz_sq
   * sizeof(JOJ::Pixel)
+
   ;
 
   for(
@@ -528,6 +519,14 @@ void JOJ::chk_img_sz(
 
     );
 
+    m_tiles.nit(
+      JOJ::STD_TILE_SZ,
+
+      m_hed.img_sz,
+      m_hed.img_sz_sq
+
+    );
+
 // ---   *   ---   *   ---
 // throw bad size
 
@@ -664,6 +663,10 @@ float* JOJ::read_pixels(int idex) {
 
   // decode joj
   this->swap_to(idex,Bin::READ);
+
+  m_tiles.unpack();
+  this->from_tiles();
+
   this->encoder(Frac::DECODE);
 
   return m_raw.get();

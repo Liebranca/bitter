@@ -2,8 +2,6 @@
 
 // ---   *   ---   *   ---
 
-template class Mem<short>;
-
 int main(void) {
 
   Mem<short> m(66);

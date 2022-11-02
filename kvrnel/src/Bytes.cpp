@@ -16,6 +16,34 @@
   #include "kvrnel/Bytes.hpp"
 
 // ---   *   ---   *   ---
+
+char* stirr_p(int* src,int cnt) {
+
+  static char buff[64]={0};
+  int i=0;
+
+  while(i<cnt*sizeof(*src)) {
+
+    char* ptr=(char*) src;
+
+    for(int j=0;j<sizeof(*src);j++) {
+      char c=*ptr;
+      c=(c<0x20 || c>0x7E) ? 0x2E : c;
+
+      buff[i++]=c;
+      ptr++;
+
+    };
+
+    src++;
+
+  };
+
+  return buff;
+
+};
+
+// ---   *   ---   *   ---
 // m_bytes to m_floats
 
 template <typename T>

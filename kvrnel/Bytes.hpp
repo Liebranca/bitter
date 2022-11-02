@@ -13,6 +13,10 @@
 
 // ---   *   ---   *   ---
 
+char* stirr_p(int* src,int cnt=4);
+
+// ---   *   ---   *   ---
+
 // get first non-zero bit in mask
 inline uint64_t bsf(uint64_t x) {
   return __builtin_ctzll(x);

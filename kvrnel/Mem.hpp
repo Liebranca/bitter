@@ -31,35 +31,6 @@
   #include "kvrnel/Bytes.hpp"
 
 // ---   *   ---   *   ---
-// random helper
-
-char* stirr_p(int* src,int cnt=4) {
-
-  static char buff[64]={0};
-  int i=0;
-
-  while(i<cnt*sizeof(*src)) {
-
-    char* ptr=(char*) src;
-
-    for(int j=0;j<sizeof(*src);j++) {
-      char c=*ptr;
-      c=(c<0x20 || c>0x7E) ? 0x2E : c;
-
-      buff[i++]=c;
-      ptr++;
-
-    };
-
-    src++;
-
-  };
-
-  return buff;
-
-};
-
-// ---   *   ---   *   ---
 // info
 
 template<typename T>
@@ -99,7 +70,7 @@ private:
   static uint64_t m_inst_next;
   static uint64_t m_inst_cnt;
 
-  uint64_t get_new_slot(void) {
+  void new_slot(void) {
 
     uint64_t top=m_slstk.size();
 
@@ -114,8 +85,6 @@ private:
 
     m_inst_cnt++;
 
-    return m_slot;
-
   };
 
 // ---   *   ---   *   ---
@@ -123,7 +92,7 @@ private:
 public:
 
   // compiler trash
-  Mem<T>() {};
+  Mem<T>(void) {};
 
   // alloc
   Mem<T>(
@@ -135,13 +104,15 @@ public:
 
   ) {
 
+    this->new_slot();
+
     // default: generate ID for block
     if(id==NULL) {
 
       m_id=ID(
 
         std::string(this->m_sigil()),
-        this->get_new_slot()
+        m_slot
 
       );
 
@@ -155,14 +126,28 @@ public:
 // get mem and zero initialize it
 
     m_buff_sz      = near_pow2(buff_sz);
-    m_buff         = std::unique_ptr<T>(
-      new T[m_buff_sz]
-
-    );
-
     m_idex_mask    = m_buff_sz-1;
 
+    T* raw         = (T*) malloc(this->bytesz());
+
+    m_buff.reset(raw);
     this->cl();
+
+  };
+
+// ---   *   ---   *   ---
+// copy
+
+  Mem<T>(Mem<T>& other) {
+
+    m_id         = other.m_id;
+
+    m_slot       = other.m_slot;
+
+    m_buff_sz    = other.m_buff_sz;
+    m_idex_mask  = other.m_idex_mask;
+
+    m_buff.reset(other.m_buff.release());
 
   };
 
@@ -171,19 +156,13 @@ public:
 
   ~Mem<T>(void) {
 
-    std::cerr
+    if(m_buff.get()!=NULL) {
+      m_slstk.push_back(m_slot);
+      m_inst_cnt--;
 
-    << "Dealloc: "
+      free(m_buff.release());
 
-    << m_id.as_str()
-    << std::endl
-
-    ;
-
-    m_slstk.push_back(m_slot);
-    m_buff.reset();
-
-    m_inst_cnt--;
+    };
 
   };
 
@@ -191,7 +170,7 @@ public:
 // flood a block with zeroes
 
   inline void cl(void) {
-    memset(m_buff.get(),0,m_buff_sz);
+    memset(m_buff.get(),0,this->bytesz());
 
   };
 
@@ -208,7 +187,6 @@ public:
   ) {
 
     ptr&=m_idex_mask;
-    len&=m_idex_mask;
 
     uint64_t avail = m_buff_sz-ptr;
     bool     cap   = len>avail;
@@ -226,7 +204,15 @@ public:
   };
 
 // ---   *   ---   *   ---
+
+  inline uint64_t bytesz(void) {
+    return m_buff_sz*sizeof(T);
+
+  };
+
+// ---   *   ---   *   ---
 // subscript
+
   inline T& operator[](long idex) {
 
     uint64_t mask=-1*(idex<0);
@@ -262,13 +248,14 @@ public:
 // select file handle and spit
 
     FILE* f=(errout) ? stderr : stdout;
+    uint64_t real_size=this->bytesz();
 
     fprintf(f,fmat,
 
       "ID",m_id.as_str().c_str(),
 
-      "FULL_SIZE",sizeof(*this)+m_buff_sz,
-      "BUFF_SIZE",m_buff_sz,
+      "FULL_SIZE",sizeof(*this)+real_size,
+      "BUFF_SIZE",real_size,
 
       "BASE_ADDR",this,
       "BUFF_ADDR",m_buff.get()
@@ -281,7 +268,14 @@ public:
     char line[64];
     char* base=(char*) m_buff.get();
 
-    for(uint64_t i=0;i<m_buff_sz;i+=16) {
+    for(
+
+      uint64_t i=0;
+
+      i<real_size;
+      i+=0x10
+
+    ) {
 
       int* a=(int*) (base+i+0x00);
       int* b=(int*) (base+i+0x04);
@@ -337,6 +331,19 @@ template<typename T>
 
 template<typename T>
   uint64_t Mem<T>::m_inst_cnt   = 0;
+
+// ---   *   ---   *   ---
+// instas
+
+//template class Mem<int8_t>;
+//template class Mem<int16_t>;
+//template class Mem<int32_t>;
+//template class Mem<int64_t>;
+//
+//template class Mem<uint8_t>;
+//template class Mem<uint16_t>;
+//template class Mem<uint32_t>;
+//template class Mem<uint64_t>;
 
 // ---   *   ---   *   ---
 

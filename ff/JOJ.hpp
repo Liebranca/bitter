@@ -9,6 +9,7 @@
   #include "kvrnel/Bytes.hpp"
 
   #include "kvrnel/Bin.hpp"
+  #include "kvrnel/Mem.hpp"
 
 // ---   *   ---   *   ---
 // info
@@ -36,20 +37,11 @@ public:
 
 private:
 
-  void get_tile(
-    JOJ::Tiles& tiles,
-    uint64_t    offset
+  void get_tile(uint64_t offset);
+  void set_tile(uint64_t offset);
 
-  );
-
-  void set_tile(
-    JOJ::Tiles& tiles,
-    uint64_t    offset
-
-  );
-
-  JOJ::Tiles to_tiles(uint64_t sz);
-  void from_tiles(JOJ::Tiles& tiles);
+  void to_tiles(void);
+  void from_tiles(void);
 
 // ---   *   ---   *   ---
 // header def for non-pixel data in file
@@ -57,15 +49,15 @@ private:
 
   typedef struct {
 
-    char sig[8];
+    char       sig[8];
 
-    uint64_t img_sz;
-    uint64_t img_sz_sq;
+    uint64_t   img_sz;
+    uint64_t   img_sz_sq;
 
-    uint64_t img_cnt;
+    uint64_t   img_cnt;
 
-    uint8_t  img_comp_cnt;
-    char     img_comp[3];
+    uint8_t    img_comp_cnt;
+    char       img_comp[3];
 
   } Header;
 
@@ -99,6 +91,7 @@ private:
 
   JOJ::Encoding    m_enc;
   JOJ::SubEncoding m_c_enc;
+  JOJ::Tiles       m_tiles;
 
   std::unique_ptr<float>      m_raw;
   std::unique_ptr<JOJ::Pixel> m_pixels;

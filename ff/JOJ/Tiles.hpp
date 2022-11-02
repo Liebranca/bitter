@@ -11,6 +11,8 @@
 
 private:
 
+  cx8 STD_TILE_SZ=0x10;
+
 typedef struct {
   uint64_t src_x;
   uint64_t src_y;
@@ -72,17 +74,17 @@ typedef struct {
 
   ) {
 
-    this->x      = 0;
-    this->y      = 0;
+    this->x       = 0;
+    this->y       = 0;
 
-    this->sz     = sz;
-    this->sz_sq  = sz*sz;
-    this->sz_i   = sz-1;
+    this->sz      = sz;
+    this->sz_sq   = sz*sz;
+    this->sz_i    = sz-1;
 
-    this->cnt    = img_sz/sz;
-    this->cnt_sq = img_sz_sq/sz;
+    this->cnt     = img_sz/sz;
+    this->cnt_sq  = this->cnt*this->cnt;
 
-    this->data   = std::unique_ptr<JOJ::Pixel>(
+    this->data    = std::unique_ptr<JOJ::Pixel>(
       new JOJ::Pixel[img_sz_sq]
 
     );
@@ -95,7 +97,13 @@ typedef struct {
 // ---   *   ---   *   ---
 
   // write tiles info to a buffer
-  void to_buff(void);
+  Mem<JOJ::Tile_Desc> to_buff(void);
+
+  // ^inverse
+  void from_buff(
+    Mem<JOJ::Tile_Desc>& src
+
+  );
 
   // discard contents of tile
   void clear(
@@ -205,8 +213,11 @@ typedef struct {
   // ^runs reloc on whole image
   void reloc_all(void);
 
+  // builds table from image
+  void pack(void);
+
   // build original image from table
-  void restore(void);
+  void unpack(void);
 
   // get tile number
   inline uint64_t tile_idex(

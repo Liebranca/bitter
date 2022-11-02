@@ -15,10 +15,49 @@
   #include "ff/JOJ.hpp"
 
 // ---   *   ---   *   ---
+// instas
+
+template class Mem<JOJ::Tile_Desc>;
+
+// ---   *   ---   *   ---
 // write tiles info to a buffer
 
-void JOJ::Tiles::to_buff(void) {
-  ;
+Mem<JOJ::Tile_Desc> JOJ::Tiles::to_buff(void) {
+
+  Mem<JOJ::Tile_Desc> out(this->cnt_sq);
+
+  out.write(
+    this->tab.data(),
+    this->tab.size()
+
+  );
+
+  return Mem<JOJ::Tile_Desc>(out);
+
+};
+
+// ---   *   ---   *   ---
+// ^get tiles from mem
+
+void JOJ::Tiles::from_buff(
+  Mem<JOJ::Tile_Desc>& src
+
+) {
+
+  uint64_t i=0;
+  for(JOJ::Tile_Desc& td : this->tab) {
+
+    td.rotated  = src[i].rotated;
+    td.mirrored = src[i].mirrored;
+
+    td.x        = src[i].x;
+    td.y        = src[i].y;
+    td.dx       = src[i].dx;
+    td.dy       = src[i].dy;
+
+    i++;
+
+  };
 
 };
 
@@ -412,15 +451,31 @@ void JOJ::Tiles::reloc_all(void) {
 };
 
 // ---   *   ---   *   ---
+// build table
+
+void JOJ::Tiles::pack(void) {
+
+  for(int y=0;y<this->cnt;y++) {
+  for(int x=0;x<this->cnt;x++) {
+    this->match(x,y);
+
+  }};
+
+  this->reloc_all();
+
+};
+
+// ---   *   ---   *   ---
 // rebuilds original image from descriptor table
 
-void JOJ::Tiles::restore(void) {
+void JOJ::Tiles::unpack(void) {
 
-  uint64_t img_sz=this->sz*this->cnt_sq;
+  uint64_t img_sz_sq=this->sz*this->cnt;
+  img_sz_sq*=img_sz_sq;
 
   // make copy of image
   std::unique_ptr<JOJ::Pixel> src(
-    new JOJ::Pixel[img_sz]
+    new JOJ::Pixel[img_sz_sq]
 
   );
 
@@ -430,7 +485,7 @@ void JOJ::Tiles::restore(void) {
   // transfer
   memcpy(
     src_p,this->data.get(),
-    img_sz*sizeof(JOJ::Pixel)
+    img_sz_sq*sizeof(JOJ::Pixel)
 
   );
 
@@ -439,6 +494,9 @@ void JOJ::Tiles::restore(void) {
 
     JOJ::Pixel* dst=this->get(td.dx,td.dy);
     uint64_t offset=this->real_idex(td.x,td.y);
+
+    printf("[%u,%u] -> [%u,%u]\n",
+      td.dx,td.dy,td.x,td.y);
 
     this->mov(dst,src_p+offset);
 
