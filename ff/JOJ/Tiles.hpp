@@ -14,10 +14,10 @@ private:
   cx8 STD_TILE_SZ=0x10;
 
 typedef struct {
-  uint64_t src_x;
-  uint64_t src_y;
-  uint64_t dst_x;
-  uint64_t dst_y;
+  uint16_t src_x;
+  uint16_t src_y;
+  uint16_t dst_x;
+  uint16_t dst_y;
 
 } Tile_Fetch;
 
@@ -26,21 +26,36 @@ typedef struct {
 
 typedef struct {
 
-  uint8_t  rotated  : 2;
-  uint8_t  mirrored : 2;
-
   // fetch-from
-  uint64_t x;
-  uint64_t y;
+  uint16_t x;
+  uint16_t y;
 
   // fetch-to
-  uint64_t dx;
-  uint64_t dy;
+  uint16_t dx;
+  uint16_t dy;
+
+  uint8_t  rotated  : 2;
+  uint8_t  mirrored : 2;
 
   // indices of tiles sampling this one
   std::vector<uint64_t> used_by;
 
 } Tile_Desc;
+
+typedef struct {
+
+  // fetch-from
+  uint16_t x;
+  uint16_t y;
+
+  // fetch-to
+  uint16_t dx;
+  uint16_t dy;
+
+  uint8_t  rotated  : 2;
+  uint8_t  mirrored : 2;
+
+} Tile_Desc_Packed;
 
 // ---   *   ---   *   ---
 
@@ -48,14 +63,15 @@ public:
 
 typedef struct {
 
-  uint64_t x;
-  uint64_t y;
+  uint16_t x;
+  uint16_t y;
 
-  uint64_t sz;
+  uint16_t sz;
+  uint16_t sz_i;
+
+  uint16_t cnt;
+
   uint64_t sz_sq;
-  uint64_t sz_i;
-
-  uint64_t cnt;
   uint64_t cnt_sq;
 
   std::unique_ptr<JOJ::Pixel> data;
@@ -68,7 +84,8 @@ typedef struct {
 
   void nit(
 
-    uint64_t sz,
+    uint16_t sz,
+
     uint64_t img_sz,
     uint64_t img_sz_sq
 
@@ -97,18 +114,18 @@ typedef struct {
 // ---   *   ---   *   ---
 
   // write tiles info to a buffer
-  Mem<JOJ::Tile_Desc> to_buff(void);
+  Mem<JOJ::Tile_Desc_Packed> to_buff(void);
 
   // ^inverse
   void from_buff(
-    Mem<JOJ::Tile_Desc>& src
+    Mem<JOJ::Tile_Desc_Packed>& src
 
   );
 
   // discard contents of tile
   void clear(
-    uint64_t x,
-    uint64_t y
+    uint16_t x,
+    uint16_t y
 
   );
 
@@ -121,8 +138,8 @@ typedef struct {
 
   // attempt matching with previous tiles
   void match(
-    uint64_t x,
-    uint64_t y
+    uint16_t x,
+    uint16_t y
 
   );
 
@@ -221,15 +238,15 @@ typedef struct {
 
   // get tile number
   inline uint64_t tile_idex(
-    uint64_t x,
-    uint64_t y
+    uint16_t x,
+    uint16_t y
 
   ) {return sq_idex(x,y,this->cnt);};
 
   // get index of tile in buffer
   inline uint64_t real_idex(
-    uint64_t x,
-    uint64_t y
+    uint16_t x,
+    uint16_t y
 
   ) {
 
@@ -246,8 +263,8 @@ typedef struct {
 
   // return ptr to tile at [x,y]
   inline JOJ::Pixel* get(
-    uint64_t x,
-    uint64_t y
+    uint16_t x,
+    uint16_t y
 
   ) {
 
@@ -273,10 +290,10 @@ private:
 
   // generic
   void xform(
-    uint64_t off_x,
-    uint64_t off_y,
+    uint16_t off_x,
+    uint16_t off_y,
 
-    uint64_t fn_idex
+    uint32_t fn_idex
 
   );
 
@@ -313,22 +330,22 @@ private:
 
 public:
 
-  inline void ror(uint64_t x,uint64_t y) {
+  inline void ror(uint16_t x,uint16_t y) {
     this->xform(x,y,XFORM_ROR);
 
   };
 
-  inline void rol(uint64_t x,uint64_t y) {
+  inline void rol(uint16_t x,uint16_t y) {
     this->xform(x,y,XFORM_ROL);
 
   };
 
-  inline void xmir(uint64_t x,uint64_t y) {
+  inline void xmir(uint16_t x,uint16_t y) {
     this->xform(x,y,XFORM_XMIR);
 
   };
 
-  inline void ymir(uint64_t x,uint64_t y) {
+  inline void ymir(uint16_t x,uint16_t y) {
     this->xform(x,y,XFORM_YMIR);
 
   };

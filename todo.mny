@@ -10,7 +10,7 @@ x ^ Buff counter
 x Saving decode data to header
 x Cutting into square tiles
 x Tile palettes
-~ Use packed struct for Tiles.tab write
+x Use packed struct for Tiles.tab write
 
 *>CRK
 ~ Vertex classes

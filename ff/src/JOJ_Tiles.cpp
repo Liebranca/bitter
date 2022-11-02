@@ -22,17 +22,27 @@ template class Mem<JOJ::Tile_Desc>;
 // ---   *   ---   *   ---
 // write tiles info to a buffer
 
-Mem<JOJ::Tile_Desc> JOJ::Tiles::to_buff(void) {
+Mem<JOJ::Tile_Desc_Packed>
+JOJ::Tiles::to_buff(void) {
 
-  Mem<JOJ::Tile_Desc> out(this->cnt_sq);
+  Mem<JOJ::Tile_Desc_Packed> out(this->cnt_sq);
 
-  out.write(
-    this->tab.data(),
-    this->tab.size()
+  uint64_t i=0;
+  for(JOJ::Tile_Desc& td : this->tab) {
 
-  );
+    out[i].rotated  = td.rotated;
+    out[i].mirrored = td.mirrored;
 
-  return Mem<JOJ::Tile_Desc>(out);
+    out[i].x        = td.x;
+    out[i].y        = td.y;
+    out[i].dx       = td.dx;
+    out[i].dy       = td.dy;
+
+    i++;
+
+  };
+
+  return Mem<JOJ::Tile_Desc_Packed>(out);
 
 };
 
@@ -40,7 +50,7 @@ Mem<JOJ::Tile_Desc> JOJ::Tiles::to_buff(void) {
 // ^get tiles from mem
 
 void JOJ::Tiles::from_buff(
-  Mem<JOJ::Tile_Desc>& src
+  Mem<JOJ::Tile_Desc_Packed>& src
 
 ) {
 
@@ -65,13 +75,13 @@ void JOJ::Tiles::from_buff(
 // discard contents of tile
 
 void JOJ::Tiles::clear(
-  uint64_t x,
-  uint64_t y
+  uint16_t x,
+  uint16_t y
 
 ) {
 
   JOJ::Pixel* tile = this->get(x,y);
-  for(uint64_t i=0;i<this->sz_sq;i++) {
+  for(uint16_t i=0;i<this->sz_sq;i++) {
     tile->clear();
     tile++;
 
@@ -92,7 +102,7 @@ bool JOJ::Tiles::cmp(
 
   bool out=true;
 
-  for(uint64_t i=0;i<this->sz_sq;i++) {
+  for(uint16_t i=0;i<this->sz_sq;i++) {
 
     if(*a++!=*b++) {
       out=false;
@@ -296,8 +306,8 @@ void JOJ::Tiles::apply_rotation(
 // match tile against the rest of the image
 
 void JOJ::Tiles::match(
-  uint64_t x,
-  uint64_t y
+  uint16_t x,
+  uint16_t y
 
 ) {
 
@@ -319,8 +329,8 @@ void JOJ::Tiles::match(
   JOJ::Pixel* a=this->get(x,y);
 
   // walk tiles
-  for(uint64_t iy=0;iy<this->cnt;iy++) {
-  for(uint64_t ix=0;ix<this->cnt;ix++) {
+  for(uint16_t iy=0;iy<this->cnt;iy++) {
+  for(uint16_t ix=0;ix<this->cnt;ix++) {
 
     // stop at self
     if(ix==x && iy==y) {
@@ -396,8 +406,8 @@ void JOJ::Tiles::reloc(
 
 // ---   *   ---   *   ---
 
-  for(uint64_t y=0;y<this->cnt;y++) {
-  for(uint64_t x=0;x<this->cnt;x++) {
+  for(uint16_t y=0;y<this->cnt;y++) {
+  for(uint16_t x=0;x<this->cnt;x++) {
 
     uint64_t dst_idex=this->tile_idex(x,y);
 
@@ -455,8 +465,8 @@ void JOJ::Tiles::reloc_all(void) {
 
 void JOJ::Tiles::pack(void) {
 
-  for(int y=0;y<this->cnt;y++) {
-  for(int x=0;x<this->cnt;x++) {
+  for(uint16_t y=0;y<this->cnt;y++) {
+  for(uint16_t x=0;x<this->cnt;x++) {
     this->match(x,y);
 
   }};
@@ -494,9 +504,6 @@ void JOJ::Tiles::unpack(void) {
 
     JOJ::Pixel* dst=this->get(td.dx,td.dy);
     uint64_t offset=this->real_idex(td.x,td.y);
-
-    printf("[%u,%u] -> [%u,%u]\n",
-      td.dx,td.dy,td.x,td.y);
 
     this->mov(dst,src_p+offset);
 
@@ -557,10 +564,10 @@ void JOJ::Tiles::mov(
 // generic iterative transform
 
 void JOJ::Tiles::xform(
-  uint64_t off_x,
-  uint64_t off_y,
+  uint16_t off_x,
+  uint16_t off_y,
 
-  uint64_t fn_idex
+  uint32_t fn_idex
 
 ) {
 

@@ -147,7 +147,11 @@ void JOJ::swap_to(int idex,char mode) {
 
   if(mode==Bin::READ) {
 
-    Mem<JOJ::Tile_Desc> m(m_tiles.cnt_sq);
+    Mem<JOJ::Tile_Desc_Packed> m(
+      m_tiles.cnt_sq
+
+    );
+
     out.read(&m[0],m.bytesz());
     m_tiles.from_buff(m);
 
@@ -155,7 +159,9 @@ void JOJ::swap_to(int idex,char mode) {
 
   } else {
 
-    Mem<JOJ::Tile_Desc> m=m_tiles.to_buff();
+    Mem<JOJ::Tile_Desc_Packed> m=
+      m_tiles.to_buff();
+
     out.write(&m[0],m.bytesz());
     out.write(src,sz);
 
@@ -173,7 +179,7 @@ void JOJ::get_tile(uint64_t offset) {
 
 // ---   *   ---   *   ---
 
-  for(uint64_t y=0;y<m_tiles.sz;y++) {
+  for(uint16_t y=0;y<m_tiles.sz;y++) {
 
     uint64_t idex=sq_idex(
       m_tiles.x,
@@ -208,8 +214,8 @@ void JOJ::to_tiles(void) {
 
   uint64_t offset=0;
 
-  for(uint64_t y=0;y<m_tiles.cnt;y++) {
-    for(uint64_t x=0;x<m_tiles.cnt;x++) {
+  for(uint16_t y=0;y<m_tiles.cnt;y++) {
+    for(uint16_t x=0;x<m_tiles.cnt;x++) {
 
       this->get_tile(offset);
       offset+=m_tiles.sz_sq;
@@ -235,7 +241,7 @@ void JOJ::set_tile(uint64_t offset) {
 
 // ---   *   ---   *   ---
 
-  for(uint64_t y=0;y<m_tiles.sz;y++) {
+  for(uint16_t y=0;y<m_tiles.sz;y++) {
 
     uint64_t idex=sq_idex(
       m_tiles.x,
@@ -273,8 +279,8 @@ void JOJ::from_tiles(void) {
 
   uint64_t offset=0;
 
-  for(uint64_t y=0;y<m_tiles.cnt;y++) {
-    for(uint64_t x=0;x<m_tiles.cnt;x++) {
+  for(uint16_t y=0;y<m_tiles.cnt;y++) {
+    for(uint16_t x=0;x<m_tiles.cnt;x++) {
 
       this->set_tile(offset);
       offset+=m_tiles.sz_sq;
