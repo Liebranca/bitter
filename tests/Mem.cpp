@@ -1,42 +1,15 @@
-#include "kvrnel/src/ID.cpp"
-#include "kvrnel/src/Evil.cpp"
-#include "kvrnel/src/Mem.cpp"
-
-#include <cstdio>
+#include "kvrnel/Mem.hpp"
 
 // ---   *   ---   *   ---
 
-class xMem: public Mem<short> {
-
-public:
-
-  static xMem& nit(size_t buff_sz,ID* id) {
-
-    return *((xMem*) Mem<short>::nit(
-      buff_sz,sizeof(xMem),id
-
-    ));
-
-  };
-
-  size_t flags;
-  size_t whats;
-
-};
-
-// ---   *   ---   *   ---
+template class Mem<short>;
 
 int main(void) {
 
-  ID id("$","bb");
-  xMem& m=xMem::nit(64,&id);
+  Mem<short> m(66);
 
-  m.write("00000000");
-
-  printf("%016X\n",&m.flags);
-
+  m.write((void*) "$$$$$$$$$$$$$$$$",8);
   m.prich();
-  m.del();
 
   return 0;
 

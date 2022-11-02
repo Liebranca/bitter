@@ -317,9 +317,6 @@ void JOJ::pack(void) {
 
     JOJ::Tiles t=this->to_tiles(16);
 
-    std::vector<JOJ::Tile_Desc> td_vec;
-    td_vec.resize(t.cnt_sq);
-
     for(int y=0;y<t.cnt;y++) {
     for(int x=0;x<t.cnt;x++) {
       t.match(x,y);

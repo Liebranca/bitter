@@ -94,6 +94,9 @@ typedef struct {
 
 // ---   *   ---   *   ---
 
+  // write tiles info to a buffer
+  void to_buff(void);
+
   // discard contents of tile
   void clear(
     uint64_t x,

@@ -15,6 +15,14 @@
   #include "ff/JOJ.hpp"
 
 // ---   *   ---   *   ---
+// write tiles info to a buffer
+
+void JOJ::Tiles::to_buff(void) {
+  ;
+
+};
+
+// ---   *   ---   *   ---
 // discard contents of tile
 
 void JOJ::Tiles::clear(
@@ -396,7 +404,7 @@ void JOJ::Tiles::reloc(
 
 void JOJ::Tiles::reloc_all(void) {
 
-  for(JOJ::Tile_Desc td : this->tab) {
+  for(JOJ::Tile_Desc& td : this->tab) {
     this->reloc(td);
 
   };

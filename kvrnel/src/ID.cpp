@@ -12,56 +12,39 @@
 // ---   *   ---   *   ---
 // deps
 
+  #include <algorithm>
   #include "kvrnel/ID.hpp"
 
 // ---   *   ---   *   ---
+// constructor
 
 ID::ID(
 
-  const char* sig,
-  const char* key
+  const std::string sig,
+  const std::string key
 
 ) {
 
-  int i=0;
+  m_sig=sig;
+  m_key=key;
 
-  do {
-
-    m_sig[i++]=*sig++;
-    if(i==SLIMIT || !*sig) {
-      break;
-
-    };
-
-  } while(*sig);
-
-  while(i<=SLIMIT) {
-    m_sig[i++]='_';
-
-  };
+};
 
 // ---   *   ---   *   ---
+// ^generic version
 
-  i=0;
+ID::ID(
+  const std::string sig,
+  uint64_t          n
 
-  do {
+) {
 
-    m_key[i++]=*key;
+  m_sig=sig;
 
-    if(i==KLIMIT) {
-      m_key[KLIMIT]='\0';
-      break;
+  char key[KEYW]={0};
+  sprintf(key,"%016X",n);
 
-    }
-
-  } while(*key++);
-
-// ---   *   ---   *   ---
-
-  if(i!=KLIMIT) {
-    m_key[i]='\0';
-
-  };
+  m_key=std::string(key);
 
 };
 

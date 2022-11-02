@@ -11,36 +11,27 @@
 
 class ID {
 
-  VERSION   "v2.00.1";
+  VERSION   "v2.00.2";
   AUTHOR    "IBN-3DILA";
 
 // ---   *   ---   *   ---
 
-  cx8 KEYW=28;
-  cx8 SIGW=4;
+  cx8 KEYW   = 28;
+  cx8 SIGW   = 4;
 
-  cx8 KLIMIT=KEYW-1;
-  cx8 SLIMIT=SIGW-1;
+  cx8 KLIMIT = KEYW-1;
+  cx8 SLIMIT = SIGW-1;
 
 //   ---     ---     ---     ---     ---
 // base struct to identify otherwise wild voids
 
 private:
 
-  union {
+  // block type
+  std::string m_sig;
 
-    // sigil describes the block
-    // key is used for hashing
-    struct {
-      char m_sig[SIGW];
-      char m_key[KEYW];
-
-    };
-
-    // sigil + key
-    char m_full[SIGW+KEYW];
-
-  };
+  // block name
+  std::string m_key;
 
 // ---   *   ---   *   ---
 
@@ -51,26 +42,32 @@ public:
 
   // constructor
   ID(
+    const std::string sig,
+    const std::string key
 
-    const char* sig,
-    const char* key
+  );
+
+  // ^for generic ones
+  ID(
+    const std::string sig,
+    uint64_t          n
 
   );
 
 // ---   *   ---   *   ---
 // getters
 
-  inline const char* as_str(void) {
-    return m_full;
+  inline std::string as_str(void) {
+    return m_sig+m_key;
 
   };
 
-  inline const int sigil(void) {
-    return *((int*) m_sig);
+  inline int sigil(void) {
+    return *((int*) m_sig.c_str());
 
   };
 
-  inline const char* key(void) {
+  inline std::string key(void) {
     return m_key;
 
   };

@@ -1,5 +1,11 @@
 >blkmgk v2.00.1
 
+*>kvrnel
+x Generic IDs
+x Fix Mem interface
+x ^ Generic IDs by default
+x ^ Buff counter
+
 *>JOJ
 x Saving decode data to header
 x Cutting into square tiles
