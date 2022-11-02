@@ -322,23 +322,12 @@ void JOJ::pack(void) {
 
     for(int y=0;y<t.cnt;y++) {
     for(int x=0;x<t.cnt;x++) {
-
-      uint64_t idex=t.tile_idex(x,y);
-      JOJ::Tile_Desc td=t.match(x,y);
-
-      td_vec[idex]=td;
+      t.match(x,y);
 
     }};
 
-    for(int y=0;y<t.cnt;y++) {
-    for(int x=0;x<t.cnt;x++) {
-
-      uint64_t idex=t.tile_idex(x,y);
-      JOJ::Tile_Desc td=td_vec[idex];
-
-      t.reloc(td);
-
-    }};
+    t.reloc_all();
+    t.restore();
 
     this->from_tiles(t);
     this->swap_to(i,Bin::NEW);

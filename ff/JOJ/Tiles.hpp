@@ -27,8 +27,16 @@ typedef struct {
   uint8_t  rotated  : 2;
   uint8_t  mirrored : 2;
 
+  // fetch-from
   uint64_t x;
   uint64_t y;
+
+  // fetch-to
+  uint64_t dx;
+  uint64_t dy;
+
+  // indices of tiles sampling this one
+  std::vector<uint64_t> used_by;
 
 } Tile_Desc;
 
@@ -49,7 +57,9 @@ typedef struct {
   uint64_t cnt_sq;
 
   std::unique_ptr<JOJ::Pixel> data;
+
   std::vector<uint64_t>       cleared;
+  std::vector<JOJ::Tile_Desc> tab;
 
 // ---   *   ---   *   ---
 // default constructor doesn't want to work
@@ -78,6 +88,7 @@ typedef struct {
     );
 
     this->cleared.resize(this->cnt_sq);
+    this->tab.resize(this->cnt_sq);
 
   };
 
@@ -98,7 +109,7 @@ typedef struct {
   );
 
   // attempt matching with previous tiles
-  JOJ::Tile_Desc match(
+  void match(
     uint64_t x,
     uint64_t y
 
@@ -155,7 +166,22 @@ typedef struct {
     this->undo_rotation(td);
     this->undo_mirror(td);
 
+    td.rotated  = ROT_0;
+    td.mirrored = MIRROR_NONE;
+
   };
+
+  // rotates from descriptor
+  void apply_rotation(
+    JOJ::Tile_Desc& td
+
+  );
+
+  // mirrors from descriptor
+  void apply_mirror(
+    JOJ::Tile_Desc& td
+
+  );
 
   // send duplicate of tile to buffer
   std::unique_ptr<JOJ::Pixel> copy(
@@ -171,10 +197,13 @@ typedef struct {
   );
 
   // move tile to first empty one
-  void reloc(
-    JOJ::Tile_Desc& td
+  void reloc(JOJ::Tile_Desc& td);
 
-  );
+  // ^runs reloc on whole image
+  void reloc_all(void);
+
+  // build original image from table
+  void restore(void);
 
   // get tile number
   inline uint64_t tile_idex(

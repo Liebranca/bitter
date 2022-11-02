@@ -165,6 +165,34 @@ void JOJ::Tiles::undo_mirror(
 };
 
 // ---   *   ---   *   ---
+// ^reverse
+
+void JOJ::Tiles::apply_mirror(
+  JOJ::Tile_Desc& td
+
+) {
+
+  switch(td.mirrored) {
+
+  case MIRROR_X:
+    this->xmir(td.dx,td.dy);
+    break;
+
+  case MIRROR_Y:
+    this->ymir(td.dx,td.dy);
+    break;
+
+  case MIRROR_XY:
+    this->xmir(td.dx,td.dy);
+    this->ymir(td.dx,td.dy);
+
+    break;
+
+  };
+
+};
+
+// ---   *   ---   *   ---
 
 void JOJ::Tiles::undo_rotation(
   JOJ::Tile_Desc& td
@@ -191,38 +219,74 @@ void JOJ::Tiles::undo_rotation(
 };
 
 // ---   *   ---   *   ---
+// ^reverse
+
+void JOJ::Tiles::apply_rotation(
+  JOJ::Tile_Desc& td
+
+) {
+
+  switch(td.rotated) {
+
+  case ROT_90:
+    this->ror(td.dx,td.dy);
+    break;
+
+  case ROT_180:
+    this->ror(td.dx,td.dy);
+    this->ror(td.dx,td.dy);
+    break;
+
+  case ROT_240:
+    this->rol(td.dx,td.dy);
+    break;
+
+  };
+
+};
+
+// ---   *   ---   *   ---
 // match tile against the rest of the image
 
-JOJ::Tile_Desc JOJ::Tiles::match(
+void JOJ::Tiles::match(
   uint64_t x,
   uint64_t y
 
 ) {
 
-  JOJ::Tile_Desc out={
-    .rotated  = 0,
-    .mirrored = 0,
+  uint64_t        td_idex = this->tile_idex(x,y);
+  JOJ::Tile_Desc& td      = this->tab[td_idex];
 
-    .x        = x,
-    .y        = y
+  td.rotated  = 0;
+  td.mirrored = 0;
 
-  };
+  td.x        = x;
+  td.y        = y;
+
+  td.dx       = x;
+  td.dy       = y;
+
+// ---   *   ---   *   ---
 
   // get current
   JOJ::Pixel* a=this->get(x,y);
 
   // walk tiles
-  for(uint64_t iy=0;iy<x;iy++) {
-  for(uint64_t ix=0;ix<y;ix++) {
+  for(uint64_t iy=0;iy<this->cnt;iy++) {
+  for(uint64_t ix=0;ix<this->cnt;ix++) {
+
+    // stop at self
+    if(ix==x && iy==y) {
+      return;
+
+    // skip blank tiles
+    } else if(
+      this->cleared[this->tile_idex(ix,iy)]
+
+    ) {continue;};
 
     // get previous
     JOJ::Pixel* b=this->get(ix,iy);
-
-    // skip blank tiles
-    if(this->cleared[this->tile_idex(ix,iy)]) {
-      continue;
-
-    };
 
 // ---   *   ---   *   ---
 // compare against previous
@@ -235,32 +299,36 @@ CMP:
     if(!same) {
 
       // transforms pending, retry
-      if(this->match_rotate(out)) {
+      if(this->match_rotate(td)) {
         goto CMP;
 
       // transforms exhausted, undo
       } else {
-        this->match_undo(out);
+        this->match_undo(td);
 
       };
 
+// ---   *   ---   *   ---
+
     // match, end here
     } else if(same) {
-      out.x=ix;
-      out.y=iy;
+
+      uint64_t ref_idex=this->tile_idex(ix,iy);
+      this->tab[ref_idex].used_by.push_back(
+        td_idex
+
+      );
+
+      td.x=ix;
+      td.y=iy;
 
       this->clear(x,y);
 
-      return out;
+      return;
 
     };
 
-// ---   *   ---   *   ---
-// give back descriptor
-
   }};
-
-  return out;
 
 };
 
@@ -272,7 +340,7 @@ void JOJ::Tiles::reloc(
 
 ) {
 
-  uint64_t src_idex=this->tile_idex(td.x,td.y);
+  uint64_t src_idex=this->tile_idex(td.dx,td.dy);
 
   if(this->cleared[src_idex]) {
     return;
@@ -293,11 +361,23 @@ void JOJ::Tiles::reloc(
 
       this->mov(
         this->get(x,y),
-        this->get(td.x,td.y)
+        this->get(td.dx,td.dy)
 
       );
 
-      this->clear(td.x,td.y);
+      for(
+
+        uint64_t ref_idex
+      : this->tab[src_idex].used_by
+
+      ) {
+
+        this->tab[ref_idex].x=x;
+        this->tab[ref_idex].y=y;
+
+      };
+
+      this->clear(td.dx,td.dy);
       this->cleared[dst_idex]=0;
 
       td.x=x;
@@ -308,6 +388,56 @@ void JOJ::Tiles::reloc(
     };
 
   }};
+
+};
+
+// ---   *   ---   *   ---
+// ^whole image
+
+void JOJ::Tiles::reloc_all(void) {
+
+  for(JOJ::Tile_Desc td : this->tab) {
+    this->reloc(td);
+
+  };
+
+};
+
+// ---   *   ---   *   ---
+// rebuilds original image from descriptor table
+
+void JOJ::Tiles::restore(void) {
+
+  uint64_t img_sz=this->sz*this->cnt_sq;
+
+  // make copy of image
+  std::unique_ptr<JOJ::Pixel> src(
+    new JOJ::Pixel[img_sz]
+
+  );
+
+  // go raw
+  JOJ::Pixel* src_p=src.get();
+
+  // transfer
+  memcpy(
+    src_p,this->data.get(),
+    img_sz*sizeof(JOJ::Pixel)
+
+  );
+
+  // walk the descriptor table
+  for(JOJ::Tile_Desc td : this->tab) {
+
+    JOJ::Pixel* dst=this->get(td.dx,td.dy);
+    uint64_t offset=this->real_idex(td.x,td.y);
+
+    this->mov(dst,src_p+offset);
+
+    this->apply_rotation(td);
+    this->apply_mirror(td);
+
+  };
 
 };
 
