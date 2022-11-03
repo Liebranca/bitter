@@ -44,13 +44,8 @@ typedef struct {
 
 typedef struct {
 
-  // fetch-from
   uint16_t x;
   uint16_t y;
-
-  // fetch-to
-  uint16_t dx;
-  uint16_t dy;
 
   uint8_t  rotated  : 2;
   uint8_t  mirrored : 2;
@@ -112,6 +107,9 @@ typedef struct {
   };
 
 // ---   *   ---   *   ---
+
+  // clears tile metadata
+  void metawipe(void);
 
   // write tiles info to a buffer
   Mem<JOJ::Tile_Desc_Packed> to_buff(void);

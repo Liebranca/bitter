@@ -35,8 +35,6 @@ JOJ::Tiles::to_buff(void) {
 
     out[i].x        = td.x;
     out[i].y        = td.y;
-    out[i].dx       = td.dx;
-    out[i].dy       = td.dy;
 
     i++;
 
@@ -62,12 +60,19 @@ void JOJ::Tiles::from_buff(
 
     td.x        = src[i].x;
     td.y        = src[i].y;
-    td.dx       = src[i].dx;
-    td.dy       = src[i].dy;
 
     i++;
 
   };
+
+};
+
+// ---   *   ---   *   ---
+// clears tile metadata
+
+void JOJ::Tiles::metawipe(void) {
+  this->cleared.clear();
+  this->cleared.resize(this->cnt_sq);
 
 };
 
@@ -323,6 +328,8 @@ void JOJ::Tiles::match(
   td.dx       = x;
   td.dy       = y;
 
+  td.used_by.clear();
+
 // ---   *   ---   *   ---
 
   // get current
@@ -500,9 +507,16 @@ void JOJ::Tiles::unpack(void) {
   );
 
   // walk the descriptor table
-  for(JOJ::Tile_Desc td : this->tab) {
+  for(uint16_t y=0;y<this->cnt;y++) {
+  for(uint16_t x=0;x<this->cnt;x++) {
 
-    JOJ::Pixel* dst=this->get(td.dx,td.dy);
+    uint64_t        td_idex = this->tile_idex(x,y);
+    JOJ::Tile_Desc& td      = this->tab[td_idex];
+
+    td.dx=x;
+    td.dy=y;
+
+    JOJ::Pixel* dst=this->get(x,y);
     uint64_t offset=this->real_idex(td.x,td.y);
 
     this->mov(dst,src_p+offset);
@@ -510,7 +524,7 @@ void JOJ::Tiles::unpack(void) {
     this->apply_rotation(td);
     this->apply_mirror(td);
 
-  };
+  }};
 
 };
 

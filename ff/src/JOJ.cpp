@@ -141,9 +141,12 @@ void JOJ::swap_to(int idex,char mode) {
   Bin out(path,mode);
 
   uint64_t sz=
-    sizeof(JOJ::Pixel)
-  * m_hed.img_sz_sq
+    m_hed.img_sz_sq
+  * sizeof(JOJ::Pixel)
   ;
+
+// ---   *   ---   *   ---
+// retrieve
 
   if(mode==Bin::READ) {
 
@@ -156,6 +159,9 @@ void JOJ::swap_to(int idex,char mode) {
     m_tiles.from_buff(m);
 
     out.read(src,sz);
+
+// ---   *   ---   *   ---
+// store
 
   } else {
 
@@ -211,6 +217,9 @@ void JOJ::get_tile(uint64_t offset) {
 // ^whole image
 
 void JOJ::to_tiles(void) {
+
+  m_tiles.x=0;
+  m_tiles.y=0;
 
   uint64_t offset=0;
 
@@ -320,6 +329,7 @@ void JOJ::pack(void) {
     m_tiles.pack();
 
     this->swap_to(i,Bin::NEW);
+    m_tiles.metawipe();
 
   };
 
@@ -363,7 +373,7 @@ void JOJ::unpack(void) {
   uint64_t sz=
 
     m_tiles.cnt_sq
-  * sizeof(JOJ::Tile_Desc)
+  * sizeof(JOJ::Tile_Desc_Packed)
 
   + m_hed.img_sz_sq
   * sizeof(JOJ::Pixel)

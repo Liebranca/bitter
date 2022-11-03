@@ -16,7 +16,9 @@ int main(void) {
 
     );
 
-    j.add_img_set("test");
+    j.add_img_set("1");
+    j.add_img_set("0");
+
     j.pack();
 
   };
@@ -24,7 +26,8 @@ int main(void) {
   JOJ j("./out");
 
   j.unpack();
-  j.to_png(0,"./out_im");
+  j.to_png(1,"./frame0");
+  j.to_png(0,"./frame1");
 
   return 0;
 
