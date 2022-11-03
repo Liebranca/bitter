@@ -12,10 +12,24 @@
 
 public:
 
-  typedef struct {
+  typedef struct FwdSubEncoding {
 
     const char* values;
     const int*  cnt;
+
+    bool operator==(FwdSubEncoding& other) {
+
+      return
+          this->values == other.values
+      &&  this->cnt    == other.cnt
+      ;
+
+    };
+
+    bool operator!=(FwdSubEncoding& other) {
+      return !(*this==other);
+
+    };
 
   } SubEncoding;
 

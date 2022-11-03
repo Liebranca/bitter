@@ -49,12 +49,14 @@ private:
 
   typedef struct {
 
-    char       sig[8];
+    char       sig[4];
 
-    uint64_t   img_sz;
+    uint16_t   img_sz;
+    uint16_t   img_cnt;
+
+    // TODO: atlas class! goes here!
+
     uint64_t   img_sz_sq;
-
-    uint64_t   img_cnt;
 
     uint8_t    img_comp_cnt;
     char       img_comp[3];
@@ -64,7 +66,7 @@ private:
 // ---   *   ---   *   ---
 
   vicstr m_fsig(void) {
-    return "%JOJ\0\0\0\0";
+    return "%JOJ";
 
   };
 
@@ -86,7 +88,7 @@ private:
   std::string      m_src_path;
   strvec           m_img_names;
 
-  uint64_t         m_next_img;
+  uint16_t         m_next_img;
   char             m_next_type;
 
   JOJ::Encoding    m_enc;
@@ -101,18 +103,13 @@ private:
 
   JOJ::SubEncoding read_mode(char type);
 
-  bool enc_compare(
-    JOJ::SubEncoding& x
-
-  );
-
   // buffer init/errme on bad open
   void chk_img_sz(
 
     std::string fpath,
 
-    uint64_t width,
-    uint64_t height
+    uint16_t width,
+    uint16_t height
 
   );
 
@@ -202,7 +199,7 @@ public:
 
 // ---   *   ---   *   ---
 
-  inline uint64_t get_img_sz(void) {
+  inline uint16_t get_img_sz(void) {
     return m_hed.img_sz;
 
   };

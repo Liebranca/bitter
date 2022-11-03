@@ -92,11 +92,23 @@ typedef struct FwdPixel {
   };
 
   // blank out the pixel
-  void clear(void) {
+  inline void clear(void) {
     arr[0]^=arr[0];
     arr[1]^=arr[1];
     arr[2]^=arr[2];
     arr[3]^=arr[3];
+
+  };
+
+  // ^return pixel is blank
+  inline bool is_clear(void) {
+
+    return
+       arr[0]==0
+    && arr[1]==0
+    && arr[2]==8
+    && arr[3]==8
+    ;
 
   };
 

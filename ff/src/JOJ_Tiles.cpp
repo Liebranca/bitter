@@ -32,6 +32,7 @@ JOJ::Tiles::to_buff(void) {
 
     out[i].rotated  = td.rotated;
     out[i].mirrored = td.mirrored;
+    out[i].cleared  = td.cleared;
 
     out[i].x        = td.x;
     out[i].y        = td.y;
@@ -57,6 +58,7 @@ void JOJ::Tiles::from_buff(
 
     td.rotated  = src[i].rotated;
     td.mirrored = src[i].mirrored;
+    td.cleared  = src[i].cleared;
 
     td.x        = src[i].x;
     td.y        = src[i].y;
@@ -64,15 +66,6 @@ void JOJ::Tiles::from_buff(
     i++;
 
   };
-
-};
-
-// ---   *   ---   *   ---
-// clears tile metadata
-
-void JOJ::Tiles::metawipe(void) {
-  this->cleared.clear();
-  this->cleared.resize(this->cnt_sq);
 
 };
 
@@ -92,7 +85,34 @@ void JOJ::Tiles::clear(
 
   };
 
-  this->cleared[this->tile_idex(x,y)]=1;
+  this->tab[this->tile_idex(x,y)].cleared=
+    CLEAR_FETCH;
+
+};
+
+// ---   *   ---   *   ---
+// true if tile is blank
+
+bool JOJ::Tiles::is_clear(
+  JOJ::Pixel* t
+
+) {
+
+  bool out=true;
+
+  for(uint16_t i=0;i<this->sz_sq;i++) {
+
+    if(!t->is_clear()) {
+      out=false;
+      break;
+
+    };
+
+    t++;
+
+  };
+
+  return out;
 
 };
 
@@ -319,8 +339,9 @@ void JOJ::Tiles::match(
   uint64_t        td_idex = this->tile_idex(x,y);
   JOJ::Tile_Desc& td      = this->tab[td_idex];
 
-  td.rotated  = 0;
-  td.mirrored = 0;
+  td.rotated  = ROT_0;
+  td.mirrored = MIRROR_NONE;
+  td.cleared  = SOLID;
 
   td.x        = x;
   td.y        = y;
@@ -335,6 +356,15 @@ void JOJ::Tiles::match(
   // get current
   JOJ::Pixel* a=this->get(x,y);
 
+  // skip pixel if blank
+  if(this->is_clear(a)) {
+    td.cleared=CLEAR_NAT;
+    return;
+
+  };
+
+  this->solid++;
+
   // walk tiles
   for(uint16_t iy=0;iy<this->cnt;iy++) {
   for(uint16_t ix=0;ix<this->cnt;ix++) {
@@ -345,7 +375,7 @@ void JOJ::Tiles::match(
 
     // skip blank tiles
     } else if(
-      this->cleared[this->tile_idex(ix,iy)]
+      this->tab[this->tile_idex(ix,iy)].cleared
 
     ) {continue;};
 
@@ -406,7 +436,7 @@ void JOJ::Tiles::reloc(
 
   uint64_t src_idex=this->tile_idex(td.dx,td.dy);
 
-  if(this->cleared[src_idex]) {
+  if(this->tab[src_idex].cleared) {
     return;
 
   };
@@ -417,11 +447,12 @@ void JOJ::Tiles::reloc(
   for(uint16_t x=0;x<this->cnt;x++) {
 
     uint64_t dst_idex=this->tile_idex(x,y);
+    uint8_t cleared=this->tab[dst_idex].cleared;
 
     if(dst_idex==src_idex) {
       return;
 
-    } else if(this->cleared[dst_idex]) {
+    } else if(cleared && cleared!=FAKE_SOLID) {
 
       this->mov(
         this->get(x,y),
@@ -442,7 +473,13 @@ void JOJ::Tiles::reloc(
       };
 
       this->clear(td.dx,td.dy);
-      this->cleared[dst_idex]=0;
+
+      cleared=(cleared==CLEAR_NAT)
+        ? FAKE_SOLID
+        : SOLID
+        ;
+
+      this->tab[dst_idex].cleared=cleared;
 
       td.x=x;
       td.y=y;
@@ -506,25 +543,50 @@ void JOJ::Tiles::unpack(void) {
 
   );
 
-  // walk the descriptor table
+// ---   *   ---   *   ---
+// walk the descriptor table
+
+  std::vector<uint64_t> needs_clear;
+
   for(uint16_t y=0;y<this->cnt;y++) {
   for(uint16_t x=0;x<this->cnt;x++) {
 
+    // fetch tile
     uint64_t        td_idex = this->tile_idex(x,y);
     JOJ::Tile_Desc& td      = this->tab[td_idex];
 
+    // original position
     td.dx=x;
     td.dy=y;
 
+    // find fetch-from
     JOJ::Pixel* dst=this->get(x,y);
     uint64_t offset=this->real_idex(td.x,td.y);
 
+    // fetch and transform
     this->mov(dst,src_p+offset);
 
     this->apply_rotation(td);
     this->apply_mirror(td);
 
+// ---   *   ---   *   ---
+// remember originally transparent tiles
+
+    if(
+
+       td.cleared==FAKE_SOLID
+    || td.cleared==CLEAR_NAT
+
+    ) {needs_clear.push_back(td_idex);};
+
   }};
+
+  // ^then blank them out ;>
+  for(uint64_t td_idex : needs_clear) {
+    JOJ::Tile_Desc& td=this->tab[td_idex];
+    this->clear(td.dx,td.dy);
+
+  };
 
 };
 

@@ -36,6 +36,7 @@ typedef struct {
 
   uint8_t  rotated  : 2;
   uint8_t  mirrored : 2;
+  uint8_t  cleared  : 3;
 
   // indices of tiles sampling this one
   std::vector<uint64_t> used_by;
@@ -49,6 +50,7 @@ typedef struct {
 
   uint8_t  rotated  : 2;
   uint8_t  mirrored : 2;
+  uint8_t  cleared  : 3;
 
 } Tile_Desc_Packed;
 
@@ -69,9 +71,9 @@ typedef struct {
   uint64_t sz_sq;
   uint64_t cnt_sq;
 
-  std::unique_ptr<JOJ::Pixel> data;
+  uint64_t solid;
 
-  std::vector<uint64_t>       cleared;
+  std::unique_ptr<JOJ::Pixel> data;
   std::vector<JOJ::Tile_Desc> tab;
 
 // ---   *   ---   *   ---
@@ -96,20 +98,18 @@ typedef struct {
     this->cnt     = img_sz/sz;
     this->cnt_sq  = this->cnt*this->cnt;
 
+    this->solid   = 0;
+
     this->data    = std::unique_ptr<JOJ::Pixel>(
       new JOJ::Pixel[img_sz_sq]
 
     );
 
-    this->cleared.resize(this->cnt_sq);
     this->tab.resize(this->cnt_sq);
 
   };
 
 // ---   *   ---   *   ---
-
-  // clears tile metadata
-  void metawipe(void);
 
   // write tiles info to a buffer
   Mem<JOJ::Tile_Desc_Packed> to_buff(void);
@@ -126,6 +126,9 @@ typedef struct {
     uint16_t y
 
   );
+
+  // true if tile is blank
+  bool is_clear(JOJ::Pixel* a);
 
   // true if tiles are identical
   bool cmp(
@@ -144,6 +147,7 @@ typedef struct {
   enum {
 
     MIRROR_NONE,
+
     MIRROR_X,
     MIRROR_Y,
     MIRROR_XY
@@ -153,9 +157,18 @@ typedef struct {
   enum {
 
     ROT_0,
+
     ROT_90,
     ROT_180,
     ROT_240
+
+  };
+
+  enum {
+    SOLID       = 0b000,
+    CLEAR_NAT   = 0b001,
+    CLEAR_FETCH = 0b010,
+    FAKE_SOLID  = 0b100,
 
   };
 

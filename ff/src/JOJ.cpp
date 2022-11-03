@@ -329,7 +329,6 @@ void JOJ::pack(void) {
     m_tiles.pack();
 
     this->swap_to(i,Bin::NEW);
-    m_tiles.metawipe();
 
   };
 
@@ -495,8 +494,8 @@ void JOJ::chk_img_sz(
 
   std::string fpath,
 
-  uint64_t width,
-  uint64_t height
+  uint16_t width,
+  uint16_t height
 
 ) {
 
@@ -564,41 +563,23 @@ void JOJ::chk_img_sz(
 };
 
 // ---   *   ---   *   ---
-// because overloading operator ==
-// on a struct was too much of a hassle
-
-bool JOJ::enc_compare(
-  JOJ::SubEncoding& x
-
-) {
-
-  return
-
-      m_c_enc.values == x.values
-  &&  m_c_enc.cnt    == x.cnt
-
-  ;
-
-};
-
-// ---   *   ---   *   ---
 // handles color conversions
 
 void JOJ::color(float* pixel,bool mode) {
 
   if(mode==Frac::ENCODE) {
 
-    if(this->enc_compare(m_enc.color)) {
+    if(m_c_enc==m_enc.color) {
       rgba2yauv(pixel);
 
     };
 
   } else {
 
-    if(this->enc_compare(m_enc.color)) {
+    if(m_c_enc==m_enc.color) {
       yauv2rgba(pixel);
 
-    } else if(this->enc_compare(m_enc.normal)) {
+    } else if(m_c_enc==m_enc.normal) {
       fnorm(pixel);
 
     };
@@ -631,8 +612,8 @@ void JOJ::from_png(
   png::image<png::rgba_pixel> im(fpath);
 
   // get dims
-  uint64_t width  = im.get_width();
-  uint64_t height = im.get_height();
+  uint16_t width  = im.get_width();
+  uint16_t height = im.get_height();
 
   this->chk_img_sz(fpath,width,height);
 
@@ -642,11 +623,11 @@ void JOJ::from_png(
   float*   pixels = m_raw.get();
   uint64_t i      = 0;
 
-  for(uint64_t y=0;y<height;y++) {
+  for(uint16_t y=0;y<height;y++) {
 
     uint64_t row=y*width;
 
-    for(uint64_t x=0;x<width;x++) {
+    for(uint16_t x=0;x<width;x++) {
 
       png::rgba_pixel px=im.get_pixel(x,y);
 
@@ -680,7 +661,7 @@ float* JOJ::read_pixels(int idex) {
   // decode joj
   this->swap_to(idex,Bin::READ);
 
-  m_tiles.unpack();
+//  m_tiles.unpack();
   this->from_tiles();
 
   this->encoder(Frac::DECODE);
@@ -707,8 +688,8 @@ JOJ::to_buff(int idex,float mult) {
 
   uint64_t i=0;
 
-  for(uint64_t y=0;y<m_hed.img_sz;y++) {
-    for(uint64_t x=0;x<m_hed.img_sz;x++) {
+  for(uint16_t y=0;y<m_hed.img_sz;y++) {
+    for(uint16_t x=0;x<m_hed.img_sz;x++) {
 
       this->color(pixels+i,Frac::DECODE);
 
@@ -749,8 +730,8 @@ void JOJ::to_png(
 
   uint64_t i=0;
 
-  for(uint64_t y=0;y<m_hed.img_sz;y++) {
-    for(uint64_t x=0;x<m_hed.img_sz;x++) {
+  for(uint16_t y=0;y<m_hed.img_sz;y++) {
+    for(uint16_t x=0;x<m_hed.img_sz;x++) {
 
       png::rgba_pixel px;
 
@@ -791,8 +772,8 @@ void JOJ::to_png(
 
   uint64_t i=0;
 
-  for(uint64_t y=0;y<m_hed.img_sz;y++) {
-    for(uint64_t x=0;x<m_hed.img_sz;x++) {
+  for(uint16_t y=0;y<m_hed.img_sz;y++) {
+    for(uint16_t x=0;x<m_hed.img_sz;x++) {
 
       png::rgba_pixel px;
 
