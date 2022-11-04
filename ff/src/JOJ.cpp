@@ -522,6 +522,11 @@ void JOJ::chk_img_sz(
     m_hed.img_sz    = width;
     m_hed.img_sz_sq = width*width;
 
+    if(!m_hed.atlas_sz) {
+      this->atlas_sz(width);
+
+    };
+
     // for extracting image files
     m_raw=std::unique_ptr<float>(
       new float[m_hed.img_sz_sq*4]
@@ -617,31 +622,14 @@ void JOJ::from_png(
 
   this->chk_img_sz(fpath,width,height);
 
-// ---   *   ---   *   ---
-// translate buffer
-
-  float*   pixels = m_raw.get();
-  uint64_t i      = 0;
-
-  for(uint16_t y=0;y<height;y++) {
-
-    uint64_t row=y*width;
-
-    for(uint16_t x=0;x<width;x++) {
-
-      png::rgba_pixel px=im.get_pixel(x,y);
-
-      uint64_t orig=i;
-      pixels[i++]=px.red/255.0f;
-      pixels[i++]=px.green/255.0f;
-      pixels[i++]=px.blue/255.0f;
-      pixels[i++]=px.alpha/255.0f;
-
-      this->color(pixels+orig,Frac::ENCODE);
-
-    };
-
-  };
+//  this->img_cpy_rgba2yauv(
+//    m_raw.get(),
+//    im,
+//
+//    m_hed.img_sz,
+//    255.0f
+//
+//  );
 
 };
 
@@ -674,35 +662,30 @@ float* JOJ::read_pixels(int idex) {
 // from joj format to float
 
 std::unique_ptr<float>
-JOJ::to_buff(int idex,float mult) {
+JOJ::to_buff(
+
+  int   idex,
+
+  float mult,
+  bool  atlas
+
+) {
 
   std::unique_ptr<float> out(
-    new float[m_hed.img_sz_sq<<2]
+    new float[this->on_atlas_sz_sq(atlas)<<2]
 
   );
 
   float* pixels = this->read_pixels(idex);
-  float* out_p  = out.get();
 
-// ---   *   ---   *   ---
-
-  uint64_t i=0;
-
-  for(uint16_t y=0;y<m_hed.img_sz;y++) {
-    for(uint16_t x=0;x<m_hed.img_sz;x++) {
-
-      this->color(pixels+i,Frac::DECODE);
-
-      out_p[i+0] = pixels[i+0]*mult;
-      out_p[i+1] = pixels[i+1]*mult;
-      out_p[i+2] = pixels[i+2]*mult;
-      out_p[i+3] = pixels[i+3]*mult;
-
-      i+=4;
-
-    };
-
-  };
+//  this->img_cpy_yauv2rgba(
+//    out.get(),
+//    pixels,
+//
+//    this->on_atlas_sz(atlas),
+//    mult
+//
+//  );
 
   return out;
 
@@ -712,81 +695,30 @@ JOJ::to_buff(int idex,float mult) {
 // from joj format to png
 
 void JOJ::to_png(
-  int idex,
-  std::string name
+
+  int         idex,
+  std::string name,
+
+  bool        atlas
 
 ) {
 
-  // make image
-  png::image<png::rgba_pixel> im(
-    m_hed.img_sz,m_hed.img_sz
+  uint64_t sz=this->on_atlas_sz(atlas);
 
-  );
+  // make image
+  png::image<png::rgba_pixel> im(sz,sz);
 
   float* pixels=this->read_pixels(idex);
 
-// ---   *   ---   *   ---
-// transform color
-
-  uint64_t i=0;
-
-  for(uint16_t y=0;y<m_hed.img_sz;y++) {
-    for(uint16_t x=0;x<m_hed.img_sz;x++) {
-
-      png::rgba_pixel px;
-
-      this->color(pixels+i,Frac::DECODE);
-
-      px.red   = pixels[i++]*255.0f;
-      px.green = pixels[i++]*255.0f;
-      px.blue  = pixels[i++]*255.0f;
-      px.alpha = pixels[i++]*255.0f;
-
-      im[y][x]=px;
-
-    };
-
-  };
-
-  // dump it out
-  im.write(name);
-
-};
-
-// ---   *   ---   *   ---
-
-void JOJ::to_png(
-  float* pixels,
-  std::string name
-
-) {
-
-  // make image
-  png::image<png::rgba_pixel> im(
-    m_hed.img_sz,m_hed.img_sz
-
-  );
-
-// ---   *   ---   *   ---
-// transform color
-
-  uint64_t i=0;
-
-  for(uint16_t y=0;y<m_hed.img_sz;y++) {
-    for(uint16_t x=0;x<m_hed.img_sz;x++) {
-
-      png::rgba_pixel px;
-
-      px.red   = pixels[i++];
-      px.green = pixels[i++];
-      px.blue  = pixels[i++];
-      px.alpha = pixels[i++];
-
-      im[y][x]=px;
-
-    };
-
-  };
+//  this->img_cpy_yauv2rgba(
+//    im,
+//
+//    pixels,
+//
+//    sz,
+//    255.0f
+//
+//  );
 
   // dump it out
   im.write(name);

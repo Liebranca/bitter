@@ -1,7 +1,6 @@
 // ---   *   ---   *   ---
-// boring details that'd make the header
-// too long for the casual reader
-// meant to be pasted in!
+// paste-in header
+// part of the JOJ class
 
 #ifndef __24_JOJ_TILES_H__
 #define __24_JOJ_TILES_H__

@@ -4,6 +4,8 @@
 // ---   *   ---   *   ---
 // deps
 
+  #include <memory>
+
   #include "kvrnel/Style.hpp"
   #include "kvrnel/Bytes.hpp"
 
@@ -34,6 +36,34 @@ inline uint32_t rsq_idex(
   uint16_t x=i-(y<<n);
 
   return x | (uint32_t(y)<<16);
+
+};
+
+// ---   *   ---   *   ---
+
+std::unique_ptr<void*> sq_rows(
+  void*    buff,
+
+  uint64_t sz,
+  uint64_t step
+
+) {
+
+  std::unique_ptr<void*> out(
+    new void*[sz]
+
+  );
+
+  void**   out_p = out.get();
+  uint8_t* row   = (uint8_t*) buff;
+
+  for(uint64_t i=0;i<sz;i++) {
+    out_p[i]=row;
+    row+=sz*step;
+
+  };
+
+  return out;
 
 };
 

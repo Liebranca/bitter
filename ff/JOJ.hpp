@@ -54,9 +54,10 @@ private:
     uint16_t   img_sz;
     uint16_t   img_cnt;
 
-    // TODO: atlas class! goes here!
+    uint16_t   atlas_sz = 0;
 
     uint64_t   img_sz_sq;
+    uint64_t   atlas_sz_sq;
 
     uint8_t    img_comp_cnt;
     char       img_comp[3];
@@ -132,6 +133,11 @@ private:
   float* read_pixels(int idex);
 
 // ---   *   ---   *   ---
+// dumb && repetitive boilerplate methods
+
+  #include "ff/JOJ/Image.hpp"
+
+// ---   *   ---   *   ---
 // buff to disk stuff
 
   // makes dump id
@@ -169,6 +175,28 @@ public:
   // destroy
   ~JOJ(void);
 
+  inline void atlas_sz(uint16_t x) {
+    m_hed.atlas_sz    = x;
+    m_hed.atlas_sz_sq = x*x;
+
+  };
+
+  inline uint16_t on_atlas_sz(bool& is_atlas) {
+    return (is_atlas)
+      ? m_hed.atlas_sz
+      : m_hed.img_sz
+      ;
+
+  };
+
+  inline uint64_t on_atlas_sz_sq(bool& is_atlas) {
+    return (is_atlas)
+      ? m_hed.atlas_sz_sq
+      : m_hed.img_sz_sq
+      ;
+
+  };
+
   // joins image list into single file
   void pack(void);
 
@@ -178,15 +206,19 @@ public:
   // ^raw joj to float*
   std::unique_ptr<float> to_buff(
     int   idex,
-    float mult=1.0f
+
+    float mult  = 1.0f,
+    bool  atlas = false
 
   );
 
   // ^raw joj to png
-  void to_png(int idex,std::string name);
   void to_png(
-    float* buff,
-    std::string name
+
+    int         idex,
+    std::string name,
+
+    bool        atlas=false
 
   );
 
