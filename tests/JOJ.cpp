@@ -7,21 +7,21 @@ int main(void) {
 
   };
 
-  { JOJ j(
-
-      "./out",
-      "/home/lyeb/Cruelty/Medi/",
-
-      comp
-
-    );
-
-    j.add_img_set("1");
-    j.add_img_set("0");
-
-    j.pack();
-
-  };
+//  { JOJ j(
+//
+//      "./out",
+//      "/home/lyeb/Cruelty/Medi/",
+//
+//      comp
+//
+//    );
+//
+//    j.add_img_set("1");
+//    j.add_img_set("0");
+//
+//    j.pack();
+//
+//  };
 
   JOJ j("./out");
 

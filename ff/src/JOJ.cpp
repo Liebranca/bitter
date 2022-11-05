@@ -12,7 +12,7 @@
 // ---   *   ---   *   ---
 // deps
 
-  #include <png++/png.hpp>
+  #include "ff/PNG_Wrap.hpp"
 
   #include "ff/Zwrap.hpp"
   #include "ff/JOJ.hpp"
@@ -81,16 +81,12 @@ JOJ::JOJ(
   m_enc=ENCDEF;
 
   // native format
-  m_pixels=std::unique_ptr<JOJ::Pixel>(
-    new JOJ::Pixel[m_hed.img_sz_sq]
-
-  );
+  Mem<JOJ::Pixel> pixels(m_hed.img_sz_sq);
+  m_pixels.copy(pixels);
 
   // ^to png/glbuff
-  m_raw=std::unique_ptr<float>(
-    new float[m_hed.img_sz_sq*4]
-
-  );
+  Mem<float> raw(m_hed.img_sz_sq<<2);
+  m_raw.copy(raw);
 
   m_tiles.nit(
     JOJ::STD_TILE_SZ,
@@ -180,8 +176,8 @@ void JOJ::swap_to(int idex,char mode) {
 
 void JOJ::get_tile(uint64_t offset) {
 
-  JOJ::Pixel* dst=m_tiles.data.get()+offset;
-  JOJ::Pixel* src=m_pixels.get();
+  JOJ::Pixel* dst=&m_tiles.data[0]+offset;
+  JOJ::Pixel* src=&m_pixels[0];
 
 // ---   *   ---   *   ---
 
@@ -245,8 +241,8 @@ void JOJ::to_tiles(void) {
 
 void JOJ::set_tile(uint64_t offset) {
 
-  JOJ::Pixel* src=m_tiles.data.get()+offset;
-  JOJ::Pixel* dst=m_pixels.get();
+  JOJ::Pixel* src=&m_tiles.data[0]+offset;
+  JOJ::Pixel* dst=&m_pixels[0];
 
 // ---   *   ---   *   ---
 
@@ -464,7 +460,7 @@ JOJ::SubEncoding JOJ::read_mode(char type) {
 
 void JOJ::encoder(bool mode) {
 
-  JOJ::Pixel* buff=m_pixels.get();
+  JOJ::Pixel* buff=&m_pixels[0];
 
 // ---   *   ---   *   ---
 // transform to and from compressed floats
@@ -472,7 +468,7 @@ void JOJ::encoder(bool mode) {
   struct Frac::Bat<char> batch={
 
     .m_bytes  = buff[0].as_ptr(),
-    .m_floats = m_raw.get(),
+    .m_floats = &m_raw[0],
     .m_sz     = m_hed.img_sz_sq*4,
 
     .m_enc    = (char*) m_c_enc.values,
@@ -487,57 +483,33 @@ void JOJ::encoder(bool mode) {
 };
 
 // ---   *   ---   *   ---
-// ensures you fools don't pass non-square
-// images through a square image format
+// minimal sanity check
 
 void JOJ::chk_img_sz(
 
   std::string fpath,
-
-  uint16_t width,
-  uint16_t height
+  uint16_t    sz
 
 ) {
 
-  // errchk
-  if(width!=height) {
-
-    printf(
-      "Image <%s> must be square "
-      "for *.joj format conversion\n",
-
-      fpath.c_str()
-
-    );
-
-    exit(1);
-
-  };
-
-// ---   *   ---   *   ---
-// get mem
-
+  // get mem
   if(!m_hed.img_sz) {
 
-    m_hed.img_sz    = width;
-    m_hed.img_sz_sq = width*width;
+    m_hed.img_sz    = sz;
+    m_hed.img_sz_sq = sz*sz;
 
     if(!m_hed.atlas_sz) {
-      this->atlas_sz(width);
+      this->atlas_sz(sz);
 
     };
 
     // for extracting image files
-    m_raw=std::unique_ptr<float>(
-      new float[m_hed.img_sz_sq*4]
-
-    );
+    Mem<float> raw(m_hed.img_sz_sq<<2);
+    m_raw.copy(raw);
 
     // ^converts into integer format
-    m_pixels=std::unique_ptr<JOJ::Pixel>(
-      new JOJ::Pixel[m_hed.img_sz_sq]
-
-    );
+    Mem<JOJ::Pixel> pixels(m_hed.img_sz_sq);
+    m_pixels.copy(pixels);
 
     m_tiles.nit(
       JOJ::STD_TILE_SZ,
@@ -550,7 +522,7 @@ void JOJ::chk_img_sz(
 // ---   *   ---   *   ---
 // throw bad size
 
-  } else if(width*height!=m_hed.img_sz_sq) {
+  } else if(sz*sz!=m_hed.img_sz_sq) {
 
     printf(
       "Image <%s> has size different "
@@ -614,22 +586,22 @@ void JOJ::from_png(
   ;
 
   // open image
-  png::image<png::rgba_pixel> im(fpath);
+  PNG im(fpath);
 
-  // get dims
-  uint16_t width  = im.get_width();
-  uint16_t height = im.get_height();
+  // run checks
+  this->chk_img_sz(fpath,im.get_sz());
 
-  this->chk_img_sz(fpath,width,height);
+  auto buff=im.read();
 
-//  this->img_cpy_rgba2yauv(
-//    m_raw.get(),
-//    im,
-//
-//    m_hed.img_sz,
-//    255.0f
-//
-//  );
+  // convert
+  this->img_cpy_rgba2yauv(
+    &m_raw[0],
+    &buff[0],
+
+    m_hed.img_sz,
+    255.0f
+
+  );
 
 };
 
@@ -654,15 +626,14 @@ float* JOJ::read_pixels(int idex) {
 
   this->encoder(Frac::DECODE);
 
-  return m_raw.get();
+  return &m_raw[0];
 
 };
 
 // ---   *   ---   *   ---
 // from joj format to float
 
-std::unique_ptr<float>
-JOJ::to_buff(
+Mem<float> JOJ::to_buff(
 
   int   idex,
 
@@ -671,23 +642,22 @@ JOJ::to_buff(
 
 ) {
 
-  std::unique_ptr<float> out(
-    new float[this->on_atlas_sz_sq(atlas)<<2]
+  uint64_t sz_sq=this->on_atlas_sz_sq(atlas)<<2;
 
-  );
+  Mem<float> out(sz_sq);
 
   float* pixels = this->read_pixels(idex);
 
-//  this->img_cpy_yauv2rgba(
-//    out.get(),
-//    pixels,
-//
-//    this->on_atlas_sz(atlas),
-//    mult
-//
-//  );
+  this->img_cpy_yauv2rgba(
+    &out[0],
+    pixels,
 
-  return out;
+    this->on_atlas_sz(atlas),
+    mult
+
+  );
+
+  return Mem<float>(out);
 
 };
 
@@ -703,25 +673,26 @@ void JOJ::to_png(
 
 ) {
 
-  uint64_t sz=this->on_atlas_sz(atlas);
+  uint64_t sz    = this->on_atlas_sz(atlas);
+  uint64_t sz_sq = this->on_atlas_sz_sq(atlas);
 
   // make image
-  png::image<png::rgba_pixel> im(sz,sz);
+  PNG im(name,sz);
 
   float* pixels=this->read_pixels(idex);
+  Mem<uint8_t> buff(sz_sq<<2);
 
-//  this->img_cpy_yauv2rgba(
-//    im,
-//
-//    pixels,
-//
-//    sz,
-//    255.0f
-//
-//  );
+  this->img_cpy_yauv2rgba(
+    &buff[0],
+    pixels,
+
+    sz,
+    255.0f
+
+  );
 
   // dump it out
-  im.write(name);
+  im.write(buff);
 
 };
 

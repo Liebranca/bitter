@@ -18,6 +18,7 @@
 // deps
 
   #include <memory>
+
   #include <string>
   #include <iostream>
 
@@ -38,7 +39,7 @@ class Mem {
 
 public:
 
-  VERSION   "v2.00.2";
+  VERSION   "v2.00.3";
   AUTHOR    "IBN-3DILA";
 
 // ---   *   ---   *   ---
@@ -72,16 +73,18 @@ private:
 
   void new_slot(void) {
 
-    uint64_t top=m_slstk.size();
+    m_slot=m_inst_next++;
 
-    if(top) {
-      m_slot=m_slstk[top-1];
-      m_slstk.pop_back();
-
-    } else {
-      m_slot=m_inst_next++;
-
-    };
+//    uint64_t top=m_slstk.size();
+//
+//    if(top) {
+//      m_slot=m_slstk[top-1];
+//      m_slstk.pop_back();
+//
+//    } else {
+//      m_slot=m_inst_next++;
+//
+//    };
 
     m_inst_cnt++;
 
@@ -97,17 +100,15 @@ public:
   // alloc
   Mem<T>(
 
-    uint64_t buff_sz,
-    uint64_t header_sz = 0x00,
-
-    ID*      id        = NULL
+    uint64_t    buff_sz,
+    std::string name=""
 
   ) {
 
     this->new_slot();
 
     // default: generate ID for block
-    if(id==NULL) {
+    if(!name.length()) {
 
       m_id=ID(
 
@@ -118,7 +119,11 @@ public:
 
     // copy user-provided
     } else {
-      m_id=*id;
+
+      m_id=ID(
+        std::string(this->m_sigil()),name
+
+      );
 
     };
 
@@ -136,18 +141,25 @@ public:
   };
 
 // ---   *   ---   *   ---
-// copy
+// copying
 
-  Mem<T>(Mem<T>& other) {
-
-    m_id         = other.m_id;
-
-    m_slot       = other.m_slot;
-
-    m_buff_sz    = other.m_buff_sz;
-    m_idex_mask  = other.m_idex_mask;
+  inline void copy(Mem<T>& other) {
+    m_id        = other.m_id;
+    m_slot      = other.m_slot;
+    m_buff_sz   = other.m_buff_sz;
+    m_idex_mask = other.m_idex_mask;
 
     m_buff.reset(other.m_buff.release());
+
+  };
+
+  Mem<T>(Mem<T>& other) {
+    this->copy(other);
+
+  };
+
+  Mem<T>(const Mem<T>& other) {
+    this->copy(*((Mem<T>*) &other));
 
   };
 
@@ -331,19 +343,6 @@ template<typename T>
 
 template<typename T>
   uint64_t Mem<T>::m_inst_cnt   = 0;
-
-// ---   *   ---   *   ---
-// instas
-
-//template class Mem<int8_t>;
-//template class Mem<int16_t>;
-//template class Mem<int32_t>;
-//template class Mem<int64_t>;
-//
-//template class Mem<uint8_t>;
-//template class Mem<uint16_t>;
-//template class Mem<uint32_t>;
-//template class Mem<uint64_t>;
 
 // ---   *   ---   *   ---
 

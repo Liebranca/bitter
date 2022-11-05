@@ -96,8 +96,8 @@ private:
   JOJ::SubEncoding m_c_enc;
   JOJ::Tiles       m_tiles;
 
-  std::unique_ptr<float>      m_raw;
-  std::unique_ptr<JOJ::Pixel> m_pixels;
+  Mem<float>       m_raw;
+  Mem<JOJ::Pixel>  m_pixels;
 
 // ---   *   ---   *   ---
 // internals
@@ -108,9 +108,7 @@ private:
   void chk_img_sz(
 
     std::string fpath,
-
-    uint16_t width,
-    uint16_t height
+    uint16_t    sz
 
   );
 
@@ -204,7 +202,7 @@ public:
   void unpack(void);
 
   // ^raw joj to float*
-  std::unique_ptr<float> to_buff(
+  Mem<float> to_buff(
     int   idex,
 
     float mult  = 1.0f,

@@ -85,6 +85,15 @@ PNG::~PNG(void) {
 
 Mem<uint8_t> PNG::read(void) {
 
+  // nit copy if file open for writing
+  if(m_mode) {
+    PNG im(m_fpath);
+    return im.read();
+
+  };
+
+// ---   *   ---   *   ---
+
   Mem<uint8_t> out(m_sz_sq<<2);
 
   auto rows=sq_rows(
@@ -92,13 +101,26 @@ Mem<uint8_t> PNG::read(void) {
 
   );
 
-  png_read_image(m_rd,(uint8_t**) rows.get());
+  png_read_image(m_rd,(uint8_t**) &rows[0]);
 
   return Mem<uint8_t>(out);
 
 };
 
+// ---   *   ---   *   ---
+
 void PNG::write(Mem<uint8_t>& src) {
+
+  // nit copy if file open for reading
+  if(!m_mode) {
+    PNG im(m_fpath,m_sz);
+    im.write(src);
+
+    return;
+
+  };
+
+// ---   *   ---   *   ---
 
   png_set_IHDR(
     m_wt,
@@ -122,7 +144,7 @@ void PNG::write(Mem<uint8_t>& src) {
 
   );
 
-  png_write_image(m_wt,(uint8_t**) rows.get());
+  png_write_image(m_wt,(uint8_t**) &rows[0]);
   png_write_end(m_wt,NULL);
 
 };

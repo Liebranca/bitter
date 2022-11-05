@@ -4,10 +4,10 @@
 // ---   *   ---   *   ---
 // deps
 
-  #include <memory>
-
   #include "kvrnel/Style.hpp"
   #include "kvrnel/Bytes.hpp"
+
+  #include "kvrnel/Mem.hpp"
 
 // ---   *   ---   *   ---
 // get index of point in rect from 2D coords
@@ -41,7 +41,7 @@ inline uint32_t rsq_idex(
 
 // ---   *   ---   *   ---
 
-std::unique_ptr<void*> sq_rows(
+static Mem<void*> sq_rows(
   void*    buff,
 
   uint64_t sz,
@@ -49,12 +49,9 @@ std::unique_ptr<void*> sq_rows(
 
 ) {
 
-  std::unique_ptr<void*> out(
-    new void*[sz]
+  Mem<void*> out(sz);
 
-  );
-
-  void**   out_p = out.get();
+  void**   out_p = &out[0];
   uint8_t* row   = (uint8_t*) buff;
 
   for(uint64_t i=0;i<sz;i++) {
@@ -63,7 +60,7 @@ std::unique_ptr<void*> sq_rows(
 
   };
 
-  return out;
+  return Mem<void*>(out);
 
 };
 

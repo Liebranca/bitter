@@ -528,17 +528,14 @@ void JOJ::Tiles::unpack(void) {
   img_sz_sq*=img_sz_sq;
 
   // make copy of image
-  std::unique_ptr<JOJ::Pixel> src(
-    new JOJ::Pixel[img_sz_sq]
-
-  );
+  Mem<JOJ::Pixel> src(img_sz_sq);
 
   // go raw
-  JOJ::Pixel* src_p=src.get();
+  JOJ::Pixel* src_p=&src[0];
 
   // transfer
   memcpy(
-    src_p,this->data.get(),
+    src_p,&this->data[0],
     img_sz_sq*sizeof(JOJ::Pixel)
 
   );
@@ -593,17 +590,13 @@ void JOJ::Tiles::unpack(void) {
 // ---   *   ---   *   ---
 // send duplicate of tile to buffer
 
-std::unique_ptr<JOJ::Pixel> JOJ::Tiles::copy(
+Mem<JOJ::Pixel> JOJ::Tiles::copy(
   JOJ::Pixel* pixel
 
 ) {
 
-  std::unique_ptr<JOJ::Pixel> out(
-    new JOJ::Pixel[this->sz_sq]
-
-  );
-
-  JOJ::Pixel* out_p=out.get();
+  Mem<JOJ::Pixel> out(this->sz_sq);
+  JOJ::Pixel* out_p=&out[0];
 
   memcpy(
     out_p,pixel,
@@ -613,7 +606,7 @@ std::unique_ptr<JOJ::Pixel> JOJ::Tiles::copy(
 
   );
 
-  return out;
+  return Mem<JOJ::Pixel>(out);
 
 };
 
@@ -650,7 +643,7 @@ void JOJ::Tiles::xform(
   auto pixel = this->get(off_x,off_y);
   auto buff  = this->copy(pixel);
 
-  JOJ::Pixel* buff_p=buff.get();
+  JOJ::Pixel* buff_p=&buff[0];
 
 // ---   *   ---   *   ---
 // get function pointer from idex
@@ -704,8 +697,6 @@ void JOJ::Tiles::xform(
     pixel[dst_idex]=buff_p[src_idex];
 
   }};
-
-  buff.reset();
 
 };
 

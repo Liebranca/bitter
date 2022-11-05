@@ -56,6 +56,12 @@ public:
   Mem<uint8_t> read(void);
   void write(Mem<uint8_t>& src);
 
+  // getters
+  inline uint16_t get_sz(void) {
+    return m_sz;
+
+  };
+
 };
 
 // ---   *   ---   *   ---

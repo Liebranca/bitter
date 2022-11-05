@@ -72,7 +72,7 @@ typedef struct {
 
   uint64_t solid;
 
-  std::unique_ptr<JOJ::Pixel> data;
+  Mem<JOJ::Pixel> data;
   std::vector<JOJ::Tile_Desc> tab;
 
 // ---   *   ---   *   ---
@@ -99,10 +99,8 @@ typedef struct {
 
     this->solid   = 0;
 
-    this->data    = std::unique_ptr<JOJ::Pixel>(
-      new JOJ::Pixel[img_sz_sq]
-
-    );
+    Mem<JOJ::Pixel> data(img_sz_sq);
+    this->data.copy(data);
 
     this->tab.resize(this->cnt_sq);
 
@@ -222,7 +220,7 @@ typedef struct {
   );
 
   // send duplicate of tile to buffer
-  std::unique_ptr<JOJ::Pixel> copy(
+  Mem<JOJ::Pixel> copy(
     JOJ::Pixel* pixel
 
   );
@@ -278,7 +276,7 @@ typedef struct {
 
   ) {
 
-    JOJ::Pixel* out=this->data.get();
+    JOJ::Pixel* out=&this->data[0];
     return out+this->real_idex(x,y);
 
   };
