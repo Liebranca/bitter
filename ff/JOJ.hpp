@@ -18,7 +18,7 @@ class JOJ: public Bin {
 
 public:
 
-  VERSION   "v2.00.2";
+  VERSION   "v2.00.5";
   AUTHOR    "IBN-3DILA";
 
 // ---   *   ---   *   ---
@@ -54,10 +54,11 @@ private:
     uint16_t   img_sz;
     uint16_t   img_cnt;
 
-    uint16_t   atlas_sz = 0;
+    uint16_t   atlas_sz=0;
 
     uint64_t   img_sz_sq;
     uint64_t   atlas_sz_sq;
+    uint64_t   atlas_ptr=0;
 
     uint8_t    img_comp_cnt;
     char       img_comp[3];
@@ -99,8 +100,26 @@ private:
   Mem<float>       m_raw;
   Mem<JOJ::Pixel>  m_pixels;
 
+  std::vector<uint64_t> m_leaps;
+
 // ---   *   ---   *   ---
 // internals
+
+  inline char get_img_type(uint16_t idex) {
+    return m_hed.img_comp[
+      idex%m_hed.img_comp_cnt
+
+    ];
+
+  };
+
+  inline uint16_t img_idex(uint16_t idex) {
+    return idex/m_hed.img_comp_cnt;
+
+  };
+
+  void write_leaps(void);
+  void read_leaps(void);
 
   JOJ::SubEncoding read_mode(char type);
 
@@ -128,7 +147,11 @@ private:
   // per-pixel color conversion
   void color(float* pixel,bool mode);
 
-  float* read_pixels(int idex);
+  float* read_pixels(
+    int  idex,
+    bool unpack_tiles=false
+
+  );
 
 // ---   *   ---   *   ---
 // dumb && repetitive boilerplate methods
@@ -139,10 +162,10 @@ private:
 // buff to disk stuff
 
   // makes dump id
-  std::string get_dump_f(int idex);
+  std::string get_dump_f(uint16_t idex);
 
   // save/load to/from dump
-  void swap_to(int idex,char mode);
+  void swap_to(uint16_t idex,char mode);
 
   // write packed
   void write(void);
@@ -179,22 +202,6 @@ public:
 
   };
 
-  inline uint16_t on_atlas_sz(bool& is_atlas) {
-    return (is_atlas)
-      ? m_hed.atlas_sz
-      : m_hed.img_sz
-      ;
-
-  };
-
-  inline uint64_t on_atlas_sz_sq(bool& is_atlas) {
-    return (is_atlas)
-      ? m_hed.atlas_sz_sq
-      : m_hed.img_sz_sq
-      ;
-
-  };
-
   // joins image list into single file
   void pack(void);
 
@@ -203,20 +210,15 @@ public:
 
   // ^raw joj to float*
   Mem<float> to_buff(
-    int   idex,
-
-    float mult  = 1.0f,
-    bool  atlas = false
+    uint16_t idex,
+    float    mult=1.0f
 
   );
 
   // ^raw joj to png
   void to_png(
-
-    int         idex,
-    std::string name,
-
-    bool        atlas=false
+    uint16_t    idex,
+    std::string name
 
   );
 

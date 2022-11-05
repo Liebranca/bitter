@@ -113,13 +113,15 @@ JOJ::~JOJ(void) {
 // ---   *   ---   *   ---
 // gets generic dump id
 
-std::string JOJ::get_dump_f(int idex) {
+std::string JOJ::get_dump_f(uint16_t idex) {
+
+  char type=this->get_img_type(idex);
 
   std::string path=
 
     m_fpath
   + "_dump"
-  + std::to_string(idex)
+  + std::to_string(type+0x41)
   ;
 
   return path;
@@ -129,17 +131,17 @@ std::string JOJ::get_dump_f(int idex) {
 // ---   *   ---   *   ---
 // save/load to/from dump
 
-void JOJ::swap_to(int idex,char mode) {
+void JOJ::swap_to(
+  uint16_t idex,
+  char     mode
+
+) {
 
   std::string path = this->get_dump_f(idex);
   void*       src  = (void*) m_tiles.get(0,0);
 
-  Bin out(path,mode);
-
-  uint64_t sz=
-    m_hed.img_sz_sq
-  * sizeof(JOJ::Pixel)
-  ;
+  Bin color(path,mode);
+  Bin table(path+"_tab",mode);
 
 // ---   *   ---   *   ---
 // retrieve
@@ -151,21 +153,42 @@ void JOJ::swap_to(int idex,char mode) {
 
     );
 
-    out.read(&m[0],m.bytesz());
+    uint16_t offset=this->img_idex(idex);
+
+    uint64_t leap=
+      m_tiles.cnt_sq
+    * sizeof(JOJ::Tile_Desc_Packed)
+    ;
+
+    table.seek(leap*offset);
+    table.read(&m[0],m.bytesz());
     m_tiles.from_buff(m);
 
-    out.read(src,sz);
+    uint64_t sz=
+      m_tiles.solid_cnt()
+    * sizeof(JOJ::Pixel)
+    ;
+
+    color.seek(m_leaps[idex],Bin::BEG);
+    color.read(src,sz);
 
 // ---   *   ---   *   ---
 // store
 
   } else {
 
-    Mem<JOJ::Tile_Desc_Packed> m=
-      m_tiles.to_buff();
+    auto m=m_tiles.to_buff();
+    table.write(&m[0],m.bytesz());
 
-    out.write(&m[0],m.bytesz());
-    out.write(src,sz);
+    uint64_t sz=
+      m_tiles.solid_cnt()
+    * sizeof(JOJ::Pixel)
+    ;
+
+    color.seek(0,Bin::END);
+    m_leaps.push_back(color.tell());
+
+    color.write(src,sz);
 
   };
 
@@ -310,7 +333,7 @@ void JOJ::pack(void) {
   // dumps resulting buff for each
   for(
 
-    int i=0;
+    uint16_t i=0;
 
     i<m_hed.img_cnt*m_hed.img_comp_cnt;
     i++
@@ -324,7 +347,7 @@ void JOJ::pack(void) {
     this->to_tiles();
     m_tiles.pack();
 
-    this->swap_to(i,Bin::NEW);
+    this->swap_to(i,Bin::WRITE|Bin::APPEND);
 
   };
 
@@ -334,27 +357,66 @@ void JOJ::pack(void) {
 };
 
 // ---   *   ---   *   ---
+
+void JOJ::write_leaps(void) {
+
+  m_leaps.insert(
+    m_leaps.begin(),
+    m_leaps.size()
+
+  );
+
+  Bin::write(
+    m_leaps.data(),
+
+    m_leaps.size()
+  * sizeof(uint64_t)
+
+  );
+
+};
+
+// ---   *   ---   *   ---
+
+void JOJ::read_leaps(void) {
+
+  uint64_t sz=0;
+  Bin::read(&sz,sizeof(uint64_t));
+
+  m_leaps.clear();
+  m_leaps.resize(sz);
+
+  Bin::read(m_leaps.data(),sz*sizeof(uint64_t));
+
+};
+
+// ---   *   ---   *   ---
 // dump to disk
 
 void JOJ::write(void) {
 
   this->write_header(&m_hed);
+  this->write_leaps();
 
   for(
 
-    int i=0;
+    uint16_t i=0;
 
-    i<m_hed.img_cnt*m_hed.img_comp_cnt;
+    i<m_hed.img_comp_cnt;
     i++
 
   ) {
 
     std::string path=this->get_dump_f(i);
 
-    Bin src(path,Bin::READ);
+    Bin color(path,Bin::READ);
+    Bin table(path+"_tab",Bin::READ);
 
-    src.transfer(this);
-    src.nuke();
+    table.transfer(this);
+    color.transfer(this);
+
+    table.nuke();
+    color.nuke();
 
   };
 
@@ -365,29 +427,41 @@ void JOJ::write(void) {
 
 void JOJ::unpack(void) {
 
-  uint64_t sz=
+  uint64_t table_sz=
 
     m_tiles.cnt_sq
   * sizeof(JOJ::Tile_Desc_Packed)
+  * m_hed.img_cnt
+  ;
 
-  + m_hed.img_sz_sq
+  uint64_t color_sz=
+
+    m_hed.img_sz_sq
   * sizeof(JOJ::Pixel)
+  * m_hed.img_cnt
 
   ;
 
+  this->read_leaps();
+
+// ---   *   ---   *   ---
+
   for(
 
-    int i=0;
+    uint16_t i=0;
 
-    i<m_hed.img_cnt*m_hed.img_comp_cnt;
+    i<m_hed.img_comp_cnt;
     i++
 
   ) {
 
     std::string path=this->get_dump_f(i);
 
-    Bin dst(path,Bin::NEW);
-    this->transfer(&dst,sz);
+    Bin color(path,Bin::NEW);
+    Bin table(path+"_tab",Bin::NEW);
+
+    this->transfer(&table,table_sz);
+    this->transfer(&color,color_sz);
 
   };
 
@@ -402,17 +476,20 @@ void JOJ::rmdump(void) {
 
   for(
 
-    int i=0;
+    uint16_t i=0;
 
-    i<m_hed.img_cnt*m_hed.img_comp_cnt;
+    i<m_hed.img_comp_cnt;
     i++
 
   ) {
 
     std::string path=this->get_dump_f(i);
 
-    Bin dst(path,Bin::READ);
-    dst.nuke();
+    Bin color(path,Bin::READ);
+    Bin table(path+"_tab",Bin::READ);
+
+    color.nuke();
+    table.nuke();
 
   };
 
@@ -609,21 +686,26 @@ void JOJ::from_png(
 // fill out internal buffer
 // give back ptr to buff
 
-float* JOJ::read_pixels(int idex) {
+float* JOJ::read_pixels(
+  int  idex,
+  bool unpack_tiles
 
-  char type=m_hed.img_comp[
-    idex%m_hed.img_comp_cnt
+) {
 
-  ];
+  m_c_enc=this->read_mode(
+    this->get_img_type(idex)
 
-  m_c_enc=this->read_mode(type);
+  );
 
   // decode joj
   this->swap_to(idex,Bin::READ);
 
-//  m_tiles.unpack();
-  this->from_tiles();
+  if(unpack_tiles) {
+    m_tiles.unpack();
 
+  };
+
+  this->from_tiles();
   this->encoder(Frac::DECODE);
 
   return &m_raw[0];
@@ -635,24 +717,19 @@ float* JOJ::read_pixels(int idex) {
 
 Mem<float> JOJ::to_buff(
 
-  int   idex,
-
-  float mult,
-  bool  atlas
+  uint16_t idex,
+  float    mult
 
 ) {
 
-  uint64_t sz_sq=this->on_atlas_sz_sq(atlas)<<2;
-
-  Mem<float> out(sz_sq);
-
+  Mem<float> out(m_hed.img_sz_sq<<2);
   float* pixels = this->read_pixels(idex);
 
   this->img_cpy_yauv2rgba(
     &out[0],
     pixels,
 
-    this->on_atlas_sz(atlas),
+    m_hed.img_sz,
     mult
 
   );
@@ -666,27 +743,22 @@ Mem<float> JOJ::to_buff(
 
 void JOJ::to_png(
 
-  int         idex,
-  std::string name,
-
-  bool        atlas
+  uint16_t    idex,
+  std::string name
 
 ) {
 
-  uint64_t sz    = this->on_atlas_sz(atlas);
-  uint64_t sz_sq = this->on_atlas_sz_sq(atlas);
-
   // make image
-  PNG im(name,sz);
+  PNG im(name,m_hed.img_sz);
 
-  float* pixels=this->read_pixels(idex);
-  Mem<uint8_t> buff(sz_sq<<2);
+  float* pixels=this->read_pixels(idex,true);
+  Mem<uint8_t> buff(m_hed.img_sz_sq<<2);
 
   this->img_cpy_yauv2rgba(
     &buff[0],
     pixels,
 
-    sz,
+    m_hed.img_sz,
     255.0f
 
   );

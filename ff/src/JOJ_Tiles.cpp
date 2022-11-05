@@ -117,6 +117,35 @@ bool JOJ::Tiles::is_clear(
 };
 
 // ---   *   ---   *   ---
+// counts non-transparent tiles
+
+uint64_t JOJ::Tiles::solid_cnt(void) {
+
+  uint64_t out=0;
+
+  for(uint64_t i=0;i<this->cnt_sq;i++) {
+
+    JOJ::Tile_Desc& td=this->tab[i];
+
+    if(
+
+       td.cleared==CLEAR_NAT
+    || td.cleared==CLEAR_FETCH
+
+    ) {
+
+      out=i;
+      break;
+
+    };
+
+  };
+
+  return out*this->sz_sq;
+
+};
+
+// ---   *   ---   *   ---
 // true if tiles are identical
 
 bool JOJ::Tiles::cmp(

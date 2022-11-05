@@ -11,6 +11,7 @@ x Saving decode data to header
 x Cutting into square tiles
 x Tile palettes
 x Use packed struct for Tiles.tab write
+~ JOJ as texture atlas
 
 *>CRK
 ~ Vertex classes

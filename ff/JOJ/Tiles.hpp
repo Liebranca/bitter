@@ -127,6 +127,9 @@ typedef struct {
   // true if tile is blank
   bool is_clear(JOJ::Pixel* a);
 
+  // number of used tiles
+  uint64_t solid_cnt(void);
+
   // true if tiles are identical
   bool cmp(
     JOJ::Pixel* a,
@@ -278,6 +281,12 @@ typedef struct {
 
     JOJ::Pixel* out=&this->data[0];
     return out+this->real_idex(x,y);
+
+  };
+
+  // return ptr to tile N
+  inline JOJ::Pixel* get(uint64_t i) {
+    return &this->data[0]+i*this->sz_sq;
 
   };
 

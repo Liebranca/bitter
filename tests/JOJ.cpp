@@ -7,27 +7,27 @@ int main(void) {
 
   };
 
-//  { JOJ j(
-//
-//      "./out",
-//      "/home/lyeb/Cruelty/Medi/",
-//
-//      comp
-//
-//    );
-//
-//    j.add_img_set("1");
-//    j.add_img_set("0");
-//
-//    j.pack();
-//
-//  };
+  { JOJ j(
+
+      "./out",
+      "/home/lyeb/Cruelty/Medi/",
+
+      comp
+
+    );
+
+    j.add_img_set("0");
+    j.add_img_set("1");
+
+    j.pack();
+
+  };
 
   JOJ j("./out");
 
   j.unpack();
-  j.to_png(1,"./frame0");
-  j.to_png(0,"./frame1");
+  j.to_png(0,"./frame0");
+  j.to_png(1,"./frame1");
 
   return 0;
 
