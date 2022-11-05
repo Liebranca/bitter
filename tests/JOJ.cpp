@@ -26,8 +26,8 @@ int main(void) {
   JOJ j("./out");
 
   j.unpack();
-  j.to_png(0,"./frame0");
-  j.to_png(1,"./frame1");
+  j.to_png(1,"./frame0");
+//  j.to_png(1,"./frame1");
 
   return 0;
 

@@ -117,6 +117,12 @@ typedef struct {
 
   );
 
+  // offsets the next table read
+  void fetch_offset(
+    uint64_t prev_tiles
+
+  );
+
   // discard contents of tile
   void clear(
     uint16_t x,

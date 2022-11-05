@@ -70,6 +70,43 @@ void JOJ::Tiles::from_buff(
 };
 
 // ---   *   ---   *   ---
+// offsets the next table read
+
+void JOJ::Tiles::fetch_offset(
+  uint64_t prev_tiles
+
+) {
+
+  // get origin
+  uint32_t xy=rsq_idex(
+    prev_tiles,this->cnt
+
+  );
+
+  // ^unpack
+  uint16_t ox=xy&0xFFFF;
+  uint16_t oy=xy>>16;
+
+// ---   *   ---   *   ---
+// walk the table and adjust fetches
+
+  for(JOJ::Tile_Desc& td : this->tab) {
+
+    td.x+=ox;
+
+    while(td.x>=this->cnt) {
+      td.x-=this->cnt;
+      td.y++;
+
+    };
+
+    td.y+=oy;
+
+  };
+
+};
+
+// ---   *   ---   *   ---
 // discard contents of tile
 
 void JOJ::Tiles::clear(
@@ -581,6 +618,19 @@ void JOJ::Tiles::unpack(void) {
     uint64_t        td_idex = this->tile_idex(x,y);
     JOJ::Tile_Desc& td      = this->tab[td_idex];
 
+
+    // remember transparent
+    if(
+
+       td.cleared==FAKE_SOLID
+    || td.cleared==CLEAR_NAT
+
+    ) {
+
+      needs_clear.push_back(td_idex);
+
+    };
+
     // original position
     td.dx=x;
     td.dy=y;
@@ -595,19 +645,9 @@ void JOJ::Tiles::unpack(void) {
     this->apply_rotation(td);
     this->apply_mirror(td);
 
-// ---   *   ---   *   ---
-// remember originally transparent tiles
-
-    if(
-
-       td.cleared==FAKE_SOLID
-    || td.cleared==CLEAR_NAT
-
-    ) {needs_clear.push_back(td_idex);};
-
   }};
 
-  // ^then blank them out ;>
+  // blank out transparent tiles
   for(uint64_t td_idex : needs_clear) {
     JOJ::Tile_Desc& td=this->tab[td_idex];
     this->clear(td.dx,td.dy);

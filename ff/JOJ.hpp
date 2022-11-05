@@ -18,7 +18,7 @@ class JOJ: public Bin {
 
 public:
 
-  VERSION   "v2.00.5";
+  VERSION   "v2.00.6";
   AUTHOR    "IBN-3DILA";
 
 // ---   *   ---   *   ---
@@ -166,6 +166,39 @@ private:
 
   // save/load to/from dump
   void swap_to(uint16_t idex,char mode);
+
+  // load single image from atlas
+  void read_img(
+
+    uint16_t idex,
+
+    Bin&     color,
+    Bin&     table
+
+  );
+
+  // ^load just the table for an image in atlas
+  void read_img_table(
+    uint16_t idex,
+    Bin&     table
+
+  );
+
+  // shifts the img fetch array
+  void offset_img_table(
+    uint16_t idex
+
+  );
+
+  // ^load the whole atlas
+  void read_atlas(
+
+    uint16_t idex,
+
+    Bin&     color,
+    Bin&     table
+
+  );
 
   // write packed
   void write(void);
