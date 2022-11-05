@@ -57,7 +57,7 @@ typedef struct {
 
 public:
 
-typedef struct {
+typedef struct FwdTiles {
 
   uint16_t x;
   uint16_t y;
@@ -119,7 +119,8 @@ typedef struct {
 
   // offsets the next table read
   void fetch_offset(
-    uint64_t prev_tiles
+    uint64_t prev_tiles,
+    uint16_t atlas_cnt
 
   );
 
@@ -251,7 +252,10 @@ typedef struct {
   void pack(void);
 
   // build original image from table
-  void unpack(void);
+  void unpack(
+    JOJ::FwdTiles& other
+
+  );
 
   // get tile number
   inline uint64_t tile_idex(

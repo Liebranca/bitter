@@ -12,7 +12,7 @@ x Cutting into square tiles
 x Tile palettes
 x Use packed struct for Tiles.tab write
 x JOJ as texture atlas
-~ Resizing image for atlas
+x Resizing image for atlas
 
 *>CRK
 ~ Vertex classes

@@ -96,6 +96,14 @@ JOJ::JOJ(
 
   );
 
+  m_atlas.nit(
+    JOJ::STD_TILE_SZ,
+
+    m_hed.atlas_sz,
+    m_hed.atlas_sz_sq
+
+  );
+
 };
 
 // ---   *   ---   *   ---
@@ -164,11 +172,12 @@ void JOJ::offset_img_table(
 
   uint64_t prev_tiles=
     m_leaps[idex]
-  / (sizeof(JOJ::Pixel)*m_tiles.sz_sq)
+  / (sizeof(JOJ::Pixel)*m_atlas.sz_sq)
   ;
 
   m_tiles.fetch_offset(
-    prev_tiles
+    prev_tiles,
+    m_atlas.cnt
 
   );
 
@@ -207,7 +216,7 @@ void JOJ::read_atlas(
 
 ) {
 
-  color.read(m_tiles.get(0,0));
+  color.read(m_atlas.get(0,0));
 
 };
 
@@ -772,7 +781,7 @@ float* JOJ::read_pixels(
   this->offset_img_table(idex);
 
   if(unpack_tiles) {
-    m_tiles.unpack();
+    m_tiles.unpack(m_atlas);
 
   };
 

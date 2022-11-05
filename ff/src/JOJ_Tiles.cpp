@@ -73,7 +73,8 @@ void JOJ::Tiles::from_buff(
 // offsets the next table read
 
 void JOJ::Tiles::fetch_offset(
-  uint64_t prev_tiles
+  uint64_t prev_tiles,
+  uint16_t atlas_cnt
 
 ) {
 
@@ -94,8 +95,8 @@ void JOJ::Tiles::fetch_offset(
 
     td.x+=ox;
 
-    while(td.x>=this->cnt) {
-      td.x-=this->cnt;
+    while(td.x>=atlas_cnt) {
+      td.x-=atlas_cnt;
       td.y++;
 
     };
@@ -588,27 +589,14 @@ void JOJ::Tiles::pack(void) {
 // ---   *   ---   *   ---
 // rebuilds original image from descriptor table
 
-void JOJ::Tiles::unpack(void) {
+void JOJ::Tiles::unpack(
+  JOJ::FwdTiles& other
 
-  uint64_t img_sz_sq=this->sz*this->cnt;
-  img_sz_sq*=img_sz_sq;
+) {
 
-  // make copy of image
-  Mem<JOJ::Pixel> src(img_sz_sq);
+  JOJ::Pixel* src=other.get(0,0);
 
-  // go raw
-  JOJ::Pixel* src_p=&src[0];
-
-  // transfer
-  memcpy(
-    src_p,&this->data[0],
-    img_sz_sq*sizeof(JOJ::Pixel)
-
-  );
-
-// ---   *   ---   *   ---
-// walk the descriptor table
-
+  // walk the descriptor table
   std::vector<uint64_t> needs_clear;
 
   for(uint16_t y=0;y<this->cnt;y++) {
@@ -635,12 +623,14 @@ void JOJ::Tiles::unpack(void) {
     td.dx=x;
     td.dy=y;
 
-    // find fetch-from
+    // fetch-from
+    uint64_t offset=other.real_idex(td.x,td.y);
+
+    // fetch-to
     JOJ::Pixel* dst=this->get(x,y);
-    uint64_t offset=this->real_idex(td.x,td.y);
 
     // fetch and transform
-    this->mov(dst,src_p+offset);
+    this->mov(dst,&src[offset]);
 
     this->apply_rotation(td);
     this->apply_mirror(td);

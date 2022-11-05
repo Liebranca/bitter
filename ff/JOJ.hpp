@@ -58,7 +58,6 @@ private:
 
     uint64_t   img_sz_sq;
     uint64_t   atlas_sz_sq;
-    uint64_t   atlas_ptr=0;
 
     uint8_t    img_comp_cnt;
     char       img_comp[3];
@@ -96,6 +95,7 @@ private:
   JOJ::Encoding    m_enc;
   JOJ::SubEncoding m_c_enc;
   JOJ::Tiles       m_tiles;
+  JOJ::Tiles       m_atlas;
 
   Mem<float>       m_raw;
   Mem<JOJ::Pixel>  m_pixels;
