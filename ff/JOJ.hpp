@@ -161,44 +161,52 @@ private:
 // ---   *   ---   *   ---
 // buff to disk stuff
 
+  // helper
+  typedef struct {
+
+    char     mode;
+    char     type;
+
+    uint16_t idex;
+
+    Bin      color;
+    Bin      table;
+    Bin      atlas;
+
+  } Swap;
+
+  typedef std::unique_ptr<JOJ::Swap> Swap_PTR;
+
+  // ^nit
+  JOJ::Swap_PTR make_swapper(
+    uint16_t idex,
+    char     mode
+
+  );
+
   // makes dump id
-  std::string get_dump_f(uint16_t idex);
+  std::string get_dump_f(char type);
 
   // save/load to/from dump
-  void swap_to(uint16_t idex,char mode);
+  JOJ::Swap_PTR swap_to(uint16_t idex,char mode);
 
   // load single image from atlas
-  void read_img(
-
-    uint16_t idex,
-
-    Bin&     color,
-    Bin&     table
-
-  );
+  void read_img(JOJ::Swap_PTR& swap);
 
   // ^load just the table for an image in atlas
-  void read_img_table(
-    uint16_t idex,
-    Bin&     table
-
-  );
+  void read_img_table(JOJ::Swap_PTR& swap);
 
   // shifts the img fetch array
-  void offset_img_table(
-    uint16_t idex
-
-  );
+  void offset_img_table(JOJ::Swap_PTR& swap);
 
   // ^load the whole atlas
-  void read_atlas(
+  void read_atlas(JOJ::Swap_PTR& swap);
 
-    uint16_t idex,
+  // ^runs processing on atlases
+  void pack_atlas(void);
 
-    Bin&     color,
-    Bin&     table
-
-  );
+  // ^rewrites saved color
+  void owc_atlas(JOJ::Swap_PTR& swap);
 
   // write packed
   void write(void);

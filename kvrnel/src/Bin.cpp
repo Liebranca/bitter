@@ -91,7 +91,7 @@ int Bin::open(std::string fpath,char mode) {
 
 void Bin::close(void) {
 
-  if(m_fh.is_open()) {
+  if(!m_passed && m_fh.is_open()) {
     m_fh.close();
 
   };

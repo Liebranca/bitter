@@ -13,6 +13,7 @@ x Tile palettes
 x Use packed struct for Tiles.tab write
 x JOJ as texture atlas
 x Resizing image for atlas
+x Compare JOJ tile arrays against atlas
 
 *>CRK
 ~ Vertex classes

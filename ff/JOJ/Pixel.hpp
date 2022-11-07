@@ -106,13 +106,23 @@ typedef struct FwdPixel {
     return
        arr[0]==0
     && arr[1]==0
-    && arr[2]==8
-    && arr[3]==8
+    && (arr[2]==8 || arr[2]==0)
+    && (arr[3]==8 || arr[3]==0)
     ;
 
   };
 
 // ---   *   ---   *   ---
+
+  inline uint32_t as_int(void) {
+    return *((uint32_t*) &arr[0]);
+
+  };
+
+  inline void from_int(uint32_t v) {
+    *((uint32_t*) &arr[0])=v;
+
+  };
 
   // straight numerical repr
   inline uint64_t as_key(
@@ -160,14 +170,7 @@ typedef struct FwdPixel {
     struct FwdPixel& other
 
   ) {
-
-    return
-
-       this->arr[0]==other.arr[0]
-    && this->arr[1]==other.arr[1]
-    && this->arr[2]==other.arr[2]
-    && this->arr[3]==other.arr[3]
-    ;
+    return this->as_int()==other.as_int();
 
   };
 

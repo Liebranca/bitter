@@ -56,6 +56,8 @@ private:
   uint64_t    m_size;
   uint64_t    m_ptr;
 
+  bool        m_passed=false;
+
 protected:
   std::string m_fpath;
 
@@ -219,6 +221,11 @@ public:
 
   inline uint64_t get_fullsize(void) {
     return m_size+m_header_sz();
+
+  };
+
+  inline std::string get_fpath(void) {
+    return m_fpath;
 
   };
 

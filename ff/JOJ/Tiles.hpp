@@ -37,7 +37,6 @@ typedef struct {
   uint8_t  mirrored : 2;
   uint8_t  cleared  : 3;
 
-  // indices of tiles sampling this one
   std::vector<uint64_t> used_by;
 
 } Tile_Desc;
@@ -52,6 +51,21 @@ typedef struct {
   uint8_t  cleared  : 3;
 
 } Tile_Desc_Packed;
+
+// ---   *   ---   *   ---
+// another comparison helper
+
+typedef struct {
+
+  JOJ::Tile_Desc& td;
+
+  JOJ::Pixel*     a;
+  JOJ::Pixel*     b;
+
+  uint16_t        x;
+  uint16_t        y;
+
+} Tile_Cmp;
 
 // ---   *   ---   *   ---
 
@@ -69,8 +83,6 @@ typedef struct FwdTiles {
 
   uint64_t sz_sq;
   uint64_t cnt_sq;
-
-  uint64_t solid;
 
   Mem<JOJ::Pixel> data;
   std::vector<JOJ::Tile_Desc> tab;
@@ -96,8 +108,6 @@ typedef struct FwdTiles {
 
     this->cnt     = img_sz/sz;
     this->cnt_sq  = this->cnt*this->cnt;
-
-    this->solid   = 0;
 
     Mem<JOJ::Pixel> data(img_sz_sq);
     this->data.copy(data);
@@ -143,6 +153,23 @@ typedef struct FwdTiles {
     JOJ::Pixel* b
 
   );
+
+  // initializes tile descriptor
+  JOJ::Tile_Desc& nit_desc(
+    uint16_t x,
+    uint16_t y
+
+  );
+
+  // get handle to compared tile
+  JOJ::Pixel* match_get_ref(
+    uint16_t x,
+    uint16_t y
+
+  );
+
+  // matches two tiles
+  bool match_cmp(JOJ::Tile_Cmp& mat);
 
   // attempt matching with previous tiles
   void match(
@@ -253,9 +280,13 @@ typedef struct FwdTiles {
 
   // build original image from table
   void unpack(
-    JOJ::FwdTiles& other
+    JOJ::FwdTiles& atlas,
+    bool           clear_nat=false
 
   );
+
+  // ^same, copy self
+  void unpack(bool clear_nat=false);
 
   // get tile number
   inline uint64_t tile_idex(
