@@ -21,6 +21,13 @@ public:
   VERSION   "v2.00.6";
   AUTHOR    "IBN-3DILA";
 
+  enum {
+
+    UNPACK_IMAGE=0,
+    UNPACK_ATLAS=1
+
+  };
+
 // ---   *   ---   *   ---
 // fat boiler
 
@@ -38,10 +45,15 @@ public:
 private:
 
   void get_tile(uint64_t offset);
-  void set_tile(uint64_t offset);
+
+  void set_tile(
+    JOJ::Tiles& tiles,
+    uint64_t    offset
+
+  );
 
   void to_tiles(void);
-  void from_tiles(void);
+  void from_tiles(JOJ::Tiles& tiles);
 
 // ---   *   ---   *   ---
 // header def for non-pixel data in file
@@ -91,6 +103,7 @@ private:
 
   uint16_t         m_next_img;
   char             m_next_type;
+  bool             m_atlas_mode=false;
 
   JOJ::Encoding    m_enc;
   JOJ::SubEncoding m_c_enc;
@@ -142,7 +155,11 @@ private:
   void read_next_img(void);
 
   // processes loaded buffer
-  void encoder(bool mode=Frac::ENCODE);
+  void encoder(
+    bool     mode = Frac::ENCODE,
+    uint64_t sz   = 0
+
+  );
 
   // per-pixel color conversion
   void color(float* pixel,bool mode);
@@ -251,15 +268,21 @@ public:
 
   // ^raw joj to float*
   Mem<float> to_buff(
+
     uint16_t idex,
-    float    mult=1.0f
+
+    bool     mode = JOJ::UNPACK_IMAGE,
+    float    mult = 1.0f
 
   );
 
   // ^raw joj to png
   void to_png(
+
     uint16_t    idex,
-    std::string name
+    std::string name,
+
+    bool        mode=JOJ::UNPACK_IMAGE
 
   );
 

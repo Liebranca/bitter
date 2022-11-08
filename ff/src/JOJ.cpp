@@ -269,26 +269,6 @@ void JOJ::pack_atlas(void) {
     auto raw   = swap.get();
 
     m_atlas.pack();
-
-// ---   *   ---   *   ---
-
-Mem<JOJ::Pixel> red(m_atlas.sz_sq);
-for(uint64_t j=0;j<m_atlas.sz_sq;j++) {
-  red[j].from_int(0x80FF7FFF);
-
-};
-
-//memcpy(
-//  m_atlas.get(6,1),
-//  &red[0],
-//
-//  m_atlas.sz_sq
-//* sizeof(JOJ::Pixel)
-//
-//);
-
-// ---   *   ---   *   ---
-
     this->owc_atlas(swap);
 
   };
@@ -440,18 +420,22 @@ void JOJ::to_tiles(void) {
 // ---   *   ---   *   ---
 // set NxN chunk
 
-void JOJ::set_tile(uint64_t offset) {
+void JOJ::set_tile(
+  JOJ::Tiles& tiles,
+  uint64_t    offset
 
-  JOJ::Pixel* src=&m_tiles.data[0]+offset;
+) {
+
+  JOJ::Pixel* src=&tiles.data[0]+offset;
   JOJ::Pixel* dst=&m_pixels[0];
 
 // ---   *   ---   *   ---
 
-  for(uint16_t y=0;y<m_tiles.sz;y++) {
+  for(uint16_t y=0;y<tiles.sz;y++) {
 
     uint64_t idex=sq_idex(
-      m_tiles.x,
-      y+m_tiles.y,
+      tiles.x,
+      y+tiles.y,
 
       m_hed.img_sz
 
@@ -464,12 +448,12 @@ void JOJ::set_tile(uint64_t offset) {
       dst+idex,
       src,
 
-      m_tiles.sz
+      tiles.sz
     * sizeof(JOJ::Pixel)
 
     );
 
-    src+=m_tiles.sz;
+    src+=tiles.sz;
 
   };
 
@@ -478,25 +462,25 @@ void JOJ::set_tile(uint64_t offset) {
 // ---   *   ---   *   ---
 // ^copies tiles array to pixel buffer
 
-void JOJ::from_tiles(void) {
+void JOJ::from_tiles(JOJ::Tiles& tiles) {
 
-  m_tiles.x=0;
-  m_tiles.y=0;
+  tiles.x=0;
+  tiles.y=0;
 
   uint64_t offset=0;
 
-  for(uint16_t y=0;y<m_tiles.cnt;y++) {
-    for(uint16_t x=0;x<m_tiles.cnt;x++) {
+  for(uint16_t y=0;y<tiles.cnt;y++) {
+    for(uint16_t x=0;x<tiles.cnt;x++) {
 
-      this->set_tile(offset);
-      offset+=m_tiles.sz_sq;
+      this->set_tile(tiles,offset);
+      offset+=tiles.sz_sq;
 
-      m_tiles.x+=m_tiles.sz;
+      tiles.x+=tiles.sz;
 
     };
 
-    m_tiles.x=0;
-    m_tiles.y+=m_tiles.sz;
+    tiles.x=0;
+    tiles.y+=tiles.sz;
 
   };
 
@@ -715,9 +699,14 @@ JOJ::SubEncoding JOJ::read_mode(char type) {
 // ---   *   ---   *   ---
 // does/undoes frac'ing of floats
 
-void JOJ::encoder(bool mode) {
+void JOJ::encoder(
+  bool     mode,
+  uint64_t sz
+
+) {
 
   JOJ::Pixel* buff=&m_pixels[0];
+  sz+=m_hed.img_sz_sq*!sz;
 
 // ---   *   ---   *   ---
 // transform to and from compressed floats
@@ -726,7 +715,7 @@ void JOJ::encoder(bool mode) {
 
     .m_bytes  = buff[0].as_ptr(),
     .m_floats = &m_raw[0],
-    .m_sz     = m_hed.img_sz_sq*4,
+    .m_sz     = sz*4,
 
     .m_enc    = (char*) m_c_enc.values,
     .m_cnt    = (int*) m_c_enc.cnt,
@@ -891,23 +880,49 @@ float* JOJ::read_pixels(
 
   m_atlas.unpack();
 
+  // get single image
   if(unpack_tiles) {
+
+    if(m_atlas_mode) {
+
+      Mem<JOJ::Pixel> pixels(m_hed.img_sz_sq);
+      m_pixels.copy(pixels);
+
+      Mem<float> raw(m_hed.img_sz_sq<<2);
+      m_raw.copy(raw);
+
+      m_atlas_mode=false;
+
+    };
+
     m_tiles.unpack(m_atlas,true);
 
-  } else {
-    memcpy(
-      m_tiles.get(0,0),
-      m_atlas.get(0,0),
+    this->from_tiles(m_tiles);
+    this->encoder(Frac::DECODE);
 
-      m_hed.img_sz_sq
-    * sizeof(JOJ::Pixel)
+  // get the entire atlas
+  } else {
+
+    if(!m_atlas_mode) {
+
+      Mem<JOJ::Pixel> pixels(m_hed.atlas_sz_sq);
+      m_pixels.copy(pixels);
+
+      Mem<float> raw(m_hed.atlas_sz_sq<<2);
+      m_raw.copy(raw);
+
+      m_atlas_mode=true;
+
+    };
+
+    this->from_tiles(m_atlas);
+    this->encoder(
+      Frac::DECODE,
+      m_hed.atlas_sz_sq
 
     );
 
   };
-
-  this->from_tiles();
-  this->encoder(Frac::DECODE);
 
   return &m_raw[0];
 
@@ -919,18 +934,30 @@ float* JOJ::read_pixels(
 Mem<float> JOJ::to_buff(
 
   uint16_t idex,
+
+  bool     mode,
   float    mult
 
 ) {
 
-  Mem<float> out(m_hed.img_sz_sq<<2);
-  float* pixels = this->read_pixels(idex);
+  uint64_t sz=(mode==JOJ::UNPACK_ATLAS)
+    ? m_hed.atlas_sz
+    : m_hed.img_sz
+    ;
+
+  uint64_t sz_sq=sz*sz;
+
+  Mem<float> out(sz_sq<<2);
+  float* pixels=this->read_pixels(
+    idex,mode==JOJ::UNPACK_IMAGE
+
+  );
 
   this->img_cpy_yauv2rgba(
     &out[0],
     pixels,
 
-    m_hed.img_sz,
+    sz,
     mult
 
   );
@@ -945,21 +972,34 @@ Mem<float> JOJ::to_buff(
 void JOJ::to_png(
 
   uint16_t    idex,
-  std::string name
+  std::string name,
+
+  bool        mode
 
 ) {
 
-  // make image
-  PNG im(name,m_hed.img_sz);
+  uint64_t sz=(mode==JOJ::UNPACK_ATLAS)
+    ? m_hed.atlas_sz
+    : m_hed.img_sz
+    ;
 
-  float* pixels=this->read_pixels(idex,true);
-  Mem<uint8_t> buff(m_hed.img_sz_sq<<2);
+  uint64_t sz_sq=sz*sz;
+
+  // make image
+  PNG im(name,sz);
+
+  float* pixels=this->read_pixels(
+    idex,mode==JOJ::UNPACK_IMAGE
+
+  );
+
+  Mem<uint8_t> buff(sz_sq<<2);
 
   this->img_cpy_yauv2rgba(
     &buff[0],
     pixels,
 
-    m_hed.img_sz,
+    sz,
     255.0f
 
   );

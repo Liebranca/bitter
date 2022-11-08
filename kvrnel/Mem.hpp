@@ -75,16 +75,16 @@ private:
 
     m_slot=m_inst_next++;
 
-//    uint64_t top=m_slstk.size();
-//
-//    if(top) {
-//      m_slot=m_slstk[top-1];
-//      m_slstk.pop_back();
-//
-//    } else {
-//      m_slot=m_inst_next++;
-//
-//    };
+    uint64_t top=m_slstk.size();
+
+    if(top) {
+      m_slot=m_slstk[top-1];
+      m_slstk.pop_back();
+
+    } else {
+      m_slot=m_inst_next++;
+
+    };
 
     m_inst_cnt++;
 
@@ -121,7 +121,8 @@ public:
     } else {
 
       m_id=ID(
-        std::string(this->m_sigil()),name
+        std::string(this->m_sigil()),
+        name
 
       );
 
@@ -149,6 +150,13 @@ public:
     m_buff_sz   = other.m_buff_sz;
     m_idex_mask = other.m_idex_mask;
 
+    // free owned memory if any
+    if(m_buff.get()!=NULL) {
+      free(m_buff.release());
+
+    };
+
+    // ^assume ownership of new block
     m_buff.reset(other.m_buff.release());
 
   };
