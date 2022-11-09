@@ -114,7 +114,9 @@ void JOJ::Tiles::fetch_offset(
 
 void JOJ::Tiles::clear(
   uint16_t x,
-  uint16_t y
+  uint16_t y,
+
+  uint8_t  flag
 
 ) {
 
@@ -125,8 +127,7 @@ void JOJ::Tiles::clear(
 
   };
 
-  this->tab[this->tile_idex(x,y)].cleared=
-    CLEAR_FETCH;
+  this->tab[this->tile_idex(x,y)].cleared=flag;
 
 };
 
@@ -504,8 +505,11 @@ bool JOJ::Tiles::match_cmp(
 // match tile against the rest of the image
 
 void JOJ::Tiles::match(
+
   uint16_t x,
-  uint16_t y
+  uint16_t y,
+
+  bool     skip
 
 ) {
 
@@ -646,11 +650,11 @@ void JOJ::Tiles::reloc_all(void) {
 // ---   *   ---   *   ---
 // build table
 
-void JOJ::Tiles::pack(void) {
+void JOJ::Tiles::pack(bool no_match) {
 
   for(uint16_t y=0;y<this->cnt;y++) {
   for(uint16_t x=0;x<this->cnt;x++) {
-    this->match(x,y);
+    this->match(x,y,no_match);
 
   }};
 
@@ -668,10 +672,9 @@ void JOJ::Tiles::unpack(
 ) {
 
   JOJ::Pixel* src=atlas.get(0,0);
-
-  // walk the descriptor table
   std::vector<uint64_t> needs_clear;
 
+  // walk the descriptor table
   for(uint16_t y=0;y<this->cnt;y++) {
   for(uint16_t x=0;x<this->cnt;x++) {
 
@@ -750,6 +753,43 @@ void JOJ::Tiles::unpack(bool clear_nat) {
   this->unpack(cpy,clear_nat);
 
 };
+
+// ---   *   ---   *   ---
+
+void JOJ::Tiles::get_img_desc(
+  JOJ::FwdTiles&         atlas,
+  std::vector<uint64_t>& desc
+
+) {
+
+  uint64_t top=desc.size();
+  desc.push_back(0);
+  desc.push_back(this->cnt);
+
+  // walk the descriptor table
+  for(uint16_t y=0;y<this->cnt;y++) {
+  for(uint16_t x=0;x<this->cnt;x++) {
+
+    // fetch tile
+    uint64_t        td_idex = this->tile_idex(x,y);
+    JOJ::Tile_Desc& td      = this->tab[td_idex];
+
+    // skip transparent
+    if(td.cleared==CLEAR_NAT) {continue;};
+
+    uint64_t offset=atlas.tile_idex(td.x,td.y);
+
+    desc.push_back(
+      x|(uint64_t(y)<<16)|(offset<<32)
+
+    );
+
+    desc[top]++;
+
+  }};
+
+};
+
 
 // ---   *   ---   *   ---
 // send duplicate of tile to buffer

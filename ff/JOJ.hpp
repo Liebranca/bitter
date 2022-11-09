@@ -18,7 +18,7 @@ class JOJ: public Bin {
 
 public:
 
-  VERSION   "v2.00.6";
+  VERSION   "v2.00.7";
   AUTHOR    "IBN-3DILA";
 
   enum {
@@ -299,6 +299,16 @@ public:
     return m_hed.img_sz;
 
   };
+
+  inline uint16_t get_atlas_sz(void) {
+    return m_hed.atlas_sz;
+
+  };
+
+  std::vector<uint64_t> get_atlas_desc(
+    uint16_t idex
+
+  );
 
 };
 

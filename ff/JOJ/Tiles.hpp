@@ -134,10 +134,20 @@ typedef struct FwdTiles {
 
   );
 
+  enum {
+    SOLID       = 0b000,
+    CLEAR_NAT   = 0b001,
+    CLEAR_FETCH = 0b010,
+    FAKE_SOLID  = 0b100,
+
+  };
+
   // discard contents of tile
   void clear(
     uint16_t x,
-    uint16_t y
+    uint16_t y,
+
+    uint8_t  flag=JOJ::Tiles::CLEAR_FETCH
 
   );
 
@@ -171,10 +181,19 @@ typedef struct FwdTiles {
   // matches two tiles
   bool match_cmp(JOJ::Tile_Cmp& mat);
 
+  enum {
+
+    XFORM_APPLY,
+    XFORM_SKIP
+
+  };
+
   // attempt matching with previous tiles
   void match(
     uint16_t x,
-    uint16_t y
+    uint16_t y,
+
+    bool     skip=false
 
   );
 
@@ -195,14 +214,6 @@ typedef struct FwdTiles {
     ROT_90,
     ROT_180,
     ROT_240
-
-  };
-
-  enum {
-    SOLID       = 0b000,
-    CLEAR_NAT   = 0b001,
-    CLEAR_FETCH = 0b010,
-    FAKE_SOLID  = 0b100,
 
   };
 
@@ -276,7 +287,7 @@ typedef struct FwdTiles {
   void reloc_all(void);
 
   // builds table from image
-  void pack(void);
+  void pack(bool no_match);
 
   // build original image from table
   void unpack(
@@ -287,6 +298,13 @@ typedef struct FwdTiles {
 
   // ^same, copy self
   void unpack(bool clear_nat=false);
+
+  // get packed tiles for whole image
+  void get_img_desc(
+    JOJ::FwdTiles&         atlas,
+    std::vector<uint64_t>& desc
+
+  );
 
   // get tile number
   inline uint64_t tile_idex(
