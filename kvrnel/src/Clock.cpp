@@ -22,7 +22,9 @@
 // ---   *   ---   *   ---
 // constructor
 
-Clock::Clock(float fps) {
+void Clock::nit(float fps) {
+
+  glm::uvec4 pos;
 
   m_beg=clock();
   m_end=m_beg;
@@ -32,20 +34,18 @@ Clock::Clock(float fps) {
   * CLOCKS_PER_SEC
   ;
 
-  m_len=std::round(frame_time);
+  m_len   = std::round(frame_time);
 
-  m_delta=0;
-  m_scale=1.0;
+  m_delta = 0;
+  m_scale = 1.0f;
 
-  m_fBy=0.0;
-  m_uBy=0;
+  m_fBy   = 0.0;
+  m_uBy   = 0;
 
-  glm::uvec4 pos;
+  pos.x   = 0;
+  pos.y   = -1;
 
-  pos.x=0;
-  pos.y=-1;
-
-  m_gf=Sprite(
+  m_gf    = Sprite(
 
     L"\x01A9\x01AA\x01AB\x01AC"
     L"\x01AD\x01AE\x01AF\x01B0",

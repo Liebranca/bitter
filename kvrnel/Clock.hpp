@@ -14,7 +14,7 @@ class Clock {
 
 private:
 
-  VERSION   "v2.00.1";
+  VERSION   "v2.00.2";
   AUTHOR    "IBN-3DILA";
 
 // ---   *   ---   *   ---
@@ -34,13 +34,35 @@ private:
   Sprite  m_gf;
 
 // ---   *   ---   *   ---
+// iface
 
 public:
 
-  Clock(float fps);
+  // ctrash
+  Clock(void) {};
+
+  inline Clock(float fps) {
+    this->nit(fps);
+
+  };
+
+  void nit(float fps);
   void tick(int busy);
 
   inline void draw(void);
+
+// ---   *   ---   *   ---
+// getters
+
+  inline float fBy(void) {
+    return m_fBy;
+
+  };
+
+  inline long uBy(void) {
+    return m_uBy;
+
+  };
 
 };
 
