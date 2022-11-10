@@ -1,5 +1,5 @@
 // ---   *   ---   *   ---
-// SPRITE
+// CHAR SPRITE
 // Retro motion
 //
 // LIBRE SOFTWARE
@@ -15,12 +15,12 @@
   #include <cstring>
   #include <iostream>
 
-  #include "kvrnel/Sprite.hpp"
+  #include "kvrnel/Char_Sprite.hpp"
 
 // ---   *   ---   *   ---
 // constructor
 
-Sprite::Sprite(
+Char_Sprite::Char_Sprite(
   const wchar_t* anim,
   glm::uvec4& co
 
@@ -36,7 +36,7 @@ Sprite::Sprite(
 // ---   *   ---   *   ---
 // display next frame
 
-void Sprite::play(char speed) {
+void Char_Sprite::play(char speed) {
 
   // position the cursor
   std::wcout
@@ -77,7 +77,7 @@ void Sprite::play(char speed) {
 // ---   *   ---   *   ---
 // debug print
 
-void Sprite::prich(void) {
+void Char_Sprite::prich(void) {
 
   std::wcout << m_anim << std::endl;
 

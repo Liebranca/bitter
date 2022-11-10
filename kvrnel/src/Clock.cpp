@@ -45,7 +45,7 @@ void Clock::nit(float fps) {
   pos.x   = 0;
   pos.y   = -1;
 
-  m_gf    = Sprite(
+  m_gf    = Char_Sprite(
 
     L"\x01A9\x01AA\x01AB\x01AC"
     L"\x01AD\x01AE\x01AF\x01B0",

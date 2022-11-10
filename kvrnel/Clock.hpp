@@ -5,7 +5,7 @@
 // deps
 
   #include "kvrnel/Style.hpp"
-  #include "kvrnel/Sprite.hpp"
+  #include "kvrnel/Char_Sprite.hpp"
 
 // ---   *   ---   *   ---
 // info
@@ -31,7 +31,7 @@ private:
   float   m_fBy;
   long    m_uBy;
 
-  Sprite  m_gf;
+  Char_Sprite m_gf;
 
 // ---   *   ---   *   ---
 // iface

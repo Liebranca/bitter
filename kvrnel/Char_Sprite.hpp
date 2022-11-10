@@ -1,5 +1,5 @@
-#ifndef __24_SPRITE_H__
-#define __24_SPRITE_H__
+#ifndef __24_CHAR_SPRITE_H__
+#define __24_CHAR_SPRITE_H__
 
 // ---   *   ---   *   ---
 // deps
@@ -9,7 +9,7 @@
 
 // ---   *   ---   *   ---
 
-class Sprite {
+class Char_Sprite {
 
 private:
 
@@ -25,10 +25,10 @@ private:
 public:
 
   // compiler trash
-  Sprite() {};
+  Char_Sprite() {};
 
   // constructor
-  Sprite(
+  Char_Sprite(
     const wchar_t* anim,
     glm::uvec4& co
 
@@ -44,4 +44,4 @@ public:
 
 // ---   *   ---   *   ---
 
-#endif // __24_SPRITE_H__
+#endif // __24_CHAR_SPRITE_H__
