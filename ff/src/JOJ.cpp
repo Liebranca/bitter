@@ -171,41 +171,42 @@ std::vector<uint64_t> JOJ::get_atlas_desc(
 
   std::vector<uint64_t> out;
 
-  auto swap = this->make_swapper(idex,Bin::READ);
-  auto raw  = swap.get();
+  // number of entries in table
+  out.push_back(m_hed.img_cnt);
 
-  Mem<JOJ::Tile_Desc_Packed> m(
-    m_tiles.cnt_sq
+  float tile_step  = 1.0f;
+  float atlas_step = 1.0f;
+
+  // 1 step == 1 tile-width worth of pixels
+  tile_step/=m_hed.img_sz/m_tiles.sz;
+  atlas_step/=m_hed.atlas_sz/m_atlas.sz;
+
+  // ^pack as a single long
+  out.push_back(
+    *((uint64_t*) &tile_step)
+  | (*((uint64_t*) &atlas_step)<<32)
 
   );
 
 // ---   *   ---   *   ---
 
+  auto swap = this->make_swapper(idex,Bin::READ);
+  auto raw  = swap.get();
+
   for(
 
     uint16_t i=raw->idex;
 
-    i<=m_hed.img_cnt*m_hed.img_comp_cnt;
+    i<m_hed.img_cnt*m_hed.img_comp_cnt;
     i+=m_hed.img_comp_cnt
 
   ) {
 
-    uint16_t offset=this->img_idex(i);
-
-    uint64_t leap=
-      m_tiles.cnt_sq
-    * sizeof(JOJ::Tile_Desc_Packed)
-    ;
-
-    raw->table.seek(leap*offset);
-    raw->table.read(&m[0],m.bytesz());
-
-    m_tiles.from_buff(m);
+    this->read_img_table(swap);
     m_tiles.get_img_desc(m_atlas,out);
 
   };
 
-  out.push_back(0x00);
   return out;
 
 };

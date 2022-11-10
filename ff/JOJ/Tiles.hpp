@@ -10,8 +10,6 @@
 
 private:
 
-  cx8 STD_TILE_SZ=0x10;
-
 typedef struct {
   uint16_t src_x;
   uint16_t src_y;
@@ -70,6 +68,8 @@ typedef struct {
 // ---   *   ---   *   ---
 
 public:
+
+  cx8 STD_TILE_SZ=0x10;
 
 typedef struct FwdTiles {
 

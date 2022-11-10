@@ -535,6 +535,8 @@ void JOJ::Tiles::match(
 
   };
 
+  if(skip) {goto TAIL;};
+
   // walk tiles
   for(uint16_t iy=0;iy<this->cnt;iy++) {
   for(uint16_t ix=0;ix<this->cnt;ix++) {
@@ -764,7 +766,6 @@ void JOJ::Tiles::get_img_desc(
 
   uint64_t top=desc.size();
   desc.push_back(0);
-  desc.push_back(this->cnt);
 
   // walk the descriptor table
   for(uint16_t y=0;y<this->cnt;y++) {
@@ -775,12 +776,20 @@ void JOJ::Tiles::get_img_desc(
     JOJ::Tile_Desc& td      = this->tab[td_idex];
 
     // skip transparent
-    if(td.cleared==CLEAR_NAT) {continue;};
+    if(
 
-    uint64_t offset=atlas.tile_idex(td.x,td.y);
+       td.cleared==CLEAR_NAT
+    || td.cleared==FAKE_SOLID
+
+    ) {continue;};
 
     desc.push_back(
-      x|(uint64_t(y)<<16)|(offset<<32)
+
+      x
+
+    | (uint64_t(y)<<16)
+    | (uint64_t(td.x)<<32)
+    | (uint64_t(td.y)<<48)
 
     );
 
