@@ -53,6 +53,8 @@ private:
   uint64_t m_buff_sz;
   uint64_t m_idex_mask;
 
+  uint64_t m_used;
+
   std::unique_ptr<T> m_buff;
 
 // ---   *   ---   *   ---
@@ -134,6 +136,8 @@ public:
     m_buff_sz      = near_pow2(buff_sz);
     m_idex_mask    = m_buff_sz-1;
 
+    m_used         = 0;
+
     T* raw         = (T*) malloc(this->bytesz());
 
     m_buff.reset(raw);
@@ -149,6 +153,7 @@ public:
     m_slot      = other.m_slot;
     m_buff_sz   = other.m_buff_sz;
     m_idex_mask = other.m_idex_mask;
+    m_used      = other.m_used;
 
     // free owned memory if any
     if(m_buff.get()!=NULL) {
@@ -219,6 +224,11 @@ public:
 
     );
 
+    m_used=
+      (ptr+len)
+    * ((ptr+len)>m_used)
+    ;
+
     return len;
 
   };
@@ -227,6 +237,11 @@ public:
 
   inline uint64_t bytesz(void) {
     return m_buff_sz*sizeof(T);
+
+  };
+
+  inline uint64_t used(void) {
+    return m_used;
 
   };
 

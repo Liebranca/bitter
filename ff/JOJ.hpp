@@ -18,7 +18,7 @@ class JOJ: public Bin {
 
 public:
 
-  VERSION   "v2.00.7";
+  VERSION   "v2.00.8";
   AUTHOR    "IBN-3DILA";
 
   enum {
@@ -113,7 +113,7 @@ private:
   Mem<float>       m_raw;
   Mem<JOJ::Pixel>  m_pixels;
 
-  std::vector<uint64_t> m_leaps;
+  std::vector<uint64_t> m_atlas_refs;
 
 // ---   *   ---   *   ---
 // internals
@@ -130,9 +130,6 @@ private:
     return idex/m_hed.img_comp_cnt;
 
   };
-
-  void write_leaps(void);
-  void read_leaps(void);
 
   JOJ::SubEncoding read_mode(char type);
 
@@ -206,9 +203,6 @@ private:
 
   // save/load to/from dump
   JOJ::Swap_PTR swap_to(uint16_t idex,char mode);
-
-  // load single image from atlas
-  void read_img(JOJ::Swap_PTR& swap);
 
   // ^load just the table for an image in atlas
   void read_img_table(JOJ::Swap_PTR& swap);

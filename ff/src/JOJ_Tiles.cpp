@@ -22,26 +22,50 @@ template class Mem<JOJ::Tile_Desc>;
 // ---   *   ---   *   ---
 // write tiles info to a buffer
 
-Mem<JOJ::Tile_Desc_Packed>
-JOJ::Tiles::to_buff(void) {
+Mem<uint8_t> JOJ::Tiles::to_buff(void) {
 
-  Mem<JOJ::Tile_Desc_Packed> out(this->cnt_sq);
+  uint64_t _sz=
+    this->cnt_sq
+  * sizeof(uint64_t)
+  ;
 
-  uint64_t i=0;
-  for(JOJ::Tile_Desc& td : this->tab) {
+  for(uint64_t i=0;i<this->cnt_sq;i++) {
 
-    out[i].rotated  = td.rotated;
-    out[i].mirrored = td.mirrored;
-    out[i].cleared  = td.cleared;
-
-    out[i].x        = td.x;
-    out[i].y        = td.y;
-
-    i++;
+    _sz+=
+      this->users[i].size()
+    * sizeof(JOJ::Tile_Ref)
+    ;
 
   };
 
-  return Mem<JOJ::Tile_Desc_Packed>(out);
+// ---   *   ---   *   ---
+
+  Mem<uint8_t> out(_sz);
+
+  uint64_t i=0;
+  for(uint64_t i=0,j=0;i<this->cnt_sq;i++) {
+
+    auto src = this->users[i];
+    src.cnt  = src.size();
+
+    out.write(&src.cnt,sizeof(uint64_t),j);
+    j+=sizeof(uint64_t);
+
+    uint64_t leap=
+      src.cnt
+    * sizeof(JOJ::Tile_Ref)
+    ;
+
+    if(leap) {
+
+      out.write(src.data(),leap,j);
+      j+=leap;
+
+    };
+
+  };
+
+  return Mem<uint8_t>(out);
 
 };
 
@@ -49,21 +73,36 @@ JOJ::Tiles::to_buff(void) {
 // ^get tiles from mem
 
 void JOJ::Tiles::from_buff(
-  Mem<JOJ::Tile_Desc_Packed>& src
+  Mem<uint8_t>& src
 
 ) {
 
-  uint64_t i=0;
-  for(JOJ::Tile_Desc& td : this->tab) {
+  for(uint64_t i=0,j=0;i<this->cnt_sq;i++) {
 
-    td.rotated  = src[i].rotated;
-    td.mirrored = src[i].mirrored;
-    td.cleared  = src[i].cleared;
+    uint64_t _cnt=*((uint64_t*) &src[j]);
+    j+=sizeof(uint64_t);
 
-    td.x        = src[i].x;
-    td.y        = src[i].y;
+    uint64_t leap=
+      _cnt
+    * sizeof(JOJ::Tile_Ref)
+    ;
 
-    i++;
+    if(leap) {
+
+      this->users[i].resize(_cnt);
+
+      memcpy(
+
+        this->users[i].data(),
+        &src[j],
+
+        leap
+
+      );
+
+      j+=leap;
+
+    };
 
   };
 
@@ -73,14 +112,17 @@ void JOJ::Tiles::from_buff(
 // offsets the next table read
 
 void JOJ::Tiles::fetch_offset(
-  uint64_t prev_tiles,
-  uint16_t atlas_cnt
+
+  JOJ::FwdTiles& atlas,
+
+  uint16_t       img_idex,
+  uint64_t       prev_tiles
 
 ) {
 
   // get origin
   uint32_t xy=rsq_idex(
-    prev_tiles,atlas_cnt
+    prev_tiles,atlas.cnt
 
   );
 
@@ -93,17 +135,32 @@ void JOJ::Tiles::fetch_offset(
 
   for(JOJ::Tile_Desc& td : this->tab) {
 
-    if(td.cleared==CLEAR_NAT) {continue;};
+    if(
+
+       td.cleared==CLEAR_NAT
+    || td.cleared==FAKE_SOLID
+
+    ) {continue;};
 
     td.x+=ox;
 
-    while(td.x>=atlas_cnt) {
-      td.x-=atlas_cnt;
+    while(td.x>=atlas.cnt) {
+      td.x-=atlas.cnt;
       td.y++;
 
     };
 
     td.y+=oy;
+
+    uint64_t td_idex=atlas.tile_idex(td.x,td.y);
+
+    auto ref=JOJ::Tile_Ref(
+      img_idex,
+      this->tile_idex(td.dx,td.dy)
+
+    );
+
+    atlas.users[td_idex].push_back(ref);
 
   };
 
@@ -419,7 +476,43 @@ JOJ::Tile_Desc& JOJ::Tiles::nit_desc(
   td.dx       = x;
   td.dy       = y;
 
-  td.used_by.clear();
+  td.users.clear();
+
+  return td;
+
+};
+
+// ---   *   ---   *   ---
+// initializes tile descriptors in image array
+
+JOJ::Tile_Desc& JOJ::Tiles::nit_img_desc(
+
+  std::vector<JOJ::Tile_Desc>& dst,
+
+  uint64_t i,
+  uint16_t entry_cnt
+
+) {
+
+  uint64_t        td_idex = i;
+  JOJ::Tile_Desc& td      = dst[td_idex];
+
+  uint32_t xy = rsq_idex(i,entry_cnt);
+
+  uint16_t _x = xy&0xFFFF;
+  uint16_t _y = xy>>16;
+
+  td.rotated  = ROT_0;
+  td.mirrored = MIRROR_NONE;
+  td.cleared  = SOLID;
+
+  td.x        = _x;
+  td.y        = _y;
+
+  td.dx       = _x;
+  td.dy       = _y;
+
+  td.users.clear();
 
   return td;
 
@@ -483,11 +576,20 @@ bool JOJ::Tiles::match_cmp(
       mat.td.x=mat.x;
       mat.td.y=mat.y;
 
+      uint64_t idex=this->tile_idex(
+        mat.td.dx,mat.td.dy
+
+      );
+
+      // add this tile to target's users
       this->tab[
         this->tile_idex(mat.x,mat.y)
 
-      ].used_by.push_back(
-        this->tile_idex(mat.td.dx,mat.td.dy)
+      ].users.push_back(idex);
+
+      // notify users of this tile
+      this->reloc_users(
+        idex,x,y
 
       );
 
@@ -572,6 +674,46 @@ TAIL:
 };
 
 // ---   *   ---   *   ---
+
+void JOJ::Tiles::reloc_users(
+
+  uint64_t idex,
+
+  uint16_t x,
+  uint16_t y
+
+) {
+
+  std::vector<uint64_t>& src0=
+    this->tab[idex].users;
+
+  for(uint64_t ref_idex : src0) {
+
+    this->tab[ref_idex].x=x;
+    this->tab[ref_idex].y=y;
+
+  };
+
+  if(this->users.size()) {
+
+    std::vector<JOJ::Tile_Ref>& src1=
+      this->users[idex].buff;
+
+    for(JOJ::Tile_Ref& ref : src1) {
+
+      auto& dst=
+        this->image[ref.img][ref.tile];
+
+      dst.x=x;
+      dst.y=y;
+
+    };
+
+  };
+
+};
+
+// ---   *   ---   *   ---
 // move tile to first empty one
 
 void JOJ::Tiles::reloc(
@@ -605,17 +747,10 @@ void JOJ::Tiles::reloc(
 
       );
 
-      for(
+      this->reloc_users(
+        src_idex,x,y
 
-        uint64_t ref_idex
-      : this->tab[src_idex].used_by
-
-      ) {
-
-        this->tab[ref_idex].x=x;
-        this->tab[ref_idex].y=y;
-
-      };
+      );
 
       this->clear(td.dx,td.dy);
 
@@ -652,11 +787,14 @@ void JOJ::Tiles::reloc_all(void) {
 // ---   *   ---   *   ---
 // build table
 
-void JOJ::Tiles::pack(bool no_match) {
+void JOJ::Tiles::pack(
+  bool skip_match
+
+) {
 
   for(uint16_t y=0;y<this->cnt;y++) {
   for(uint16_t x=0;x<this->cnt;x++) {
-    this->match(x,y,no_match);
+    this->match(x,y,skip_match);
 
   }};
 

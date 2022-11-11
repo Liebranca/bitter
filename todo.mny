@@ -14,6 +14,10 @@ x Use packed struct for Tiles.tab write
 x JOJ as texture atlas
 x Resizing image for atlas
 x Compare JOJ tile arrays against atlas
+~ Eliminate need for runtime atlas unpacking
+~ ^ Update image tables during atlas pack
+~ ^ Derive polygon cache from image tables
+~ Make binary for packing and unpacking
 
 *>CRK
 ~ Vertex classes

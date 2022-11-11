@@ -141,24 +141,24 @@ void JOJ::read_img_table(
 
 ) {
 
-  auto raw=swap.get();
-
-  Mem<JOJ::Tile_Desc_Packed> m(
-    m_tiles.cnt_sq
-
-  );
-
-  uint16_t offset=this->img_idex(raw->idex);
-
-  uint64_t leap=
-    m_tiles.cnt_sq
-  * sizeof(JOJ::Tile_Desc_Packed)
-  ;
-
-  raw->table.seek(leap*offset);
-  raw->table.read(&m[0],m.bytesz());
-
-  m_tiles.from_buff(m);
+//  auto raw=swap.get();
+//
+//  Mem<JOJ::Tile_Desc_Packed> m(
+//    m_tiles.cnt_sq
+//
+//  );
+//
+//  uint16_t offset=this->img_idex(raw->idex);
+//
+//  uint64_t leap=
+//    m_tiles.cnt_sq
+//  * sizeof(JOJ::Tile_Desc_Packed)
+//  ;
+//
+//  raw->table.seek(leap*offset);
+//  raw->table.read(&m[0],m.bytesz());
+//
+//  m_tiles.from_buff(m);
 
 };
 
@@ -220,35 +220,19 @@ void JOJ::offset_img_table(JOJ::Swap_PTR& swap) {
   raw->color.seek(0,Bin::END);
   uint64_t offset=raw->color.tell();
 
-  m_leaps.push_back(offset);
-
   uint64_t prev_tiles=
     offset
   / (sizeof(JOJ::Pixel)*m_atlas.sz_sq)
   ;
 
   m_tiles.fetch_offset(
-    prev_tiles,
-    m_atlas.cnt
+
+    m_atlas,
+
+    raw->idex%m_hed.img_cnt,
+    prev_tiles
 
   );
-
-};
-
-// ---   *   ---   *   ---
-
-void JOJ::read_img(JOJ::Swap_PTR& swap) {
-
-  auto raw=swap.get();
-  this->read_img_table(swap);
-
-  uint64_t sz=
-    m_tiles.solid_cnt()
-  * sizeof(JOJ::Pixel)
-  ;
-
-  raw->color.seek(m_leaps[raw->idex],Bin::BEG);
-  raw->color.read(m_tiles.get(0,0),sz);
 
 };
 
@@ -259,10 +243,7 @@ void JOJ::read_atlas(JOJ::Swap_PTR& swap) {
   auto raw=swap.get();
   raw->color.read(m_atlas.get(0,0));
 
-  Mem<JOJ::Tile_Desc_Packed> m(
-    m_atlas.cnt_sq
-
-  );
+  Mem<uint8_t> m(raw->atlas.get_size());
 
   raw->atlas.read(&m[0],m.bytesz());
   m_atlas.from_buff(m);
@@ -285,7 +266,7 @@ void JOJ::owc_atlas(
   raw->atlas.open(fpath_atlas,Bin::NEW);
 
   auto m=m_atlas.to_buff();
-  raw->atlas.write(&m[0],m.bytesz());
+  raw->atlas.write(&m[0],m.used());
 
   // ^same, pixel data
   std::string fpath_color=raw->color.get_fpath();
@@ -315,11 +296,23 @@ void JOJ::pack_atlas(void) {
 
   ) {
 
+    m_atlas.clear_users();
+
     auto swap  = this->swap_to(i,Bin::READ);
     auto raw   = swap.get();
 
     m_atlas.pack(JOJ::Tiles::XFORM_APPLY);
     this->owc_atlas(swap);
+
+//for(uint64_t j=0;j<m_atlas.cnt_sq;j++) {
+//
+//  JOJ::Tile_Desc& td=m_atlas.image[0][j];
+//  printf("[%u,%u] -> [%u,%u]\n",
+//    td.dx,td.dy,td.x,td.y
+//
+//  );
+//
+//};
 
   };
 
@@ -378,16 +371,10 @@ JOJ::Swap_PTR JOJ::swap_to(
   // store
   } else {
 
-
-    { auto m=m_atlas.to_buff();
-      raw->atlas.write(&m[0],m.bytesz());
-
-    };
-
     this->offset_img_table(out);
 
-    auto m=m_tiles.to_buff();
-    raw->table.write(&m[0],m.bytesz());
+    auto m=m_atlas.to_buff();
+    raw->atlas.write(&m[0],m.used());
 
     uint64_t sz=
       m_tiles.solid_cnt()
@@ -576,46 +563,11 @@ void JOJ::pack(void) {
 };
 
 // ---   *   ---   *   ---
-
-void JOJ::write_leaps(void) {
-
-  m_leaps.insert(
-    m_leaps.begin(),
-    m_leaps.size()
-
-  );
-
-  Bin::write(
-    m_leaps.data(),
-
-    m_leaps.size()
-  * sizeof(uint64_t)
-
-  );
-
-};
-
-// ---   *   ---   *   ---
-
-void JOJ::read_leaps(void) {
-
-  uint64_t sz=0;
-  Bin::read(&sz,sizeof(uint64_t));
-
-  m_leaps.clear();
-  m_leaps.resize(sz);
-
-  Bin::read(m_leaps.data(),sz*sizeof(uint64_t));
-
-};
-
-// ---   *   ---   *   ---
 // dump to disk
 
 void JOJ::write(void) {
 
   this->write_header(&m_hed);
-  this->write_leaps();
 
   for(
 
@@ -630,11 +582,9 @@ void JOJ::write(void) {
     auto raw  = swap.get();
 
     raw->atlas.transfer(this);
-    raw->table.transfer(this);
     raw->color.transfer(this);
 
     raw->atlas.nuke();
-    raw->table.nuke();
     raw->color.nuke();
 
   };
@@ -657,8 +607,6 @@ void JOJ::unpack(void) {
   * sizeof(JOJ::Tile_Desc_Packed)
   * m_hed.img_cnt
   ;
-
-  this->read_leaps();
 
 // ---   *   ---   *   ---
 
@@ -819,7 +767,9 @@ void JOJ::chk_img_sz(
       JOJ::STD_TILE_SZ,
 
       m_hed.atlas_sz,
-      m_hed.atlas_sz_sq
+      m_hed.atlas_sz_sq,
+
+      m_tiles.cnt|(m_hed.img_cnt<<16)
 
     );
 

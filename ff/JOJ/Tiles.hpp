@@ -19,6 +19,68 @@ typedef struct {
 } Tile_Fetch;
 
 // ---   *   ---   *   ---
+// atlas table helper
+
+typedef struct FwdTile_Ref {
+
+  uint64_t img;
+  uint64_t tile;
+
+  FwdTile_Ref(void) {};
+  FwdTile_Ref(
+    uint16_t img,
+    uint64_t tile
+
+  ) {
+
+    this->img  = img;
+    this->tile = tile;
+
+  };
+
+} Tile_Ref;
+
+// ---   *   ---   *   ---
+// ^helper dynarray
+
+typedef struct {
+
+  uint64_t cnt;
+  std::vector <JOJ::Tile_Ref> buff;
+
+  JOJ::Tile_Ref& operator[](uint64_t i) {
+    return buff[i];
+
+  };
+
+  inline uint64_t size(void) {
+    return buff.size();
+
+  };
+
+  inline JOJ::Tile_Ref* data(void) {
+    return buff.data();
+
+  };
+
+  inline void resize(uint64_t sz) {
+    buff.resize(sz);
+
+  };
+
+  inline void clear(void) {
+    buff.clear();
+
+  };
+
+  inline void push_back(JOJ::Tile_Ref ref) {
+    buff.push_back(ref);
+
+  };
+
+} Tile_Refs;
+
+// ---   *   ---   *   ---
 // comparison/reconstruction helper
 
 typedef struct {
@@ -35,7 +97,7 @@ typedef struct {
   uint8_t  mirrored : 2;
   uint8_t  cleared  : 3;
 
-  std::vector<uint64_t> used_by;
+  std::vector<uint64_t> users;
 
 } Tile_Desc;
 
@@ -85,7 +147,14 @@ typedef struct FwdTiles {
   uint64_t cnt_sq;
 
   Mem<JOJ::Pixel> data;
+
   std::vector<JOJ::Tile_Desc> tab;
+  std::vector<JOJ::Tile_Refs> users;
+
+  std::vector<
+    std::vector<JOJ::Tile_Desc>
+
+  > image;
 
 // ---   *   ---   *   ---
 // default constructor doesn't want to work
@@ -93,9 +162,10 @@ typedef struct FwdTiles {
   void nit(
 
     uint16_t sz,
-
     uint64_t img_sz,
-    uint64_t img_sz_sq
+    uint64_t img_sz_sq,
+
+    uint32_t atlas=0
 
   ) {
 
@@ -114,23 +184,62 @@ typedef struct FwdTiles {
 
     this->tab.resize(this->cnt_sq);
 
+    if(atlas) {
+
+      uint16_t entry_sz  = atlas&0xFFFF;
+      uint16_t entry_cnt = atlas>>16;
+
+      this->users.resize(this->cnt_sq);
+      this->image.resize(entry_cnt);
+
+      uint64_t entry_sz_sq=entry_sz*entry_sz;
+
+      for(
+
+        std::vector<JOJ::Tile_Desc>& td_arr
+      : this->image
+
+      ) {
+
+        td_arr.resize(entry_sz_sq);
+
+        for(uint64_t i=0;i<entry_sz_sq;i++) {
+          this->nit_img_desc(
+            td_arr,i,entry_sz
+
+          );
+
+        };
+
+      };
+
+    };
+
   };
 
 // ---   *   ---   *   ---
 
-  // write tiles info to a buffer
-  Mem<JOJ::Tile_Desc_Packed> to_buff(void);
+  JOJ::Tile_Desc& nit_img_desc(
+    std::vector<JOJ::Tile_Desc>& dst,
 
-  // ^inverse
-  void from_buff(
-    Mem<JOJ::Tile_Desc_Packed>& src
+    uint64_t i,
+    uint16_t entry_sz
 
   );
 
+  // write tiles info to a buffer
+  Mem<uint8_t> to_buff(void);
+
+  // ^inverse
+  void from_buff(Mem<uint8_t>& src);
+
   // offsets the next table read
   void fetch_offset(
-    uint64_t prev_tiles,
-    uint16_t atlas_cnt
+
+    JOJ::FwdTiles& atlas,
+
+    uint16_t       img_idex,
+    uint64_t       prev_tiles
 
   );
 
@@ -190,6 +299,7 @@ typedef struct FwdTiles {
 
   // attempt matching with previous tiles
   void match(
+
     uint16_t x,
     uint16_t y,
 
@@ -283,11 +393,27 @@ typedef struct FwdTiles {
   // move tile to first empty one
   void reloc(JOJ::Tile_Desc& td);
 
+  // move local fetch refs
+  void reloc_users(
+
+    uint64_t idex,
+
+    uint16_t x,
+    uint16_t y
+
+  );
+
+  inline void clear_users(void) {
+    this->users.clear();
+    this->users.resize(this->sz_sq);
+
+  };
+
   // ^runs reloc on whole image
   void reloc_all(void);
 
   // builds table from image
-  void pack(bool no_match);
+  void pack(bool skip_match=false);
 
   // build original image from table
   void unpack(
