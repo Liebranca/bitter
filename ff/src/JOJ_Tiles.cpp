@@ -135,12 +135,7 @@ void JOJ::Tiles::fetch_offset(
 
   for(JOJ::Tile_Desc& td : this->tab) {
 
-    if(
-
-       td.cleared==CLEAR_NAT
-    || td.cleared==FAKE_SOLID
-
-    ) {continue;};
+    if(td.cleared==CLEAR_NAT) {continue;};
 
     td.x+=ox;
 
@@ -163,6 +158,16 @@ void JOJ::Tiles::fetch_offset(
     atlas.users[td_idex].push_back(ref);
 
   };
+
+  memcpy(
+
+    atlas.image[img_idex].data(),
+    this->tab.data(),
+
+    this->cnt_sq
+  * sizeof(JOJ::Tile_Desc)
+
+  );
 
 };
 
@@ -475,42 +480,6 @@ JOJ::Tile_Desc& JOJ::Tiles::nit_desc(
 
   td.dx       = x;
   td.dy       = y;
-
-  td.users.clear();
-
-  return td;
-
-};
-
-// ---   *   ---   *   ---
-// initializes tile descriptors in image array
-
-JOJ::Tile_Desc& JOJ::Tiles::nit_img_desc(
-
-  std::vector<JOJ::Tile_Desc>& dst,
-
-  uint64_t i,
-  uint16_t entry_cnt
-
-) {
-
-  uint64_t        td_idex = i;
-  JOJ::Tile_Desc& td      = dst[td_idex];
-
-  uint32_t xy = rsq_idex(i,entry_cnt);
-
-  uint16_t _x = xy&0xFFFF;
-  uint16_t _y = xy>>16;
-
-  td.rotated  = ROT_0;
-  td.mirrored = MIRROR_NONE;
-  td.cleared  = SOLID;
-
-  td.x        = _x;
-  td.y        = _y;
-
-  td.dx       = _x;
-  td.dy       = _y;
 
   td.users.clear();
 

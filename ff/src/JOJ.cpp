@@ -284,6 +284,32 @@ void JOJ::owc_atlas(
 };
 
 // ---   *   ---   *   ---
+// returns tile descriptors
+
+std::vector<JOJ::Tile_Desc>
+JOJ::img_tables(void) {
+
+  for(uint64_t j=0;j<m_atlas.cnt_sq;j++) {
+
+    JOJ::Tile_Desc& td=m_atlas.image[0][j];
+
+    if(
+
+       td.cleared==JOJ::Tiles::CLEAR_NAT
+    || td.cleared==JOJ::Tiles::FAKE_SOLID
+
+    ) {continue;};
+
+    printf("[%u,%u] -> [%u,%u]\n",
+      td.dx,td.dy,td.x,td.y
+
+    );
+
+  };
+
+};
+
+// ---   *   ---   *   ---
 
 void JOJ::pack_atlas(void) {
 
@@ -303,16 +329,6 @@ void JOJ::pack_atlas(void) {
 
     m_atlas.pack(JOJ::Tiles::XFORM_APPLY);
     this->owc_atlas(swap);
-
-//for(uint64_t j=0;j<m_atlas.cnt_sq;j++) {
-//
-//  JOJ::Tile_Desc& td=m_atlas.image[0][j];
-//  printf("[%u,%u] -> [%u,%u]\n",
-//    td.dx,td.dy,td.x,td.y
-//
-//  );
-//
-//};
 
   };
 

@@ -45,38 +45,7 @@ typedef struct FwdTile_Ref {
 
 typedef struct {
 
-  uint64_t cnt;
-  std::vector <JOJ::Tile_Ref> buff;
 
-  JOJ::Tile_Ref& operator[](uint64_t i) {
-    return buff[i];
-
-  };
-
-  inline uint64_t size(void) {
-    return buff.size();
-
-  };
-
-  inline JOJ::Tile_Ref* data(void) {
-    return buff.data();
-
-  };
-
-  inline void resize(uint64_t sz) {
-    buff.resize(sz);
-
-  };
-
-  inline void clear(void) {
-    buff.clear();
-
-  };
-
-  inline void push_back(JOJ::Tile_Ref ref) {
-    buff.push_back(ref);
-
-  };
 
 } Tile_Refs;
 
@@ -199,33 +168,13 @@ typedef struct FwdTiles {
         std::vector<JOJ::Tile_Desc>& td_arr
       : this->image
 
-      ) {
-
-        td_arr.resize(entry_sz_sq);
-
-        for(uint64_t i=0;i<entry_sz_sq;i++) {
-          this->nit_img_desc(
-            td_arr,i,entry_sz
-
-          );
-
-        };
-
-      };
+      ) {td_arr.resize(entry_sz_sq);};
 
     };
 
   };
 
 // ---   *   ---   *   ---
-
-  JOJ::Tile_Desc& nit_img_desc(
-    std::vector<JOJ::Tile_Desc>& dst,
-
-    uint64_t i,
-    uint16_t entry_sz
-
-  );
 
   // write tiles info to a buffer
   Mem<uint8_t> to_buff(void);
