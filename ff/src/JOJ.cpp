@@ -286,12 +286,15 @@ void JOJ::owc_atlas(
 // ---   *   ---   *   ---
 // returns tile descriptors
 
-std::vector<JOJ::Tile_Desc>
-JOJ::img_tables(void) {
+void JOJ::img_table(
+  JOJ::Atlas_Desc& dst,
+  uint16_t         idex
 
-  for(uint64_t j=0;j<m_atlas.cnt_sq;j++) {
+) {
 
-    JOJ::Tile_Desc& td=m_atlas.image[0][j];
+  for(uint64_t i=0;i<m_atlas.cnt_sq;i++) {
+
+    JOJ::Tile_Desc& td=m_atlas.image[idex][i];
 
     if(
 
@@ -300,10 +303,7 @@ JOJ::img_tables(void) {
 
     ) {continue;};
 
-    printf("[%u,%u] -> [%u,%u]\n",
-      td.dx,td.dy,td.x,td.y
-
-    );
+    dst[idex].push_back(td);
 
   };
 
@@ -311,7 +311,14 @@ JOJ::img_tables(void) {
 
 // ---   *   ---   *   ---
 
-void JOJ::pack_atlas(void) {
+JOJ::Atlas_Desc JOJ::pack_atlas(void) {
+
+  JOJ::Atlas_Desc out;
+
+  uint32_t limit=
+    m_hed.img_comp_cnt
+  * m_hed.img_cnt
+  ;
 
   for(
 
@@ -328,7 +335,46 @@ void JOJ::pack_atlas(void) {
     auto raw   = swap.get();
 
     m_atlas.pack(JOJ::Tiles::XFORM_APPLY);
+
+    for(
+
+      uint16_t j=i;
+
+      j<limit;
+      j+=m_hed.img_comp_cnt
+
+    ) {
+
+      out.push_back(JOJ::Img_Desc());
+      this->img_table(out,j);
+
+    };
+
     this->owc_atlas(swap);
+
+  };
+
+  return out;
+
+};
+
+// ---   *   ---   *   ---
+
+void JOJ::bake_frames(
+  JOJ::Atlas_Desc& tab
+
+) {
+
+  for(JOJ::Img_Desc& img : tab) {
+
+    CRK crk(fpath);
+
+    for(JOJ::Tile_Desc& td : img) {
+      crk.push_quad(td);
+
+    };
+
+    crk.pack();
 
   };
 
@@ -571,7 +617,8 @@ void JOJ::pack(void) {
 
   };
 
-  this->pack_atlas();
+  auto tab=this->pack_atlas();
+  this->bake_frames(tab);
 
   // ^joins dumps into single file
   this->write();

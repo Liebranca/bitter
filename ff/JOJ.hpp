@@ -18,7 +18,7 @@ class JOJ: public Bin {
 
 public:
 
-  VERSION   "v2.00.8";
+  VERSION   "v2.00.9";
   AUTHOR    "IBN-3DILA";
 
   enum {
@@ -151,6 +151,15 @@ private:
   // get next "queued" read
   void read_next_img(void);
 
+  // get descriptor for atlas entry
+  void img_table(
+    JOJ::Atlas_Desc& dst,
+    uint16_t         idex
+
+  );
+
+  void bake_frames(JOJ::Atlas_Desc& tab);
+
   // processes loaded buffer
   void encoder(
     bool     mode = Frac::ENCODE,
@@ -214,7 +223,7 @@ private:
   void read_atlas(JOJ::Swap_PTR& swap);
 
   // ^runs processing on atlases
-  void pack_atlas(void);
+  JOJ::Atlas_Desc pack_atlas(void);
 
   // ^rewrites saved color
   void owc_atlas(JOJ::Swap_PTR& swap);

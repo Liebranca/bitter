@@ -45,14 +45,14 @@ Mem<uint8_t> JOJ::Tiles::to_buff(void) {
   uint64_t i=0;
   for(uint64_t i=0,j=0;i<this->cnt_sq;i++) {
 
-    auto src = this->users[i];
-    src.cnt  = src.size();
+    auto src      = this->users[i];
+    uint64_t _cnt = src.size();
 
-    out.write(&src.cnt,sizeof(uint64_t),j);
+    out.write(&_cnt,sizeof(uint64_t),j);
     j+=sizeof(uint64_t);
 
     uint64_t leap=
-      src.cnt
+      _cnt
     * sizeof(JOJ::Tile_Ref)
     ;
 
@@ -666,7 +666,7 @@ void JOJ::Tiles::reloc_users(
   if(this->users.size()) {
 
     std::vector<JOJ::Tile_Ref>& src1=
-      this->users[idex].buff;
+      this->users[idex];
 
     for(JOJ::Tile_Ref& ref : src1) {
 

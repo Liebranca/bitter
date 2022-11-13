@@ -41,15 +41,6 @@ typedef struct FwdTile_Ref {
 } Tile_Ref;
 
 // ---   *   ---   *   ---
-// ^helper dynarray
-
-typedef struct {
-
-
-
-} Tile_Refs;
-
-// ---   *   ---   *   ---
 // comparison/reconstruction helper
 
 typedef struct {
@@ -80,6 +71,17 @@ typedef struct {
   uint8_t  cleared  : 3;
 
 } Tile_Desc_Packed;
+
+// ---   *   ---   *   ---
+// shorthands
+
+typedef std::vector<
+  std::vector<JOJ::Tile_Ref>
+
+> Tile_Refs;
+
+typedef std::vector<JOJ::Tile_Desc> Img_Desc;
+typedef std::vector<Img_Desc> Atlas_Desc;
 
 // ---   *   ---   *   ---
 // another comparison helper
@@ -115,15 +117,11 @@ typedef struct FwdTiles {
   uint64_t sz_sq;
   uint64_t cnt_sq;
 
-  Mem<JOJ::Pixel> data;
+  Mem<JOJ::Pixel>  data;
 
-  std::vector<JOJ::Tile_Desc> tab;
-  std::vector<JOJ::Tile_Refs> users;
-
-  std::vector<
-    std::vector<JOJ::Tile_Desc>
-
-  > image;
+  JOJ::Tile_Refs   users;
+  JOJ::Atlas_Desc  image;
+  JOJ::Img_Desc    tab;
 
 // ---   *   ---   *   ---
 // default constructor doesn't want to work
