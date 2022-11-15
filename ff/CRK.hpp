@@ -10,6 +10,8 @@
   #include "kvrnel/Bytes.hpp"
   #include "kvrnel/Bin.hpp"
 
+  #include "ff/JOJ.hpp"
+
 // ---   *   ---   *   ---
 // info
 
@@ -67,7 +69,7 @@ public:
 
   typedef struct {
 
-    Prim&    me;
+    Prim*    me;
 
     uint16_t vert;
     uint16_t idex;
@@ -75,10 +77,22 @@ public:
   } Prim_Build;
 
   typedef std::vector<CRK::Prim> Mesh;
+
   struct Mesh_Build {
 
-    uint8_t type
-    void*   data;
+    uint16_t type;
+    void*    data;
+
+  };
+
+  typedef std::vector<
+    CRK::Mesh_Build
+
+  > Mesh_Builds;
+
+  struct Vertex_Packed {
+    uint64_t sz;
+    uint64_t cnt;
 
   };
 
@@ -134,8 +148,7 @@ private:
   };
 
   CRK::Prim make_sprite_frame(
-    CRK::Build_Sprite* bld,
-    uint64_t&          offset
+    CRK::Build_Sprite* bld
 
   );
 
@@ -145,7 +158,7 @@ private:
 
   );
 
-  void build(CRK::Mesh_Build& bld);
+  void build(CRK::Mesh_Builds& bld);
 
 // ---   *   ---   *   ---
 // iface
@@ -155,8 +168,8 @@ public:
   // new
   CRK(
 
-    std::string      fpath,
-    CRK::Mesh_Build& bld
+    std::string       fpath,
+    CRK::Mesh_Builds& bld
 
   );
 

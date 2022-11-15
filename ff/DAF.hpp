@@ -14,7 +14,7 @@ class DAF: public Bin {
 
 public:
 
-  VERSION   "v2.00.1";
+  VERSION   "v2.00.2";
   AUTHOR    "IBN-3DILA";
 
 // ---   *   ---   *   ---
@@ -65,20 +65,36 @@ private:
   };
 
 // ---   *   ---   *   ---
-// internals
+// guts
 
+  // give next avail slot
   uint64_t* get_avail(void);
 
+  // ^get idex of slot mask
   inline uint64_t avail_idex(
     uint64_t* avail
 
-  );
+  ) {
+
+    return uint64_t(
+      avail-&m_hed.blk_mask[0]
+
+    ) >>3;
+
+  };
+
+  // get idex of first available slot
+  uint64_t get_next(void);
+
+  // get block by idex
+  DAF::Block* get_blk(uint64_t idex);
 
 // ---   *   ---   *   ---
+// iface
 
 public:
 
-  // compiler trash
+  // ctrash
   DAF(void) {};
   ~DAF(void);
 

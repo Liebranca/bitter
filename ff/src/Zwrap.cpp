@@ -68,7 +68,7 @@ std::string Zwrap::get_status(void) {
 Zwrap::Zwrap(int mode) {
 
   m_mode          = mode;
-  m_buff          = NULL;
+
   m_readsize      = DAFPAGE;
   m_remain        = 0x00;
 
@@ -138,7 +138,7 @@ void Zwrap::next_chunk(void) {
 
   // from file
   if(m_mode&Zwrap::INPUT_BIN) {
-    src=m_buff.get();
+    src=&m_buff[0];
     m_src.bin->read(src,m_readsize);
 
   // from mem
@@ -229,7 +229,7 @@ void Zwrap::dump(void) {
 
     if(m_mode&Zwrap::OUTPUT_BIN) {
 
-      uint8_t* dst   = m_buff.get()+DAFPAGE;
+      uint8_t* dst   = &m_buff[0]+DAFPAGE;
       uint64_t avail = DAFPAGE;
 
       have=this->process(dst,avail);
@@ -351,14 +351,12 @@ int Zwrap::flate(void) {
   (  (m_mode&Zwrap::INPUT_BIN)
   || (m_mode&Zwrap::OUTPUT_BIN)
 
-  ) && m_buff==NULL
+  ) && m_buff.is_null()
 
   ) {
 
-    m_buff=std::unique_ptr<uint8_t>(
-      new uint8_t[DAFPAGE*2]
-
-    );
+    Mem<uint8_t> buff(DAFPAGE*2);
+    m_buff.copy(buff);
 
   };
 

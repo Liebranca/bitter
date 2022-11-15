@@ -360,25 +360,25 @@ JOJ::Atlas_Desc JOJ::pack_atlas(void) {
 
 // ---   *   ---   *   ---
 
-void JOJ::bake_frames(
-  JOJ::Atlas_Desc& tab
-
-) {
-
-  for(JOJ::Img_Desc& img : tab) {
-
-    CRK crk(fpath);
-
-    for(JOJ::Tile_Desc& td : img) {
-      crk.push_quad(td);
-
-    };
-
-    crk.pack();
-
-  };
-
-};
+//void JOJ::bake_frames(
+//  JOJ::Atlas_Desc& tab
+//
+//) {
+//
+//  for(JOJ::Img_Desc& img : tab) {
+//
+//    CRK crk(fpath);
+//
+//    for(JOJ::Tile_Desc& td : img) {
+//      crk.push_quad(td);
+//
+//    };
+//
+//    crk.pack();
+//
+//  };
+//
+//};
 
 // ---   *   ---   *   ---
 
@@ -618,7 +618,7 @@ void JOJ::pack(void) {
   };
 
   auto tab=this->pack_atlas();
-  this->bake_frames(tab);
+//  this->bake_frames(tab);
 
   // ^joins dumps into single file
   this->write();

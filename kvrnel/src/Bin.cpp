@@ -223,43 +223,35 @@ Bin::~Bin(void) {
 // ---   *   ---   *   ---
 // open, read, close
 
-std::unique_ptr<uint8_t> Bin::orc(
+Mem<uint8_t> Bin::orc(
   std::string fpath
 
 ) {
 
   Bin b(fpath,READ);
+  Mem<uint8_t> buff(b.m_size);
 
-  std::unique_ptr<uint8_t> buff(
-    new uint8_t[b.m_size]
+  b.m_fh.read((char*) &buff[0],b.m_size);
 
-  );
-
-  b.m_fh.read((char*) buff.get(),b.m_size);
-
-  return buff;
+  return Mem<uint8_t>(buff);
 
 };
 
 // ---   *   ---   *   ---
 // read from cursor up to size
 
-std::unique_ptr<uint8_t> Bin::read(
+Mem<uint8_t> Bin::read(
   uint64_t sz
 
 ) {
 
   sz+=m_size*(sz==0);
+  Mem<uint8_t> buff(sz);
 
-  std::unique_ptr<uint8_t> buff(
-    new uint8_t[sz]
-
-  );
-
-  m_fh.read((char*) buff.get(),sz);
+  m_fh.read((char*) &buff[0],sz);
   m_ptr+=sz;
 
-  return buff;
+  return Mem<uint8_t>(buff);
 
 };
 
@@ -367,26 +359,19 @@ void Bin::transfer(Bin* other,uint64_t sz) {
 
   sz+=m_size*(sz==0);
 
-  std::unique_ptr<uint8_t> buff=
-    this->read(sz);
-
-  other->write(buff.get(),sz);
-
-  buff.reset();
+  auto buff=this->read(sz);
+  other->write(&buff[0],sz);
 
 };
 
 void Bin::f_transfer(Bin* other) {
 
   this->rewind();
-  uint64_t sz=this->get_fullsize();
 
-  std::unique_ptr<uint8_t> buff=
-    this->read(sz);
+  uint64_t sz   = this->get_fullsize();
+  auto     buff = this->read(sz);
 
-  other->write(buff.get(),sz);
-
-  buff.reset();
+  other->write(&buff[0],sz);
 
 };
 

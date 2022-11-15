@@ -25,7 +25,16 @@ struct Quad_Build : Prim_Build {
   float    co_scale;
   float    uv_scale;
 
-  uint64_t desc;
+  JOJ::Tile_Desc td;
+
+// ---   *   ---   *   ---
+
+  Quad_Build(Prim* p) {
+    me   = p;
+    vert = 0;
+    idex = 0;
+
+  };
 
 // ---   *   ---   *   ---
 

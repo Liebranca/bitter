@@ -158,7 +158,7 @@ private:
 
   );
 
-  void bake_frames(JOJ::Atlas_Desc& tab);
+//  void bake_frames(JOJ::Atlas_Desc& tab);
 
   // processes loaded buffer
   void encoder(

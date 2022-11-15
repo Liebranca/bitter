@@ -8,9 +8,9 @@
   #include <fstream>
   #include <string>
   #include <cstring>
-  #include <memory>
 
   #include "kvrnel/Style.hpp"
+  #include "kvrnel/Mem.hpp"
   #include "kvrnel/Evil.hpp"
 
 // ---   *   ---   *   ---
@@ -20,7 +20,7 @@ class Bin {
 
 public:
 
-  VERSION   "2.00.1";
+  VERSION   "2.00.2";
   AUTHOR    "IBN-3DILA";
 
   cx8       READ   = 0x01;
@@ -164,13 +164,13 @@ public:
   bool match_sig(void);
 
   // open, read && close
-  static std::unique_ptr<uint8_t> orc(
+  static Mem<uint8_t> orc(
     std::string fpath
 
   );
 
   // read from cursor up to size
-  std::unique_ptr<uint8_t> read(
+  Mem<uint8_t> read(
     uint64_t sz=0
 
   );

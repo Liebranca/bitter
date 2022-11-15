@@ -4,10 +4,10 @@
 // ---   *   ---   *   ---
 // deps
 
-  #include <memory>
   #include "zlib.h"
 
   #include "kvrnel/Style.hpp"
+  #include "kvrnel/Mem.hpp"
   #include "kvrnel/Bin.hpp"
 
 // ---   *   ---   *   ---
@@ -17,7 +17,7 @@ class Zwrap {
 
 public:
 
-  VERSION   "v2.00.1";
+  VERSION   "v2.00.2";
   AUTHOR    "IBN-3DILA";
 
   cx8 DEFLATE     = 0x00;
@@ -66,20 +66,20 @@ private:
 // ---   *   ---   *   ---
 // attrs
 
-  Target    m_dst;
-  Target    m_src;
+  Target       m_dst;
+  Target       m_src;
 
-  z_stream  m_strm;
+  z_stream     m_strm;
 
-  uint64_t  m_readsize;
-  uint64_t  m_remain;
+  uint64_t     m_readsize;
+  uint64_t     m_remain;
 
-  uint64_t  m_flush;
+  uint64_t     m_flush;
 
-  int       m_status;
-  int       m_mode;
+  int          m_status;
+  int          m_mode;
 
-  std::unique_ptr<uint8_t> m_buff;
+  Mem<uint8_t> m_buff;
 
 // ---   *   ---   *   ---
 // consts

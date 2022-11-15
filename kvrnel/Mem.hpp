@@ -177,11 +177,18 @@ public:
   };
 
 // ---   *   ---   *   ---
+
+  inline bool is_null(void) {
+    return m_buff.get()==NULL;
+
+  };
+
+// ---   *   ---   *   ---
 // free
 
   ~Mem<T>(void) {
 
-    if(m_buff.get()!=NULL) {
+    if(!this->is_null()) {
       m_slstk.push_back(m_slot);
       m_inst_cnt--;
 

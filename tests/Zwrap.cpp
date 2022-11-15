@@ -1,15 +1,15 @@
-#include "kvrnel/src/Evil.cpp"
-#include "kvrnel/src/ID.cpp"
-#include "kvrnel/src/Mem.cpp"
-#include "kvrnel/src/Bin.cpp"
-#include "ff/src/Zwrap.cpp"
+#include "kvrnel/Mem.hpp"
+#include "kvrnel/Bin.hpp"
+#include "ff/Zwrap.hpp"
 
 int main(void) {
 
-  ID id("$","testy");
-  Mem<uint8_t> m(&id,256);
+  Mem<uint8_t> m(256);
 
-  { Zwrap z(Zwrap::DEFLATE
+  {
+    Zwrap z(
+
+      Zwrap::DEFLATE
 
     | Zwrap::INPUT_BIN
     | Zwrap::OUTPUT_BIN
@@ -17,7 +17,7 @@ int main(void) {
     );
 
     Bin in("./ztest_in",Bin::READ);
-    Bin out("./ztest_out",Bin::WRITE|Bin::TRUNC);
+    Bin out("./ztest_out",Bin::NEW);
 
     z.set_src(&in);
     z.set_dst(&out);

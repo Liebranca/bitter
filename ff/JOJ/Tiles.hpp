@@ -43,6 +43,8 @@ typedef struct FwdTile_Ref {
 // ---   *   ---   *   ---
 // comparison/reconstruction helper
 
+public:
+
 typedef struct {
 
   // fetch-from
@@ -99,8 +101,6 @@ typedef struct {
 } Tile_Cmp;
 
 // ---   *   ---   *   ---
-
-public:
 
   cx8 STD_TILE_SZ=0x10;
 

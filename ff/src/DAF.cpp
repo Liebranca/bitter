@@ -61,25 +61,32 @@ uint64_t* DAF::get_avail(void) {
 };
 
 // ---   *   ---   *   ---
+// get block by idex
 
-inline uint64_t DAF::avail_idex(
-  uint64_t* avail
+DAF::Block* DAF::get_blk(uint64_t idex) {
 
-) {
+  DAF::Block* blk=&m_hed.blk[idex];
 
-  return uint64_t(
-    avail-&m_hed.blk_mask[0]
+  if(idex) {
+    DAF::Block* prev=&m_hed.blk[idex-1];
+    blk->off=prev->off+prev->sz;
 
-  ) >>3;
+  } else {
+    blk->off=0;
+
+  };
+
+  return blk;
 
 };
 
 // ---   *   ---   *   ---
-// insert new block
+// get idex of first available slot
 
-void DAF::push(Bin& src) {
+uint64_t DAF::get_next(void) {
 
-  uint64_t* avail=this->get_avail();
+  uint64_t  i     = 0;
+  uint64_t* avail = this->get_avail();
 
   // throw full
   if(avail==NULL) {
@@ -91,10 +98,6 @@ void DAF::push(Bin& src) {
 
   };
 
-// ---   *   ---   *   ---
-
-  uint64_t i=0;
-
   // get next free slot
   if(*avail) {
     i=nbsf(*avail);
@@ -105,25 +108,21 @@ void DAF::push(Bin& src) {
   *avail|=1<<i;
 
   // get real idex of block
-  uint64_t blk_idex=i+(
-    this->avail_idex(avail)*64
+  i+=this->avail_idex(avail)*64;
 
-  );
+  return i;
+
+};
 
 // ---   *   ---   *   ---
+// insert new block
 
-  DAF::Block* blk=&m_hed.blk[blk_idex];
+void DAF::push(Bin& src) {
 
-  if(blk_idex) {
-    DAF::Block* prev=&m_hed.blk[blk_idex-1];
-    blk->off=prev->off+prev->sz;
+  auto idex = this->get_next();
+  auto blk  = this->get_blk(idex);
 
-  } else {
-    blk->off=0;
-
-  };
-
-  blk->sz=src.get_fullsize();
+  blk->sz   = src.get_fullsize();
 
   this->seek(blk->off,Bin::BEG);
   src.f_transfer(this);
@@ -131,6 +130,7 @@ void DAF::push(Bin& src) {
 };
 
 // ---   *   ---   *   ---
+// close file
 
 void DAF::close(void) {
   this->write_header(&m_hed);
