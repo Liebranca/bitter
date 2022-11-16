@@ -65,12 +65,7 @@ int Bin::open(std::string fpath,char mode) {
   // errchk
   if(!m_fh.is_open()) {
 
-    Evil::terminator(
-      Error::OPEN_FAIL,
-      fpath
-
-    );
-
+    evil_throw(Bin::Error::OPEN,fpath);
     out=AR_ERROR;
 
   // update filepath only on success
@@ -131,12 +126,7 @@ bool Bin::match_sig(void) {
       // compare and throw
       if(m_fsig()!=sig) {
 
-        Evil::terminator(
-          Error::BAD_SIG,
-          m_fpath
-
-        );
-
+        evil_throw(Bin::Error::SIG,m_fpath);
         out=false;
 
       };

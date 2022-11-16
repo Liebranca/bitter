@@ -34,6 +34,30 @@ public:
 
 // ---   *   ---   *   ---
 
+  struct Error {
+
+    CX Evil::Errcode SIG={
+
+      .type=AR_FATAL,
+
+      .code=__COUNTER__,
+      .mess="Bad file signature"
+
+    };
+
+    CX Evil::Errcode OPEN={
+
+      .type=AR_FATAL,
+
+      .code=__COUNTER__,
+      .mess="Unable to open file"
+
+    };
+
+  };
+
+// ---   *   ---   *   ---
+
   CX std::ios_base::seekdir BEG=
     std::ios_base::beg;
 

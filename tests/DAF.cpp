@@ -1,15 +1,20 @@
+#include "kvrnel/Evil.hpp"
 #include "ff/DAF.hpp"
 
 int main(void) {
 
   DAF daf("./a.daf",Bin::NEW);
-  Bin out("./out",Bin::READ);
-  Bin txt("./todo.mny",Bin::READ);
+  Bin blk0("./blk0",Bin::READ);
+  Bin blk1("./blk1",Bin::READ);
 
-  daf.push(txt);
-  daf.push(txt);
+  errchk;
+    daf.push(blk0);
+    daf.push(blk0);
 
-  daf.insert(out,0);
+    daf.insert(blk1,2);
+    daf.push(blk1);
+
+  endchk;
 
   return 0;
 

@@ -26,6 +26,19 @@ public:
   cx8 INPUT_BIN   = 0x02;
   cx8 OUTPUT_BIN  = 0x04;
 
+  struct Error {
+
+    CX Evil::Errcode ZLIB={
+
+      .type=AR_FATAL,
+
+      .code=__COUNTER__,
+      .mess="ZLIB went PLOP!"
+
+    };
+
+  };
+
 // ---   *   ---   *   ---
 // helpers
 

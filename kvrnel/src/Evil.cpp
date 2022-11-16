@@ -12,38 +12,60 @@
 // ---   *   ---   *   ---
 // deps
 
-  #include <cstdio>
-  #include <cstdarg>
-  #include <cstdlib>
   #include <cstring>
-  #include <cmath>
+  #include <iostream>
 
   #include "kvrnel/Evil.hpp"
 
 // ---   *   ---   *   ---
-// fast check for known errors
 
-void Evil::errchk(
+cx8 HEXCHARS[]={
 
-  Dang* call,
-  int*  retx,
+  '0','1','2','3',
+  '4','5','6','7',
+  '8','9','A','B',
+  'C','D','E','F'
 
-  const short errcode,
-  std::string info
+};
+
+std::string hexstr(
+  uint64_t x,
+  uint8_t  sz
 
 ) {
 
-  if(
+  std::string out(sz,'0');
 
-    (call->state==AR_FATAL)
-  | (call->state==AR_ERROR)
+  for(int8_t i=0;i<sz;i++) {
+    out[(sz-1)-i]=char(HEXCHARS[x&0xF]);
+    x>>=4;
 
-  | (*retx && (*retx != call->state))
+  };
 
-  ) {terminator(errcode,info);};
+  return out;
 
-  *retx=call->state;
-  poplog();
+};
+
+// ---   *   ---   *   ---
+
+static Evil _evil=Evil();
+
+Evil& Evil::get(void) {
+  return _evil;
+
+};
+
+Evil::Errme& Evil::top_err(void) {
+  return Evil::m_log.back();
+
+};
+
+void Evil::set_err(
+  const std::string& info
+
+) {
+
+  top_err().info=info;
 
 };
 
@@ -78,44 +100,25 @@ char* Evil::shpath(const char* path) {
 };
 
 // ---   *   ---   *   ---
+// avoid recursion or you'll see this one
 
-Dang* Evil::geterrloc(
+void Evil::on_max_depth(Evil::Errme& me) {
 
-  const char* p,
-  const char* f,
+  if(m_depth > CSTK_LEN) {
 
-  int l
+    std::cerr
+    << "Call depth exceeded\n"
 
-) {
+    << "#:!;> " << me.file << ' '
+    << "at " << me.func << ' '
 
-  Dang* out=&(m_log[m_ptr]);
+    << "(line " << me.line << ')'
+    << std::endl
+    ;
 
-  char callbranch[66];
+  };
 
-  callbranch[0]='\b';
-  callbranch[1]='\0';
-
-// ---   *   ---   *   ---
-
-  if(m_depth) {
-
-    // avoid recursion or you'll see this one
-    if(m_depth > 63) {
-
-      fprintf(
-
-        stderr,
-
-        "Call depth exceeded\n"
-        "#:!;> %s at %s (line %i)\n",
-
-        p,f,l
-
-      );
-
-      out=NULL;
-
-    };
+};
 
 // ---   *   ---   *   ---
 // fill callbranch so that
@@ -127,6 +130,19 @@ Dang* Evil::geterrloc(
 // \--> depth 1
 //
 // etc.
+
+std::string Evil::get_callbranch(
+  Evil::Errme& me
+
+) {
+
+  std::string callbranch(66,'\0');
+
+  callbranch[0]='\b';
+  callbranch[1]='\0';
+
+  if(m_depth>1) {
+    on_max_depth(me);
 
     // branch start
     callbranch[0]='\\';
@@ -147,66 +163,76 @@ Dang* Evil::geterrloc(
 
   };
 
-// ---   *   ---   *   ---
-// assign current depth
+  return callbranch;
 
-  out->depth=m_depth++;
-
-  // paste into logs
-  snprintf(
-
-    out->loc, 255,
-
-    "%s%s%i:\x1b[0m %s<%s>"
-    "\x1b[0m on func %s%s"
-    "\x1b[0m line %s%i\e[0m\n",
-
-    PALETTE[1],
-
-    callbranch,m_ptr,
-
-    PALETTE[0],p,
-    PALETTE[2],f,
-    PALETTE[3],l
-
-  );
+};
 
 // ---   *   ---   *   ---
-// move to next entry
 
+void Evil::geterrloc(
+
+  const char* file,
+  const char* func,
+
+  uint64_t    line
+
+) {
+
+  Evil::Errme me={
+
+    .depth = m_depth++,
+    .line  = line,
+
+    .loc   = std::string(ERRS_LEN+1,'\0'),
+
+    .file  = std::string(file),
+    .func  = std::string(func)
+
+  };
+
+  auto callbranch=get_callbranch(me);
+
+  // paste to logs
+  me.loc+=
+
+    std::string(PALETTE[1])
+
+  + callbranch+std::to_string(m_ptr)
+
+  + ":\e[0m "+std::string(PALETTE[0])
+  +"<"+me.file+">"
+
+  + "\e[0m on func "+std::string(PALETTE[2])
+  + me.func
+
+  + "\e[0m line "+std::string(PALETTE[3])
+  + std::to_string(me.line)
+  + "\e[0m\n"
+  ;
+
+  // move to next entry
+  m_log.push_back(me);
   m_ptr++;
-  return out;
 
 };
 
 // ---   *   ---   *   ---
 // spit out entries
 
-void Evil::printlog(int flush) {
+void Evil::printlog(bool flush) {
 
   for(int i=0;i<m_ptr;i++) {
-    fprintf(
+    std::cerr << PALETTE[4] << m_log[i].loc;
 
-      stderr,"%s%s",
-
-      PALETTE[4],
-      m_log[i].loc
-
-    );
-
-// ---   *   ---   *   ---
-// 'delete' this entry ;>
-
+    // 'delete' this entry ;>
     if(flush) {
       m_log[i].loc[0]='\0';
 
     };
 
-// ---   *   ---   *   ---
-// reset counters if need
-
   };
 
+  // reset counters if need
   if(flush) {m_ptr=0;};
 
 };
@@ -229,179 +255,83 @@ void Evil::poplog(void) {
 };
 
 // ---   *   ---   *   ---
-// ill be back
 
-void Evil::terminator (
-
-  int errcode,
-  std::string info
+uint8_t Evil::errtype(
+  const Evil::Errcode& ee
 
 ) {
 
-  char mstart[256];
-  const char* mbody;
+  uint8_t out=0;
+  std::string mstart;
 
-  int color_code;
+  // really bad error
+  if(ee.type==AR_FATAL) {
 
-  if(errcode<Fatal::ERRCODE_MAX) {
-    snprintf(mstart,255,"%s#:!;> ",PALETTE[6]);
+    mstart+=PALETTE[6];
+
     m_state=AR_FATAL;
+    out=6;
 
-    color_code=6;
-
+  // plain bad error
   } else {
-    snprintf(mstart,255,"%s#:!;> ",PALETTE[7]);
+
+    mstart+=PALETTE[7];
+
     m_state=AR_ERROR;
-
-    color_code=7;
-
-  };
-
-// ---   *   ---   *   ---
-// let the printing begin
-
-  fprintf(
-
-    stderr,
-
-    "\n%3$s"
-
-    "%1$s"
-    "%4$04X "
-    "%2$s",
-
-    PALETTE[3],PALETTE[4],
-    mstart,errcode
-
-  );
-
-// ---   *   ---   *   ---
-// NOTE:
-//
-//  these first few are from an old version
-//  and were never used. i leave them
-//  because they amuse me
-
-  switch(errcode) {
-
-    case Fatal::OOM:
-      mbody="Insuficcient memory %s(%s requested)";
-      break;
-
-    case Fatal::ACV:
-      mbody="Access violation %s%s";
-      break;
-
-    case Fatal::END_TIMES:
-      mbody="The end times have come %s%s";
-      break;
-
-    case Fatal::ILLEGAL:
-      mbody="Illegal instruction %s%s";
-      break;
-
-// ---   *   ---   *   ---
-// these are real errmesses ;>
-
-    case Fatal::ZLIB:
-      mbody="ZLIB went PLOP %s(status %s)";
-      break;
-
-    case Fatal::ARCHIVE_FULL:
-      mbody="Full DAF %s<%s>";
-      break;
-
-// ---   *   ---   *   ---
-
-    case Error::OPEN_FAIL:
-      mbody="Couln't open file %s<%s>";
-      break;
-
-    case Error::CLOSE_FAIL:
-      mbody="File couldn't be closed %s<%s>";
-      break;
-
-    case Error::WRITE_FAIL:
-      mbody="Error writting to file %s<%s>";
-      break;
-
-    case Error::READ_FAIL:
-      mbody="Error reading from file %s<%s>.";
-      break;
-
-    case Error::BAD_SIG:
-      mbody="Inappropriate file signature %s<%s>";
-      break;
-
-    case Error::UNLINK_FAIL:
-      mbody="Error deleting file %s<%s>";
-      break;
-
-    case Error::FULL_STACK:
-      mbody="Stack is full; can't push %s%s";
-      break;
-
-    case Error::EMPTY_STACK:
-      mbody="Stack is empty; can't pop %s%s";
-      break;
-
-    case Error::HASH_INSERT:
-      mbody="Can't insert key %s<%s>";
-      break;
-
-    case Error::HASH_FETCH:
-      mbody="Key %s<%s>\x1b[0m not found";
-      break;
-
-// ---   *   ---   *   ---
-// be funny rather than admit the
-// errcode is not recognized ;>
-
-    default:
-
-      mbody=
-
-        "(!!) I screwed up the "
-        "math somewhere...\n"
-        "%s%s\n"
-
-      ;
-
-      break;
-
-// ---   *   ---   *   ---
-// spit out the wall of errors
+    out=7;
 
   };
 
-  fprintf(stderr,mbody,PALETTE[0],info);
+  mstart+="#:!;> ";
 
-  fprintf(
+  // let the printing begin
+  std::cerr
+  << "\n" << mstart
 
-    stderr,
+  << PALETTE[3]
+  << "<ERR:" << hexstr(ee.code,4) << "> "
 
-    "\n%s#:!;>%s TRACE:\n",
-    PALETTE[color_code],PALETTE[4]
+  << PALETTE[4]
+  ;
 
-  );
+  return out;
 
-  printlog(0);
-  fprintf(stderr,"\n");
+};
+
+// ---   *   ---   *   ---
+// ill be back
+
+void Evil::terminator(
+  const Evil::Errcode& ee
+
+) {
+
+  auto info  = top_err().info;
+
+  auto color = errtype(ee);
+  auto mbody = std::string(ee.mess)+" ";
+
+  std::cerr
+
+  << mbody << PALETTE[0]
+  << '<' << info << '>'
+
+  << "\n"
+  << PALETTE[color] << "#:!;> "
+  << PALETTE[4] << "TRACE:"
+  << std::endl
+  ;
+
+  printlog(false);
 
   if(m_state==AR_FATAL) {
+    abort();
 
-    fprintf(
-      stderr,
-
-      "%sTERMINATED\e[0m\n\n",
-      PALETTE[color_code]
-
-    );
-
+  } else {
     exit(m_state);
 
   };
 
 };
 
-//   ---     ---     ---     ---     ---
+// ---   *   ---   *   ---

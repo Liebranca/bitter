@@ -20,14 +20,18 @@ x Compare JOJ tile arrays against atlas
 ~ Make binary for packing and unpacking
 
 *>CRK
-~ Vertex classes
+x Vertex classes
 ~ Vertex data compression
 ~ ^ Coords
 ~ ^ Normals
 
 *>DAF
-~ Building files by blocks
+x Building files by blocks
 ~ Block insert/pop/replace
 x Passing buffers through zlib
 x Fix the Bin header boiler-trouble
 ~ "Outsource" compression of all filetypes to DAF
+
+*>Evil
+x Repurpose the ar-catcher
+~ Find a way to do errorcodes without __COUNTER__

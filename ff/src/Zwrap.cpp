@@ -55,8 +55,8 @@ std::string Zwrap::get_status(void) {
 #define CALL_ZLIB(x) {\
   m_status=x;\
   if (m_status < 0) {\
-    Evil::terminator(\
-      Fatal::ZLIB,\
+    evil_throw(\
+      Zwrap::Error::ZLIB,\
       this->get_status()\
     );\
   }\

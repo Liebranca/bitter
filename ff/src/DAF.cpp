@@ -74,7 +74,7 @@ void DAF::blktrav(void) {
 
   ) {
 
-    if(idex==DAFSIZE) {
+    if(idex>=DAFSIZE) {
       break;
 
     };
@@ -96,6 +96,35 @@ void DAF::blktrav(void) {
 };
 
 // ---   *   ---   *   ---
+// shifts block descriptors one step
+
+void DAF::blkshf(uint64_t end) {
+
+  for(
+
+    uint64_t idex=m_hed.used;
+
+    idex>end;
+    idex--
+
+  ) {
+
+    if(idex >= DAFSIZE) {
+      continue;
+
+    };
+
+    auto& blk  = m_hed.blk[idex];
+    auto& prev = m_hed.blk[idex-1];
+
+    blk.off    = prev.off;
+    blk.sz     = prev.sz;
+
+  };
+
+};
+
+// ---   *   ---   *   ---
 // get idex of first available slot
 
 uint64_t DAF::get_next(void) {
@@ -105,11 +134,7 @@ uint64_t DAF::get_next(void) {
 
   // throw full
   if(avail==NULL) {
-    Evil::terminator(
-      Fatal::ARCHIVE_FULL,
-      m_fpath
-
-    );
+    evil_throw(DAF::Error::FULL,m_fpath);
 
   };
 
@@ -158,18 +183,16 @@ DAF::Block& DAF::jump_to_idex(uint64_t idex) {
 // ---   *   ---   *   ---
 // saves portion of file to dump
 
-void DAF::dump_tail(uint64_t idex) {
+void DAF::dump_tail(DAF::Block& blk) {
 
-  auto& blk=m_hed.blk[idex];
   this->seek(blk.off,Bin::BEG);
 
   DAF cpy(m_fpath,Bin::READ);
   Bin tmp(m_fpath+"_tail",Bin::NEW);
 
-  auto     top = m_hed.blk[m_hed.used-1];
-  uint64_t sz  = top.off+top.sz;
+  this->stat();
 
-  sz-=sz-(blk.off+blk.sz);
+  uint64_t sz=this->get_size()-blk.off;
 
   if(sz) {
     cpy.transfer(tmp,sz);
@@ -203,19 +226,16 @@ void DAF::insert(
 
   // TODO: pass this through evil
   if(idex>=m_hed.used) {
-    std::cerr
-    << "DAF insert out of bounds"
-    << std::endl
-    ;
-
-    exit(1);
+    evil_throw(DAF::Error::OOB,m_fpath);
 
   };
 
 // ---   *   ---   *   ---
 
-  auto blk=this->jump_to_idex(idex);
-  this->dump_tail(idex);
+  this->blkshf(idex);
+
+  auto& blk=this->jump_to_idex(idex);
+  this->dump_tail(blk);
 
   // overwrite
   this->seek(blk.off,Bin::BEG);
@@ -224,6 +244,9 @@ void DAF::insert(
   blk.sz=src.get_fullsize();
   this->slap_tail(blk);
 
+  this->get_next();
+
+  m_hed.used++;
   this->blktrav();
 
 };
