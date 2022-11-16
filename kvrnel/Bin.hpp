@@ -137,7 +137,7 @@ public:
   ~Bin(void);
 
   // open file
-  int open(
+  void open(
     std::string fpath,
     char mode=READ
 

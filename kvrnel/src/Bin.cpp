@@ -55,18 +55,14 @@ void Bin::set_mode(char mode) {
 // ---   *   ---   *   ---
 // opens a file
 
-int Bin::open(std::string fpath,char mode) {
-
-  int out=AR_DONE;
+void Bin::open(std::string fpath,char mode) {
 
   this->set_mode(mode);
   m_fh.open(fpath,m_mode);
 
   // errchk
   if(!m_fh.is_open()) {
-
     evil_throw(Bin::Error::OPEN,fpath);
-    out=AR_ERROR;
 
   // update filepath only on success
   } else {
@@ -77,8 +73,6 @@ int Bin::open(std::string fpath,char mode) {
     this->match_sig();
 
   };
-
-  return out;
 
 };
 
@@ -371,10 +365,9 @@ void Bin::f_transfer(Bin& other) {
 
 void Bin::trunc_to(uint64_t sz) {
 
-  if(sz<this->get_fullsize()) {
+  if(sz<m_size) {
 
-    long diff=sz-this->m_header_sz();
-    sz+=(-diff)*(diff<0);
+    sz+=this->m_header_sz();
 
     std::filesystem::resize_file(
       m_fpath,sz

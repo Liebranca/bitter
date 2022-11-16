@@ -11,8 +11,14 @@ int main(void) {
     daf.push(blk0);
     daf.push(blk0);
 
-    daf.insert(blk1,2);
+    daf.insert(blk1,1);
     daf.push(blk1);
+
+    daf.pop();
+    daf.remove(0);
+
+    daf.replace(blk0,0);
+    daf.replace(blk1,1);
 
   endchk;
 

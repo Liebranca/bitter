@@ -14,7 +14,7 @@ class DAF: public Bin {
 
 public:
 
-  VERSION   "v2.00.4";
+  VERSION   "v2.00.5";
   AUTHOR    "IBN-3DILA";
 
   struct Error {
@@ -33,7 +33,20 @@ public:
       .type=AR_FATAL,
 
       .code=__COUNTER__,
-      .mess="DAF insert out of bounds"
+
+      .mess=
+
+        "DAF insert, remove or replace "
+        "out of bounds"
+
+    };
+
+    CX Evil::Errcode EMPTY={
+
+      .type=AR_FATAL,
+
+      .code=__COUNTER__,
+      .mess="Pop from empty DAF"
 
     };
 
@@ -112,18 +125,61 @@ private:
   // header sanity checks
   void blktrav(void);
   void blkshf(uint64_t end);
+  void blkshb(uint64_t start);
 
   // positions file cursor on first avail block
-  DAF::Block& jump_to_end(void);
+  DAF::Block& jump_to_avail(void);
 
   // positions file cursor on specific block
   DAF::Block& jump_to_idex(uint64_t idex);
+
+  // go to last entry
+  DAF::Block& jump_to_end(void);
 
   // saves portion of file to dump
   void dump_tail(DAF::Block& blk);
 
   // ^recovers
   void slap_tail(DAF::Block& blk);
+
+// ---   *   ---   *   ---
+// dryguts
+
+  inline void blk_from_file(
+    Bin&        src,
+    DAF::Block& blk
+
+  ) {
+
+    src.f_transfer(*this);
+    blk.sz=src.get_fullsize();
+
+  };
+
+  inline void blk_from_buff(
+
+    void*       src,
+    uint64_t    sz,
+
+    DAF::Block& blk
+
+  ) {
+
+    this->write(src,sz);
+    blk.sz=sz;
+
+  };
+
+  inline void push_epilogue(void) {
+    m_hed.used++;
+    this->blktrav();
+
+  };
+
+  DAF::Block& insert_prelude(uint64_t idex);
+  void insert_epilogue(DAF::Block& blk);
+
+  DAF::Block& replace_prelude(uint64_t idex);
 
 // ---   *   ---   *   ---
 // iface
@@ -140,19 +196,21 @@ public:
   // save changes; automatic on destroy
   void close(void);
 
+  // remove last block
+  void pop(void);
+
+  // remove specific block
+  void remove(uint64_t idex);
+
 // ---   *   ---   *   ---
 // put new block at end of file
 
   // src is file
   inline void push(Bin& src) {
 
-    auto& blk = this->jump_to_end();
-    blk.sz    = src.get_fullsize();
-
-    src.f_transfer(*this);
-
-    m_hed.used++;
-    this->blktrav();
+    auto& blk=this->jump_to_avail();
+    this->blk_from_file(src,blk);
+    this->push_epilogue();
 
   };
 
@@ -163,24 +221,62 @@ public:
 
   ) {
 
-    auto& blk = this->jump_to_end();
-    blk.sz    = sz;
-
-    this->write(src,sz);
-
-    m_hed.used++;
-    this->blktrav();
+    auto& blk=this->jump_to_avail();
+    this->blk_from_buff(src,sz,blk);
+    this->push_epilogue();
 
   };
 
 // ---   *   ---   *   ---
 // put new block at position
 
-  void insert(
+  // src is file
+  inline void insert(
+    Bin&     src,
+    uint64_t idex
+
+  ) {
+
+    auto& blk=this->insert_prelude(idex);
+    this->blk_from_file(src,blk);
+    this->insert_epilogue(blk);
+
+  };
+
+  // src is buff
+  inline void insert(
+    void*    src,
+    uint64_t sz,
+
+    uint64_t idex
+
+  ) {
+
+    auto& blk=this->insert_prelude(idex);
+    this->blk_from_buff(src,sz,blk);
+    this->insert_epilogue(blk);
+
+  };
+
+// ---   *   ---   *   ---
+// change value of block
+
+  // src is file
+  void replace(
     Bin&     src,
     uint64_t idex
 
   );
+
+  // src is buff
+  void replace(
+    void*    src,
+    uint64_t sz,
+
+    uint64_t idex
+
+  );
+
 
 };
 

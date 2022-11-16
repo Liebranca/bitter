@@ -96,7 +96,7 @@ void DAF::blktrav(void) {
 };
 
 // ---   *   ---   *   ---
-// shifts block descriptors one step
+// shifts block descriptors one step forward
 
 void DAF::blkshf(uint64_t end) {
 
@@ -119,6 +119,35 @@ void DAF::blkshf(uint64_t end) {
 
     blk.off    = prev.off;
     blk.sz     = prev.sz;
+
+  };
+
+};
+
+// ---   *   ---   *   ---
+// ^inverse
+
+void DAF::blkshb(uint64_t start) {
+
+  for(
+
+    uint64_t idex=start;
+
+    idex<m_hed.used-1;
+    idex++
+
+  ) {
+
+    if((idex+1) >= DAFSIZE) {
+      continue;
+
+    };
+
+    auto& blk  = m_hed.blk[idex];
+    auto& next = m_hed.blk[idex+1];
+
+    blk.off    = next.off;
+    blk.sz     = next.sz;
 
   };
 
@@ -157,7 +186,7 @@ uint64_t DAF::get_next(void) {
 // ---   *   ---   *   ---
 // go to end of file
 
-DAF::Block& DAF::jump_to_end(void) {
+DAF::Block& DAF::jump_to_avail(void) {
 
   auto  idex = this->get_next();
   auto& blk  = m_hed.blk[idex];
@@ -181,20 +210,31 @@ DAF::Block& DAF::jump_to_idex(uint64_t idex) {
 };
 
 // ---   *   ---   *   ---
+// go to last entry
+
+DAF::Block& DAF::jump_to_end(void) {
+
+  auto& blk=m_hed.blk[m_hed.used-1];
+  this->seek(blk.off,Bin::BEG);
+
+  return blk;
+
+};
+
+// ---   *   ---   *   ---
 // saves portion of file to dump
 
 void DAF::dump_tail(DAF::Block& blk) {
-
-  this->seek(blk.off,Bin::BEG);
 
   DAF cpy(m_fpath,Bin::READ);
   Bin tmp(m_fpath+"_tail",Bin::NEW);
 
   this->stat();
 
-  uint64_t sz=this->get_size()-blk.off;
+  uint64_t sz=this->get_size()-blk.off;;
 
   if(sz) {
+    cpy.seek(blk.off);
     cpy.transfer(tmp,sz);
 
   };
@@ -208,46 +248,183 @@ void DAF::slap_tail(DAF::Block& blk) {
 
   Bin tmp(m_fpath+"_tail",Bin::READ);
 
+  this->stat();
+  this->trunc_to(blk.off);
+
   tmp.f_transfer(*this);
   tmp.nuke();
-
-  this->trunc_to(this->tell());
 
 };
 
 // ---   *   ---   *   ---
-// put new block at position
+// drybeg of func
 
-void DAF::insert(
-  Bin&     src,
+DAF::Block& DAF::insert_prelude(
   uint64_t idex
 
 ) {
 
-  // TODO: pass this through evil
   if(idex>=m_hed.used) {
     evil_throw(DAF::Error::OOB,m_fpath);
 
   };
-
-// ---   *   ---   *   ---
 
   this->blkshf(idex);
 
   auto& blk=this->jump_to_idex(idex);
   this->dump_tail(blk);
 
-  // overwrite
   this->seek(blk.off,Bin::BEG);
-  src.f_transfer(*this);
 
-  blk.sz=src.get_fullsize();
+  return blk;
+
+};
+
+// ---   *   ---   *   ---
+// dryend of func
+
+void DAF::insert_epilogue(
+  DAF::Block& blk
+
+) {
+
   this->slap_tail(blk);
-
   this->get_next();
+  this->push_epilogue();
 
-  m_hed.used++;
-  this->blktrav();
+};
+
+// ---   *   ---   *   ---
+// remove last block
+
+void DAF::pop(void) {
+
+  if(!m_hed.used) {
+    evil_throw(DAF::Error::EMPTY,m_fpath);
+
+  };
+
+  auto& blk = this->jump_to_end();
+  blk.sz    = 0;
+
+  this->stat();
+  this->trunc_to(blk.off);
+
+  m_hed.used--;
+
+};
+
+// ---   *   ---   *   ---
+
+DAF::Block& DAF::replace_prelude(
+  uint64_t idex
+
+) {
+
+  auto& next=this->jump_to_idex(idex+1);
+  this->dump_tail(next);
+
+  auto& blk=this->jump_to_idex(idex);
+
+  return blk;
+
+};
+
+// ---   *   ---   *   ---
+// remove specific block
+
+void DAF::remove(uint64_t idex) {
+
+  if(idex>=m_hed.used) {
+    evil_throw(DAF::Error::OOB,m_fpath);
+
+  };
+
+  // element in the middle
+  if(idex!=m_hed.used-1) {
+
+    auto& blk=this->replace_prelude(idex);
+    blk.sz=0;
+
+    this->slap_tail(blk);
+    this->blktrav();
+    this->blkshb(idex);
+
+    m_hed.used--;
+
+  // remove last element
+  } else {
+    this->pop();
+
+  };
+
+};
+
+// ---   *   ---   *   ---
+// change value of block
+
+void DAF::replace(
+  Bin&     src,
+  uint64_t idex
+
+) {
+
+  if(idex>=m_hed.used) {
+    evil_throw(DAF::Error::OOB,m_fpath);
+
+  };
+
+  // element in the middle
+  if(idex!=m_hed.used-1) {
+
+    auto& blk=this->replace_prelude(idex);
+
+    this->blk_from_file(src,blk);
+    this->slap_tail(blk);
+    this->blktrav();
+
+  // last element
+  } else {
+    auto& blk=this->jump_to_end();
+    this->blk_from_file(src,blk);
+    this->blktrav();
+
+  };
+
+};
+
+// ---   *   ---   *   ---
+// ^from buff
+
+void DAF::replace(
+  void*    src,
+  uint64_t sz,
+
+  uint64_t idex
+
+) {
+
+  if(idex>=m_hed.used) {
+    evil_throw(DAF::Error::OOB,m_fpath);
+
+  };
+
+  // element in the middle
+  if(idex!=m_hed.used-1) {
+
+    auto& blk=this->replace_prelude(idex);
+
+    this->blk_from_buff(src,sz,blk);
+    this->slap_tail(blk);
+    this->blktrav();
+
+  // last element
+  } else {
+    auto& blk=this->jump_to_end();
+    this->blk_from_buff(src,sz,blk);
+    this->blktrav();
+
+  };
 
 };
 

@@ -27,11 +27,17 @@ x Vertex classes
 
 *>DAF
 x Building files by blocks
-~ Block insert/pop/replace
+x Block ops
+x ^push
+x ^insert
+x ^pop
+x ^remove
+x ^replace
 x Passing buffers through zlib
 x Fix the Bin header boiler-trouble
 ~ "Outsource" compression of all filetypes to DAF
 
 *>Evil
 x Repurpose the ar-catcher
+x Update errchecks on existing code
 ~ Find a way to do errorcodes without __COUNTER__
