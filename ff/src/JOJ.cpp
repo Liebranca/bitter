@@ -644,8 +644,8 @@ void JOJ::write(void) {
     auto swap = this->make_swapper(i,Bin::READ);
     auto raw  = swap.get();
 
-    raw->atlas.transfer(this);
-    raw->color.transfer(this);
+    raw->atlas.transfer(*this);
+    raw->color.transfer(*this);
 
     raw->atlas.nuke();
     raw->color.nuke();
@@ -685,9 +685,9 @@ void JOJ::unpack(void) {
     auto swap = this->make_swapper(i,Bin::NEW);
     auto raw  = swap.get();
 
-    this->transfer(&raw->atlas,atlas_sz);
-    this->transfer(&raw->table,table_sz);
-    this->transfer(&raw->color);
+    this->transfer(raw->atlas,atlas_sz);
+    this->transfer(raw->table,table_sz);
+    this->transfer(raw->color);
 
   };
 

@@ -23,6 +23,7 @@
 
 void Bin::set_mode(char mode) {
 
+  m_mode_ch=mode;
   m_mode^=m_mode;
 
   if(mode&READ) {
@@ -355,23 +356,42 @@ inline void Bin::rewind(void) {
 // ---   *   ---   *   ---
 // read from A, write to B
 
-void Bin::transfer(Bin* other,uint64_t sz) {
+void Bin::transfer(Bin& other,uint64_t sz) {
 
   sz+=m_size*(sz==0);
 
   auto buff=this->read(sz);
-  other->write(&buff[0],sz);
+  other.write(&buff[0],sz);
 
 };
 
-void Bin::f_transfer(Bin* other) {
+void Bin::f_transfer(Bin& other) {
 
   this->rewind();
 
   uint64_t sz   = this->get_fullsize();
   auto     buff = this->read(sz);
 
-  other->write(&buff[0],sz);
+  other.write(&buff[0],sz);
+
+};
+
+// ---   *   ---   *   ---
+// shortens file
+
+void Bin::trunc_to(uint64_t sz) {
+
+  if(sz<this->get_fullsize()) {
+
+    long diff=sz-this->m_header_sz();
+    sz+=(-diff)*(diff<0);
+
+    std::filesystem::resize_file(
+      m_fpath,sz
+
+    );
+
+  };
 
 };
 

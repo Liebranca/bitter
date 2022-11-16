@@ -60,6 +60,7 @@ private:
 
 protected:
   std::string m_fpath;
+  uint8_t     m_mode_ch;
 
 private:
   std::ios_base::openmode m_mode;
@@ -188,8 +189,11 @@ public:
   void write_header(void* buff);
 
   // move bytes from file A to B
-  void transfer(Bin* other,uint64_t sz=0);
-  void f_transfer(Bin* other);
+  void transfer(Bin& other,uint64_t sz=0);
+  void f_transfer(Bin& other);
+
+  // shortens file
+  void trunc_to(uint64_t sz);
 
   // move cursor
   void seek(

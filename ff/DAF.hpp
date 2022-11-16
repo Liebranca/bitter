@@ -14,7 +14,7 @@ class DAF: public Bin {
 
 public:
 
-  VERSION   "v2.00.2";
+  VERSION   "v2.00.3";
   AUTHOR    "IBN-3DILA";
 
 // ---   *   ---   *   ---
@@ -36,6 +36,7 @@ private:
 
     char       sig      [8];
 
+    uint64_t   used=0;
     uint64_t   blk_mask [BLK_CNT];
     DAF::Block blk      [DAFSIZE];
 
@@ -86,8 +87,20 @@ private:
   // get idex of first available slot
   uint64_t get_next(void);
 
-  // get block by idex
-  DAF::Block* get_blk(uint64_t idex);
+  // header sanity check
+  void blktrav(void);
+
+  // positions file cursor on first avail block
+  DAF::Block& jump_to_end(void);
+
+  // positions file cursor on specific block
+  DAF::Block& jump_to_idex(uint64_t idex);
+
+  // saves portion of file to dump
+  void dump_tail(uint64_t idex);
+
+  // ^recovers
+  void slap_tail(DAF::Block& blk);
 
 // ---   *   ---   *   ---
 // iface
@@ -101,10 +114,50 @@ public:
   // constructor
   DAF(std::string fpath,char mode=Bin::READ);
 
-  // add new element
-  void push(Bin& src);
-
+  // save changes; automatic on destroy
   void close(void);
+
+// ---   *   ---   *   ---
+// put new block at end of file
+
+  // src is file
+  inline void push(Bin& src) {
+
+    auto& blk = this->jump_to_end();
+    blk.sz    = src.get_fullsize();
+
+    src.f_transfer(*this);
+
+    m_hed.used++;
+    this->blktrav();
+
+  };
+
+  // src is buff
+  inline void push(
+    void*    src,
+    uint64_t sz
+
+  ) {
+
+    auto& blk = this->jump_to_end();
+    blk.sz    = sz;
+
+    this->write(src,sz);
+
+    m_hed.used++;
+    this->blktrav();
+
+  };
+
+// ---   *   ---   *   ---
+// put new block at position
+
+  void insert(
+    Bin&     src,
+    uint64_t idex
+
+  );
 
 };
 
