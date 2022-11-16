@@ -142,6 +142,10 @@ private:
   // ^recovers
   void slap_tail(DAF::Block& blk);
 
+  // passes file through zlib
+  void pack(void);
+  void unpack(void);
+
 // ---   *   ---   *   ---
 // dryguts
 

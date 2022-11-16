@@ -35,7 +35,7 @@ x ^remove
 x ^replace
 x Passing buffers through zlib
 x Fix the Bin header boiler-trouble
-~ "Outsource" compression of all filetypes to DAF
+x "Outsource" compression of all filetypes to DAF
 
 *>Evil
 x Repurpose the ar-catcher

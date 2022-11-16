@@ -1,18 +1,19 @@
 *
 !/**/
 !*.*
+!bin/
+!tests/*.cpp
 
 *.bin
 *.o
 *.out
 *.daf
+*.dafz
 *.joj
 *.crk
 
 mig/
 *~
-
-!bin/
 
 avto
 .avto-cache

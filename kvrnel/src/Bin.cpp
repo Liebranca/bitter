@@ -82,6 +82,12 @@ void Bin::open(std::string fpath,char mode) {
 void Bin::close(void) {
 
   if(!m_passed && m_fh.is_open()) {
+
+    if(!m_fh.good()) {
+      evil_throw(Bin::Error::CLOSE,m_fpath);
+
+    };
+
     m_fh.close();
 
   };

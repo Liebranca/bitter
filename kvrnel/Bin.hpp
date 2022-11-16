@@ -54,6 +54,15 @@ public:
 
     };
 
+    CX Evil::Errcode CLOSE={
+
+      .type=AR_FATAL,
+
+      .code=__COUNTER__,
+      .mess="Unable to close file"
+
+    };
+
   };
 
 // ---   *   ---   *   ---

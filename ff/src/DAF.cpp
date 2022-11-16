@@ -13,6 +13,8 @@
 // deps
 
   #include "kvrnel/Bytes.hpp"
+
+  #include "ff/Zwrap.hpp"
   #include "ff/DAF.hpp"
 
 // ---   *   ---   *   ---
@@ -20,9 +22,15 @@
 
 DAF::DAF(
   std::string fpath,
-  char mode
+  char        mode
 
 ):Bin() {
+
+  if(mode!=Bin::NEW) {
+    m_fpath=fpath;
+    this->unpack();
+
+  };
 
   this->defopen<DAF::Header>(fpath,mode);
 
@@ -226,7 +234,7 @@ DAF::Block& DAF::jump_to_end(void) {
 
 void DAF::dump_tail(DAF::Block& blk) {
 
-  DAF cpy(m_fpath,Bin::READ);
+  Bin cpy(m_fpath,Bin::READ);
   Bin tmp(m_fpath+"_tail",Bin::NEW);
 
   this->stat();
@@ -234,7 +242,7 @@ void DAF::dump_tail(DAF::Block& blk) {
   uint64_t sz=this->get_size()-blk.off;;
 
   if(sz) {
-    cpy.seek(blk.off);
+    cpy.seek(this->m_header_sz()+blk.off);
     cpy.transfer(tmp,sz);
 
   };
@@ -429,16 +437,65 @@ void DAF::replace(
 };
 
 // ---   *   ---   *   ---
+// passes file through zlib
+
+void DAF::pack(void) {
+
+  Zwrap z(
+
+    Zwrap::DEFLATE
+
+  | Zwrap::INPUT_BIN
+  | Zwrap::OUTPUT_BIN
+
+  );
+
+  Bin in(m_fpath,Bin::READ);
+  Bin out(m_fpath+'z',Bin::NEW);
+
+  z.set_src(&in);
+  z.set_dst(&out);
+
+  z.flate();
+
+};
+
+// ---   *   ---   *   ---
+// ^undo
+
+void DAF::unpack(void) {
+
+  Zwrap z(
+
+    Zwrap::INFLATE
+
+  | Zwrap::INPUT_BIN
+  | Zwrap::OUTPUT_BIN
+
+  );
+
+  Bin in(m_fpath+'z',Bin::READ);
+  Bin out(m_fpath,Bin::NEW);
+
+  z.set_src(&in);
+  z.set_dst(&out);
+
+  z.flate();
+
+};
+
+// ---   *   ---   *   ---
 // close file
 
 void DAF::close(void) {
 
   if(m_mode_ch&Bin::WRITE) {
     this->write_header(&m_hed);
+    this->pack();
 
   };
 
-  Bin::close();
+  this->nuke();
 
 };
 
