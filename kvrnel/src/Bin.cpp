@@ -62,7 +62,7 @@ void Bin::open(std::string fpath,char mode) {
 
   // errchk
   if(!m_fh.is_open()) {
-    evil_throw(Bin::Error::OPEN,fpath);
+    err(Bin::Error::OPEN,fpath);
 
   // update filepath only on success
   } else {
@@ -84,7 +84,7 @@ void Bin::close(void) {
   if(!m_passed && m_fh.is_open()) {
 
     if(!m_fh.good()) {
-      evil_throw(Bin::Error::CLOSE,m_fpath);
+      err(Bin::Error::CLOSE,m_fpath);
 
     };
 
@@ -95,14 +95,11 @@ void Bin::close(void) {
 };
 
 // ---   *   ---   *   ---
-// true if signatures match
+// crash if signatures don't match
 
-bool Bin::match_sig(void) {
-
-  bool out=true;
+void Bin::match_sig(void) {
 
   uint64_t sig_len=m_fsig().length();
-
   this->rewind();
 
   // skip check if no signature
@@ -125,9 +122,7 @@ bool Bin::match_sig(void) {
 
       // compare and throw
       if(m_fsig()!=sig) {
-
-        evil_throw(Bin::Error::SIG,m_fpath);
-        out=false;
+        err(Bin::Error::SIG,m_fpath);
 
       };
 
@@ -144,11 +139,7 @@ bool Bin::match_sig(void) {
 
     };
 
-// ---   *   ---   *   ---
-
   };
-
-  return out;
 
 };
 
@@ -237,6 +228,8 @@ Mem<uint8_t> Bin::read(
 ) {
 
   sz+=m_size*(sz==0);
+  this->rcap(sz);
+
   Mem<uint8_t> buff(sz);
 
   m_fh.read((char*) &buff[0],sz);
@@ -252,6 +245,7 @@ Mem<uint8_t> Bin::read(
 void Bin::read(void* dst,uint64_t sz) {
 
   sz+=m_size*(sz==0);
+  this->rcap(sz);
 
   m_fh.read((char*) dst,sz);
   m_ptr+=sz;

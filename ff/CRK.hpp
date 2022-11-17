@@ -19,7 +19,7 @@ class CRK: public Bin {
 
 public:
 
-  VERSION     "v2.00.1";
+  VERSION     "v2.00.2";
   AUTHOR      "IBN-3DILA";
 
 // ---   *   ---   *   ---
@@ -29,7 +29,10 @@ public:
 
   enum {
 
-    SPRITE_FRAME=0
+    QUAD,
+
+    FRAME,
+    SPRITE
 
   };
 
@@ -101,6 +104,18 @@ public:
 
   #include "ff/CRK/Quad.hpp"
 
+  struct Frame_Build {
+    float scale[2];
+    JOJ::Img_Desc img;
+
+  };
+
+  struct Sprite_Build {
+    float scale[2];
+    JOJ::Atlas_Desc atlas;
+
+  };
+
 // ---   *   ---   *   ---
 // bin header
 
@@ -141,14 +156,13 @@ private:
 // ---   *   ---   *   ---
 // guts
 
-  struct Build_Sprite {
-    float scale[2];
-    JOJ::Img_Desc img;
-
-  };
-
   CRK::Prim make_sprite_frame(
-    CRK::Build_Sprite* bld
+    CRK::Frame_Build* bld
+
+  );
+
+  void make_sprite(
+    CRK::Sprite_Build* bld
 
   );
 

@@ -19,45 +19,33 @@
 
 void CRK::Quad_Build::calc_verts(void) {
 
-//  uint16_t co[2]={
-//    uint16_t(desc&0xFFFF),
-//    uint16_t((desc>>16)&0xFFFF)
-//
-//  };
-//
-//  uint16_t uv[2]={
-//    uint16_t((desc>>32)&0xFFFF),
-//    uint16_t((desc>>48)&0xFFFF)
-//
-//  };
-//
-//  float raw[]={
-//    float(co[0])*co_scale,0,
-//    float(co[1])*co_scale,0,
-//    float(uv[0])*uv_scale,0,
-//    float(uv[1])*uv_scale,0
-//
-//  };
-//
-//  raw[1]=raw[0]+co_scale;
-//  raw[3]=raw[2]+co_scale;
-//  raw[5]=raw[4]+uv_scale;
-//  raw[7]=raw[6]+uv_scale;
-//
-//  for(int i=0;i<8;i++) {
-//
-//    data[i]=frac<uint8_t>(
-//
-//      raw[i],
-//
-//      CRK::CO_STEP,
-//      CRK::CO_BITS,
-//
-//      Frac::UNSIGNED
-//
-//    );
-//
-//  };
+  float raw[]={
+    float(td.dx)*co_scale,0,
+    float(td.dy)*co_scale,0,
+    float(td.x)*uv_scale,0,
+    float(td.y)*uv_scale,0
+
+  };
+
+  raw[1]=raw[0]+co_scale;
+  raw[3]=raw[2]+co_scale;
+  raw[5]=raw[4]+uv_scale;
+  raw[7]=raw[6]+uv_scale;
+
+  for(int i=0;i<8;i++) {
+
+    data[i]=frac<uint8_t>(
+
+      raw[i],
+
+      CRK::CO_STEP,
+      CRK::CO_BITS,
+
+      Frac::UNSIGNED
+
+    );
+
+  };
 
 };
 
@@ -119,6 +107,110 @@ void CRK::Quad_Build::get_indices(void) {
   me->indices[idex+3]=vert+2;
   me->indices[idex+4]=vert+3;
   me->indices[idex+5]=vert+0;
+
+};
+
+// ---   *   ---   *   ---
+// rotates uvs 90 degrees clockwise
+
+void CRK::Quad_Build::uv_ror(void) {
+
+  for(uint8_t i=0;i<4;i++) {
+
+    auto& vrt  = me->verts[vert+i];
+    auto  cpy  = me->verts[vert+i];
+
+    vrt.TEX[0] = 0xFF-cpy.TEX[1];
+    vrt.TEX[1] = cpy.TEX[0];
+
+  };
+
+};
+
+// ---   *   ---   *   ---
+// rotates uvs 90 degrees anti-clockwise
+
+void CRK::Quad_Build::uv_rol(void) {
+
+  for(uint8_t i=0;i<4;i++) {
+
+    auto& vrt  = me->verts[vert+i];
+    auto  cpy  = me->verts[vert+i];
+
+    vrt.TEX[0] = cpy.TEX[1];
+    vrt.TEX[1] = 0xFF-cpy.TEX[0];
+
+  };
+
+};
+
+// ---   *   ---   *   ---
+// mirrors uvs on x axis
+
+void CRK::Quad_Build::uv_xmir(void) {
+
+  for(uint8_t i=0;i<4;i++) {
+
+    auto& vrt  = me->verts[vert+i];
+    auto  cpy  = me->verts[vert+i];
+
+    vrt.TEX[0] = 0xFF-cpy.TEX[0];
+    vrt.TEX[1] = cpy.TEX[1];
+
+  };
+
+};
+
+// ---   *   ---   *   ---
+// mirrors uvs on y axis
+
+void CRK::Quad_Build::uv_ymir(void) {
+
+  for(uint8_t i=0;i<4;i++) {
+
+    auto& vrt  = me->verts[vert+i];
+    auto  cpy  = me->verts[vert+i];
+
+    vrt.TEX[0] = cpy.TEX[0];
+    vrt.TEX[1] = 0xFF-cpy.TEX[1];
+
+  };
+
+};
+
+// ---   *   ---   *   ---
+
+void CRK::Quad_Build::apply_xforms(void) {
+
+  switch(td.rotated) {
+
+  case JOJ::Tiles::ROT_180:
+    this->uv_ror();
+
+  case JOJ::Tiles::ROT_90:
+    this->uv_ror();
+    break;
+
+  case JOJ::Tiles::ROT_240:
+    this->uv_rol();
+    break;
+
+  };
+
+  switch(td.mirrored) {
+
+  case JOJ::Tiles::MIRROR_XY:
+    this->uv_xmir();
+
+  case JOJ::Tiles::MIRROR_Y:
+    this->uv_ymir();
+    break;
+
+  case JOJ::Tiles::MIRROR_X:
+    this->uv_xmir();
+    break;
+
+  };
 
 };
 

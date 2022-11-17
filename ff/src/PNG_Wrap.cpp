@@ -45,7 +45,7 @@ PNG::PNG(std::string fpath) {
 
   ) {
 
-    evil_throw(PNG::Error::SIZE,fpath);
+    err(PNG::Error::SIZE,fpath);
 
   };
 
@@ -60,7 +60,7 @@ PNG::PNG(std::string fpath) {
 PNG::PNG(std::string fpath,uint16_t sz) {
 
   if(sz!=near_pow2(sz)) {
-    evil_throw(PNG::Error::SIZE,fpath);
+    err(PNG::Error::SIZE,fpath);
 
   };
 
@@ -140,7 +140,7 @@ void PNG::write(Mem<uint8_t>& src) {
   };
 
   if(src.bytesz()!=m_sz_sq<<2) {
-    evil_throw(PNG::Error::WRITE,m_fpath);
+    err(PNG::Error::WRITE,m_fpath);
 
   };
 

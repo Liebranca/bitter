@@ -653,28 +653,35 @@ void JOJ::Tiles::reloc_users(
 
 ) {
 
-  std::vector<uint64_t>& src0=
-    this->tab[idex].users;
+  auto& td=this->tab[idex];
 
-  for(uint64_t ref_idex : src0) {
+  for(uint64_t ref_idex : td.users) {
 
-    this->tab[ref_idex].x=x;
-    this->tab[ref_idex].y=y;
+    auto& dst=this->tab[ref_idex];
+
+    dst.x=x;
+    dst.y=y;
+
+    dst.rotated  = td.rotated;
+    dst.mirrored = td.mirrored;
 
   };
 
   if(this->users.size()) {
 
-    std::vector<JOJ::Tile_Ref>& src1=
+    std::vector<JOJ::Tile_Ref>& src=
       this->users[idex];
 
-    for(JOJ::Tile_Ref& ref : src1) {
+    for(JOJ::Tile_Ref& ref : src) {
 
       auto& dst=
         this->image[ref.img][ref.tile];
 
       dst.x=x;
       dst.y=y;
+
+      dst.rotated  = td.rotated;
+      dst.mirrored = td.mirrored;
 
     };
 

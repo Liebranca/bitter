@@ -171,7 +171,7 @@ uint64_t DAF::get_next(void) {
 
   // throw full
   if(avail==NULL) {
-    evil_throw(DAF::Error::FULL,m_fpath);
+    err(DAF::Error::FULL,m_fpath);
 
   };
 
@@ -273,7 +273,7 @@ DAF::Block& DAF::insert_prelude(
 ) {
 
   if(idex>=m_hed.used) {
-    evil_throw(DAF::Error::OOB,m_fpath);
+    err(DAF::Error::OOB,m_fpath);
 
   };
 
@@ -308,7 +308,7 @@ void DAF::insert_epilogue(
 void DAF::pop(void) {
 
   if(!m_hed.used) {
-    evil_throw(DAF::Error::EMPTY,m_fpath);
+    err(DAF::Error::EMPTY,m_fpath);
 
   };
 
@@ -344,7 +344,7 @@ DAF::Block& DAF::replace_prelude(
 void DAF::remove(uint64_t idex) {
 
   if(idex>=m_hed.used) {
-    evil_throw(DAF::Error::OOB,m_fpath);
+    err(DAF::Error::OOB,m_fpath);
 
   };
 
@@ -378,7 +378,7 @@ void DAF::replace(
 ) {
 
   if(idex>=m_hed.used) {
-    evil_throw(DAF::Error::OOB,m_fpath);
+    err(DAF::Error::OOB,m_fpath);
 
   };
 
@@ -413,7 +413,7 @@ void DAF::replace(
 ) {
 
   if(idex>=m_hed.used) {
-    evil_throw(DAF::Error::OOB,m_fpath);
+    err(DAF::Error::OOB,m_fpath);
 
   };
 

@@ -42,6 +42,7 @@ struct Quad_Build : Prim_Build {
 
     this->get_verts();
     this->get_indices();
+    this->apply_xforms();
 
     vert+=4;
     idex+=6;
@@ -51,6 +52,13 @@ struct Quad_Build : Prim_Build {
   void calc_verts(void);
   void get_verts(void);
   void get_indices(void);
+  void apply_xforms(void);
+
+  void uv_ror(void);
+  void uv_rol(void);
+
+  void uv_xmir(void);
+  void uv_ymir(void);
 
 };
 

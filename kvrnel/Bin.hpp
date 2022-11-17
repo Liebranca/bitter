@@ -38,7 +38,7 @@ public:
 
     CX Evil::Errcode SIG={
 
-      .type=AR_FATAL,
+      .type=AR_ERROR,
 
       .code=__COUNTER__,
       .mess="Bad file signature"
@@ -118,6 +118,7 @@ private:
   };
 
 // ---   *   ---   *   ---
+// guts
 
   // reads mode flags
   void set_mode(char mode);
@@ -132,11 +133,20 @@ private:
 
   );
 
+  // ensures you can't over-read
+  inline void rcap(uint64_t& sz) {
+
+    uint64_t limit=m_size-this->tell();
+    sz=(sz>limit) ? limit : sz;
+
+  };
+
 // ---   *   ---   *   ---
+// iface
 
 public:
 
-  // compiler trash
+  // ctrash
   Bin(void) {};
 
   // create object (implicit open)
@@ -195,7 +205,7 @@ public:
 // ---   *   ---   *   ---
 
   // current file has correct signature
-  bool match_sig(void);
+  void match_sig(void);
 
   // open, read && close
   static Mem<uint8_t> orc(

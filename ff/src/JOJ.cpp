@@ -171,41 +171,34 @@ std::vector<uint64_t> JOJ::get_atlas_desc(
 
   std::vector<uint64_t> out;
 
-  // number of entries in table
-  out.push_back(m_hed.img_cnt);
+//  // number of entries in table
+//  out.push_back(m_hed.img_cnt);
 
-  float tile_step  = 1.0f;
-  float atlas_step = 1.0f;
-
-  // 1 step == 1 tile-width worth of pixels
-  tile_step/=m_hed.img_sz/m_tiles.sz;
-  atlas_step/=m_hed.atlas_sz/m_atlas.sz;
-
-  // ^pack as a single long
-  out.push_back(
-    *((uint64_t*) &tile_step)
-  | (*((uint64_t*) &atlas_step)<<32)
-
-  );
+//  // ^pack as a single long
+//  out.push_back(
+//    *((uint64_t*) &tile_step)
+//  | (*((uint64_t*) &atlas_step)<<32)
+//
+//  );
 
 // ---   *   ---   *   ---
 
-  auto swap = this->make_swapper(idex,Bin::READ);
-  auto raw  = swap.get();
-
-  for(
-
-    uint16_t i=raw->idex;
-
-    i<m_hed.img_cnt*m_hed.img_comp_cnt;
-    i+=m_hed.img_comp_cnt
-
-  ) {
-
-    this->read_img_table(swap);
-    m_tiles.get_img_desc(m_atlas,out);
-
-  };
+//  auto swap = this->make_swapper(idex,Bin::READ);
+//  auto raw  = swap.get();
+//
+//  for(
+//
+//    uint16_t i=raw->idex;
+//
+//    i<m_hed.img_cnt*m_hed.img_comp_cnt;
+//    i+=m_hed.img_comp_cnt
+//
+//  ) {
+//
+//    this->read_img_table(swap);
+//    m_tiles.get_img_desc(m_atlas,out);
+//
+//  };
 
   return out;
 
@@ -294,7 +287,7 @@ void JOJ::img_table(
 
   for(uint64_t i=0;i<m_atlas.cnt_sq;i++) {
 
-    JOJ::Tile_Desc& td=m_atlas.image[idex][i];
+    auto& td=m_atlas.image[idex][i];
 
     if(
 
@@ -357,28 +350,6 @@ JOJ::Atlas_Desc JOJ::pack_atlas(void) {
   return out;
 
 };
-
-// ---   *   ---   *   ---
-
-//void JOJ::bake_frames(
-//  JOJ::Atlas_Desc& tab
-//
-//) {
-//
-//  for(JOJ::Img_Desc& img : tab) {
-//
-//    CRK crk(fpath);
-//
-//    for(JOJ::Tile_Desc& td : img) {
-//      crk.push_quad(td);
-//
-//    };
-//
-//    crk.pack();
-//
-//  };
-//
-//};
 
 // ---   *   ---   *   ---
 
@@ -588,7 +559,7 @@ void JOJ::from_tiles(JOJ::Tiles& tiles) {
 // ---   *   ---   *   ---
 // tights up the buffs
 
-void JOJ::pack(void) {
+JOJ::Atlas_Desc JOJ::pack(void) {
 
   // run encoder on list of images
   // dumps resulting buff for each
@@ -617,11 +588,7 @@ void JOJ::pack(void) {
 
   };
 
-  auto tab=this->pack_atlas();
-//  this->bake_frames(tab);
-
-  // ^joins dumps into single file
-  this->write();
+  return this->pack_atlas();
 
 };
 

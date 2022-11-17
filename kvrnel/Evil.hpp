@@ -150,14 +150,14 @@ public:
 #define errchk \
   Evil::get().geterrloc(\
     Evil::get().shpath(__FILE__),__func__,__LINE__\
-  );try {
+  );try
 
-#define evil_throw(ee,info) \
+#define err(ee,info) \
   Evil::get().set_err(info);\
   throw ee
 
 #define endchk \
-  } catch(Evil::Errcode ee) {\
+  catch(Evil::Errcode ee) {\
     Evil::get().terminator(ee);\
   };Evil::get().poplog()
 

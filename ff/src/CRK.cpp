@@ -62,7 +62,7 @@ void CRK::build(CRK::Mesh_Builds& bld) {
 // ---   *   ---   *   ---
 
 CRK::Prim CRK::make_sprite_frame(
-  CRK::Build_Sprite* bld
+  CRK::Frame_Build* bld
 
 ) {
 
@@ -91,6 +91,36 @@ CRK::Prim CRK::make_sprite_frame(
 };
 
 // ---   *   ---   *   ---
+// ^gives all frames through atlas
+
+void CRK::make_sprite(
+  CRK::Sprite_Build* bld
+
+) {
+
+  uint64_t i=0;
+
+  for(JOJ::Img_Desc& img : bld->atlas) {
+
+    CRK::Frame_Build frame={
+
+      .scale = {
+        bld->scale[0],
+        bld->scale[1]
+
+      },
+
+      .img   = img
+
+    };
+
+    this->make_prim(CRK::FRAME,&frame);
+
+  };
+
+};
+
+// ---   *   ---   *   ---
 
 void CRK::make_prim(
 
@@ -103,9 +133,18 @@ void CRK::make_prim(
 
   switch(type) {
 
-  case CRK::SPRITE_FRAME:
+  case CRK::FRAME:
     me=this->make_sprite_frame(
-      (CRK::Build_Sprite*) data
+      (CRK::Frame_Build*) data
+
+    );
+
+    break;
+
+  case CRK::SPRITE:
+
+    this->make_sprite(
+      (CRK::Sprite_Build*) data
 
     );
 
@@ -113,10 +152,14 @@ void CRK::make_prim(
 
   };
 
-  m_hed.vcount+=me.verts.size();
-  m_hed.icount+=me.indices.size();
+  if(me.verts.size()) {
 
-  m_data.push_back(me);
+    m_hed.vcount+=me.verts.size();
+    m_hed.icount+=me.indices.size();
+
+    m_data.push_back(me);
+
+  };
 
 };
 

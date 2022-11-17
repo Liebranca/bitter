@@ -3,7 +3,7 @@
 
 int main(void) {
 
-  errchk;
+  errchk {
 
     DAF daf("./a.daf",Bin::NEW);
 
@@ -22,18 +22,18 @@ int main(void) {
     daf.replace(blk0,0);
     daf.replace(blk1,1);
 
-  endchk;
+  } endchk;
 
 // ---   *   ---   *   ---
 
-  errchk;
+  errchk {
 
     DAF daf("./a.daf",Bin::READ);
     auto m=daf.read();
 
     m.prich();
 
-  endchk;
+  } endchk;
 
   return 0;
 

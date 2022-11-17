@@ -1,4 +1,5 @@
 #include "ff/JOJ.hpp"
+#include "ff/CRK.hpp"
 
 int main(void) {
 
@@ -7,7 +8,10 @@ int main(void) {
 
   };
 
-  { JOJ j(
+
+  errchk {
+
+    JOJ j(
 
       "./out",
       "/home/lyeb/Cruelty/Medi/",
@@ -19,16 +23,32 @@ int main(void) {
     j.add_img_set("0");
     j.add_img_set("1");
 
-    j.pack();
+    auto tab=j.pack();
 
-  };
+    CRK::Sprite_Build frames={
 
-//  JOJ j("./out");
-//
-//  j.unpack();
-//  j.to_png(0,"./atlas",JOJ::UNPACK_ATLAS);
-//  j.to_png(0,"./frame0",JOJ::UNPACK_IMAGE);
-//  j.to_png(1,"./frame1",JOJ::UNPACK_IMAGE);
+      .scale = {
+        j.get_tile_scale(),
+        j.get_atlas_scale()
+
+      },
+
+      .atlas = tab
+
+    };
+
+    CRK::Mesh_Builds blds;
+    CRK::Mesh_Build bld={
+      .type=CRK::SPRITE,
+      .data=&frames
+
+    };
+
+    blds.push_back(bld);
+
+    CRK("./out.crk",blds);
+
+  } endchk;
 
   return 0;
 

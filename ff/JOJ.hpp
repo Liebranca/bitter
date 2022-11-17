@@ -264,7 +264,7 @@ public:
   };
 
   // joins image list into single file
-  void pack(void);
+  JOJ::Atlas_Desc pack(void);
 
   // ^dumps out packed
   void unpack(void);
@@ -303,8 +303,18 @@ public:
 
   };
 
+  inline float get_tile_scale(void) {
+    return 1.0f/(m_hed.img_sz/m_tiles.sz);
+
+  };
+
   inline uint16_t get_atlas_sz(void) {
     return m_hed.atlas_sz;
+
+  };
+
+  inline float get_atlas_scale(void) {
+    return 1.0f/(m_hed.atlas_sz/m_atlas.sz);
 
   };
 
