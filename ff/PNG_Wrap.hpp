@@ -8,6 +8,7 @@
   #include <png.h>
 
   #include "kvrnel/Style.hpp"
+  #include "kvrnel/Evil.hpp"
   #include "kvrnel/Mem.hpp"
 
 // ---   *   ---   *   ---
@@ -17,8 +18,32 @@ class PNG {
 
 public:
 
-  VERSION   "v0.00.1b";
+  VERSION   "v0.00.2b";
   AUTHOR    "IBN-3DILA";
+
+  struct Error {
+
+    CX Evil::Errcode SIZE={
+
+      .type=AR_ERROR,
+
+      .code=__COUNTER__,
+      .mess=
+        "Image size must be square "
+        "and a power of two"
+
+    };
+
+    CX Evil::Errcode WRITE={
+
+      .type=AR_ERROR,
+
+      .code=__COUNTER__,
+      .mess="Size of buffer doesn't match image"
+
+    };
+
+  };
 
 // ---   *   ---   *   ---
 // attrs

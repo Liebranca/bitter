@@ -13,6 +13,7 @@
 // ---   *   ---   *   ---
 // deps
 
+  #include "kvrnel/Bytes.hpp"
   #include "kvrnel/Square.hpp"
   #include "ff/PNG_Wrap.hpp"
 
@@ -35,6 +36,19 @@ PNG::PNG(std::string fpath) {
   png_read_info(m_rd,m_info);
 
   m_sz       = png_get_image_width(m_rd,m_info);
+  uint16_t h = png_get_image_height(m_rd,m_info);
+
+  if(
+
+     m_sz!=near_pow2(m_sz)
+  || m_sz!=h
+
+  ) {
+
+    evil_throw(PNG::Error::SIZE,fpath);
+
+  };
+
   m_sz_sq    = m_sz*m_sz;
   m_mode     = false;
 
@@ -44,6 +58,11 @@ PNG::PNG(std::string fpath) {
 // write nit
 
 PNG::PNG(std::string fpath,uint16_t sz) {
+
+  if(sz!=near_pow2(sz)) {
+    evil_throw(PNG::Error::SIZE,fpath);
+
+  };
 
   m_fpath    = fpath;
   m_fp       = fopen(m_fpath.c_str(),"wb+");
@@ -117,6 +136,11 @@ void PNG::write(Mem<uint8_t>& src) {
     im.write(src);
 
     return;
+
+  };
+
+  if(src.bytesz()!=m_sz_sq<<2) {
+    evil_throw(PNG::Error::WRITE,m_fpath);
 
   };
 
