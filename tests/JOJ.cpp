@@ -23,30 +23,42 @@ int main(void) {
     j.add_img_set("0");
     j.add_img_set("1");
 
-    auto tab=j.pack();
+    j.pack();
 
-    CRK::Sprite_Build frames={
+//    CRK::Sprite_Build frames={
+//
+//      .scale = {
+//        j.get_tile_scale(),
+//        j.get_atlas_scale()
+//
+//      },
+//
+//      .atlas = tab
+//
+//    };
+//
+//    CRK::Mesh_Builds blds;
+//    CRK::Mesh_Build bld={
+//      .type=CRK::SPRITE,
+//      .data=&frames
+//
+//    };
+//
+//    blds.push_back(bld);
+//
+//    CRK("./out.crk",blds);
 
-      .scale = {
-        j.get_tile_scale(),
-        j.get_atlas_scale()
+  } endchk;
 
-      },
+  errchk {
 
-      .atlas = tab
+    JOJ j("./out");
+    j.unpack();
 
-    };
+    j.to_png(0,"atlas",JOJ::UNPACK_ATLAS);
 
-    CRK::Mesh_Builds blds;
-    CRK::Mesh_Build bld={
-      .type=CRK::SPRITE,
-      .data=&frames
-
-    };
-
-    blds.push_back(bld);
-
-    CRK("./out.crk",blds);
+    j.to_png(0,"frame0",JOJ::UNPACK_IMAGE);
+    j.to_png(1,"frame1",JOJ::UNPACK_IMAGE);
 
   } endchk;
 

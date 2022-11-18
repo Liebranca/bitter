@@ -18,6 +18,7 @@ x Eliminate need for runtime atlas unpacking
 x ^ Make single, redundancy-free table during atlas pack
 x ^ Derive polygon cache from image tables
 x ^ Apply tile transforms to polygons
+x Reading and writing new image table format
 ~ Make binary for packing and unpacking
 
 *>CRK

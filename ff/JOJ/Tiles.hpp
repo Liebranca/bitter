@@ -207,6 +207,9 @@ typedef struct FwdTiles {
 
   );
 
+  // ^entire image
+  void clear_all(void);
+
   // true if tile is blank
   bool is_clear(JOJ::Pixel* a);
 
@@ -364,18 +367,7 @@ typedef struct FwdTiles {
 
   // build original image from table
   void unpack(
-    JOJ::FwdTiles& atlas,
-    bool           clear_nat=false
-
-  );
-
-  // ^same, copy self
-  void unpack(bool clear_nat=false);
-
-  // get packed tiles for whole image
-  void get_img_desc(
-    JOJ::FwdTiles&         atlas,
-    std::vector<uint64_t>& desc
+    JOJ::FwdTiles& atlas
 
   );
 

@@ -8,6 +8,7 @@
   #include <vector>
 
   #include "kvrnel/Style.hpp"
+  #include "kvrnel/Evil.hpp"
 
 // ---   *   ---   *   ---
 // zero if not set at compile-time
@@ -18,7 +19,7 @@
 
 // ---   *   ---   *   ---
 
-static std::string hexstr(
+std::string hexstr(
   uint64_t x,
   uint8_t  sz
 

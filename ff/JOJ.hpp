@@ -71,6 +71,8 @@ private:
     uint64_t   img_sz_sq;
     uint64_t   atlas_sz_sq;
 
+    uint64_t   atlas_solid[3];
+
     uint8_t    img_comp_cnt;
     char       img_comp[3];
 
@@ -110,10 +112,10 @@ private:
   JOJ::Tiles       m_tiles;
   JOJ::Tiles       m_atlas;
 
+  JOJ::Atlas_Desc  m_tab;
+
   Mem<float>       m_raw;
   Mem<JOJ::Pixel>  m_pixels;
-
-  std::vector<uint64_t> m_atlas_refs;
 
 // ---   *   ---   *   ---
 // internals
@@ -214,7 +216,7 @@ private:
   JOJ::Swap_PTR swap_to(uint16_t idex,char mode);
 
   // ^load just the table for an image in atlas
-  void read_img_table(JOJ::Swap_PTR& swap);
+  void read_img_table(uint16_t idex);
 
   // shifts the img fetch array
   void offset_img_table(JOJ::Swap_PTR& swap);
@@ -223,10 +225,31 @@ private:
   void read_atlas(JOJ::Swap_PTR& swap);
 
   // ^runs processing on atlases
-  JOJ::Atlas_Desc pack_atlas(void);
+  void pack_atlas(void);
 
   // ^rewrites saved color
-  void owc_atlas(JOJ::Swap_PTR& swap);
+  void owc_atlas(
+    JOJ::Swap_PTR& swap
+
+  );
+
+  // populates sub-element in atlas desc
+  void build_img_table(
+    uint16_t idex
+
+  );
+
+  // atlas desc to bytearray
+  Mem<uint8_t> atlas_desc_to_buff(
+    uint16_t idex
+
+  );
+
+  // bytearray to atlas desc
+  void buff_to_atlas_desc(
+    uint16_t idex
+
+  );
 
   // write packed
   void write(void);
@@ -264,7 +287,7 @@ public:
   };
 
   // joins image list into single file
-  JOJ::Atlas_Desc pack(void);
+  void pack(void);
 
   // ^dumps out packed
   void unpack(void);
@@ -317,11 +340,6 @@ public:
     return 1.0f/(m_hed.atlas_sz/m_atlas.sz);
 
   };
-
-  std::vector<uint64_t> get_atlas_desc(
-    uint16_t idex
-
-  );
 
 };
 
