@@ -100,13 +100,13 @@ void CRK::Quad_Build::get_verts(void) {
 
 void CRK::Quad_Build::get_indices(void) {
 
-  me->indices[idex+0]=vert+0;
-  me->indices[idex+1]=vert+1;
-  me->indices[idex+2]=vert+2;
+  me->indices[idex+0]=idex_off+vert+0;
+  me->indices[idex+1]=idex_off+vert+3;
+  me->indices[idex+2]=idex_off+vert+2;
 
-  me->indices[idex+3]=vert+2;
-  me->indices[idex+4]=vert+3;
-  me->indices[idex+5]=vert+0;
+  me->indices[idex+3]=idex_off+vert+0;
+  me->indices[idex+4]=idex_off+vert+2;
+  me->indices[idex+5]=idex_off+vert+1;
 
 };
 

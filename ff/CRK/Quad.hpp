@@ -27,12 +27,16 @@ struct Quad_Build : Prim_Build {
 
   JOJ::Tile_Desc td;
 
+  uint16_t idex_off;
+
 // ---   *   ---   *   ---
 
-  Quad_Build(Prim* p) {
+  Quad_Build(Prim* p,uint16_t off) {
     me   = p;
     vert = 0;
     idex = 0;
+
+    idex_off=off;
 
   };
 

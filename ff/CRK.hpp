@@ -19,7 +19,7 @@ class CRK: public Bin {
 
 public:
 
-  VERSION     "v2.00.2";
+  VERSION     "v2.00.3";
   AUTHOR      "IBN-3DILA";
 
 // ---   *   ---   *   ---
@@ -49,8 +49,8 @@ public:
         uint8_t  NTB[3];  // 6
         uint8_t  TEX[2];  // 8
 
-        uint16_t BONE;    // 10
-        uint16_t ID;      // 12
+        uint16_t ID;      // 10
+        uint16_t BONE;    // 12
 
       };
 
@@ -216,6 +216,11 @@ public:
 
   void pack(void);
   void unpack(void);
+
+  inline CRK::Mesh& data(void) {
+    return m_data;
+
+  };
 
 };
 

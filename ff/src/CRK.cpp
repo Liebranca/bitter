@@ -276,7 +276,7 @@ CRK::Prim CRK::make_sprite_frame(
 ) {
 
   CRK::Prim       me;
-  CRK::Quad_Build qbld(&me);
+  CRK::Quad_Build qbld(&me,m_hed.vcount);
 
   uint64_t tile_cnt = bld->img.size();
 
@@ -290,7 +290,11 @@ CRK::Prim CRK::make_sprite_frame(
 
   // push one quad per tile
   for(uint64_t i=0;i<tile_cnt;i++) {
-    qbld.td=bld->img[i];
+
+    qbld.td    = bld->img[i];
+    qbld.layer = 0;
+    qbld.id    = i+(m_hed.vcount/4);
+
     qbld.push_quad();
 
   };
@@ -363,8 +367,8 @@ void CRK::make_prim(
 
   if(me.verts.size()) {
 
-    m_hed.vcount+=me.verts.size();
-    m_hed.icount+=me.indices.size();
+    m_hed.vcount+=me.verts.size()+4;
+    m_hed.icount+=me.indices.size()+6;
 
     m_data.push_back(me);
 

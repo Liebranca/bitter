@@ -341,12 +341,12 @@ void JOJ::buff_to_atlas_desc(
     cnt*sizeof(m_tab[0][0]);
 
   Mem<uint8_t> sins_of_bjarne(
-    cnt*sizeof(m_tab[0][0])
+    cnt*sizeof(typeof(m_tab[0][0]))
 
   );
 
   Bin::read(
-    (void*) &sins_of_bjarne[0],
+    &sins_of_bjarne[0],
     guilt_of_bjarne
 
   );
@@ -355,7 +355,7 @@ void JOJ::buff_to_atlas_desc(
     (typeof(m_tab[0][0])*) &sins_of_bjarne[0];
 
   for(uint16_t i=0;i<cnt;i++) {
-    m_tab[top][i]=jail_of_bjarne[i];
+    m_tab[top][i].wcopy(jail_of_bjarne[i]);
 
   };
 
@@ -774,7 +774,6 @@ void JOJ::unpack(void) {
     auto raw  = swap.get();
 
     this->buff_to_atlas_desc(i);
-
     this->transfer(
       raw->color,
       m_hed.atlas_solid[i]

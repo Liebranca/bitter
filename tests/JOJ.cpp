@@ -35,13 +35,13 @@ int main(void) {
     JOJ j("./out");
     j.unpack();
 
+    CRK c("./out.crk");
+    c.unpack();
+
     j.to_png(0,"atlas",JOJ::UNPACK_ATLAS);
 
     j.to_png(0,"frame0",JOJ::UNPACK_IMAGE);
     j.to_png(1,"frame1",JOJ::UNPACK_IMAGE);
-
-    CRK c("./out.crk");
-    c.unpack();
 
   } endchk;
 

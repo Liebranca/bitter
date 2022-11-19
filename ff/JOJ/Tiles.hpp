@@ -45,7 +45,7 @@ typedef struct FwdTile_Ref {
 
 public:
 
-typedef struct {
+struct Tile_Desc {
 
   // fetch-from
   uint16_t x;
@@ -61,7 +61,20 @@ typedef struct {
 
   std::vector<uint64_t> users;
 
-} Tile_Desc;
+  void wcopy(Tile_Desc& other) {
+
+    x        = other.x;
+    y        = other.y;
+    dx       = other.dx;
+    dy       = other.dy;
+
+    rotated  = other.rotated;
+    mirrored = other.mirrored;
+    cleared  = other.cleared;
+
+  };
+
+};
 
 typedef struct {
 
