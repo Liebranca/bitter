@@ -341,6 +341,11 @@ public:
 
   };
 
+  inline JOJ::Atlas_Desc& get_atlas_desc(void) {
+    return m_tab;
+
+  };
+
 };
 
 // ---   *   ---   *   ---

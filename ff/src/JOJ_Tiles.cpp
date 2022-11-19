@@ -767,8 +767,6 @@ void JOJ::Tiles::reloc_all(void) {
 
   };
 
-std::cerr << std::endl;
-
 };
 
 // ---   *   ---   *   ---

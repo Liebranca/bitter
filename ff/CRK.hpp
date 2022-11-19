@@ -68,6 +68,20 @@ public:
     std::vector<CRK::Vertex> verts;
     std::vector<uint16_t>    indices;
 
+    uint64_t bytesz(void);
+
+    void to_buff(
+      Mem<uint8_t>& dst,
+      uint64_t&     ptr
+
+    );
+
+    void from_buff(
+      Mem<uint8_t>& src,
+      uint64_t&     ptr
+
+    );
+
   } Prim;
 
   typedef struct {
@@ -172,7 +186,14 @@ private:
 
   );
 
+  Mem<uint8_t> mesh_to_buff(void);
+  void buff_to_mesh(Mem<uint8_t>& src);
+
   void build(CRK::Mesh_Builds& bld);
+  void open(std::string fpath,char mode);
+
+  void write(void);
+  void read(void);
 
 // ---   *   ---   *   ---
 // iface
@@ -187,8 +208,14 @@ public:
 
   );
 
+  // ^from *.joj
+  CRK(std::string fpath,JOJ& joj);
+
   // load
   CRK(std::string fpath);
+
+  void pack(void);
+  void unpack(void);
 
 };
 

@@ -89,7 +89,10 @@ cx16 DAFSIZE=256;
   static_assert(boo, dummy)
 
 #define arrsize(arr) \
-  sizeof((arr)) / sizeof(*(arr))
+  (sizeof((arr)) / sizeof(*(arr)))
+
+#define reipret(type,value) \
+  *((type*) (&value))
 
 #define addrof(x) (&(x))
 

@@ -25,28 +25,8 @@ int main(void) {
 
     j.pack();
 
-//    CRK::Sprite_Build frames={
-//
-//      .scale = {
-//        j.get_tile_scale(),
-//        j.get_atlas_scale()
-//
-//      },
-//
-//      .atlas = tab
-//
-//    };
-//
-//    CRK::Mesh_Builds blds;
-//    CRK::Mesh_Build bld={
-//      .type=CRK::SPRITE,
-//      .data=&frames
-//
-//    };
-//
-//    blds.push_back(bld);
-//
-//    CRK("./out.crk",blds);
+    CRK c("./out.crk",j);
+    c.pack();
 
   } endchk;
 
@@ -59,6 +39,9 @@ int main(void) {
 
     j.to_png(0,"frame0",JOJ::UNPACK_IMAGE);
     j.to_png(1,"frame1",JOJ::UNPACK_IMAGE);
+
+    CRK c("./out.crk");
+    c.unpack();
 
   } endchk;
 
