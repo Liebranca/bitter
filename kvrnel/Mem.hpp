@@ -136,8 +136,6 @@ public:
     m_buff_sz      = near_pow2(buff_sz);
     m_idex_mask    = m_buff_sz-1;
 
-    m_used         = 0;
-
     T* raw         = (T*) malloc(this->bytesz());
 
     m_buff.reset(raw);
@@ -203,6 +201,12 @@ public:
 
   inline void cl(void) {
     memset(m_buff.get(),0,this->bytesz());
+    m_used=0;
+
+  };
+
+  inline void set_used(uint64_t x) {
+    m_used=x;
 
   };
 
@@ -226,8 +230,12 @@ public:
     len=(len*!cap)+(avail*cap);
 
     memcpy(
+
       m_buff.get()+ptr,
-      src,len*sizeof(T)
+      src,
+
+      len
+    * sizeof(T)
 
     );
 
@@ -248,7 +256,7 @@ public:
   };
 
   inline uint64_t used(void) {
-    return m_used;
+    return m_used*sizeof(T);
 
   };
 

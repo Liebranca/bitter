@@ -206,6 +206,9 @@ public:
   // remove specific block
   void remove(uint64_t idex);
 
+  // create bin from entry
+  std::string extract(uint64_t idex);
+
 // ---   *   ---   *   ---
 // put new block at end of file
 

@@ -13,8 +13,6 @@
 // deps
 
   #include "ff/PNG_Wrap.hpp"
-
-  #include "ff/Zwrap.hpp"
   #include "ff/JOJ.hpp"
 
 // ---   *   ---   *   ---

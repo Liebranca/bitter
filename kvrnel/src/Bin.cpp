@@ -235,6 +235,8 @@ Mem<uint8_t> Bin::read(
   m_fh.read((char*) &buff[0],sz);
   m_ptr+=sz;
 
+  buff.set_used(sz);
+
   return Mem<uint8_t>(buff);
 
 };
@@ -330,14 +332,6 @@ void Bin::seek(
 };
 
 // ---   *   ---   *   ---
-// seek to beg
-
-inline void Bin::rewind(void) {
-  this->seek(0,BEG,0);
-
-};
-
-// ---   *   ---   *   ---
 // read from A, write to B
 
 void Bin::transfer(Bin& other,uint64_t sz) {
@@ -345,7 +339,7 @@ void Bin::transfer(Bin& other,uint64_t sz) {
   sz+=m_size*(sz==0);
 
   auto buff=this->read(sz);
-  other.write(&buff[0],sz);
+  other.write(&buff[0],buff.used());
 
 };
 
@@ -356,7 +350,7 @@ void Bin::f_transfer(Bin& other) {
   uint64_t sz   = this->get_fullsize();
   auto     buff = this->read(sz);
 
-  other.write(&buff[0],sz);
+  other.write(&buff[0],buff.used());
 
 };
 

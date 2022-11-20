@@ -138,7 +138,7 @@ void Zwrap::next_chunk(void) {
 
   // from file
   if(m_mode&Zwrap::INPUT_BIN) {
-    src=&m_buff[0];
+    src=&m_in_buff[0];
     m_src.bin->read(src,m_readsize);
 
   // from mem
@@ -229,7 +229,7 @@ void Zwrap::dump(void) {
 
     if(m_mode&Zwrap::OUTPUT_BIN) {
 
-      uint8_t* dst   = &m_buff[0]+DAFPAGE;
+      uint8_t* dst   = &m_out_buff[0];
       uint64_t avail = DAFPAGE;
 
       have=this->process(dst,avail);
@@ -254,7 +254,12 @@ void Zwrap::dump(void) {
 // ---   *   ---   *   ---
 // early exit
 
-    if(!have || !m_remain) {break;};
+    if(
+
+       (!have || !m_remain)
+    && !m_strm.avail_in
+
+    ) {break;};
 
 
   };
@@ -273,7 +278,7 @@ void Zwrap::Target::set(
 ) {
 
   this->size   = (!size)
-    ? src->get_size()-offset
+    ? src->get_fullsize()-offset
     : size
     ;
 
@@ -343,7 +348,7 @@ void Zwrap::set_dst(
 // grows a compressed buff or bin
 // shrinks a raw buffer or bin
 
-int Zwrap::flate(void) {
+void Zwrap::flate(void) {
 
   // get read/write buffer for bins
   if(
@@ -351,12 +356,18 @@ int Zwrap::flate(void) {
   (  (m_mode&Zwrap::INPUT_BIN)
   || (m_mode&Zwrap::OUTPUT_BIN)
 
-  ) && m_buff.is_null()
+  ) && (
 
-  ) {
+     m_in_buff.is_null()
+  && m_out_buff.is_null()
 
-    Mem<uint8_t> buff(DAFPAGE*2);
-    m_buff.copy(buff);
+  )) {
+
+    Mem<uint8_t> in(DAFPAGE);
+    Mem<uint8_t> out(DAFPAGE);
+
+    m_in_buff.copy(in);
+    m_out_buff.copy(out);
 
   };
 
@@ -369,8 +380,6 @@ int Zwrap::flate(void) {
     this->next_chunk();
 
   };
-
-  return AR_DONE;
 
 };
 

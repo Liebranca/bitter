@@ -33,6 +33,7 @@ DAF::DAF(
   };
 
   this->defopen<DAF::Header>(fpath,mode);
+  this->seek(0,Bin::BEG);
 
 };
 
@@ -481,6 +482,26 @@ void DAF::unpack(void) {
   z.set_dst(&out);
 
   z.flate();
+
+};
+
+// ---   *   ---   *   ---
+// create bin from entry
+
+std::string DAF::extract(uint64_t idex) {
+
+  std::string path=
+    m_fpath
+  + "e"
+  + std::to_string(idex)
+  ;
+
+  Bin out(path,Bin::NEW);
+
+  auto& blk=this->jump_to_idex(idex);
+  this->transfer(out,blk.sz);
+
+  return path;
 
 };
 

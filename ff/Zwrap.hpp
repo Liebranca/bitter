@@ -17,7 +17,7 @@ class Zwrap {
 
 public:
 
-  VERSION   "v2.00.2";
+  VERSION   "v2.00.3";
   AUTHOR    "IBN-3DILA";
 
   cx8 DEFLATE     = 0x00;
@@ -92,7 +92,8 @@ private:
   int          m_status;
   int          m_mode;
 
-  Mem<uint8_t> m_buff;
+  Mem<uint8_t> m_in_buff;
+  Mem<uint8_t> m_out_buff;
 
 // ---   *   ---   *   ---
 // consts
@@ -133,7 +134,7 @@ public:
   Zwrap(int mode=0x00);
   ~Zwrap(void);
 
-  int flate(void);
+  void flate(void);
 
 // ---   *   ---   *   ---
 // setters

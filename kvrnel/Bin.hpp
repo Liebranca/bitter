@@ -136,7 +136,11 @@ private:
   // ensures you can't over-read
   inline void rcap(uint64_t& sz) {
 
-    uint64_t limit=m_size-this->tell();
+    uint64_t limit=
+      this->get_fullsize()
+    - this->tell()
+    ;
+
     sz=(sz>limit) ? limit : sz;
 
   };
@@ -248,7 +252,10 @@ public:
   );
 
   // seek to beggining
-  inline void rewind(void);
+  inline void rewind(void) {
+    this->seek(0,BEG,0);
+
+  };
 
   // remove file
   void nuke(void);

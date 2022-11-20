@@ -1,5 +1,6 @@
 #include "ff/JOJ.hpp"
 #include "ff/CRK.hpp"
+#include "ff/DAF.hpp"
 
 int main(void) {
 
@@ -7,7 +8,6 @@ int main(void) {
     JOJ::YAUV,0x7F
 
   };
-
 
   errchk {
 
@@ -30,13 +30,32 @@ int main(void) {
 
   } endchk;
 
+// ---   *   ---   *   ---
+
   errchk {
 
-    JOJ j("./out");
-    j.unpack();
+    Bin j("./out",Bin::READ);
+    Bin c("./out.crk",Bin::READ);
 
-    CRK c("./out.crk");
-    c.unpack();
+    DAF daf("./a.daf",Bin::NEW);
+
+    daf.push(j);
+    daf.push(c);
+
+    j.nuke();
+    c.nuke();
+
+  } endchk;
+
+// ---   *   ---   *   ---
+
+  errchk {
+
+    DAF daf("./a.daf",Bin::READ);
+    auto joj_path=daf.extract(0);
+
+    JOJ j(joj_path);
+    j.unpack();
 
     j.to_png(0,"atlas",JOJ::UNPACK_ATLAS);
 

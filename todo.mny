@@ -38,6 +38,7 @@ x ^replace
 x Passing buffers through zlib
 x Fix the Bin header boiler-trouble
 x "Outsource" compression of all filetypes to DAF
+~ Make binary for packing resource files
 
 *>Evil
 x Repurpose the ar-catcher
