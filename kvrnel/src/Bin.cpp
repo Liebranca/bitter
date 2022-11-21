@@ -12,11 +12,10 @@
 // ---   *   ---   *   ---
 // deps
 
-#include <unistd.h>
-#include <filesystem>
+  #include <filesystem>
 
-#include "kvrnel/Evil.hpp"
-#include "kvrnel/Bin.hpp"
+  #include "kvrnel/Evil.hpp"
+  #include "kvrnel/Bin.hpp"
 
 // ---   *   ---   *   ---
 // reads mode flags
@@ -369,15 +368,6 @@ void Bin::trunc_to(uint64_t sz) {
     );
 
   };
-
-};
-
-// ---   *   ---   *   ---
-
-void Bin::nuke(void) {
-
-  this->close();
-  unlink(m_fpath.c_str());
 
 };
 

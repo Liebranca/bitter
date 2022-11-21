@@ -14,7 +14,7 @@ class DAF: public Bin {
 
 public:
 
-  VERSION   "v2.00.5";
+  VERSION   "v2.00.6";
   AUTHOR    "IBN-3DILA";
 
   struct Error {
@@ -143,8 +143,11 @@ private:
   void slap_tail(DAF::Block& blk);
 
   // passes file through zlib
-  void pack(void);
-  void unpack(void);
+  void zip(void);
+  void unzip(void);
+
+  // clears tmp files
+  void rmdump(void);
 
 // ---   *   ---   *   ---
 // dryguts
@@ -185,6 +188,20 @@ private:
 
   DAF::Block& replace_prelude(uint64_t idex);
 
+  // get filename for dumpbin N
+  inline std::string dumpname(
+    uint64_t idex
+
+  ) {
+
+    return
+      m_fpath
+    + "e"
+    + std::to_string(idex)
+    ;
+
+  };
+
 // ---   *   ---   *   ---
 // iface
 
@@ -208,6 +225,9 @@ public:
 
   // create bin from entry
   std::string extract(uint64_t idex);
+
+  // ^whole archive
+  strvec unpack(void);
 
 // ---   *   ---   *   ---
 // put new block at end of file
@@ -283,7 +303,6 @@ public:
     uint64_t idex
 
   );
-
 
 };
 

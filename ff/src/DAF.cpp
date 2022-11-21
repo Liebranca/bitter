@@ -28,7 +28,7 @@ DAF::DAF(
 
   if(mode!=Bin::NEW) {
     m_fpath=fpath;
-    this->unpack();
+    this->unzip();
 
   };
 
@@ -261,7 +261,7 @@ void DAF::slap_tail(DAF::Block& blk) {
   this->trunc_to(blk.off);
 
   tmp.f_transfer(*this);
-  tmp.nuke();
+  tmp.unlink();
 
 };
 
@@ -440,7 +440,7 @@ void DAF::replace(
 // ---   *   ---   *   ---
 // passes file through zlib
 
-void DAF::pack(void) {
+void DAF::zip(void) {
 
   Zwrap z(
 
@@ -464,7 +464,7 @@ void DAF::pack(void) {
 // ---   *   ---   *   ---
 // ^undo
 
-void DAF::unpack(void) {
+void DAF::unzip(void) {
 
   Zwrap z(
 
@@ -490,11 +490,7 @@ void DAF::unpack(void) {
 
 std::string DAF::extract(uint64_t idex) {
 
-  std::string path=
-    m_fpath
-  + "e"
-  + std::to_string(idex)
-  ;
+  std::string path=this->dumpname(idex);
 
   Bin out(path,Bin::NEW);
 
@@ -506,17 +502,50 @@ std::string DAF::extract(uint64_t idex) {
 };
 
 // ---   *   ---   *   ---
+// ^whole archive
+
+strvec DAF::unpack(void) {
+
+  strvec out;
+  out.resize(m_hed.used);
+
+  for(uint64_t i=0;i<m_hed.used;i++) {
+    out.push_back(this->extract(i));
+
+  };
+
+  return out;
+
+};
+
+// ---   *   ---   *   ---
 // close file
 
 void DAF::close(void) {
 
   if(m_mode_ch&Bin::WRITE) {
     this->write_header(&m_hed);
-    this->pack();
+    this->zip();
 
   };
 
-  this->nuke();
+  this->rmdump();
+
+};
+
+// ---   *   ---   *   ---
+// clears the mess
+
+void DAF::rmdump(void) {
+
+  for(uint64_t i=0;i<m_hed.used;i++) {
+
+    auto path=this->dumpname(i);
+    Bin::unlink(path);
+
+  };
+
+  this->unlink();
 
 };
 

@@ -42,8 +42,8 @@ int main(void) {
     daf.push(j);
     daf.push(c);
 
-    j.nuke();
-    c.nuke();
+    j.unlink();
+    c.unlink();
 
   } endchk;
 

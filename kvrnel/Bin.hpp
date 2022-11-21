@@ -9,9 +9,20 @@
   #include <string>
   #include <cstring>
 
+  #include <unistd.h>
+  #include <sys/stat.h>
+
   #include "kvrnel/Style.hpp"
   #include "kvrnel/Mem.hpp"
   #include "kvrnel/Evil.hpp"
+
+// ---   *   ---   *   ---
+// aliasing
+
+  const auto unistd_unlink = unlink;
+  const auto sys_stat      = stat;
+
+  typedef struct stat sys_stat_st;
 
 // ---   *   ---   *   ---
 // info
@@ -20,7 +31,7 @@ class Bin {
 
 public:
 
-  VERSION   "2.00.2";
+  VERSION   "2.00.3";
   AUTHOR    "IBN-3DILA";
 
   cx8       READ   = 0x01;
@@ -257,8 +268,41 @@ public:
 
   };
 
-  // remove file
-  void nuke(void);
+  // rm [fname]
+  inline void unlink(
+    std::string& fpath
+
+  ) {
+
+    if(exists(fpath)) {
+      unistd_unlink(fpath.c_str());
+
+    };
+
+  };
+
+  inline void unlink(void) {
+
+    this->close();
+    unlink(m_fpath);
+
+  };
+
+  // -f [fname]
+  inline bool exists(
+    std::string& fpath
+
+  ) {
+
+    sys_stat_st b;
+    return !sys_stat(fpath.c_str(),&b);
+
+  };
+
+  inline bool exists(void) {
+    return exists(m_fpath);
+
+  };
 
 // ---   *   ---   *   ---
 // getters

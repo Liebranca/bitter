@@ -740,8 +740,8 @@ void JOJ::write(void) {
     raw->atlas.transfer(*this);
     raw->color.transfer(*this);
 
-    raw->atlas.nuke();
-    raw->color.nuke();
+    raw->atlas.unlink();
+    raw->color.unlink();
 
   };
 
@@ -801,8 +801,8 @@ void JOJ::rmdump(void) {
     auto swap = this->make_swapper(i,Bin::READ);
     auto raw  = swap.get();
 
-    raw->atlas.nuke();
-    raw->color.nuke();
+    raw->atlas.unlink();
+    raw->color.unlink();
 
   };
 

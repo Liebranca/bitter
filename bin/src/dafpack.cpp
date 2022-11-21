@@ -90,7 +90,7 @@ int main(int argc,char** argv) {
       Bin f(fname,Bin::READ);
       daf.push(f);
 
-      f.nuke();
+      f.unlink();
 
     };
 
