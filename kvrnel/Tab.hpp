@@ -5,7 +5,9 @@
 // deps
 
   #include <vector>
+
   #include "kvrnel/Style.hpp"
+  #include "kvrnel/Evil.hpp"
 
 // ---   *   ---   *   ---
 // helpers
@@ -46,6 +48,21 @@ namespace TAB {
     char nkey[64];
 
   } Hash;
+
+// ---   *   ---   *   ---
+
+  struct Error {
+
+    CX Evil::Errcode KEY={
+
+      .type=AR_ERROR,
+
+      .code=__COUNTER__,
+      .mess="No such key in table"
+
+    };
+
+  };
 
 // ---   *   ---   *   ---
 // namespace TAB
@@ -127,6 +144,8 @@ public:
   // nit/del
   Tab(uint64_t fake);
   ~Tab(void);
+
+  void nit(uint64_t fake);
 
   // remove entry
   T pop(K& k);

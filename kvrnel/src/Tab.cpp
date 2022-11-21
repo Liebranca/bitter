@@ -100,7 +100,7 @@ uint64_t Tab<K,T>::hash(
 // constructor
 
 template <typename K,typename T>
-Tab<K,T>::Tab(
+void Tab<K,T>::nit(
   uint64_t fake
 
 ) {
@@ -131,6 +131,12 @@ Tab<K,T>::Tab(
   m_sorted=false;
 
 };
+
+template <typename K,typename T>
+Tab<K,T>::Tab(
+  uint64_t fake
+
+) {this->nit(fake);};
 
 // ---   *   ---   *   ---
 // destructor
@@ -407,5 +413,8 @@ void Tab<uint64_t,TAB::Symbol>::dump(
 
 template class Tab<uint64_t,TAB::Symbol>;
 template class Tab<uint64_t,TAB::Symbol*>;
+
+template class Tab<std::string,void*>;
+template class Tab<std::string,uint64_t>;
 
 // ---   *   ---   *   ---

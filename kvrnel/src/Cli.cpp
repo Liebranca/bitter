@@ -27,17 +27,23 @@ Cli::Cli(
   m_opt_sz=opt_sz;
 
   m_opt.resize(m_opt_sz);
-  m_have.resize(m_opt_sz);
+  m_have.resize(m_opt_sz+1);
+
+  m_tab.nit(m_opt_sz);
 
   for(uint64_t i=0;i<m_opt_sz;i++) {
 
     m_opt[i]=opt[i];
     m_opt[i].long_form+='=';
 
-    m_have[i].name=m_opt[i].id;
-    m_have[i].idex=i;
+    std::string key(opt[i].id);
+
+    m_tab.push(key,i);
 
   };
+
+  std::string key="DATA";
+  m_tab.push(key,m_opt_sz);
 
 };
 
@@ -128,9 +134,6 @@ int Cli::is_opt(std::string& s) {
 
         break;
 
-      } else {
-        pos=NPOS;
-
       };
 
     };
@@ -201,6 +204,26 @@ void Cli::input(int argc,char** argv) {
 };
 
 // ---   *   ---   *   ---
+// fetch collected data for option
+
+Cli::Arg& Cli::have(std::string key) {
+
+  uint64_t idex;
+  auto lkp=m_tab.has(key);
+
+  if(lkp.key_match) {
+    idex=m_tab.get(lkp);
+
+  } else {
+    err(TAB::Error::KEY,key);
+
+  };
+
+  return m_have[idex];
+
+};
+
+// ---   *   ---   *   ---
 // debug
 
 void Cli::prich(int errout) {
@@ -210,9 +233,9 @@ void Cli::prich(int errout) {
   for(uint64_t i=0;i<m_opt_sz;i++) {
 
     out
-    << m_have[i].idex << ": "
-    << m_have[i].name << " "
-    << m_have[i].on   << " "
+    << int(i) << ": "
+    << m_opt[i].id << " "
+    << m_have[i].on << " "
     ;
 
     for(auto& s : m_have[i].values) {

@@ -1,3 +1,4 @@
+#include <iostream>
 #include "kvrnel/Cli.hpp"
 
 const Cli::Opt OPTIONS[]={
@@ -14,6 +15,15 @@ int main(int argc,char** argv) {
     CLI;
 
     cli.input(argc,argv);
+
+    auto& out=cli.have("DATA");
+
+    std::cerr << out.on << std::endl;
+    for(auto& s : out.values) {
+      std::cerr << s << std::endl;
+
+    };
+
     cli.prich();
 
   } endchk;

@@ -6,6 +6,7 @@
 
   #include "kvrnel/Style.hpp"
   #include "kvrnel/Evil.hpp"
+  #include "kvrnel/Tab.hpp"
 
 // ---   *   ---   *   ---
 // info
@@ -31,6 +32,13 @@ public:
 
   };
 
+  struct Arg {
+
+    bool on;
+    std::vector<std::string> values;
+
+  };
+
 // ---   *   ---   *   ---
 
   struct Error {
@@ -47,28 +55,16 @@ public:
   };
 
 // ---   *   ---   *   ---
-// internal helper
+// attrs
 
 private:
 
-  struct Arg {
-
-    std::string name;
-    uint64_t    idex;
-
-    bool        on;
-
-    std::vector<std::string> values;
-
-  };
-
-// ---   *   ---   *   ---
-// attrs
-
-  uint64_t              m_opt_sz;
+  uint64_t m_opt_sz;
 
   std::vector<Cli::Opt> m_opt;
   std::vector<Cli::Arg> m_have;
+
+  Tab<std::string,uint64_t> m_tab;
 
 // ---   *   ---   *   ---
 // guts
@@ -117,6 +113,9 @@ public:
 
   // fill out m_have from argv
   void input(int argc,char** argv);
+
+  // get value of option
+  Cli::Arg& have(std::string key);
 
   // debug
   void prich(int errout=0);
