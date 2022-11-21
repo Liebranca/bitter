@@ -19,21 +19,22 @@
 // nit
 
 Cli::Cli(
-  const char** opt,
-  uint64_t     opt_sz
+  const Cli::Opt* opt,
+  const uint64_t  opt_sz
 
 ) {
 
-  m_opt_sz = opt_sz;
+  m_opt_sz=opt_sz;
 
   m_opt.resize(m_opt_sz);
   m_have.resize(m_opt_sz);
 
   for(uint64_t i=0;i<m_opt_sz;i++) {
 
-    m_opt[i]=std::string(opt[i]);
+    m_opt[i]=opt[i];
+    m_opt[i].long_form+='=';
 
-    m_have[i].name=m_opt[i];
+    m_have[i].name=m_opt[i].id;
     m_have[i].idex=i;
 
   };
@@ -44,19 +45,14 @@ Cli::Cli(
 // breaks value,value
 
 void Cli::comma_split(
-  Cli::Opt&    dst,
+  Cli::Arg&    dst,
   std::string& s
 
 ) {
 
-  uint64_t pos=std::string::npos;
+  uint64_t pos=NPOS;
 
-  while(
-
-     (pos=s.find(","))
-  != std::string::npos
-
-  ) {
+  while((pos=s.find(","))!=NPOS) {
 
     dst.values.push_back(
       s.substr(0,pos)
@@ -64,6 +60,7 @@ void Cli::comma_split(
     );
 
     s=s.substr(pos+1);
+    s=(s.length()) ? s : "";
 
   };
 
@@ -80,23 +77,24 @@ void Cli::comma_split(
 
 bool Cli::data_in_opt(
 
-  Cli::Opt&    dst,
+  Cli::Arg&    dst,
+  Cli::Opt&    opt,
 
-  std::string& arg,
-  std::string& opt
+  std::string& arg
 
 ) {
 
   bool out   = false;
-
   auto a_len = arg.length();
-  auto o_len = opt.length();
 
-  if(a_len>o_len) {
+  if(a_len) {
 
-    auto src=arg.substr(o_len);
-    this->comma_split(dst,src);
+    if(opt.is_switch) {
+      err(Cli::Error::SWITCH,opt.id);
 
+    };
+
+    this->comma_split(dst,arg);
     out=true;
 
   };
@@ -110,14 +108,34 @@ bool Cli::data_in_opt(
 
 int Cli::is_opt(std::string& s) {
 
-  int out=NO_MATCH;
+  int      out = NO_MATCH;
+  uint64_t pos = NPOS;
 
   for(int i=0;i<m_opt_sz;i++) {
+    for(int j=0;j<2;j++) {
+      auto form=(j)
+        ? m_opt[i].short_form
+        : m_opt[i].long_form
+        ;
 
-    uint64_t pos=s.rfind(m_opt[i],0);
+      pos=s.rfind(form,0);
 
-    if(pos==0) {
-      out=i;
+      if(pos==0) {
+        m_have[i].on=true;
+        out=i;
+
+        s=s.substr(form.length());
+
+        break;
+
+      } else {
+        pos=NPOS;
+
+      };
+
+    };
+
+    if(pos!=NPOS) {
       break;
 
     };
@@ -146,9 +164,9 @@ int Cli::parse_opt(
   // next entry is data
   } else if(!this->data_in_opt(
     m_have[idex],
+    m_opt[idex],
 
-    arg,
-    m_opt[idex]
+    arg
 
   )) {out=idex;};
 
@@ -194,13 +212,14 @@ void Cli::prich(int errout) {
     out
     << m_have[i].idex << ": "
     << m_have[i].name << " "
+    << m_have[i].on   << " "
     ;
 
     for(auto& s : m_have[i].values) {
 
       out << s;
       if(s!=m_have[i].values.back()) {
-        out << ' ';
+        out << '|';
 
       };
 

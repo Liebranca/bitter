@@ -1,16 +1,21 @@
 #include "kvrnel/Cli.hpp"
 
-const char* OPTIONS[]={
+const Cli::Opt OPTIONS[]={
 
-  "-l","-o"
+  {"switch","-s","--switch",1},
+  {"output","-o","--output",0}
 
 };
 
 int main(int argc,char** argv) {
 
-  CLI;
+  errchk {
 
-  cli.input(argc,argv);
-  cli.prich();
+    CLI;
+
+    cli.input(argc,argv);
+    cli.prich();
+
+  } endchk;
 
 };
