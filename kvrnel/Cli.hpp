@@ -34,8 +34,8 @@ public:
 
   struct Arg {
 
-    bool on;
-    std::vector<std::string> values;
+    bool   on;
+    strvec values;
 
   };
 
@@ -125,11 +125,15 @@ public:
 // ---   *   ---   *   ---
 // sugar
 
+#define OPTIONS \
+  const Cli::Opt _OPTIONS[]=
+
 #define CLI \
   Cli cli( \
-    OPTIONS, \
-    arrsize(OPTIONS) \
-  )
+    _OPTIONS, \
+    arrsize(_OPTIONS) \
+  );\
+  cli.input(argc,argv)
 
 // ---   *   ---   *   ---
 

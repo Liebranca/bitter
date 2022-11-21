@@ -24,18 +24,33 @@ Avt::set_config(
 
   post_build=>q(
 
-#    my @call=qw(
-#
-#      olink
-#
-#      -lbitter
-#      -o$ARPATH/bin/joj-sprite
-#
-#      $ARPATH/bitter/bin/src/joj-sprite.cpp
-#
-#    );
-#
-#    system {$call[0]} @call;
+    chdir(Shb7::dir('bitter'));
+
+    my @call=qw(
+
+      ../avtomat/bin/olink
+
+      -lbitter
+      -o../bin/joj-sprite
+
+      bin/src/joj_sprite.cpp
+
+    );
+
+    system {$call[0]} @call;
+
+    @call=qw(
+
+      ../avtomat/bin/olink
+
+      -lbitter
+      -o../bin/dafpack
+
+      bin/src/dafpack.cpp
+
+    );
+
+    system {$call[0]} @call;
 
 #    use Emit::Std;
 #    use Emit::Python;

@@ -53,8 +53,8 @@ typedef void*(*signal)(void*);
 
 #define cxstr CX std::string_view
 
-#define VERSION cxstr VERSION=
-#define AUTHOR  cxstr AUTHOR=
+#define VERSION cxstr _VERSION=
+#define AUTHOR  cxstr _AUTHOR=
 
 // ---   *   ---   *   ---
 // can't override inherited constants?

@@ -19,7 +19,8 @@ x ^ Make single, redundancy-free table during atlas pack
 x ^ Derive polygon cache from image tables
 x ^ Apply tile transforms to polygons
 x Reading and writing new image table format
-~ Make binary for packing and unpacking
+~ Binary for packing and unpacking images
+x Binary for packing and unpacking sprites
 
 *>CRK
 x Vertex classes
@@ -38,7 +39,7 @@ x ^replace
 x Passing buffers through zlib
 x Fix the Bin header boiler-trouble
 x "Outsource" compression of all filetypes to DAF
-~ Make binary for packing resource files
+x Binary for packing and unpacking resource files
 
 *>Evil
 x Repurpose the ar-catcher

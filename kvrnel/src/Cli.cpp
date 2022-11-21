@@ -162,7 +162,7 @@ int Cli::parse_opt(
 
   // this entry is data
   if(idex==NO_MATCH) {
-    this->comma_split(m_have[idex],arg);
+    this->comma_split(m_have[m_opt_sz],arg);
 
   // next entry is data
   } else if(!this->data_in_opt(
