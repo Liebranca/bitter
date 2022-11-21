@@ -43,6 +43,11 @@ typedef void*(*signal)(void*);
 #define cx32  CX uint32_t
 #define cx64  CX uint64_t
 
+#define cxi8  CX int8_t
+#define cxi16 CX int16_t
+#define cxi32 CX int32_t
+#define cxi64 CX int64_t
+
 #define cxr32 CX float
 #define cxr64 CX double
 

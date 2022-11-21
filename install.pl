@@ -15,15 +15,28 @@
 Avt::set_config(
 
   name=>'bitter',
-  scan=>'-x legacy',
+  scan=>'-x legacy,bin',
 
   build=>'ar:bitter',
 
 #  xprt=>[qw(TODO)],
   libs=>[qw(stdc++ m z png)],
 
-#  post_build=>q(
+  post_build=>q(
+
+#    my @call=qw(
 #
+#      olink
+#
+#      -lbitter
+#      -o$ARPATH/bin/joj-sprite
+#
+#      $ARPATH/bitter/bin/src/joj-sprite.cpp
+#
+#    );
+#
+#    system {$call[0]} @call;
+
 #    use Emit::Std;
 #    use Emit::Python;
 #
@@ -38,8 +51,8 @@ Avt::set_config(
 #      args=>['JOJ',['bitter']],
 #
 #    );
-#
-#  ),
+
+  ),
 
 );
 
