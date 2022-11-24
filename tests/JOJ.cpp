@@ -12,8 +12,7 @@ int main(void) {
   errchk {
 
     JOJ j(
-
-      "./out",
+      "./out.joj",
       "/home/lyeb/Cruelty/Medi/",
 
       comp
@@ -23,38 +22,16 @@ int main(void) {
     j.add_img_set("0");
     j.add_img_set("1");
 
+    j.atlas_sz(256);
     j.pack();
 
-    CRK c("./out.crk",j);
-    c.pack();
-
   } endchk;
 
 // ---   *   ---   *   ---
 
   errchk {
 
-    Bin j("./out",Bin::READ);
-    Bin c("./out.crk",Bin::READ);
-
-    DAF daf("./a.daf",Bin::NEW);
-
-    daf.push(j);
-    daf.push(c);
-
-    j.unlink();
-    c.unlink();
-
-  } endchk;
-
-// ---   *   ---   *   ---
-
-  errchk {
-
-    DAF daf("./a.daf",Bin::READ);
-    auto joj_path=daf.extract(0);
-
-    JOJ j(joj_path);
+    JOJ j("./out.joj");
     j.unpack();
 
     j.to_png(0,"atlas",JOJ::UNPACK_ATLAS);

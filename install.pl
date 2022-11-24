@@ -5,6 +5,7 @@
   use warnings;
 
   use lib $ENV{'ARPATH'}.'/lib/sys/';
+  use Style;
   use Shb7;
 
   use lib $ENV{'ARPATH'}.'/lib/';
@@ -25,28 +26,34 @@ Avt::set_config(
   post_build=>q(
 
     chdir(Shb7::dir('bitter'));
+    my $debug=($cli->{debug}!=$NULL)
+      ? q[-g] : $NULLSTR;
 
-    my @call=qw(
+    my @call=(qw(
 
       ../avtomat/bin/olink
 
       -lbitter
       -o../bin/joj-sprite
 
-      bin/src/joj_sprite.cpp
+    ),$debug,
+
+      q[bin/src/joj_sprite.cpp]
 
     );
 
     system {$call[0]} @call;
 
-    @call=qw(
+    @call=(qw(
 
       ../avtomat/bin/olink
 
       -lbitter
       -o../bin/dafpack
 
-      bin/src/dafpack.cpp
+    ),$debug,
+
+      q[bin/src/dafpack.cpp]
 
     );
 

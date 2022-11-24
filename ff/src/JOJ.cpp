@@ -399,6 +399,8 @@ void JOJ::owc_atlas(
 
   m_hed.atlas_solid[raw->idex]=sz;
 
+std::cerr << "WT " << int(sz) << std::endl;
+
   raw->color.write(
     m_atlas.get(0,0),sz
 
@@ -414,7 +416,7 @@ void JOJ::build_img_table(
 
 ) {
 
-  for(uint64_t i=0;i<m_atlas.cnt_sq;i++) {
+  for(uint64_t i=0;i<m_tiles.cnt_sq;i++) {
 
     auto& td=m_atlas.image[idex][i];
 
@@ -450,6 +452,7 @@ void JOJ::pack_atlas(void) {
     i++
 
   ) {
+
 
     m_atlas.clear_users();
 
@@ -632,7 +635,7 @@ void JOJ::set_tile(
       tiles.x,
       y+tiles.y,
 
-      m_hed.img_sz
+      tiles.cnt*tiles.sz
 
     );
 
@@ -740,10 +743,9 @@ void JOJ::write(void) {
     raw->atlas.transfer(*this);
     raw->color.transfer(*this);
 
-    raw->atlas.unlink();
-    raw->color.unlink();
-
   };
+
+  this->rmdump();
 
 };
 

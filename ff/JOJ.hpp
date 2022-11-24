@@ -18,7 +18,7 @@ class JOJ: public Bin {
 
 public:
 
-  VERSION   "v2.00.9";
+  VERSION   "v2.01.0";
   AUTHOR    "IBN-3DILA";
 
   enum {

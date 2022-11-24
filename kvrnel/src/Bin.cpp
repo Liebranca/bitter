@@ -336,8 +336,8 @@ void Bin::seek(
 void Bin::transfer(Bin& other,uint64_t sz) {
 
   sz+=m_size*(sz==0);
-
   auto buff=this->read(sz);
+
   other.write(&buff[0],buff.used());
 
 };

@@ -48,6 +48,20 @@ public:
 
   };
 
+  struct Error {
+
+    CX Evil::Errcode UNRECOGNIZED={
+      .type=AR_ERROR,
+
+      .code=__COUNTER__,
+      .mess=
+        "Your application has been "
+        "killed due to an unrecognized effup."
+
+    };
+
+  };
+
 // ---   *   ---   *   ---
 // records info for calls that __can__ fail
 
@@ -160,6 +174,10 @@ public:
 #define endchk \
   catch(Evil::Errcode ee) {\
     Evil::get().terminator(ee);\
+  } catch(...) {\
+    Evil::get().terminator(\
+      Evil::Error::UNRECOGNIZED \
+    );\
   };Evil::get().poplog()
 
 // ---   *   ---   *   ---

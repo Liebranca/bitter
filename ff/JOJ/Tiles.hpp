@@ -131,6 +131,7 @@ typedef struct FwdTiles {
   uint64_t cnt_sq;
 
   Mem<JOJ::Pixel>  data;
+  Mem<JOJ::Pixel>  copy_tile;
 
   JOJ::Tile_Refs   users;
   JOJ::Atlas_Desc  image;
@@ -159,8 +160,11 @@ typedef struct FwdTiles {
     this->cnt     = img_sz/sz;
     this->cnt_sq  = this->cnt*this->cnt;
 
-    Mem<JOJ::Pixel> data(img_sz_sq);
-    this->data.copy(data);
+    Mem<JOJ::Pixel> _data(img_sz_sq);
+    this->data.copy(_data);
+
+    Mem<JOJ::Pixel> _copy_tile(this->sz_sq);
+    this->copy_tile.copy(_copy_tile);
 
     this->tab.resize(this->cnt_sq);
 
@@ -340,11 +344,8 @@ typedef struct FwdTiles {
 
   );
 
-  // send duplicate of tile to buffer
-  Mem<JOJ::Pixel> copy(
-    JOJ::Pixel* pixel
-
-  );
+  // send duplicate of tile to tile_copy buffer
+  void copy(JOJ::Pixel* pixel);
 
   // replace tile with another
   void mov(
@@ -368,7 +369,7 @@ typedef struct FwdTiles {
 
   inline void clear_users(void) {
     this->users.clear();
-    this->users.resize(this->sz_sq);
+    this->users.resize(this->cnt_sq);
 
   };
 
@@ -386,22 +387,22 @@ typedef struct FwdTiles {
 
   // get tile number
   inline uint64_t tile_idex(
-    uint16_t x,
-    uint16_t y
+    uint16_t _x,
+    uint16_t _y
 
-  ) {return sq_idex(x,y,this->cnt);};
+  ) {return sq_idex(_x,_y,this->cnt);};
 
   // get index of tile in buffer
   inline uint64_t real_idex(
-    uint16_t x,
-    uint16_t y
+    uint16_t _x,
+    uint16_t _y
 
   ) {
 
     return sq_idex(
 
-      x*this->sz_sq,
-      y*this->cnt,
+      _x*this->sz_sq,
+      _y*this->cnt,
 
       this->sz_sq
 
@@ -411,19 +412,27 @@ typedef struct FwdTiles {
 
   // return ptr to tile at [x,y]
   inline JOJ::Pixel* get(
-    uint16_t x,
-    uint16_t y
+    uint16_t _x,
+    uint16_t _y
 
   ) {
 
-    JOJ::Pixel* out=&this->data[0];
-    return out+this->real_idex(x,y);
+    return
+
+      &this->data[0]
+    + this->real_idex(_x,_y)
+    ;
 
   };
 
   // return ptr to tile N
   inline JOJ::Pixel* get(uint64_t i) {
-    return &this->data[0]+i*this->sz_sq;
+
+    return
+
+      &this->data[0]
+    + (i*this->sz_sq)
+    ;
 
   };
 

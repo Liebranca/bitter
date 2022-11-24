@@ -239,9 +239,9 @@ public:
 
     );
 
-    m_used=
-      (ptr+len)
-    * ((ptr+len)>m_used)
+    m_used=((ptr+len)>m_used)
+    ? (ptr+len)
+    : m_used
     ;
 
     return len;

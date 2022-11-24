@@ -298,14 +298,14 @@ bool JOJ::Tiles::match_mirror(
   switch(td.mirrored) {
 
   case MIRROR_NONE:
-    this->xmir(td.x,td.y);
+    this->xmir(td.dx,td.dy);
     td.mirrored=MIRROR_X;
 
     break;
 
   case MIRROR_X:
-    this->xmir(td.x,td.y);
-    this->ymir(td.x,td.y);
+    this->xmir(td.dx,td.dy);
+    this->ymir(td.dx,td.dy);
     td.mirrored=MIRROR_Y;
 
     break;
@@ -314,7 +314,7 @@ bool JOJ::Tiles::match_mirror(
 // try last combination
 
   case MIRROR_Y:
-    this->xmir(td.x,td.y);
+    this->xmir(td.dx,td.dy);
     td.mirrored=MIRROR_XY;
 
     break;
@@ -323,8 +323,8 @@ bool JOJ::Tiles::match_mirror(
 // undo and break loop
 
   case MIRROR_XY:
-    this->xmir(td.x,td.y);
-    this->ymir(td.x,td.y);
+    this->xmir(td.dx,td.dy);
+    this->ymir(td.dx,td.dy);
     td.mirrored=MIRROR_NONE;
 
     out=false;
@@ -346,7 +346,7 @@ bool JOJ::Tiles::match_rotate(
   bool out=true;
 
   // rotate
-  this->ror(td.x,td.y);
+  this->ror(td.dx,td.dy);
   td.rotated++;
 
   // attempt mirroring every 4 rotations
@@ -370,16 +370,16 @@ void JOJ::Tiles::undo_mirror(
   switch(td.mirrored) {
 
   case MIRROR_X:
-    this->xmir(td.x,td.y);
+    this->xmir(td.dx,td.dy);
     break;
 
   case MIRROR_Y:
-    this->ymir(td.x,td.y);
+    this->ymir(td.dx,td.dy);
     break;
 
   case MIRROR_XY:
-    this->xmir(td.x,td.y);
-    this->ymir(td.x,td.y);
+    this->xmir(td.dx,td.dy);
+    this->ymir(td.dx,td.dy);
 
     break;
 
@@ -425,16 +425,16 @@ void JOJ::Tiles::undo_rotation(
   switch(td.rotated) {
 
   case ROT_90:
-    this->rol(td.x,td.y);
+    this->rol(td.dx,td.dy);
     break;
 
   case ROT_180:
-    this->ror(td.x,td.y);
-    this->ror(td.x,td.y);
+    this->ror(td.dx,td.dy);
+    this->ror(td.dx,td.dy);
     break;
 
   case ROT_240:
-    this->ror(td.x,td.y);
+    this->ror(td.dx,td.dy);
     break;
 
   };
@@ -819,23 +819,18 @@ void JOJ::Tiles::unpack(
 // ---   *   ---   *   ---
 // send duplicate of tile to buffer
 
-Mem<JOJ::Pixel> JOJ::Tiles::copy(
+void JOJ::Tiles::copy(
   JOJ::Pixel* pixel
 
 ) {
 
-  Mem<JOJ::Pixel> out(this->sz_sq);
-  JOJ::Pixel* out_p=&out[0];
-
   memcpy(
-    out_p,pixel,
+    &copy_tile[0],pixel,
 
     this->sz_sq
   * sizeof(JOJ::Pixel)
 
   );
-
-  return Mem<JOJ::Pixel>(out);
 
 };
 
@@ -869,10 +864,8 @@ void JOJ::Tiles::xform(
 
 ) {
 
-  auto pixel = this->get(off_x,off_y);
-  auto buff  = this->copy(pixel);
-
-  JOJ::Pixel* buff_p=&buff[0];
+  auto pixel=this->get(off_x,off_y);
+  this->copy(pixel);
 
 // ---   *   ---   *   ---
 // get function pointer from idex
@@ -923,7 +916,7 @@ void JOJ::Tiles::xform(
     );
 
     // fetch
-    pixel[dst_idex]=buff_p[src_idex];
+    pixel[dst_idex]=copy_tile[src_idex];
 
   }};
 

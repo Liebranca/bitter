@@ -24,14 +24,15 @@
 // ---   *   ---   *   ---
 // info
 
-  VERSION     "v0.00.1b";
+  VERSION     "v0.00.2b";
   AUTHOR      "IBN-3DILA";
 
   OPTIONS {
 
     {"sorce_dir","-sd","--source_dir",0},
     {"output","-o","--output",0},
-    {"type","-t","--type",0}
+    {"type","-t","--type",0},
+    {"atlas_sz","-as","--atlas_sz",0}
 
   };
 
@@ -52,8 +53,7 @@
       .code=__COUNTER__,
 
       .mess=
-        "No images provided for *.joj; "
-        "use joj-sprite -is[name,name]"
+        "No images provided for *.joj"
 
     };
 
@@ -70,6 +70,8 @@ int main(int argc,char** argv) {
   std::string output   = "./out";
 
   const char* img_type = COMP_YAUV;
+
+  uint16_t    atlas_sz = 128;
 
 // ---   *   ---   *   ---
 // input handler
@@ -95,9 +97,16 @@ int main(int argc,char** argv) {
     images=data.values;
 
     // name of srcdir dir
-    auto& arg_sd=cli.have("srcdir");
+    auto& arg_sd=cli.have("sorce_dir");
     if(arg_sd.values.size()) {
       srcdir=arg_sd.values.back();
+
+    };
+
+    // size of final packed image
+    auto& arg_as=cli.have("atlas_sz");
+    if(arg_as.values.size()) {
+      atlas_sz=std::stoi(arg_as.values.back());
 
     };
 
@@ -128,11 +137,20 @@ int main(int argc,char** argv) {
 
     };
 
+    joj.atlas_sz(atlas_sz);
     joj.pack();
 
     // create polydump
     CRK crk(output+".crk",joj);
     crk.pack();
+
+  } endchk;
+
+  errchk {
+    JOJ joj(output+".joj");
+
+    joj.unpack();
+    joj.to_png(0,output+".png",JOJ::UNPACK_ATLAS);
 
   } endchk;
 
