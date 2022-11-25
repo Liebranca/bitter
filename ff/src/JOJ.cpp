@@ -169,7 +169,7 @@ void JOJ::offset_img_table(JOJ::Swap_PTR& swap) {
 
 };
 
-// ---   *   ---   *   ---
+// ---   *  ---   *   ---
 
 void JOJ::read_atlas(JOJ::Swap_PTR& swap) {
 
@@ -399,8 +399,6 @@ void JOJ::owc_atlas(
 
   m_hed.atlas_solid[raw->idex]=sz;
 
-std::cerr << "WT " << int(sz) << std::endl;
-
   raw->color.write(
     m_atlas.get(0,0),sz
 
@@ -416,9 +414,7 @@ void JOJ::build_img_table(
 
 ) {
 
-  for(uint64_t i=0;i<m_tiles.cnt_sq;i++) {
-
-    auto& td=m_atlas.image[idex][i];
+  for(auto& td : m_atlas.image[idex]) {
 
     if(
 
@@ -1140,7 +1136,7 @@ void JOJ::to_png(
   uint64_t sz_sq=sz*sz;
 
   // make image
-  PNG im(name,sz);
+  PNG im(name+".png",sz);
 
   float* pixels=this->read_pixels(
     idex,mode==JOJ::UNPACK_IMAGE

@@ -19,7 +19,7 @@ class CRK: public Bin {
 
 public:
 
-  VERSION     "v2.00.3";
+  VERSION     "v2.00.5";
   AUTHOR      "IBN-3DILA";
 
 // ---   *   ---   *   ---
@@ -140,6 +140,8 @@ private:
 
     uint16_t vcount;
     uint16_t icount;
+
+    uint64_t prim_cnt;
 
   } Header;
 

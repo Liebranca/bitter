@@ -118,10 +118,10 @@ void CRK::Quad_Build::uv_ror(void) {
   for(uint8_t i=0;i<4;i++) {
 
     auto& vrt  = me->verts[vert+i];
-    auto  cpy  = me->verts[vert+i];
+    auto  cpy  = me->verts[vert+((i+1)&3)];
 
-    vrt.TEX[0] = 0xFF-cpy.TEX[1];
-    vrt.TEX[1] = cpy.TEX[0];
+    vrt.TEX[0] = cpy.TEX[0];
+    vrt.TEX[1] = cpy.TEX[1];
 
   };
 
@@ -135,10 +135,10 @@ void CRK::Quad_Build::uv_rol(void) {
   for(uint8_t i=0;i<4;i++) {
 
     auto& vrt  = me->verts[vert+i];
-    auto  cpy  = me->verts[vert+i];
+    auto  cpy  = me->verts[vert+((i-1)&3)];
 
-    vrt.TEX[0] = cpy.TEX[1];
-    vrt.TEX[1] = 0xFF-cpy.TEX[0];
+    vrt.TEX[0] = cpy.TEX[0];
+    vrt.TEX[1] = cpy.TEX[1];
 
   };
 
@@ -149,12 +149,22 @@ void CRK::Quad_Build::uv_rol(void) {
 
 void CRK::Quad_Build::uv_xmir(void) {
 
-  for(uint8_t i=0;i<4;i++) {
+  for(uint8_t i=0;i<4;i+=2) {
 
     auto& vrt  = me->verts[vert+i];
-    auto  cpy  = me->verts[vert+i];
+    auto  cpy  = me->verts[vert+vert+((i+1)&3)];
 
-    vrt.TEX[0] = 0xFF-cpy.TEX[0];
+    vrt.TEX[0] = cpy.TEX[0];
+    vrt.TEX[1] = cpy.TEX[1];
+
+  };
+
+  for(uint8_t i=1;i<4;i+=2) {
+
+    auto& vrt  = me->verts[vert+i];
+    auto  cpy  = me->verts[vert+vert+((i-1)&3)];
+
+    vrt.TEX[0] = cpy.TEX[0];
     vrt.TEX[1] = cpy.TEX[1];
 
   };
@@ -166,13 +176,23 @@ void CRK::Quad_Build::uv_xmir(void) {
 
 void CRK::Quad_Build::uv_ymir(void) {
 
-  for(uint8_t i=0;i<4;i++) {
+  for(uint8_t i=1;i<4;i+=2) {
 
     auto& vrt  = me->verts[vert+i];
-    auto  cpy  = me->verts[vert+i];
+    auto  cpy  = me->verts[vert+vert+((i+1)&3)];
 
     vrt.TEX[0] = cpy.TEX[0];
-    vrt.TEX[1] = 0xFF-cpy.TEX[1];
+    vrt.TEX[1] = cpy.TEX[1];
+
+  };
+
+  for(uint8_t i=0;i<4;i+=2) {
+
+    auto& vrt  = me->verts[vert+i];
+    auto  cpy  = me->verts[vert+vert+((i-1)&3)];
+
+    vrt.TEX[0] = cpy.TEX[0];
+    vrt.TEX[1] = cpy.TEX[1];
 
   };
 

@@ -133,19 +133,23 @@ void JOJ::Tiles::fetch_offset(
 // ---   *   ---   *   ---
 // walk the table and adjust fetches
 
-  for(JOJ::Tile_Desc& td : this->tab) {
+  for(auto& td : this->tab) {
 
-    if(td.cleared==CLEAR_NAT) {continue;};
+    if(
 
-    td.x+=ox;
+       td.cleared==CLEAR_NAT
+    || td.cleared==FAKE_SOLID
 
-    while(td.x>=atlas.cnt) {
-      td.x-=atlas.cnt;
-      td.y++;
+    ) {continue;};
+
+    while(ox>=atlas.cnt) {
+      ox-=atlas.cnt;
+      oy++;
 
     };
 
-    td.y+=oy;
+    td.x=ox++;
+    td.y=oy;
 
     uint64_t td_idex=atlas.tile_idex(td.x,td.y);
 
@@ -235,21 +239,16 @@ uint64_t JOJ::Tiles::solid_cnt(void) {
 
   uint64_t out=0;
 
-  for(uint64_t i=0;i<this->cnt_sq;i++) {
-
-    JOJ::Tile_Desc& td=this->tab[i];
+  for(auto& td : this->tab) {
 
     if(
 
        td.cleared==CLEAR_NAT
     || td.cleared==CLEAR_FETCH
 
-    ) {
+    ) {break;};
 
-      out=i;
-      break;
-
-    };
+    out++;
 
   };
 
@@ -706,7 +705,8 @@ void JOJ::Tiles::reloc(
 
 ) {
 
-  uint64_t src_idex=this->tile_idex(td.dx,td.dy);
+  uint64_t src_idex=
+    this->tile_idex(td.dx,td.dy);
 
   if(this->tab[src_idex].cleared) {
     return;
@@ -715,25 +715,40 @@ void JOJ::Tiles::reloc(
 
 // ---   *   ---   *   ---
 
-  for(uint16_t _y=0;_y<this->cnt;_y++) {
-  for(uint16_t _x=0;_x<this->cnt;_x++) {
+  uint16_t x_avail=0;
+  uint16_t y_avail=0;
 
-    uint64_t dst_idex = this->tile_idex(_x,_y);
-    uint8_t  cleared  = this->tab[dst_idex].cleared;
+  for(auto& dst : this->tab) {
 
-    if(_x==td.dx && _y==td.dy) {
-      return;
+    uint64_t dst_idex=this->tile_idex(
+      x_avail,y_avail
+
+    );
+
+    uint8_t cleared=
+      this->tab[dst_idex].cleared;
+
+// ---   *   ---   *   ---
+
+    if(dst_idex==src_idex) {
+      break;
 
     } else if(cleared && cleared!=FAKE_SOLID) {
 
       this->mov(
-        this->get(_x,_y),
+        this->get(x_avail,y_avail),
         this->get(td.dx,td.dy)
 
       );
 
+// ---   *   ---   *   ---
+
       this->reloc_users(
-        src_idex,_x,_y
+
+        src_idex,
+
+        x_avail,
+        y_avail
 
       );
 
@@ -746,14 +761,24 @@ void JOJ::Tiles::reloc(
 
       this->tab[dst_idex].cleared=cleared;
 
-      td.x=_x;
-      td.y=_y;
+      td.x=x_avail;
+      td.y=y_avail;
 
-      return;
+      break;
 
     };
 
-  }};
+// ---   *   ---   *   ---
+
+    x_avail++;
+
+    if(x_avail==this->cnt) {
+      x_avail=0;
+      y_avail++;
+
+    };
+
+  };
 
 };
 

@@ -187,7 +187,6 @@ void CRK::Prim::from_buff(
 
 Mem<uint8_t> CRK::mesh_to_buff(void) {
 
-  uint64_t cnt = m_data.size();
   uint64_t sz  = 0;
   uint64_t ptr = 0;
 
@@ -199,10 +198,7 @@ Mem<uint8_t> CRK::mesh_to_buff(void) {
 
   };
 
-  Mem<uint8_t> out(sz+sizeof(cnt));
-  out.write(&cnt,sizeof(cnt),0);
-
-  ptr+=sizeof(cnt);
+  Mem<uint8_t> out(sz);
 
   for(auto& prim : m_data) {
     prim.to_buff(out,ptr);
@@ -221,12 +217,10 @@ void CRK::buff_to_mesh(
 
 ) {
 
-  uint64_t cnt=reipret(uint64_t,src[0]);
-  uint64_t ptr=sizeof(cnt);
+  uint64_t ptr=0;
+  m_data.resize(m_hed.prim_cnt);
 
-  m_data.resize(cnt);
-
-  for(uint64_t i=0;i<cnt;i++) {
+  for(uint64_t i=0;i<m_hed.prim_cnt;i++) {
     m_data[i].from_buff(src,ptr);
 
   };
@@ -238,6 +232,7 @@ void CRK::buff_to_mesh(
 
 void CRK::write(void) {
 
+  m_hed.prim_cnt=m_data.size();
   this->write_header(&m_hed);
 
   auto m=this->mesh_to_buff();
@@ -315,6 +310,11 @@ void CRK::make_sprite(
 
   for(JOJ::Img_Desc& img : bld->atlas) {
 
+    if(i==bld->atlas.size()-1) {
+      break;
+
+    };
+
     CRK::Frame_Build frame={
 
       .scale = {
@@ -365,14 +365,10 @@ void CRK::make_prim(
 
   };
 
-  if(me.verts.size()) {
+  m_hed.vcount+=me.verts.size();
+  m_hed.icount+=me.indices.size();
 
-    m_hed.vcount+=me.verts.size()+4;
-    m_hed.icount+=me.indices.size()+6;
-
-    m_data.push_back(me);
-
-  };
+  m_data.push_back(me);
 
 };
 

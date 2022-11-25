@@ -146,11 +146,22 @@ int main(int argc,char** argv) {
 
   } endchk;
 
+// ---   *   ---   *   ---
+// debug
+
   errchk {
+
     JOJ joj(output+".joj");
 
     joj.unpack();
-    joj.to_png(0,output+".png",JOJ::UNPACK_ATLAS);
+
+    joj.to_png(0,"atlas",JOJ::UNPACK_ATLAS);
+
+    uint64_t idex=0;
+    for(auto& name : images) {
+      joj.to_png(idex++,name,JOJ::UNPACK_IMAGE);
+
+    };
 
   } endchk;
 
