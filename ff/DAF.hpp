@@ -14,7 +14,7 @@ class DAF: public Bin {
 
 public:
 
-  VERSION   "v2.00.6";
+  VERSION   "v2.00.7";
   AUTHOR    "IBN-3DILA";
 
   struct Error {
@@ -224,10 +224,14 @@ public:
   void remove(uint64_t idex);
 
   // create bin from entry
-  std::string extract(uint64_t idex);
+  std::string extract(
+    uint64_t    idex,
+    std::string path=""
+
+  );
 
   // ^whole archive
-  strvec unpack(void);
+  strvec unpack(std::string base="");
 
 // ---   *   ---   *   ---
 // put new block at end of file

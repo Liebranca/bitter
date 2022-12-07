@@ -328,6 +328,7 @@ void CRK::make_sprite(
     };
 
     this->make_prim(CRK::FRAME,&frame);
+    i++;
 
   };
 
@@ -361,7 +362,7 @@ void CRK::make_prim(
 
     );
 
-    break;
+    return;
 
   };
 

@@ -20,45 +20,18 @@ Avt::set_config(
 
   build=>'ar:bitter',
 
-#  xprt=>[qw(TODO)],
   libs=>[qw(stdc++ m z png)],
 
-  post_build=>q(
+  utils=>{
 
-    chdir(Shb7::dir('bitter'));
-    my $debug=($cli->{debug}!=$NULL)
-      ? q[-g] : $NULLSTR;
+    q[joj-sprite]=>[qw(bin/src/joj_sprite.cpp)],
+    q[daf]=>[qw(bin/src/daf.cpp)],
 
-    my @call=(qw(
+  },
 
-      ../avtomat/bin/olink
-
-      -lbitter
-      -o../bin/joj-sprite
-
-    ),$debug,
-
-      q[bin/src/joj_sprite.cpp]
-
-    );
-
-    system {$call[0]} @call;
-
-    @call=(qw(
-
-      ../avtomat/bin/olink
-
-      -lbitter
-      -o../bin/dafpack
-
-    ),$debug,
-
-      q[bin/src/dafpack.cpp]
-
-    );
-
-    system {$call[0]} @call;
-
+#  xprt=>[qw(TODO)],
+#  post_build=>q(
+#
 #    use Emit::Std;
 #    use Emit::Python;
 #
@@ -73,8 +46,8 @@ Avt::set_config(
 #      args=>['JOJ',['bitter']],
 #
 #    );
-
-  ),
+#
+#  ),
 
 );
 

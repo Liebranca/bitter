@@ -488,9 +488,16 @@ void DAF::unzip(void) {
 // ---   *   ---   *   ---
 // create bin from entry
 
-std::string DAF::extract(uint64_t idex) {
+std::string DAF::extract(
+  uint64_t    idex,
+  std::string path
 
-  std::string path=this->dumpname(idex);
+) {
+
+  if(!path.length()) {
+    path=this->dumpname(idex);
+
+  };
 
   Bin out(path,Bin::NEW);
 
@@ -504,13 +511,21 @@ std::string DAF::extract(uint64_t idex) {
 // ---   *   ---   *   ---
 // ^whole archive
 
-strvec DAF::unpack(void) {
+strvec DAF::unpack(std::string base) {
 
-  strvec out;
+  strvec      out;
+  std::string path=base;
+
   out.resize(m_hed.used);
 
   for(uint64_t i=0;i<m_hed.used;i++) {
-    out.push_back(this->extract(i));
+
+    if(base.length()) {
+      path=base+std::to_string(i);
+
+    };
+
+    out.push_back(this->extract(i,path));
 
   };
 
