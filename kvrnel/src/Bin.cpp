@@ -213,6 +213,7 @@ Mem<uint8_t> Bin::orc(
   Mem<uint8_t> buff(b.m_size);
 
   b.m_fh.read((char*) &buff[0],b.m_size);
+  buff.set_used(b.m_size);
 
   return Mem<uint8_t>(buff);
 

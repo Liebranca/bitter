@@ -197,14 +197,39 @@ public:
   };
 
 // ---   *   ---   *   ---
-// flood a block with zeroes
 
+  // flood a block with zeroes
   inline void cl(void) {
     memset(m_buff.get(),0,this->bytesz());
     m_used=0;
 
   };
 
+  // buffers are identical
+  bool cmp(Mem<T>& other) {
+
+    bool out=
+
+       (this->m_used    == other.m_used   )
+    && (this->m_buff_sz == other.m_buff_sz)
+    ;
+
+    if(!out) {goto TAIL;};
+
+    out=!memcmp(
+      this->m_buff.get(),
+      other.m_buff.get(),
+
+      this->m_used
+
+    );
+
+  TAIL:
+    return out;
+
+  };
+
+  // dirty setter for ORC-type funcs
   inline void set_used(uint64_t x) {
     m_used=x;
 
