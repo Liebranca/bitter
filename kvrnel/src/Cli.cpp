@@ -165,11 +165,14 @@ int Cli::parse_opt(
     this->comma_split(m_have[m_opt_sz],arg);
 
   // next entry is data
-  } else if(!this->data_in_opt(
-    m_have[idex],
-    m_opt[idex],
+  } else if(
 
-    arg
+     !m_opt[idex].is_switch
+  && !this->data_in_opt(
+       m_have[idex],
+       m_opt[idex],
+
+       arg
 
   )) {out=idex;};
 

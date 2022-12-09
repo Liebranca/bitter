@@ -265,19 +265,14 @@ bool JOJ::Tiles::cmp(
 
 ) {
 
-  bool out=true;
+  return !memcmp(
 
-  for(uint16_t i=0;i<this->sz_sq;i++) {
+    a,b,
 
-    if(*a++!=*b++) {
-      out=false;
-      break;
+    this->sz_sq
+  * sizeof(*a)
 
-    };
-
-  };
-
-  return out;
+  );
 
 };
 
@@ -531,17 +526,23 @@ bool JOJ::Tiles::match_cmp(
 
     // no match
     if(!same) {
+      break;
 
-      // transforms pending, retry
-      if(this->match_rotate(mat.td)) {
-        continue;
-
-      // transforms exhausted, undo and end
-      } else {
-        this->match_undo(mat.td);
-        break;
-
-      };
+// this bit is too slow!
+//
+// ill fix it when im done testing
+// everything else
+//
+//      // transforms pending, retry
+//      if(this->match_rotate(mat.td)) {
+//        continue;
+//
+//      // transforms exhausted, undo and end
+//      } else {
+//        this->match_undo(mat.td);
+//        break;
+//
+//      };
 
 // ---   *   ---   *   ---
 // match, end here
@@ -586,17 +587,24 @@ bool JOJ::Tiles::match_cmp(
 void JOJ::Tiles::match(
 
   uint16_t _x,
-  uint16_t _y,
-
-  bool     skip
+  uint16_t _y
 
 ) {
 
-  // get current
-  JOJ::Tile_Desc& td  = this->nit_desc(_x,_y);
-  JOJ::Pixel*     a   = this->get(_x,_y);
+  // get tile descriptor
+  auto td_idex=this->tile_idex(_x,_y);
 
-  JOJ::Tile_Cmp   mat = {
+  // get data
+  JOJ::Tile_Desc& td = this->tab[td_idex];
+  JOJ::Pixel*     a  = this->get(_x,_y);
+
+  if(td.cleared) {
+    return;
+
+  };
+
+  // make comparison helper
+  JOJ::Tile_Cmp mat={
 
     .td = td,
 
@@ -606,15 +614,6 @@ void JOJ::Tiles::match(
     .y  = _y
 
   };
-
-  // skip tile if blank
-  if(this->is_clear(a)) {
-    td.cleared=CLEAR_NAT;
-    goto TAIL;
-
-  };
-
-  if(skip) {goto TAIL;};
 
   // walk tiles
   for(uint16_t iy=0;iy<this->cnt;iy++) {
@@ -652,6 +651,27 @@ TAIL:
 
 // ---   *   ---   *   ---
 
+void JOJ::Tiles::pre_proc(
+
+  uint16_t _x,
+  uint16_t _y
+
+) {
+
+  // get current
+  JOJ::Tile_Desc& td  = this->nit_desc(_x,_y);
+  JOJ::Pixel*     a   = this->get(_x,_y);
+
+  // mark blank tile
+  if(this->is_clear(a)) {
+    td.cleared=CLEAR_NAT;
+
+  };
+
+};
+
+// ---   *   ---   *   ---
+
 void JOJ::Tiles::reloc_users(
 
   uint64_t idex,
@@ -670,8 +690,8 @@ void JOJ::Tiles::reloc_users(
     dst.x=_x;
     dst.y=_y;
 
-    dst.rotated  = td.rotated;
-    dst.mirrored = td.mirrored;
+//    dst.rotated  = td.rotated;
+//    dst.mirrored = td.mirrored;
 
   };
 
@@ -688,8 +708,8 @@ void JOJ::Tiles::reloc_users(
       dst.x=_x;
       dst.y=_y;
 
-      dst.rotated  = td.rotated;
-      dst.mirrored = td.mirrored;
+//      dst.rotated  = td.rotated;
+//      dst.mirrored = td.mirrored;
 
     };
 
@@ -742,6 +762,19 @@ void JOJ::Tiles::reloc(
       );
 
 // ---   *   ---   *   ---
+
+      if(cleared==CLEAR_FETCH) {
+
+        this->reloc_users(
+
+          dst_idex,
+
+          this->tab[dst_idex].x,
+          this->tab[dst_idex].y
+
+        );
+
+      };
 
       this->reloc_users(
 
@@ -804,11 +837,18 @@ void JOJ::Tiles::pack(
 
   for(uint16_t _y=0;_y<this->cnt;_y++) {
   for(uint16_t _x=0;_x<this->cnt;_x++) {
-    this->match(_x,_y,skip_match);
+
+    this->pre_proc(_x,_y);
+
+    if(!skip_match) {
+      this->match(_x,_y);
+
+    };
+
+    auto& td=this->tab[this->tile_idex(_x,_y)];
+    this->reloc(td);
 
   }};
-
-  this->reloc_all();
 
 };
 

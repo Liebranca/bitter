@@ -100,7 +100,19 @@ int main(int argc,char** argv) {
   errchk {
 
     DAF daf(source+".daf",Bin::READ);
-    daf.unpack(output.back());
+
+    if(indices.size()) {
+
+      uint64_t j=0;
+      for(auto i : indices) {
+        daf.extract(i,output[j++]);
+
+      };
+
+    } else {
+      daf.unpack(output.back());
+
+    };
 
   } endchk;
 

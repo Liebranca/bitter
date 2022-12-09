@@ -266,11 +266,15 @@ typedef struct FwdTiles {
 
   // attempt matching with previous tiles
   void match(
+    uint16_t _x,
+    uint16_t _y
 
-    uint16_t x,
-    uint16_t y,
+  );
 
-    bool     skip=false
+  // initialize a tile for processing
+  void pre_proc(
+    uint16_t _x,
+    uint16_t _y
 
   );
 

@@ -3,9 +3,6 @@
 // Compares a series of
 // files byte-by-byte
 //
-// Also generates *.crk
-// polydump for sprite drawing
-//
 // LIBRE SOFTWARE
 // Licensed under GNU GPL3
 // be a bro and inherit
