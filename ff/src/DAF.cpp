@@ -92,8 +92,8 @@ void DAF::blktrav(void) {
 
     if(idex) {
 
-      auto& prev=m_hed.blk[idex-1];
-      blk.off=prev.off+prev.sz;
+      auto& prev = m_hed.blk[idex-1];
+      blk.off    = prev.off+prev.sz;
 
     } else {
       blk.off=0;
@@ -494,7 +494,7 @@ std::string DAF::extract(
 
 ) {
 
-  if(!path.length()) {
+  if(! path.length()) {
     path=this->dumpname(idex);
 
   };

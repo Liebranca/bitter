@@ -159,6 +159,12 @@ void JOJ::Tiles::fetch_offset(
 
     );
 
+    if(td_idex>=atlas.cnt_sq) {
+      fprintf(stderr,"ATLAS SIZE TOO SMALL");
+      exit(1);
+
+    };
+
     atlas.users[td_idex].push_back(ref);
 
   };
@@ -265,7 +271,7 @@ bool JOJ::Tiles::cmp(
 
 ) {
 
-  return !memcmp(
+  return ! memcmp(
 
     a,b,
 
@@ -525,13 +531,16 @@ bool JOJ::Tiles::match_cmp(
     same=this->cmp(mat.a,mat.b);
 
     // no match
-    if(!same) {
+    if(! same) {
+
       break;
 
-// this bit is too slow!
+//  i tried some opz on this
 //
-// ill fix it when im done testing
-// everything else
+//  result?
+//  too slow for too little gain
+//
+//  i'll just disable it for now
 //
 //      // transforms pending, retry
 //      if(this->match_rotate(mat.td)) {

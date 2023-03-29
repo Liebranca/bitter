@@ -53,6 +53,8 @@ typedef void*(*signal)(void*);
 
 #define cxstr CX std::string_view
 
+#define cxfptr const auto
+
 #define VERSION cxstr _VERSION=
 #define AUTHOR  cxstr _AUTHOR=
 

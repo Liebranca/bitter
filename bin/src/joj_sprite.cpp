@@ -146,6 +146,9 @@ int main(int argc,char** argv) {
 
   } endchk;
 
+  auto dbout=Bin::orc(output+".crk");
+  dbout.prich();
+
   return 0;
 
 };

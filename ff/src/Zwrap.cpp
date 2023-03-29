@@ -67,17 +67,21 @@ std::string Zwrap::get_status(void) {
 
 Zwrap::Zwrap(int mode) {
 
-  m_mode          = mode;
+  m_mode           = mode;
 
-  m_readsize      = DAFPAGE;
-  m_remain        = 0x00;
+  m_readsize       = DAFPAGE;
+  m_remain         = 0x00;
 
-  m_strm          = {0};
-  m_strm.zalloc   = Z_NULL;
-  m_strm.zfree    = Z_NULL;
-  m_strm.opaque   = Z_NULL;
-  m_strm.next_in  = Z_NULL;
-  m_strm.avail_in = 0;
+  m_strm           = {0};
+  m_strm.zalloc    = Z_NULL;
+  m_strm.zfree     = Z_NULL;
+  m_strm.opaque    = Z_NULL;
+
+  m_strm.next_in   = Z_NULL;
+  m_strm.avail_in  = 0;
+
+  m_strm.next_out  = Z_NULL;
+  m_strm.avail_out = 0;
 
   if(m_mode&Zwrap::INFLATE) {
 
@@ -137,7 +141,7 @@ void Zwrap::next_chunk(void) {
   uint8_t* src;
 
   // from file
-  if(m_mode&Zwrap::INPUT_BIN) {
+  if(m_mode & Zwrap::INPUT_BIN) {
     src=&m_in_buff[0];
     m_src.bin->read(src,m_readsize);
 
@@ -149,12 +153,15 @@ void Zwrap::next_chunk(void) {
   };
 
   // ^point to it
-  m_strm.avail_in = m_readsize;
-  m_strm.next_in  = src;
+  m_strm.avail_in  = m_readsize;
+  m_strm.next_in   = src;
 
+  // clear previous out
+  m_strm.avail_out = 0;
+  m_strm.next_out  = Z_NULL;
+
+  // ^sub pending and spit it out
   m_remain-=m_readsize;
-
-  // ^spit it out
   this->dump();
 
 };
@@ -173,7 +180,7 @@ uint64_t Zwrap::process(
   m_strm.avail_out = avail;
   m_strm.next_out  = dst;
 
-  if(!avail) {goto TAIL;};
+  if(! avail) {goto TAIL;};
 
 // ---   *   ---   *   ---
 
@@ -205,7 +212,7 @@ TAIL:
 
 void Zwrap::dump(void) {
 
-  if(!(m_mode&Zwrap::INFLATE)) {
+  if(m_mode & Zwrap::DEFLATE) {
     m_flush=(m_remain)
       ? Z_NO_FLUSH
       : Z_FINISH
@@ -215,19 +222,14 @@ void Zwrap::dump(void) {
 
 // ---   *   ---   *   ---
 
-  while(
-
-     m_strm.avail_in
-  || !m_strm.avail_out
-
-  ) {
+  while(this->flating()) {
 
     uint64_t have=0x00;
 
 // ---   *   ---   *   ---
 // from file
 
-    if(m_mode&Zwrap::OUTPUT_BIN) {
+    if(m_mode & Zwrap::OUTPUT_BIN) {
 
       uint8_t* dst   = &m_out_buff[0];
       uint64_t avail = DAFPAGE;
@@ -246,21 +248,10 @@ void Zwrap::dump(void) {
 
       have=this->process(m_dst.bytes,m_dst.size);
 
-      m_dst.bytes+=have;
-      m_dst.size-=have;
+      m_dst.bytes += have;
+      m_dst.size  -= have;
 
     };
-
-// ---   *   ---   *   ---
-// early exit
-
-    if(
-
-       (!have || !m_remain)
-    && !m_strm.avail_in
-
-    ) {break;};
-
 
   };
 
@@ -277,7 +268,7 @@ void Zwrap::Target::set(
 
 ) {
 
-  this->size   = (!size)
+  this->size   = (! size)
     ? src->get_fullsize()-offset
     : size
     ;
@@ -313,7 +304,7 @@ void Zwrap::set_src(
 
 ) {
 
-  if(m_mode&Zwrap::INPUT_BIN) {
+  if(m_mode & Zwrap::INPUT_BIN) {
     m_src.set((Bin*) src,size,offset);
 
   } else {
@@ -334,7 +325,7 @@ void Zwrap::set_dst(
 
 ) {
 
-  if(m_mode&Zwrap::OUTPUT_BIN) {
+  if(m_mode & Zwrap::OUTPUT_BIN) {
     m_dst.set((Bin*) dst,size,offset);
 
   } else {
@@ -353,8 +344,8 @@ void Zwrap::flate(void) {
   // get read/write buffer for bins
   if(
 
-  (  (m_mode&Zwrap::INPUT_BIN)
-  || (m_mode&Zwrap::OUTPUT_BIN)
+  (  (m_mode & Zwrap::INPUT_BIN)
+  || (m_mode & Zwrap::OUTPUT_BIN)
 
   ) && (
 
@@ -375,6 +366,7 @@ void Zwrap::flate(void) {
 // consume input
 
   m_remain=m_src.size;
+fprintf(stderr,"REM %u\n",m_remain);
 
   while(m_remain) {
     this->next_chunk();

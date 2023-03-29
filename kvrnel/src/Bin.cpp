@@ -60,7 +60,13 @@ void Bin::open(std::string fpath,char mode) {
   m_fh.open(fpath,m_mode);
 
   // errchk
-  if(!m_fh.is_open()) {
+  if(
+
+     ! m_fh.is_open()
+  || ! m_fh.good()
+
+  ) {
+
     err(Bin::Error::OPEN,fpath);
 
   // update filepath only on success
@@ -82,7 +88,7 @@ void Bin::close(void) {
 
   if(!m_passed && m_fh.is_open()) {
 
-    if(!m_fh.good()) {
+    if(! m_fh.good()) {
       err(Bin::Error::CLOSE,m_fpath);
 
     };

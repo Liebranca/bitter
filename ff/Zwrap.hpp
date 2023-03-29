@@ -20,11 +20,11 @@ public:
   VERSION   "v2.00.3";
   AUTHOR    "IBN-3DILA";
 
-  cx8 DEFLATE     = 0x00;
-  cx8 INFLATE     = 0x01;
+  cx8 DEFLATE     = 0x01;
+  cx8 INFLATE     = 0x02;
 
-  cx8 INPUT_BIN   = 0x02;
-  cx8 OUTPUT_BIN  = 0x04;
+  cx8 INPUT_BIN   = 0x04;
+  cx8 OUTPUT_BIN  = 0x08;
 
   struct Error {
 
@@ -125,6 +125,25 @@ private:
     uint64_t avail
 
   );
+
+  // exit condition for flate loop
+  bool flating(void) {
+
+    bool out=(m_mode & Zwrap::DEFLATE)
+      ?   m_strm.avail_in
+      : ! m_strm.avail_out
+      ;
+
+    // i curse the zlib docs to
+    // eternal damnation
+    if(m_status==Z_OK && ! m_strm.avail_out) {
+      out=1;
+
+    };
+
+    return out;
+
+  };
 
 // ---   *   ---   *   ---
 // iface

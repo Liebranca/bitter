@@ -205,7 +205,7 @@ Mem<uint8_t> CRK::mesh_to_buff(void) {
 
   };
 
-  return out;
+  return Mem<uint8_t>(out);
 
 };
 
