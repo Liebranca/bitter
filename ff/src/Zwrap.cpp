@@ -366,8 +366,6 @@ void Zwrap::flate(void) {
 // consume input
 
   m_remain=m_src.size;
-fprintf(stderr,"REM %u\n",m_remain);
-
   while(m_remain) {
     this->next_chunk();
 
