@@ -19,19 +19,30 @@
 
 ANS::ANS(std::string fpath) {
 
-  auto     m = Bin::orc(fpath);
-  uint64_t i = 0;
+  auto     m   = Bin::orc(fpath);
 
-  while(i < m.used()) {
+  uint64_t i   = 0;
+  uint16_t cnt = m[i];i+=2;
+
+  m_dict.nit(cnt);
+
+  for(uint64_t j=0;j<cnt;j++) {
 
     Anim anim;
 
-    uint8_t tag_sz=m[i++];i+=tag_sz;
+    std::string tag    = "";
+    uint8_t     tag_sz = m[i++];
+
+    for(uint8_t c=0;c<tag_sz;c++) {
+      tag+=m[i++];
+
+    };
 
     anim.beg=*((uint16_t*) &m[i]);i+=2;
     anim.end=*((uint16_t*) &m[i]);i+=4;
 
     m_anims.push_back(anim);
+    m_dict.push(tag,j);
 
   };
 

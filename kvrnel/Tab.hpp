@@ -234,6 +234,8 @@ public:
 // sugar
 
 typedef Tab<uint64_t,TAB::Symbol> Symtab;
+typedef Tab<std::string,void*>    Vtab;
+typedef Tab<std::string,uint64_t> Itab;
 
 // ---   *   ---   *   ---
 

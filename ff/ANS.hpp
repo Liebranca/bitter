@@ -5,6 +5,7 @@
 // deps
 
   #include "kvrnel/Style.hpp"
+  #include "kvrnel/Tab.hpp"
 
 // ---   *   ---   *   ---
 // info
@@ -13,7 +14,7 @@ class ANS {
 
 public:
 
-  VERSION   "v0.00.1b";
+  VERSION   "v0.00.2b";
   AUTHOR    "IBN-3DILA";
 
 // ---   *   ---   *   ---
@@ -36,6 +37,7 @@ public:
 private:
 
   Anims m_anims;
+  Itab  m_dict;
 
 // ---   *   ---   *   ---
 // iface
@@ -49,9 +51,16 @@ public:
   // cstruc
   ANS(std::string fpath);
 
-  // getter
-  Anims& data(void) {
-    return m_anims;
+  // selfex
+  inline Anim* get(uint64_t i) {
+    return &m_anims[i];
+
+  };
+
+  // ^by name
+  inline Anim* get(std::string name) {
+    auto idex=m_dict.get(name);
+    return get(idex);
 
   };
 
