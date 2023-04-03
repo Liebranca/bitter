@@ -86,6 +86,7 @@ void Clock::tick(int busy) {
 
   };
 
+  m_end=m_beg;
   m_uBy=std::round(m_fBy);
 
 };
