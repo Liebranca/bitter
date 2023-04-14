@@ -56,6 +56,15 @@ inline uint64_t popcount(uint64_t x) {
 };
 
 // ---   *   ---   *   ---
+// integer exp by sq
+
+uint64_t ipow(
+  uint64_t x,
+  uint64_t n
+
+);
+
+// ---   *   ---   *   ---
 // float encoding helper ;>
 
 namespace Frac {
@@ -386,7 +395,7 @@ T frac(
   uint16_t mid  = 1<<(nbits);
   uint16_t max  = Frac::MAXV[nbits];
 
-  uint16_t midp = (!unsig)
+  uint16_t midp = (! unsig)
     ? mid
     : 1
     ;
@@ -394,13 +403,14 @@ T frac(
   long     b   = roundf(x/step);
   float    top = step*(max-mid);
 
-  top-=step*Frac::Rounding_Mode;
+  top -= step * Frac::Rounding_Mode;
 
-  b+=mid*!unsig;
-  b-=1*(b==max && x<top);
+  b   += mid * (! unsig);
+  b   -= 1   * (b==max && x<top);
 
   bool over=b>max;
-  b=(max*over)+(b*!over);
+
+  b    = (max*over) + (b * (! over));
 
   return (T) b;
 
@@ -424,8 +434,8 @@ float unfrac(
   uint16_t max  = Frac::MAXV[nbits];
   uint16_t mid  = 1<<nbits;
 
-  b+=1*(b==max);
-  b-=mid*!unsig;
+  b += 1   * (b==max);
+  b -= mid * (! unsig);
 
   return (b*step);
 

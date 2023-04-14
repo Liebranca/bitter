@@ -17,7 +17,7 @@
 
 // ---   *   ---   *   ---
 
-ANS::ANS(std::string fpath) {
+void ANS::nit(std::string fpath) {
 
   auto     m   = Bin::orc(fpath);
 

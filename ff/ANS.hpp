@@ -49,18 +49,24 @@ public:
   ~ANS(void) {};
 
   // cstruc
-  ANS(std::string fpath);
+  void nit(std::string fpath);
 
   // selfex
-  inline Anim* get(uint64_t i) {
-    return &m_anims[i];
+  inline Anim& get(uint64_t i) {
+    return m_anims[i];
 
   };
 
   // ^by name
-  inline Anim* get(std::string name) {
+  inline Anim& get(std::string name) {
     auto idex=m_dict.get(name);
     return get(idex);
+
+  };
+
+  inline uint64_t iof(std::string name) {
+    auto idex=m_dict.get(name);
+    return idex;
 
   };
 

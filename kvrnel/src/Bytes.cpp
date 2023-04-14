@@ -16,6 +16,32 @@
   #include "kvrnel/Bytes.hpp"
 
 // ---   *   ---   *   ---
+// pow by squaring
+
+uint64_t ipow(
+  uint64_t x,
+  uint64_t n
+
+) {
+
+  uint64_t out=1;
+
+  while(n) {
+
+    if(n&1) {
+      out*=x;
+
+    };
+
+    n  >>= 1;
+    x   *= x;
+
+  };
+
+  return out;
+}
+
+// ---   *   ---   *   ---
 
 char* stirr_p(int* src,int cnt) {
 

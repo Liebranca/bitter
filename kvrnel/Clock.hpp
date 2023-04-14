@@ -14,7 +14,7 @@ class Clock {
 
 private:
 
-  VERSION   "v2.00.3";
+  VERSION   "v2.00.4";
   AUTHOR    "IBN-3DILA";
 
 // ---   *   ---   *   ---

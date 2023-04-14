@@ -67,9 +67,11 @@ void Clock::tick(int busy) {
 
   m_delta=m_beg-m_end;
 
-  if(m_delta<m_len) {
+  long len=m_len<<((! busy)*2);
 
-    long  sub=m_len-m_delta;
+  if(m_delta<len) {
+
+    long  sub=(len-m_delta);
 
     float frame_time=
       ((float) sub)

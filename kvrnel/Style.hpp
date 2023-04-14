@@ -24,6 +24,7 @@
   #include <string_view>
 
   #include <vector>
+  #include <new>
 
 // ---   *   ---   *   ---
 // peso types ;>
@@ -32,6 +33,11 @@ typedef void(*nihil)(void);
 typedef void(*stark)(void*);
 
 typedef void*(*signal)(void*);
+
+// ---   *   ---   *   ---
+// also known as 'do nothing'
+
+static void noop(void) {};
 
 // ---   *   ---   *   ---
 // constant types
@@ -111,6 +117,44 @@ cx8 AR_FATAL = 0xFF;
 // shortening horrible C++ names
 
 typedef std::vector<std::string> strvec;
+
+#define SINGLETON(name) \
+  /* this is what idiocy looks like */  \
+  static inline name & ice(void) {\
+    static name ice; \
+    return ice; \
+  }; \
+  name (name const&)          = delete; \
+  void operator=(name const&) = delete
+
+// jesus christ
+#define CLINE_SZ \
+  std::hardware_destructive_interference_size
+
+#define cline_align alignas(CLINE_SZ)
+#define cline_offset(type) \
+  CLINE_SZ/sizeof(type)
+
+#define CLINE_ALIGN_CHK(type) \
+  cx16 type##_##V_OFFSET=(cline_offset(type)) \
+    ? cline_offset(type) \
+    : ! (sizeof(type) % CLINE_SZ) \
+      ? 1 \
+      : 0 \
+    ; \
+  CASSERT(  \
+    type##_##V_OFFSET, \
+    "\n\e[37;1m<" \
+    "\e[31;21mAR" \
+    "\e[37;1m>" \
+    "\e[32;1m" #type "\e[0m" \
+    " must be cache line aligned\n" \
+    "\e[37;1m::\e[0m" \
+    "rewrite as \e[35;1mstruct cline_align \e[0m" \
+    "" #type " {...};\n" \
+    "\e[37;1m::\e[0m" \
+    "else adjust struct elements\n" \
+  )
 
 // ---   *   ---   *   ---
 
