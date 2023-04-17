@@ -132,18 +132,23 @@ void CRK::Prim::to_buff(
 
   };
 
-  sz  = sizeof(cnt[0])*arrsize(cnt);
+  sz   = sizeof(cnt[0])*arrsize(cnt);
   dst.write(&cnt[0],sz,ptr);
 
-  ptr+= sz;
-  sz  = cnt[0]*sizeof(verts[0]);
+  ptr += sz;
+  sz   = cnt[0]*sizeof(verts[0]);
   dst.write(verts.data(),sz,ptr);
 
-  ptr+= sz;
-  sz  = cnt[1]*sizeof(indices[0]);
-  dst.write(indices.data(),sz,ptr);
+  ptr += sz;
+  sz   = cnt[1]*sizeof(indices[0]);
 
-  ptr+= sz;
+  // indices are skipped for 2D sprites
+  // as the pattern can be generated
+  if(sz) {
+    dst.write(indices.data(),sz,ptr);
+    ptr+=sz;
+
+  };
 
 };
 
@@ -173,12 +178,107 @@ void CRK::Prim::from_buff(
   sz=sizeof(verts[0])*cnt[0];
   memcpy(verts.data(),&src[ptr],sz);
 
+  ptr += sz;
+  sz   = sizeof(indices[0])*cnt[1];
+
+  // indices skipped for 2D sprites
+  if(sz) {
+    memcpy(indices.data(),&src[ptr],sz);
+
+  };
+
   ptr+=sz;
 
-  sz=sizeof(indices[0])*cnt[1];
-  memcpy(indices.data(),&src[ptr],sz);
+};
 
-  ptr+=sz;
+// ---   *   ---   *   ---
+// mod index buff for line drawing
+
+void CRK::Prim::tris_to_lines(void) {
+
+  uint64_t sz = indices.size();
+  uint64_t j  = 0;
+
+  // new vec is sz + [1 per every 3rd idex]
+  std::vector<uint16_t> mod;
+  mod.resize(sz+(sz/3));
+
+  // walk current
+  for(uint64_t i=0;i<sz;i+=3) {
+
+    // A to B
+    mod[j++]=indices[i+0];
+    mod[j++]=indices[i+1];
+
+    // B to C
+    mod[j++]=indices[i+1];
+    mod[j++]=indices[i+2];
+
+  };
+
+  // ^subst
+  indices=mod;
+
+};
+
+// ---   *   ---   *   ---
+// ^reverse
+
+void CRK::Prim::lines_to_tris(void) {
+
+  uint64_t sz = indices.size();
+  uint64_t j  = 0;
+
+  // new vec is sz - [1 per every 4th idex]
+  std::vector<uint16_t> mod;
+  mod.resize(sz-(sz/4));
+
+  // walk current
+  for(uint64_t i=0;i<sz;i+=4) {
+
+    // A to B to C
+    mod[j++]=indices[i+0];
+    mod[j++]=indices[i+1];
+    mod[j++]=indices[i+3];
+
+  };
+
+  // ^subst
+  indices=mod;
+
+};
+
+// ---   *   ---   *   ---
+// generates index array for
+// simple quad arrays
+
+void CRK::Prim::gen_qa_indices(void) {
+
+  // 2 additional indices per
+  // every 4 verts
+  uint64_t sz=verts.size();
+  sz+=2*(sz/4);
+
+  // ensure enough room
+  indices.resize(sz);
+  uint16_t vi=0;
+
+  // calc pattern
+  for(uint16_t i=0;i<sz;i+=6) {
+
+    // tri A
+    indices[i+0]=vi+0;
+    indices[i+1]=vi+3;
+    indices[i+2]=vi+2;
+
+    // tri B
+    indices[i+3]=vi+0;
+    indices[i+4]=vi+2;
+    indices[i+5]=vi+1;
+
+    vi+=4;
+
+  };
 
 };
 
@@ -271,7 +371,7 @@ CRK::Prim CRK::make_sprite_frame(
 ) {
 
   CRK::Prim       me;
-  CRK::Quad_Build qbld(&me,m_hed.vcount);
+  CRK::Quad_Build qbld(&me);
 
   uint64_t tile_cnt = bld->img.size();
 
@@ -279,9 +379,7 @@ CRK::Prim CRK::make_sprite_frame(
   qbld.uv_scale     = bld->scale[1];
 
   // 4 verts (2 tris) per tile
-  // 3 indices per tri
   me.verts.resize(4*tile_cnt);
-  me.indices.resize(6*tile_cnt);
 
   // push one quad per tile
   for(uint64_t i=0;i<tile_cnt;i++) {

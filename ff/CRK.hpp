@@ -19,7 +19,7 @@ class CRK: public Bin {
 
 public:
 
-  VERSION     "v2.00.5";
+  VERSION     "v2.00.7";
   AUTHOR      "IBN-3DILA";
 
 // ---   *   ---   *   ---
@@ -39,7 +39,7 @@ public:
 // ---   *   ---   *   ---
 // basis struct
 
-  typedef struct {
+  struct Vertex {
 
     union {
 
@@ -58,12 +58,12 @@ public:
 
     };
 
-  } Vertex;
+  };
 
 // ---   *   ---   *   ---
 // constructor helpers
 
-  typedef struct {
+  struct Prim {
 
     std::vector<CRK::Vertex> verts;
     std::vector<uint16_t>    indices;
@@ -82,16 +82,26 @@ public:
 
     );
 
-  } Prim;
+    // mod index buff for line drawing
+    void tris_to_lines(void);
 
-  typedef struct {
+    // ^reverse
+    void lines_to_tris(void);
+
+    // generates index array for
+    // simple quad arrays
+    void gen_qa_indices(void);
+
+  };
+
+  struct Prim_Build {
 
     Prim*    me;
 
     uint16_t vert;
     uint16_t idex;
 
-  } Prim_Build;
+  };
 
   typedef std::vector<CRK::Prim> Mesh;
 
@@ -135,7 +145,7 @@ public:
 
 private:
 
-  typedef struct {
+  struct Header {
     char     sig[4];
 
     uint16_t vcount;
@@ -143,7 +153,7 @@ private:
 
     uint64_t prim_cnt;
 
-  } Header;
+  };
 
 // ---   *   ---   *   ---
 // virtual consts

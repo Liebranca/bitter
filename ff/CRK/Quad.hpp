@@ -27,16 +27,11 @@ struct Quad_Build : Prim_Build {
 
   JOJ::Tile_Desc td;
 
-  uint16_t idex_off;
-
 // ---   *   ---   *   ---
 
-  Quad_Build(Prim* p,uint16_t off) {
+  Quad_Build(Prim* p) {
     me   = p;
     vert = 0;
-    idex = 0;
-
-    idex_off=off;
 
   };
 
@@ -45,11 +40,9 @@ struct Quad_Build : Prim_Build {
   inline void push_quad(void) {
 
     this->get_verts();
-    this->get_indices();
     this->apply_xforms();
 
     vert+=4;
-    idex+=6;
 
   };
 
