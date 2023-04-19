@@ -4,11 +4,13 @@
 // ---   *   ---   *   ---
 // deps
 
+  #include <glm/glm.hpp>
   #include <vector>
 
   #include "kvrnel/Style.hpp"
   #include "kvrnel/Bytes.hpp"
   #include "kvrnel/Bin.hpp"
+  #include "kvrnel/Seph.hpp"
 
   #include "ff/JOJ.hpp"
 
@@ -19,7 +21,7 @@ class CRK: public Bin {
 
 public:
 
-  VERSION     "v2.00.7";
+  VERSION     "v2.00.9";
   AUTHOR      "IBN-3DILA";
 
 // ---   *   ---   *   ---
@@ -32,9 +34,13 @@ public:
     QUAD,
 
     FRAME,
-    SPRITE
+    SPRITE,
+
+    TRIMESH
 
   };
+
+  typedef std::vector<glm::vec3> Points;
 
 // ---   *   ---   *   ---
 // basis struct
@@ -57,6 +63,11 @@ public:
       uint8_t data[16];
 
     };
+
+    // fill out struct from
+    // uncompressed data
+    void set_xyz(glm::vec3& co);
+    void set_n(glm::vec3& n);
 
   };
 
@@ -117,12 +128,6 @@ public:
 
   > Mesh_Builds;
 
-  struct Vertex_Packed {
-    uint64_t sz;
-    uint64_t cnt;
-
-  };
-
 // ---   *   ---   *   ---
 // geometry helpers
 
@@ -137,6 +142,18 @@ public:
   struct Sprite_Build {
     float scale[2];
     JOJ::Atlas_Desc atlas;
+
+  };
+
+  struct Tri_Build {
+    Points    pts;
+    glm::vec3 n;
+
+  };
+
+  struct Trimesh_Build {
+    std::vector<Tri_Build> tris;
+    uint16_t icount;
 
   };
 
@@ -174,6 +191,21 @@ private:
   };
 
 // ---   *   ---   *   ---
+// data packing singletons
+
+  static Seph& nseph(void) {
+    static Seph s(Seph::NORMAL,0,4,4);
+    return s;
+
+  };
+
+  static Seph& pseph(void) {
+    static Seph s(Seph::POINT,8,8,8);
+    return s;
+
+  };
+
+// ---   *   ---   *   ---
 // attrs
 
   CRK::Header m_hed;
@@ -184,6 +216,17 @@ private:
 
   CRK::Prim make_sprite_frame(
     CRK::Frame_Build* bld
+
+  );
+
+  void make_tri(
+    CRK::Prim       me,
+    CRK::Tri_Build& bld
+
+  );
+
+  CRK::Prim make_trimesh(
+    CRK::Trimesh_Build* bld
 
   );
 

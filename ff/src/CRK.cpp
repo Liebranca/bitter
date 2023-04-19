@@ -13,7 +13,28 @@
 // deps
 
   #include "kvrnel/Bytes.hpp"
+  #include "kvrnel/Seph.hpp"
+
   #include "ff/CRK.hpp"
+
+// ---   *   ---   *   ---
+// fill out struct from
+// uncompressed data
+
+void CRK::Vertex::set_xyz(glm::vec3& co) {
+
+  uint32_t b=CRK::pseph().pack(co) & 0xFFFFFFFF;
+
+  XYZ[0]=b&0xFF;b >>= 8;
+  XYZ[1]=b&0xFF;b >>= 8;
+  XYZ[2]=b&0xFF;
+
+};
+
+void CRK::Vertex::set_n(glm::vec3& n) {
+  NTB[0]=CRK::nseph().pack(n) & 0xFF;
+
+};
 
 // ---   *   ---   *   ---
 
@@ -364,6 +385,73 @@ void CRK::unpack(void) {
 };
 
 // ---   *   ---   *   ---
+// build triangle
+
+void CRK::make_tri(
+  CRK::Prim       me,
+  CRK::Tri_Build& bld
+
+) {
+
+  auto&    pts    = bld.pts;
+  auto&    n      = bld.n;
+  uint16_t i      = me.indices.size();
+
+  // fill out struct
+  for(auto& p : pts) {
+
+    me.verts.push_back(CRK::Vertex());
+    auto& vert=me.verts.back();
+
+    vert.set_xyz(p);
+    vert.set_n(n);
+
+  };
+
+  // make index array for this tri
+  uint16_t vcount=pts.size();
+  std::vector<uint16_t> iar {
+
+    uint16_t(i+0),
+    uint16_t(i+3),
+    uint16_t(i+1),
+
+    uint16_t(i+0),
+    uint16_t(i+2),
+    uint16_t(i+1),
+
+  };
+
+  uint8_t limit=(vcount==3) ? 3 : 6;
+
+  // ^append to me's array
+  for(uint8_t j=0;j<limit;j++) {
+    me.indices.push_back(iar[j]);
+
+  };
+
+};
+
+// ---   *   ---   *   ---
+// ^batch
+
+CRK::Prim CRK::make_trimesh(
+  CRK::Trimesh_Build* bld
+
+) {
+
+  CRK::Prim me;
+
+  for(auto& tri : bld->tris) {
+    this->make_tri(me,tri);
+
+  };
+
+  return me;
+
+};
+
+// ---   *   ---   *   ---
 
 CRK::Prim CRK::make_sprite_frame(
   CRK::Frame_Build* bld
@@ -461,6 +549,14 @@ void CRK::make_prim(
     );
 
     return;
+
+  case CRK::TRIMESH:
+    me=this->make_trimesh(
+      (CRK::Trimesh_Build*) data
+
+    );
+
+    break;
 
   };
 

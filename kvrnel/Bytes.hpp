@@ -124,6 +124,9 @@ namespace Frac {
   // works a lot better
   cxr32 CORD=0.64f;
 
+  // eq to no rounding
+  cxr32 LINE=1.00f;
+
   // always default to normals
   static float Rounding_Mode=NVEC;
 
