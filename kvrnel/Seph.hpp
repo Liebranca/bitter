@@ -16,7 +16,7 @@ class Seph {
 
 public:
 
-  VERSION   "v0.00.1b";
+  VERSION   "v0.00.2b";
   AUTHOR    "IBN-3DILA";
 
   // pack/unpack modes

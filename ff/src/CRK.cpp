@@ -23,7 +23,7 @@
 
 void CRK::Vertex::set_xyz(glm::vec3& co) {
 
-  uint32_t b=CRK::pseph().pack(co) & 0xFFFFFFFF;
+  uint32_t b=CRK::pseph().pack(co);
 
   XYZ[0]=b&0xFF;b >>= 8;
   XYZ[1]=b&0xFF;b >>= 8;
@@ -56,12 +56,12 @@ void CRK::open(
 
 CRK::CRK(
   std::string       fpath,
-  CRK::Mesh_Builds& bld
+  CRK::Mesh_Builds& blds
 
 ): Bin() {
 
   this->open(fpath,Bin::NEW);
-  this->build(bld);
+  this->build(blds);
 
 };
 
@@ -76,7 +76,7 @@ CRK::CRK(
 
   this->open(fpath,Bin::NEW);
 
-  CRK::Mesh_Builds blds;
+  CRK::Mesh_Builds  blds;
   CRK::Sprite_Build frames={
 
     .scale = {
@@ -92,6 +92,30 @@ CRK::CRK(
   CRK::Mesh_Build bld={
     .type=CRK::SPRITE,
     .data=&frames
+
+  };
+
+  blds.push_back(bld);
+  this->build(blds);
+
+};
+
+// ---   *   ---   *   ---
+// from raw
+
+CRK::CRK(
+  std::string fpath,
+  CRK::Tris&  tris
+
+) {
+
+  this->open(fpath,Bin::NEW);
+
+  CRK::Mesh_Builds  blds;
+
+  CRK::Mesh_Build bld={
+    .type=CRK::TRIMESH,
+    .data=&tris
 
   };
 
@@ -387,42 +411,37 @@ void CRK::unpack(void) {
 // ---   *   ---   *   ---
 // build triangle
 
-void CRK::make_tri(
-  CRK::Prim       me,
-  CRK::Tri_Build& bld
+void CRK::Tri::pack(CRK::Prim& me) {
 
-) {
-
-  auto&    pts    = bld.pts;
-  auto&    n      = bld.n;
-  uint16_t i      = me.indices.size();
+  uint16_t i=me.verts.size();
 
   // fill out struct
-  for(auto& p : pts) {
+  for(auto& p : m_points) {
 
     me.verts.push_back(CRK::Vertex());
     auto& vert=me.verts.back();
 
     vert.set_xyz(p);
-    vert.set_n(n);
+    vert.set_n(m_normal);
 
   };
 
   // make index array for this tri
-  uint16_t vcount=pts.size();
   std::vector<uint16_t> iar {
 
     uint16_t(i+0),
-    uint16_t(i+3),
     uint16_t(i+1),
-
-    uint16_t(i+0),
     uint16_t(i+2),
-    uint16_t(i+1),
+
+    uint16_t(i+2),
+    uint16_t(i+3),
+    uint16_t(i+0),
 
   };
 
-  uint8_t limit=(vcount==3) ? 3 : 6;
+  // ^quads implicitly accepted
+  uint16_t vcount = m_points.size();
+  uint8_t  limit  = (vcount==3) ? 3 : 6;
 
   // ^append to me's array
   for(uint8_t j=0;j<limit;j++) {
@@ -436,14 +455,13 @@ void CRK::make_tri(
 // ^batch
 
 CRK::Prim CRK::make_trimesh(
-  CRK::Trimesh_Build* bld
+  CRK::Tris* bld
 
 ) {
 
   CRK::Prim me;
-
-  for(auto& tri : bld->tris) {
-    this->make_tri(me,tri);
+  for(auto& tri : *bld) {
+    tri.pack(me);
 
   };
 
@@ -552,7 +570,7 @@ void CRK::make_prim(
 
   case CRK::TRIMESH:
     me=this->make_trimesh(
-      (CRK::Trimesh_Build*) data
+      (CRK::Tris*) data
 
     );
 

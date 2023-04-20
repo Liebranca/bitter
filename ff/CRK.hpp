@@ -21,7 +21,7 @@ class CRK: public Bin {
 
 public:
 
-  VERSION     "v2.00.9";
+  VERSION     "v2.01.0";
   AUTHOR      "IBN-3DILA";
 
 // ---   *   ---   *   ---
@@ -145,17 +145,33 @@ public:
 
   };
 
-  struct Tri_Build {
-    Points    pts;
-    glm::vec3 n;
+  struct Tri {
+
+    // cstruc
+    void set(Points& pts,glm::vec3& n) {
+      m_points=pts;
+      m_normal=n;
+
+    };
+
+    Tri(Points& pts,glm::vec3& n) {
+      this->set(pts,n);
+
+    };
+
+    // ctrash
+    Tri(void) {};
+    ~Tri(void) {};
+
+    // converts to CRK format
+    void pack(CRK::Prim& me);
+
+    Points    m_points;
+    glm::vec3 m_normal;
 
   };
 
-  struct Trimesh_Build {
-    std::vector<Tri_Build> tris;
-    uint16_t icount;
-
-  };
+  typedef std::vector<Tri> Tris;
 
 // ---   *   ---   *   ---
 // bin header
@@ -163,6 +179,7 @@ public:
 private:
 
   struct Header {
+
     char     sig[4];
 
     uint16_t vcount;
@@ -219,14 +236,8 @@ private:
 
   );
 
-  void make_tri(
-    CRK::Prim       me,
-    CRK::Tri_Build& bld
-
-  );
-
   CRK::Prim make_trimesh(
-    CRK::Trimesh_Build* bld
+    CRK::Tris* bld
 
   );
 
@@ -259,12 +270,19 @@ public:
   CRK(
 
     std::string       fpath,
-    CRK::Mesh_Builds& bld
+    CRK::Mesh_Builds& blds
 
   );
 
   // ^from *.joj
   CRK(std::string fpath,JOJ& joj);
+
+  // ^from raw
+  CRK(
+    std::string fpath,
+    CRK::Tris&  tris
+
+  );
 
   // load
   CRK(std::string fpath);

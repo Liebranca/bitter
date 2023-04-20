@@ -31,23 +31,23 @@ uint64_t Seph::angle_pack(glm::vec3& n) {
   float azi=atan2(n.x,n.z);
 
   // ^pack values
-  out|=frac<uint64_t>(
+  out|=frac<int64_t>(
 
     zen,
 
     m_zen_step,
-    m_zen_nbits,
+    m_zen_nbits-1,
 
     Frac::SIGNED
 
   ) << 0;
 
-  out|=frac<uint64_t>(
+  out|=frac<int64_t>(
 
     azi,
 
     m_azi_step,
-    m_azi_nbits,
+    m_azi_nbits-1,
 
     Frac::SIGNED
 
@@ -62,8 +62,6 @@ uint64_t Seph::angle_pack(glm::vec3& n) {
 
 glm::vec3 Seph::angle_unpack(uint64_t b) {
 
-  Frac::Rounding_Mode=Frac::NVEC;
-
   // retrieve packed elements
   uint64_t bzen = b&m_zen_mask;
   b >>= m_zen_nbits;
@@ -71,23 +69,23 @@ glm::vec3 Seph::angle_unpack(uint64_t b) {
   uint64_t bazi = b&m_azi_mask;
 
   // float-ify
-  float zen=unfrac<uint64_t>(
+  float zen=unfrac<int64_t>(
 
     bzen,
 
     m_zen_step,
-    m_zen_nbits,
+    m_zen_nbits-1,
 
     Frac::SIGNED
 
   );
 
-  float azi=unfrac<uint64_t>(
+  float azi=unfrac<int64_t>(
 
     bazi,
 
     m_azi_step,
-    m_azi_nbits,
+    m_azi_nbits-1,
 
     Frac::SIGNED
 
@@ -112,10 +110,10 @@ uint64_t Seph::radius_pack(glm::vec3& p) {
 
   return frac<uint64_t>(
 
-    p.length(),
+    glm::length(p),
 
     m_rad_step,
-    m_rad_nbits,
+    m_rad_nbits-1,
 
     Frac::UNSIGNED
 
@@ -125,14 +123,12 @@ uint64_t Seph::radius_pack(glm::vec3& p) {
 
 float Seph::radius_unpack(uint64_t b) {
 
-  Frac::Rounding_Mode=Frac::LINE;
-
   return unfrac<uint64_t>(
 
-    b,
+    b&m_rad_mask,
 
     m_rad_step,
-    m_rad_nbits,
+    m_rad_nbits-1,
 
     Frac::UNSIGNED
 
