@@ -32,6 +32,8 @@ Avt::set_config(
     q[daf]=>[qw(bin/src/daf.cpp)],
     q[undaf]=>[qw(bin/src/undaf.cpp)],
 
+    q[bmesh2crk]=>[qw(bin/src/bmesh2crk.cpp)],
+
   },
 
 #  xprt=>[qw(TODO)],

@@ -21,7 +21,7 @@ class CRK: public Bin {
 
 public:
 
-  VERSION     "v2.01.0";
+  VERSION     "v2.01.1";
   AUTHOR      "IBN-3DILA";
 
 // ---   *   ---   *   ---
@@ -36,7 +36,8 @@ public:
     FRAME,
     SPRITE,
 
-    TRIMESH
+    TRIMESH,
+    BMESH
 
   };
 
@@ -69,6 +70,15 @@ public:
     void set_xyz(glm::vec3& co);
     void set_n(glm::vec3& n);
 
+    void set_ntb(
+      glm::vec3& n,
+      glm::vec3& t,
+      glm::vec3& b
+
+    );
+
+    void set_uv(glm::vec2& uv);
+
   };
 
 // ---   *   ---   *   ---
@@ -78,6 +88,8 @@ public:
 
     std::vector<CRK::Vertex> verts;
     std::vector<uint16_t>    indices;
+
+    glm::vec3 box={0.5f,1,0.5f};
 
     uint64_t bytesz(void);
 
@@ -132,6 +144,7 @@ public:
 // geometry helpers
 
   #include "ff/CRK/Quad.hpp"
+  #include "ff/CRK/Bmesh.hpp"
 
   struct Frame_Build {
     float scale[2];
@@ -292,6 +305,16 @@ public:
 
   inline CRK::Mesh& data(void) {
     return m_data;
+
+  };
+
+  // push result of builder
+  // to pose array
+  void push_pose(CRK::Prim& me) {
+    m_hed.vcount+=me.verts.size();
+    m_hed.icount+=me.indices.size();
+
+    m_data.push_back(me);
 
   };
 

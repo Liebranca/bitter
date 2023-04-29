@@ -36,6 +36,48 @@ void CRK::Vertex::set_n(glm::vec3& n) {
 
 };
 
+void CRK::Vertex::set_ntb(
+  glm::vec3& n,
+  glm::vec3& t,
+  glm::vec3& b
+
+) {
+
+  NTB[0]=CRK::nseph().pack(n) & 0xFF;
+  NTB[1]=CRK::nseph().pack(t) & 0xFF;
+  NTB[2]=CRK::nseph().pack(b) & 0xFF;
+
+};
+
+void CRK::Vertex::set_uv(
+  glm::vec2& uv
+
+) {
+
+  TEX[0]=frac<uint8_t>(
+
+    uv[0],
+
+    Frac::STEP[Frac::STEP_8BIT],
+    Frac::BITS[Frac::SIZE_8BIT],
+
+    Frac::UNSIGNED
+
+  );
+
+  TEX[1]=frac<uint8_t>(
+
+    uv[1],
+
+    Frac::STEP[Frac::STEP_8BIT],
+    Frac::BITS[Frac::SIZE_8BIT],
+
+    Frac::UNSIGNED
+
+  );
+
+};
+
 // ---   *   ---   *   ---
 
 void CRK::open(
@@ -195,6 +237,9 @@ void CRK::Prim::to_buff(
 
   };
 
+  sz=sizeof(glm::vec3);
+  dst.write(&box[0],sz,ptr);
+
 };
 
 // ---   *   ---   *   ---
@@ -229,10 +274,12 @@ void CRK::Prim::from_buff(
   // indices skipped for 2D sprites
   if(sz) {
     memcpy(indices.data(),&src[ptr],sz);
+    ptr+=sz;
 
   };
 
-  ptr+=sz;
+  sz=sizeof(glm::vec3);
+  memcpy(&box[0],&src[ptr],sz);
 
 };
 
@@ -576,12 +623,15 @@ void CRK::make_prim(
 
     break;
 
+  case CRK::BMESH:
+    auto& crk=*this;
+    ((CRK::Bmesh*) data)->build(crk);
+
+    return;
+
   };
 
-  m_hed.vcount+=me.verts.size();
-  m_hed.icount+=me.indices.size();
-
-  m_data.push_back(me);
+  this->push_pose(me);
 
 };
 

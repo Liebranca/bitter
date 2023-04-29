@@ -5,6 +5,7 @@
 // deps
 
   #include <glm/glm.hpp>
+  #include <glm/gtx/quaternion.hpp>
 
   #include "kvrnel/Style.hpp"
   #include "kvrnel/Char_Sprite.hpp"
@@ -16,13 +17,14 @@ class Seph {
 
 public:
 
-  VERSION   "v0.00.2b";
+  VERSION   "v0.00.3b";
   AUTHOR    "IBN-3DILA";
 
   // pack/unpack modes
   enum {
     NORMAL,
-    POINT
+    POINT,
+    QUAT
 
   };
 
@@ -65,6 +67,10 @@ private:
   uint64_t radius_pack(glm::vec3& p);
   float radius_unpack(uint64_t b);
 
+  // byte-sized rotations ;>
+  uint64_t quat_pack(glm::quat& q);
+  glm::quat quat_unpack(uint64_t);
+
 // ---   *   ---   *   ---
 // iface
 
@@ -106,6 +112,17 @@ public:
   // entry points
   uint64_t pack(glm::vec3& a);
   glm::vec3 unpack(uint64_t b);
+
+  // ^quat variant
+  inline uint64_t qpack(glm::quat& q) {
+    return this->quat_pack(q);
+
+  };
+
+  inline glm::quat qunpack(uint64_t b) {
+    return this->quat_unpack(b);
+
+  };
 
 };
 

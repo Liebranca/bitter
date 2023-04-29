@@ -137,6 +137,126 @@ float Seph::radius_unpack(uint64_t b) {
 };
 
 // ---   *   ---   *   ---
+// byte-sized rotations ;>
+
+uint64_t Seph::quat_pack(glm::quat& q) {
+
+  Frac::Rounding_Mode=Frac::LINE;
+  uint64_t out=0x00;
+
+  // ^pack values
+  out|=frac<int64_t>(
+
+    q.w,
+
+    m_rad_step,
+    m_rad_nbits-1,
+
+    Frac::SIGNED
+
+  ) << 0;
+
+  out|=frac<int64_t>(
+
+    q.x,
+
+    m_zen_step,
+    m_zen_nbits-1,
+
+    Frac::SIGNED
+
+  ) << m_rad_nbits;
+
+  out|=frac<int64_t>(
+
+    q.y,
+
+    m_azi_step,
+    m_azi_nbits-1,
+
+    Frac::SIGNED
+
+  ) << (m_rad_nbits + m_zen_nbits);
+
+  out|=frac<int64_t>(
+
+    q.z,
+
+    m_zen_step,
+    m_zen_nbits-1,
+
+    Frac::SIGNED
+
+  ) << (m_rad_nbits + m_zen_nbits + m_azi_nbits);
+
+  return out;
+
+};
+
+glm::quat Seph::quat_unpack(uint64_t b) {
+
+  uint64_t bw=b&m_rad_mask;
+  b >>= m_rad_nbits;
+
+  uint64_t bx=b&m_zen_mask;
+  b >>= m_zen_nbits;
+
+  uint64_t by=b&m_azi_mask;
+  b >>= m_azi_nbits;
+
+  uint64_t bz=b&m_zen_mask;
+
+  // float-ify
+  float w=unfrac<int64_t>(
+
+    bw,
+
+    m_rad_step,
+    m_rad_nbits-1,
+
+    Frac::SIGNED
+
+  );
+
+  float x=unfrac<int64_t>(
+
+    bx,
+
+    m_zen_step,
+    m_zen_nbits-1,
+
+    Frac::SIGNED
+
+  );
+
+  float y=unfrac<int64_t>(
+
+    by,
+
+    m_azi_step,
+    m_azi_nbits-1,
+
+    Frac::SIGNED
+
+  );
+
+  float z=unfrac<int64_t>(
+
+    bz,
+
+    m_zen_step,
+    m_zen_nbits-1,
+
+    Frac::SIGNED
+
+  );
+
+  glm::quat q(w,x,y,z);
+  return glm::normalize(q);
+
+};
+
+// ---   *   ---   *   ---
 // cstruc
 
 void Seph::set(
