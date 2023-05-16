@@ -370,6 +370,11 @@ public:
 
   };
 
+  inline uint16_t get_comp_cnt(void) {
+    return m_hed.img_comp_cnt;
+
+  };
+
 };
 
 // ---   *   ---   *   ---

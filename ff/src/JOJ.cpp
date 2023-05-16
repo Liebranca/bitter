@@ -162,7 +162,7 @@ void JOJ::offset_img_table(JOJ::Swap_PTR& swap) {
 
     m_atlas,
 
-    raw->idex%m_hed.img_cnt,
+    raw->idex, // %m_hed.img_cnt
     prev_tiles
 
   );
