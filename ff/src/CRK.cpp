@@ -24,6 +24,7 @@
 void CRK::Vertex::set_xyz(glm::vec3& co) {
 
   uint32_t b=CRK::pseph().pack(co);
+  glm::vec3 co2=CRK::pseph().unpack(b);
 
   XYZ[0]=b&0xFF;b >>= 8;
   XYZ[1]=b&0xFF;b >>= 8;
@@ -46,6 +47,11 @@ void CRK::Vertex::set_ntb(
   NTB[0]=CRK::nseph().pack(n) & 0xFF;
   NTB[1]=CRK::nseph().pack(t) & 0xFF;
   NTB[2]=CRK::nseph().pack(b) & 0xFF;
+
+  glm::vec3 co2=CRK::nseph().unpack(
+    CRK::nseph().pack(n)
+
+  );
 
 };
 

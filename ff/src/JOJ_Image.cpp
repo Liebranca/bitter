@@ -17,7 +17,7 @@
 // ---   *   ---   *   ---
 
 template <typename T>
-void JOJ::img_cpy_yauv2rgba_pixel(
+void JOJ::img_cpy_joj2rgba_pixel(
 
   T*     dst,
   float* src,
@@ -38,7 +38,7 @@ void JOJ::img_cpy_yauv2rgba_pixel(
 // ---   *   ---   *   ---
 
 template <typename T>
-void JOJ::img_cpy_rgba2yauv_pixel(
+void JOJ::img_cpy_rgba2joj_pixel(
 
   float* dst,
   T*     src,
@@ -59,7 +59,7 @@ void JOJ::img_cpy_rgba2yauv_pixel(
 // ---   *   ---   *   ---
 
 template <typename T>
-void JOJ::img_cpy_yauv2rgba(
+void JOJ::img_cpy_joj2rgba(
 
   T*       dst,
   float*   src,
@@ -74,7 +74,7 @@ void JOJ::img_cpy_yauv2rgba(
   for(uint16_t y=0;y<sz;y++) {
     for(uint16_t x=0;x<sz;x++) {
 
-      this->img_cpy_yauv2rgba_pixel(
+      this->img_cpy_joj2rgba_pixel(
         &dst[i],&src[i],mult
 
       );
@@ -90,7 +90,7 @@ void JOJ::img_cpy_yauv2rgba(
 // ---   *   ---   *   ---
 
 template <typename T>
-void JOJ::img_cpy_rgba2yauv(
+void JOJ::img_cpy_rgba2joj(
 
   float*   dst,
   T*       src,
@@ -105,7 +105,7 @@ void JOJ::img_cpy_rgba2yauv(
   for(uint16_t y=0;y<sz;y++) {
     for(uint16_t x=0;x<sz;x++) {
 
-      this->img_cpy_rgba2yauv_pixel(
+      this->img_cpy_rgba2joj_pixel(
         &dst[i],&src[i],mult
 
       );
@@ -121,48 +121,48 @@ void JOJ::img_cpy_rgba2yauv(
 // ---   *   ---   *   ---
 // instas
 
-template void JOJ::img_cpy_yauv2rgba_pixel(
+template void JOJ::img_cpy_joj2rgba_pixel(
   float*,float*,float
 
 );
 
-template void JOJ::img_cpy_yauv2rgba(
+template void JOJ::img_cpy_joj2rgba(
   float*,float*,uint16_t,float
 
 );
 
 // ---   *   ---   *   ---
 
-template void JOJ::img_cpy_rgba2yauv_pixel(
+template void JOJ::img_cpy_rgba2joj_pixel(
   float*,float*,float
 
 );
 
-template void JOJ::img_cpy_rgba2yauv(
+template void JOJ::img_cpy_rgba2joj(
   float*,float*,uint16_t,float
 
 );
 
 // ---   *   ---   *   ---
 
-template void JOJ::img_cpy_rgba2yauv_pixel(
+template void JOJ::img_cpy_rgba2joj_pixel(
   float*,uint8_t*,float
 
 );
 
-template void JOJ::img_cpy_rgba2yauv(
+template void JOJ::img_cpy_rgba2joj(
   float*,uint8_t*,uint16_t,float
 
 );
 
 // ---   *   ---   *   ---
 
-template void JOJ::img_cpy_yauv2rgba_pixel(
+template void JOJ::img_cpy_joj2rgba_pixel(
   uint8_t*,float*,float
 
 );
 
-template void JOJ::img_cpy_yauv2rgba(
+template void JOJ::img_cpy_joj2rgba(
   uint8_t*,float*,uint16_t,float
 
 );

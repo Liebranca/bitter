@@ -27,7 +27,7 @@ public:
     };
 
     bool operator!=(FwdSubEncoding& other) {
-      return !(*this==other);
+      return ! (*this==other);
 
     };
 

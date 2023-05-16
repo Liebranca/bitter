@@ -9,7 +9,7 @@
 // rgba ops boilerplate
 
 template <typename T>
-void img_cpy_yauv2rgba_pixel(
+void img_cpy_joj2rgba_pixel(
 
   T*     dst,
   float* src,
@@ -19,7 +19,7 @@ void img_cpy_yauv2rgba_pixel(
 );
 
 template <typename T>
-void img_cpy_rgba2yauv_pixel(
+void img_cpy_rgba2joj_pixel(
 
   float* dst,
   T*     src,
@@ -29,7 +29,7 @@ void img_cpy_rgba2yauv_pixel(
 );
 
 template <typename T>
-void img_cpy_yauv2rgba(
+void img_cpy_joj2rgba(
 
   T*       dst,
   float*   src,
@@ -40,7 +40,7 @@ void img_cpy_yauv2rgba(
 );
 
 template <typename T>
-void img_cpy_rgba2yauv(
+void img_cpy_rgba2joj(
 
   float*   dst,
   T*       src,

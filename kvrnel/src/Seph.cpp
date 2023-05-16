@@ -257,6 +257,67 @@ glm::quat Seph::quat_unpack(uint64_t b) {
 };
 
 // ---   *   ---   *   ---
+// handling of *esoteric* pixel type
+// holding normal+curvature
+
+uint64_t Seph::nc_pack(float* pixel) {
+
+  // color to vector
+  glm::vec3 n={
+    (pixel[0]*2)-1,
+    (pixel[1]*2)-1,
+    (pixel[2]*2)-1
+
+  };
+
+  // normal data as spherical coords
+  n=glm::normalize(n);
+  uint64_t angle=this->angle_pack(n);
+
+  // ^pack alpha/curvature
+  uint64_t curv=frac<uint64_t>(
+
+    pixel[3],
+
+    m_rad_step,
+    m_rad_nbits-1,
+
+    Frac::UNSIGNED
+
+  );
+
+  return curv | (angle << m_rad_nbits);
+
+};
+
+void Seph::nc_unpack(float* dst,uint64_t b) {
+
+  float curv=unfrac<uint64_t>(
+
+    b&m_rad_mask,
+
+    m_rad_step,
+    m_rad_nbits-1,
+
+    Frac::UNSIGNED
+
+  );
+
+  b>>=m_rad_nbits;
+
+  glm::vec3 n=this->angle_unpack(b);
+
+  // vector to color
+  dst[0]=(n.x+1)/2;
+  dst[1]=(n.y+1)/2;
+  dst[2]=(n.z+1)/2;
+
+  // alpha channel
+  dst[3]=curv;
+
+};
+
+// ---   *   ---   *   ---
 // cstruc
 
 void Seph::set(
@@ -281,7 +342,11 @@ void Seph::set(
   m_azi_mask  = (1 << azi_nbits)-1;
 
   // get wall
-  m_rad_maxp  = 1 << (rad_nbits-2);
+  m_rad_maxp  = (m_mode==Seph::NC)
+    ? 1 << (rad_nbits)
+    : 1 << (rad_nbits-2)
+    ;
+
   m_zen_maxp  = 1 << (zen_nbits-1);
   m_azi_maxp  = 1 << (azi_nbits-1);
 

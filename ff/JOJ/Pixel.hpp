@@ -106,8 +106,8 @@ typedef struct FwdPixel {
     return
        arr[0]==0
     && arr[1]==0
-    && (arr[2]==8 || arr[2]==0)
-    && (arr[3]==8 || arr[3]==0)
+    && arr[2]==0
+    && arr[3]==0
     ;
 
   };

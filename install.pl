@@ -26,6 +26,7 @@ Avt::set_config(
 
     q[bincmp]=>[qw(bin/src/bincmp.cpp)],
 
+    q[joj]=>[qw(bin/src/joj.cpp)],
     q[joj-sprite]=>[qw(bin/src/joj_sprite.cpp)],
     q[unjoj]=>[qw(bin/src/unjoj.cpp)],
 

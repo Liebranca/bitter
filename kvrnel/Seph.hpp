@@ -17,14 +17,15 @@ class Seph {
 
 public:
 
-  VERSION   "v0.00.3b";
+  VERSION   "v0.00.5b";
   AUTHOR    "IBN-3DILA";
 
   // pack/unpack modes
   enum {
     NORMAL,
     POINT,
-    QUAT
+    QUAT,
+    NC
 
   };
 
@@ -123,6 +124,11 @@ public:
     return this->quat_unpack(b);
 
   };
+
+  // handling of *esoteric* pixel type
+  // holding normal+curvature
+  uint64_t nc_pack(float* pixel);
+  void nc_unpack(float* dst,uint64_t b);
 
 };
 

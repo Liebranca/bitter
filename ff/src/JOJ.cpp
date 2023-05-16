@@ -452,8 +452,8 @@ void JOJ::pack_atlas(void) {
 
     m_atlas.clear_users();
 
-    auto swap  = this->swap_to(i,Bin::READ);
-    auto raw   = swap.get();
+    auto swap = this->swap_to(i,Bin::READ);
+    auto raw  = swap.get();
 
     m_atlas.pack(JOJ::Tiles::XFORM_APPLY);
 
@@ -697,7 +697,14 @@ void JOJ::pack(void) {
   ) {
 
     this->read_next_img();
-    this->encoder(Frac::ENCODE);
+
+    if(m_c_enc==m_enc.normal) {
+      this->nc_encoder(Frac::ENCODE);
+
+    } else {
+      this->encoder(Frac::ENCODE);
+
+    };
 
     this->to_tiles();
     m_tiles.pack(JOJ::Tiles::XFORM_SKIP);
@@ -853,7 +860,7 @@ void JOJ::encoder(
 ) {
 
   JOJ::Pixel* buff=&m_pixels[0];
-  sz+=m_hed.img_sz_sq*!sz;
+  sz+=m_hed.img_sz_sq * (! sz);
 
 // ---   *   ---   *   ---
 // transform to and from compressed floats
@@ -872,6 +879,49 @@ void JOJ::encoder(
   };
 
   batch.encoder();
+
+};
+
+// ---   *   ---   *   ---
+// handles conversion of nc maps
+// (normal+curvature)
+
+void JOJ::nc_encoder(
+  bool     mode,
+  uint64_t sz
+
+) {
+
+  sz+=m_hed.img_sz_sq * (! sz);
+
+  auto branch_to=(mode==Frac::DECODE)
+    ? &JOJ::nc_unpack
+    : &JOJ::nc_pack
+    ;
+
+  for(uint64_t i=0;i<sz;i++) {
+    (this->*branch_to)(i);
+
+  };
+
+};
+
+// ---   *   ---   *   ---
+// ^gutsof
+
+void JOJ::nc_pack(uint64_t i) {
+  uint32_t v=JOJ::nseph().nc_pack(&m_raw[i*4]);
+  m_pixels[i].from_int(v&0xFFFFFFFF);
+
+};
+
+void JOJ::nc_unpack(uint64_t i) {
+
+  JOJ::nseph().nc_unpack(
+    &m_raw[i*4],
+    uint64_t(m_pixels[i].as_int())
+
+  );
 
 };
 
@@ -912,13 +962,18 @@ void JOJ::chk_img_sz(
 
     );
 
+    uint32_t entry_cnt=
+      m_hed.img_cnt
+    * m_hed.img_comp_cnt
+    ;
+
     m_atlas.nit(
       JOJ::STD_TILE_SZ,
 
       m_hed.atlas_sz,
       m_hed.atlas_sz_sq,
 
-      m_tiles.cnt|(m_hed.img_cnt<<16)
+      m_tiles.cnt | (entry_cnt<<16)
 
     );
 
@@ -952,15 +1007,18 @@ void JOJ::color(float* pixel,bool mode) {
     if(m_c_enc==m_enc.color) {
       rgba2yauv(pixel);
 
+    } else if(m_c_enc==m_enc.normal) {
+      nc_discard_chk(pixel);
+
+    } else {
+      orme_discard_chk(pixel);
+
     };
 
   } else {
 
     if(m_c_enc==m_enc.color) {
       yauv2rgba(pixel);
-
-    } else if(m_c_enc==m_enc.normal) {
-      fnorm(pixel);
 
     };
 
@@ -997,7 +1055,7 @@ void JOJ::from_png(
   auto buff=im.read();
 
   // convert
-  this->img_cpy_rgba2yauv(
+  this->img_cpy_rgba2joj(
     &m_raw[0],
     &buff[0],
 
@@ -1046,14 +1104,21 @@ float* JOJ::read_pixels(
     m_tiles.unpack(m_atlas);
 
     this->from_tiles(m_tiles);
-    this->encoder(Frac::DECODE);
+
+    if(m_c_enc==m_enc.normal) {
+      this->nc_encoder(Frac::DECODE);
+
+    } else {
+      this->encoder(Frac::DECODE);
+
+    };
 
     m_tiles.clear_all();
 
   // get the entire atlas
   } else {
 
-    if(!m_atlas_mode) {
+    if(! m_atlas_mode) {
 
       Mem<JOJ::Pixel> pixels(m_hed.atlas_sz_sq);
       m_pixels.copy(pixels);
@@ -1066,11 +1131,22 @@ float* JOJ::read_pixels(
     };
 
     this->from_tiles(m_atlas);
-    this->encoder(
-      Frac::DECODE,
-      m_hed.atlas_sz_sq
 
-    );
+    if(m_c_enc==m_enc.normal) {
+      nc_encoder(
+        Frac::DECODE,
+        m_hed.atlas_sz_sq
+
+      );
+
+    } else {
+      this->encoder(
+        Frac::DECODE,
+        m_hed.atlas_sz_sq
+
+      );
+
+    };
 
   };
 
@@ -1103,7 +1179,7 @@ Mem<float> JOJ::to_buff(
 
   );
 
-  this->img_cpy_yauv2rgba(
+  this->img_cpy_joj2rgba(
     &out[0],
     pixels,
 
@@ -1145,7 +1221,7 @@ void JOJ::to_png(
 
   Mem<uint8_t> buff(sz_sq<<2);
 
-  this->img_cpy_yauv2rgba(
+  this->img_cpy_joj2rgba(
     &buff[0],
     pixels,
 

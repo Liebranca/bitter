@@ -130,6 +130,9 @@ namespace Frac {
   // always default to normals
   static float Rounding_Mode=NVEC;
 
+  // signals noop to batch encode
+  cxr32 BLANK=7454.7454f;
+
 // ---   *   ---   *   ---
 
   // common fractions
@@ -449,6 +452,9 @@ float unfrac(
 
 void rgba2yauv(float* p);
 void yauv2rgba(float* p);
+
+void nc_discard_chk(float* p);
+void orme_discard_chk(float* p);
 
 void fnorm(float* p);
 

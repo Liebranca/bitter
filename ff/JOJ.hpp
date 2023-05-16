@@ -7,6 +7,7 @@
   #include "kvrnel/Style.hpp"
   #include "kvrnel/Square.hpp"
   #include "kvrnel/Bytes.hpp"
+  #include "kvrnel/Seph.hpp"
 
   #include "kvrnel/Bin.hpp"
   #include "kvrnel/Mem.hpp"
@@ -18,7 +19,7 @@ class JOJ: public Bin {
 
 public:
 
-  VERSION   "v2.01.0";
+  VERSION   "v2.01.1";
   AUTHOR    "IBN-3DILA";
 
   enum {
@@ -168,6 +169,24 @@ private:
     uint64_t sz   = 0
 
   );
+
+  // ^normal+curvature
+  void nc_encoder(
+    bool     mode = Frac::ENCODE,
+    uint64_t sz   = 0
+
+  );
+
+  // ^gutsof
+  void nc_pack(uint64_t i);
+  void nc_unpack(uint64_t i);
+
+  // sphere coords handler for nc maps
+  static Seph& nseph(void) {
+    static Seph s(Seph::NC,4,6,6);
+    return s;
+
+  };
 
   // per-pixel color conversion
   void color(float* pixel,bool mode);

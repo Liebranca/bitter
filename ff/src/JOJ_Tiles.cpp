@@ -849,7 +849,7 @@ void JOJ::Tiles::pack(
 
     this->pre_proc(_x,_y);
 
-    if(!skip_match) {
+    if(! skip_match) {
       this->match(_x,_y);
 
     };

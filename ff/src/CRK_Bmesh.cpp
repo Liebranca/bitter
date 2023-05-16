@@ -114,9 +114,12 @@ void CRK::Bmesh::set_verts(
 
   me.verts.resize(m_meta.num_verts);
   for(uint16_t i=0;i<m_meta.num_verts;i++) {
-    me.verts[i].set_xyz(src->co);
-    me.verts[i].set_ntb(src->n,src->t,src->b);
-    me.verts[i].set_uv(src->uv);
+
+    auto& vert=src[i];
+
+    me.verts[i].set_xyz(vert.co);
+    me.verts[i].set_ntb(vert.n,vert.t,vert.b);
+    me.verts[i].set_uv(vert.uv);
 
   };
 

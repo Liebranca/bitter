@@ -82,10 +82,10 @@ void Frac::Bat<T>::encode(
 
 ) {
 
-  *m_bytes=frac<T>(
-    *m_floats,step,bits,unsig
-
-  );
+  *m_bytes=(*m_floats==Frac::BLANK)
+    ? 0
+    : frac<T>(*m_floats,step,bits,unsig)
+    ;
 
 };
 
@@ -171,6 +171,28 @@ void rgba2yauv(float* p) {
   float a=p[3];
 
 // ---   *   ---   *   ---
+// discard pixels that approach
+// transparent pitch black
+
+  if(
+
+     r < 0.08f
+  && g < 0.08f
+  && b < 0.08f
+  && a < 0.08f
+
+  ) {
+
+    p[0]=Frac::BLANK;
+    p[1]=Frac::BLANK;
+    p[2]=Frac::BLANK;
+    p[3]=Frac::BLANK;
+
+    return;
+
+  };
+
+// ---   *   ---   *   ---
 // transform color
 
   float yauv[]={
@@ -249,6 +271,64 @@ void yauv2rgba(float* p) {
 };
 
 // ---   *   ---   *   ---
+// checks that pixel has no data
+// for non-color images
+
+void nc_discard_chk(float* p) {
+
+// TODO
+//
+// this would avoid storing redundancies
+//
+// however, we need to overwrite {0.5,0.5,1,0}
+// into all and every such pixel at read time
+// for it to work correctly
+//
+// should check m_c_enc eq m_enc.normal
+// when rebuilding images at JOJ::read_pixels
+// then call a filter if so; fairly trivial
+
+//  if(
+//
+//     p[0] < 0.510f && p[0] > 0.490
+//  && p[1] < 0.510f && p[1] > 0.490
+//
+//  && p[3] < 0.08f
+//
+//  ) {
+//
+//    p[0]=Frac::BLANK;
+//    p[1]=Frac::BLANK;
+//    p[2]=Frac::BLANK;
+//    p[3]=Frac::BLANK;
+//
+//  };
+
+};
+
+void orme_discard_chk(float* p) {
+
+  if(
+
+     p[0] < 0.08f
+  && p[1] < 0.08f
+  && p[2] < 0.08f
+  && p[3] < 0.08f
+
+  ) {
+
+    p[0]=Frac::BLANK;
+    p[1]=Frac::BLANK;
+    p[2]=Frac::BLANK;
+    p[3]=Frac::BLANK;
+
+    return;
+
+  };
+
+};
+
+// ---   *   ---   *   ---
 // normalizes normal map pixel
 
 void fnorm(float* p) {
@@ -267,138 +347,8 @@ void fnorm(float* p) {
 };
 
 // ---   *   ---   *   ---
-// instantiations
+// ice
 
 template struct Frac::Bat<char>;
-
-//// ---   *   ---   *   ---
-//
-//void ENCVRT(float* v,CRKVRT* c) {
-//
-//
-//  float ff=FRACL_F[CFRAC_L];
-//  uint fi=FRACL_I[CFRAC_L];
-//
-//                            // i dont care what
-//                            // anybody says, Y is
-//                            // UP
-//  c->co_x=FLTOFRAC(
-//    v[0],4,ff*CFRAC_D1,
-//    fi/CFRAC_D1,fi
-//
-//  );c->co_y=FLTOFRAC(
-//    v[2],4,ff*CFRAC_D1,
-//    fi/CFRAC_D1,fi
-//
-//  );c->co_z=FLTOFRAC(
-//    -v[1],4,ff*CFRAC_D1,
-//    fi/CFRAC_D1,fi
-//
-//  );
-//
-//                            // same for normals
-//  c->nr_x=FLTOFRAC(
-//    v[3],1,ff*CFRAC_D0,
-//    fi/CFRAC_D0,fi/CFRAC_D0
-//
-//  );c->nr_y=FLTOFRAC(
-//    v[5],1,ff*CFRAC_D0,
-//    fi/CFRAC_D0,fi/CFRAC_D0
-//
-//  );c->nr_z=-v[4]<0;
-//
-//                            // ... and tangents
-//  c->tn_x=FLTOFRAC(
-//    v[6],1,ff*CFRAC_D0,
-//    fi/CFRAC_D0,fi/CFRAC_D0
-//
-//  );c->tn_y=FLTOFRAC(
-//    v[8],1,ff*CFRAC_D0,
-//    fi/CFRAC_D0,fi/CFRAC_D0
-//
-//  );c->tn_z=-v[7]<0;
-//
-//  c->bhand=v[9]<0;
-//
-//  c->u=FLTOFRAC(v[10],1,ff,fi,0);
-//  c->v=FLTOFRAC(v[11],1,ff,fi,0);
-//
-//};
-//
-//// ---   *   ---   *   ---
-
-
-//// ---   *   ---   *   ---
-//
-//uchar GREY4STP(float v) {
-//  return((v>0.25&&v<=0.75)||v>=0.95)|((v>0.75)<<1);
-//
-//};
-//
-//void ENCGREY(float* p,JOJPIX* j) {
-//
-//
-//  JOJGREY* o=(JOJGREY*) j;
-//
-//  float ff=FRACL_F[CFRAC_L];
-//  uint fi=FRACL_I[CFRAC_L];
-//
-//  o->a=GREY4STP(p[0]);
-//  o->b=GREY4STP(p[1]);
-//  o->c=GREY4STP(p[2]);
-//  o->d=GREY4STP(p[3]);
-//
-//};
-//
-//// ---   *   ---   *   ---
-//
-//void DECGREY(float* p,JOJPIX* j) {
-//
-//
-//  JOJGREY* o=(JOJGREY*) j;
-//
-//  float ff=FRACL_F[CFRAC_L];
-//  uint fi=FRACL_I[CFRAC_L];
-//
-//  p[0]=o->a*0.35f;
-//  p[1]=o->b*0.35f;
-//  p[2]=o->c*0.35f;
-//  p[3]=o->d*0.35f;
-//
-//};
-//
-//// ---   *   ---   *   ---
-//
-//void ZJC_pack_rawvert(
-//  VP3D* vert,
-//  CRKVRT* data) {
-//
-//  ;
-//
-//  /* old fun. rewrite.
-//  uint co=((FLTOFRAC(data->co [0],4,FRAC5,32,128))
-//  |(FLTOFRAC(data->co [1],4,FRAC5,32,128)<<8)
-//  |(FLTOFRAC(data->co [2],4,FRAC5,32,128)<<16));
-//
-//  uint nnn=((FLTOFRAC(data->normal
-//    [0],1,FRAC5,32,32))
-//  |(FLTOFRAC(data->normal [1],1,FRAC4,16,16)<<6)
-//  |((data->normal [2]<0)<<11)
-//  |(((int)data->bhand)<<12));
-//
-//  uint
-//    ttt=((FLTOFRAC(data->tangent[0],1,FRAC5,32,32))
-//  |(FLTOFRAC(data->tangent[1],1,FRAC5,32,32)<<6)
-//  |((data->tangent[2]<0)<<12));
-//
-//  uint uvs=((FLTOFRAC(data->uv [0],1,FRAC7,64,64))
-//  |(FLTOFRAC(data->uv [0],1,FRAC7,64,64)<<7));
-//
-//  vert->frac1=((co)|((nnn&0xFF)<<24));
-//  vert->frac2=(((nnn&(31
-//    <<8))>>8)|(ttt<<5)|(uvs<<18));*/
-//}
-////   ---     ---     ---     ---     ---
-//// #:0xF;>
 
 // ---   *   ---   *   ---

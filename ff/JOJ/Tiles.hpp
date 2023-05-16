@@ -178,12 +178,10 @@ typedef struct FwdTiles {
 
       uint64_t entry_sz_sq=entry_sz*entry_sz;
 
-      for(
+      for(auto& td_arr : this->image) {
+        td_arr.resize(entry_sz_sq);
 
-        std::vector<JOJ::Tile_Desc>& td_arr
-      : this->image
-
-      ) {td_arr.resize(entry_sz_sq);};
+      };
 
     };
 
