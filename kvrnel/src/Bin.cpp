@@ -273,18 +273,6 @@ void Bin::read(void* dst,uint64_t sz) {
 };
 
 // ---   *   ---   *   ---
-// read from cursor up to char
-
-std::string Bin::read_until(char c) {
-
-  std::string out;
-  std::getline(m_fh,out,c);
-
-  return out;
-
-};
-
-// ---   *   ---   *   ---
 // gets header section
 
 void Bin::read_header(void* buff) {

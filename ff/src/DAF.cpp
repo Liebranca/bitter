@@ -13,6 +13,7 @@
 // deps
 
   #include "kvrnel/Bytes.hpp"
+  #include "kvrnel/Arstd.hpp"
 
   #include "ff/Zwrap.hpp"
   #include "ff/DAF.hpp"
@@ -28,14 +29,18 @@ DAF::DAF(
 
   m_tab.nit(8);
 
-  if(mode!=Bin::NEW) {
+  if(mode != Bin::NEW) {
     m_fpath=fpath;
     this->unzip();
-    this->read_ftab();
 
   };
 
   this->defopen<DAF::Header>(fpath,mode);
+  if(mode != Bin::NEW) {
+    this->read_ftab();
+
+  };
+
   this->seek(0,Bin::BEG);
 
 };
@@ -224,14 +229,21 @@ DAF::Block& DAF::jump_to_idex(uint64_t idex) {
 // ---   *   ---   *   ---
 // go to last entry
 
-DAF::Block& DAF::jump_to_end(bool ftab) {
+DAF::Block& DAF::jump_to_end(void) {
 
-  auto&    blk = m_hed.blk[m_hed.used-1];
-  uint64_t m   = (ftab) ? blk.sz : 0;
-
-  this->seek(blk.off+m,Bin::BEG);
+  auto& blk=m_hed.blk[m_hed.used-1];
+  this->seek(blk.off,Bin::BEG);
 
   return blk;
+
+};
+
+// ---   *   ---   *   ---
+// got to beg of ftab
+
+void DAF::jump_to_ftab(void) {
+  auto& blk=m_hed.blk[m_hed.used-1];
+  this->seek(blk.off+blk.sz,Bin::BEG);
 
 };
 
@@ -498,7 +510,7 @@ void DAF::unzip(void) {
 
 void DAF::write_ftab(void) {
 
-  this->jump_to_end(true);
+  this->jump_to_ftab();
 
   for(auto& key : m_fnames) {
     this->write(key);
@@ -512,11 +524,22 @@ void DAF::write_ftab(void) {
 
 void DAF::read_ftab(void) {
 
-  this->jump_to_end(true);
+  this->jump_to_ftab();
 
-  for(uint64_t i=0;i<m_hed.used;i++) {
-    auto key=this->read_until('\0');
-    this->push_ftab(key,i);
+  uint64_t i=0;
+  uint64_t j=0;
+
+  auto     m=this->read();
+
+  while(i < m.used()) {
+
+    std::string key;
+    while(m[i]) {key+=(char) m[i++];};
+
+    i++;
+
+    if(! key.length()) {break;};
+    this->push_ftab(key,j++);
 
   };
 
@@ -633,7 +656,7 @@ void DAF::unpack(
 ) {
 
   for(auto& fname : m_fnames) {
-    this->extract(fname,path);
+    this->extract(fname,path,clear);
 
   };
 
@@ -644,9 +667,11 @@ void DAF::unpack(
 
 void DAF::close(void) {
 
-  if(m_mode_ch&Bin::WRITE) {
+  if(m_mode_ch & Bin::WRITE) {
     this->write_header(&m_hed);
     this->write_ftab();
+
+    ((Bin*) this)->close();
     this->zip();
 
   };
@@ -666,6 +691,31 @@ void DAF::rmdump(void) {
   };
 
   this->unlink();
+
+};
+
+// ---   *   ---   *   ---
+// debug out
+
+void DAF::prich(void) {
+
+  for(auto& fname : m_fnames) {
+
+    auto  idex = this->ftab(fname);
+    auto& blk  = m_hed.blk[idex];
+
+    printf(
+
+      "%-24s %uK\n",
+
+      fname.c_str(),
+      blk.sz/1024
+
+    );
+
+  };
+
+  printf("\n");
 
 };
 

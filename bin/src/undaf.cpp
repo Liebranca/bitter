@@ -21,12 +21,12 @@
 // ---   *   ---   *   ---
 // info
 
-  VERSION     "v0.00.1b";
+  VERSION     "v0.00.2b";
   AUTHOR      "IBN-3DILA";
 
   OPTIONS {
 
-    {"idex","-i","--idex",0},
+    {"fnames","-f","--fnames",0},
     {"output","-o","--output",0}
 
   };
@@ -51,11 +51,10 @@
 
 int main(int argc,char** argv) {
 
-  // data
-  std::vector<uint64_t> indices;
+  strvec      fnames;
 
-  strvec      output;
-  std::string source="./out";
+  std::string output;
+  std::string source=Bin::getcwd();
 
 // ---   *   ---   *   ---
 // input handler
@@ -67,18 +66,14 @@ int main(int argc,char** argv) {
     // name of output files
     auto& arg_o=cli.have("output");
     if(arg_o.values.size()) {
-      output=arg_o.values;
+      output=arg_o.values.back();
 
     };
 
-    // indices of entries to extract
-    auto& arg_i=cli.have("idex");
-    if(arg_i.values.size()) {
-
-      for(auto& s : arg_i.values) {
-        indices.push_back(std::stoull(s));
-
-      };
+    // names of entries to extract
+    auto& arg_s=cli.have("fnames");
+    if(arg_s.values.size()) {
+      fnames=arg_s.values;
 
     };
 
@@ -101,16 +96,15 @@ int main(int argc,char** argv) {
 
     DAF daf(source+".daf",Bin::READ);
 
-    if(indices.size()) {
+    if(fnames.size()) {
 
-      uint64_t j=0;
-      for(auto i : indices) {
-        daf.extract(i,output[j++]);
+      for(auto fname : fnames) {
+        daf.extract(fname,output);
 
       };
 
     } else {
-      daf.unpack(output.back());
+      daf.unpack(output);
 
     };
 

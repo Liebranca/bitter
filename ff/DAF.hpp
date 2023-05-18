@@ -15,7 +15,7 @@ class DAF: public Bin {
 
 public:
 
-  VERSION   "v2.00.8";
+  VERSION   "v2.00.9";
   AUTHOR    "IBN-3DILA";
 
 // ---   *   ---   *   ---
@@ -156,7 +156,10 @@ private:
   DAF::Block& jump_to_idex(uint64_t idex);
 
   // go to last entry
-  DAF::Block& jump_to_end(bool ftab=false);
+  DAF::Block& jump_to_end(void);
+
+  // got to beg of ftab
+  void jump_to_ftab(void);
 
   // saves portion of file to dump
   void dump_tail(DAF::Block& blk);
@@ -400,6 +403,9 @@ public:
     bool        clear = false
 
   );
+
+  // debug out
+  void prich(void);
 
   // getters
   inline strvec& get_fnames(void) {

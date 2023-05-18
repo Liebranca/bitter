@@ -13,6 +13,7 @@
 // deps
 
   #include "kvrnel/Style.hpp"
+  #include "kvrnel/Arstd.hpp"
   #include "kvrnel/Evil.hpp"
   #include "kvrnel/Cli.hpp"
 
@@ -21,12 +22,12 @@
 // ---   *   ---   *   ---
 // info
 
-  VERSION     "v0.00.1b";
+  VERSION     "v0.00.2b";
   AUTHOR      "IBN-3DILA";
 
   OPTIONS {
 
-    {"update","-u","--update",0},
+    {"inspect","-i","--i",1},
     {"output","-o","--output",0}
 
   };
@@ -51,9 +52,10 @@
 
 int main(int argc,char** argv) {
 
-  // data
   strvec      source;
-  std::string output="./out";
+
+  std::string output  = "./out";
+  bool        inspect = false;
 
 // ---   *   ---   *   ---
 // input handler
@@ -68,6 +70,10 @@ int main(int argc,char** argv) {
       output=arg_o.values.back();
 
     };
+
+    // flips archive view mode
+    auto& arg_b=cli.have("inspect");
+    inspect=arg_b.on;
 
     // input filenames
     auto& data=cli.have("DATA");
@@ -85,12 +91,22 @@ int main(int argc,char** argv) {
 
   errchk {
 
-    DAF daf(output+".daf",Bin::NEW);
-    for(auto& fname : source) {
-      Bin f(fname,Bin::READ);
-      daf.push(f);
+    if(! inspect) {
 
-      f.unlink();
+      DAF daf(output+".daf",Bin::NEW);
+
+      for(auto& fname : source) {
+        Bin f(fname,Bin::READ);
+        daf.push(basef(fname),f);
+
+        f.unlink();
+
+      };
+
+    } else {
+
+      DAF daf(source.back()+".daf",Bin::READ);
+      daf.prich();
 
     };
 

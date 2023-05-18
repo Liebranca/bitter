@@ -227,9 +227,6 @@ public:
   // ^same, you provide the buff
   void read(void* dst,uint64_t sz=0);
 
-  // read from cursor up to char
-  std::string read_until(char c);
-
   // write from cursor
   void write(void* buff,uint64_t sz);
 
