@@ -9,20 +9,9 @@
   #include <string>
   #include <cstring>
 
-  #include <unistd.h>
-  #include <sys/stat.h>
-
   #include "kvrnel/Style.hpp"
   #include "kvrnel/Mem.hpp"
   #include "kvrnel/Evil.hpp"
-
-// ---   *   ---   *   ---
-// aliasing
-
-  const auto unistd_unlink = unlink;
-  const auto sys_stat      = stat;
-
-  typedef struct stat sys_stat_st;
 
 // ---   *   ---   *   ---
 // info
@@ -31,7 +20,7 @@ class Bin {
 
 public:
 
-  VERSION   "2.00.3";
+  VERSION   "2.00.4";
   AUTHOR    "IBN-3DILA";
 
   cx8       READ   = 0x01;
@@ -44,6 +33,7 @@ public:
   cx8       SLIMIT = 0x80;
 
 // ---   *   ---   *   ---
+// errmes
 
   struct Error {
 
@@ -237,8 +227,14 @@ public:
   // ^same, you provide the buff
   void read(void* dst,uint64_t sz=0);
 
+  // read from cursor up to char
+  std::string read_until(char c);
+
   // write from cursor
   void write(void* buff,uint64_t sz);
+
+  // ^same, source is string
+  void write(std::string s);
 
   // get filebeg
   void read_header(void* buff);
@@ -269,40 +265,33 @@ public:
   };
 
   // rm [fname]
-  inline void unlink(
+  static void unlink(
     std::string& fpath
 
-  ) {
-
-    if(exists(fpath)) {
-      unistd_unlink(fpath.c_str());
-
-    };
-
-  };
+  );
 
   inline void unlink(void) {
-
     this->close();
     unlink(m_fpath);
 
   };
 
   // -f [fname]
-  inline bool exists(
+  static bool exists(
     std::string& fpath
 
-  ) {
-
-    sys_stat_st b;
-    return !sys_stat(fpath.c_str(),&b);
-
-  };
+  );
 
   inline bool exists(void) {
     return exists(m_fpath);
 
   };
+
+  // get current dir
+  static std::string getcwd(void);
+
+  // ^set
+  static void chdir(std::string dst);
 
 // ---   *   ---   *   ---
 // getters

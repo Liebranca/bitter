@@ -6,6 +6,7 @@
 
   #include "kvrnel/Style.hpp"
   #include "kvrnel/Bin.hpp"
+  #include "kvrnel/Tab.hpp"
 
 // ---   *   ---   *   ---
 // info
@@ -14,8 +15,11 @@ class DAF: public Bin {
 
 public:
 
-  VERSION   "v2.00.7";
+  VERSION   "v2.00.8";
   AUTHOR    "IBN-3DILA";
+
+// ---   *   ---   *   ---
+// errmes
 
   struct Error {
 
@@ -25,6 +29,17 @@ public:
 
       .code=__COUNTER__,
       .mess="DAF archive is full"
+
+    };
+
+
+
+    CX Evil::Errcode NSF={
+
+      .type=AR_FATAL,
+
+      .code=__COUNTER__,
+      .mess="No such fname in archive"
 
     };
 
@@ -53,34 +68,41 @@ public:
   };
 
 // ---   *   ---   *   ---
+// helpers
 
 private:
 
   cx16 BLK_CNT=DAFSIZE/64;
 
   // single entry
-  typedef struct {
+  struct Block {
 
     uint64_t off;
     uint64_t sz;
 
-  } Block;
+  };
 
   // ^whole header
-  typedef struct {
+  struct Header {
 
     char       sig      [8];
 
     uint64_t   used=0;
     uint64_t   blk_mask [BLK_CNT];
-    DAF::Block blk      [DAFSIZE];
 
-  } Header;
+    DAF::Block blk      [DAFSIZE];
+    DAF::Block tab;
+
+  };
 
 // ---   *   ---   *   ---
 // attrs
 
   Header m_hed;
+  Itab   m_tab;
+
+  strvec m_fnames;
+  strvec m_cl_on_close;
 
 // ---   *   ---   *   ---
 // virtual const
@@ -134,7 +156,7 @@ private:
   DAF::Block& jump_to_idex(uint64_t idex);
 
   // go to last entry
-  DAF::Block& jump_to_end(void);
+  DAF::Block& jump_to_end(bool ftab=false);
 
   // saves portion of file to dump
   void dump_tail(DAF::Block& blk);
@@ -145,6 +167,35 @@ private:
   // passes file through zlib
   void zip(void);
   void unzip(void);
+
+  // save file table for later fetch
+  void write_ftab(void);
+
+  // rebuilds file table
+  void read_ftab(void);
+
+  // ^push new entry to ftab
+  void push_ftab(
+    std::string key,
+    uint64_t    idex
+
+  );
+
+  // ^specific position
+  void insert_ftab(
+    std::string key,
+    uint64_t    idex
+
+  );
+
+  // ^remove last
+  void pop_ftab(void);
+
+  // ^remove specific
+  void remove_ftab(uint64_t idex);
+
+  // gives blk idex of key
+  uint64_t ftab(std::string key);
 
   // clears tmp files
   void rmdump(void);
@@ -188,20 +239,6 @@ private:
 
   DAF::Block& replace_prelude(uint64_t idex);
 
-  // get filename for dumpbin N
-  inline std::string dumpname(
-    uint64_t idex
-
-  ) {
-
-    return
-      m_fpath
-    + "e"
-    + std::to_string(idex)
-    ;
-
-  };
-
 // ---   *   ---   *   ---
 // iface
 
@@ -217,43 +254,36 @@ public:
   // save changes; automatic on destroy
   void close(void);
 
-  // remove last block
-  void pop(void);
-
-  // remove specific block
-  void remove(uint64_t idex);
-
-  // create bin from entry
-  std::string extract(
-    uint64_t    idex,
-    std::string path=""
-
-  );
-
-  // ^whole archive
-  strvec unpack(std::string base="");
-
 // ---   *   ---   *   ---
 // put new block at end of file
 
   // src is file
-  inline void push(Bin& src) {
+  inline void push(
+    std::string key,
+    Bin&        src
+
+  ) {
 
     auto& blk=this->jump_to_avail();
     this->blk_from_file(src,blk);
+    this->push_ftab(key,m_hed.used);
     this->push_epilogue();
 
   };
 
   // src is buff
   inline void push(
-    void*    src,
-    uint64_t sz
+
+    std::string key,
+
+    void*       src,
+    uint64_t    sz
 
   ) {
 
     auto& blk=this->jump_to_avail();
     this->blk_from_buff(src,sz,blk);
+    this->push_ftab(key,m_hed.used);
     this->push_epilogue();
 
   };
@@ -263,28 +293,36 @@ public:
 
   // src is file
   inline void insert(
-    Bin&     src,
-    uint64_t idex
+
+    std::string key,
+
+    Bin&        src,
+    uint64_t    idex
 
   ) {
 
     auto& blk=this->insert_prelude(idex);
     this->blk_from_file(src,blk);
+    this->insert_ftab(key,idex);
     this->insert_epilogue(blk);
 
   };
 
   // src is buff
   inline void insert(
-    void*    src,
-    uint64_t sz,
 
-    uint64_t idex
+    std::string key,
+
+    void*       src,
+    uint64_t    sz,
+
+    uint64_t    idex
 
   ) {
 
     auto& blk=this->insert_prelude(idex);
     this->blk_from_buff(src,sz,blk);
+    this->insert_ftab(key,idex);
     this->insert_epilogue(blk);
 
   };
@@ -294,19 +332,80 @@ public:
 
   // src is file
   void replace(
-    Bin&     src,
-    uint64_t idex
+    uint64_t key,
+    Bin&     src
 
   );
+
+  inline void replace(
+    std::string key,
+    Bin&        src
+
+  ) {
+
+    this->replace(this->ftab(key),src);
+
+  };
 
   // src is buff
   void replace(
-    void*    src,
-    uint64_t sz,
 
-    uint64_t idex
+    uint64_t    idex,
+
+    void*       src,
+    uint64_t    sz
 
   );
+
+  inline void replace(
+
+    std::string key,
+
+    void*       src,
+    uint64_t    sz
+
+  ) {
+
+    this->replace(this->ftab(key),src,sz);
+
+  };
+
+// ---   *   ---   *   ---
+
+  // remove last block
+  void pop(void);
+
+  // remove specific block
+  void remove(uint64_t i);
+
+  // ^lookup idex from key
+  inline void remove(std::string key) {
+    this->remove(this->ftab(key));
+
+  };
+
+  // create bin from entry
+  void extract(
+
+    std::string fname,
+
+    std::string path  = "",
+    bool        clear = false
+
+  );
+
+  // ^whole archive
+  void unpack(
+    std::string path  = "",
+    bool        clear = false
+
+  );
+
+  // getters
+  inline strvec& get_fnames(void) {
+    return m_fnames;
+
+  };
 
 };
 

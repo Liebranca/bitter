@@ -26,9 +26,12 @@ DAF::DAF(
 
 ):Bin() {
 
+  m_tab.nit(8);
+
   if(mode!=Bin::NEW) {
     m_fpath=fpath;
     this->unzip();
+    this->read_ftab();
 
   };
 
@@ -221,10 +224,12 @@ DAF::Block& DAF::jump_to_idex(uint64_t idex) {
 // ---   *   ---   *   ---
 // go to last entry
 
-DAF::Block& DAF::jump_to_end(void) {
+DAF::Block& DAF::jump_to_end(bool ftab) {
 
-  auto& blk=m_hed.blk[m_hed.used-1];
-  this->seek(blk.off,Bin::BEG);
+  auto&    blk = m_hed.blk[m_hed.used-1];
+  uint64_t m   = (ftab) ? blk.sz : 0;
+
+  this->seek(blk.off+m,Bin::BEG);
 
   return blk;
 
@@ -318,6 +323,7 @@ void DAF::pop(void) {
 
   this->stat();
   this->trunc_to(blk.off);
+  this->pop_ftab();
 
   m_hed.used--;
 
@@ -344,7 +350,7 @@ DAF::Block& DAF::replace_prelude(
 
 void DAF::remove(uint64_t idex) {
 
-  if(idex>=m_hed.used) {
+  if(idex >= m_hed.used) {
     err(DAF::Error::OOB,m_fpath);
 
   };
@@ -358,6 +364,7 @@ void DAF::remove(uint64_t idex) {
     this->slap_tail(blk);
     this->blktrav();
     this->blkshb(idex);
+    this->remove_ftab(idex);
 
     m_hed.used--;
 
@@ -373,8 +380,8 @@ void DAF::remove(uint64_t idex) {
 // change value of block
 
 void DAF::replace(
-  Bin&     src,
-  uint64_t idex
+  uint64_t idex,
+  Bin&     src
 
 ) {
 
@@ -406,10 +413,11 @@ void DAF::replace(
 // ^from buff
 
 void DAF::replace(
-  void*    src,
-  uint64_t sz,
 
-  uint64_t idex
+  uint64_t idex,
+
+  void*    src,
+  uint64_t sz
 
 ) {
 
@@ -486,50 +494,148 @@ void DAF::unzip(void) {
 };
 
 // ---   *   ---   *   ---
+// save file table for later fetch
+
+void DAF::write_ftab(void) {
+
+  this->jump_to_end(true);
+
+  for(auto& key : m_fnames) {
+    this->write(key);
+
+  };
+
+};
+
+// ---   *   ---   *   ---
+// rebuilds file table
+
+void DAF::read_ftab(void) {
+
+  this->jump_to_end(true);
+
+  for(uint64_t i=0;i<m_hed.used;i++) {
+    auto key=this->read_until('\0');
+    this->push_ftab(key,i);
+
+  };
+
+};
+
+// ---   *   ---   *   ---
+// push new entry to ftab
+
+void DAF::push_ftab(
+  std::string key,
+  uint64_t    idex
+
+) {
+
+  m_fnames.push_back(key);
+  m_tab.push(key,idex);
+
+};
+
+// ---   *   ---   *   ---
+// ^specific position
+
+void DAF::insert_ftab(
+  std::string key,
+  uint64_t    idex
+
+) {
+
+  m_fnames.insert(m_fnames.begin()+idex,key);
+  m_tab.push(key,idex);
+
+};
+
+// ---   *   ---   *   ---
+// ^remove last
+
+void DAF::pop_ftab(void) {
+
+  auto& s=m_fnames.back();
+
+  m_tab.pop(s);
+  m_fnames.pop_back();
+
+};
+
+// ---   *   ---   *   ---
+// ^remove specific
+
+void DAF::remove_ftab(uint64_t idex) {
+
+  auto& s=m_fnames[idex];
+
+  m_tab.pop(s);
+  m_fnames.erase(m_fnames.begin()+idex);
+
+};
+
+// ---   *   ---   *   ---
+// gives blk idex of key
+
+uint64_t DAF::ftab(std::string key) {
+
+  auto lkp=m_tab.has(key);
+
+  if(! lkp.key_match) {
+    err(DAF::Error::NSF,key);
+
+  };
+
+  return m_tab.get(lkp);
+
+};
+
+// ---   *   ---   *   ---
 // create bin from entry
 
-std::string DAF::extract(
-  uint64_t    idex,
-  std::string path
+void DAF::extract(
+
+  std::string fname,
+  std::string path,
+
+  bool        clear
 
 ) {
 
   if(! path.length()) {
-    path=this->dumpname(idex);
+    path=Bin::getcwd();
 
   };
 
+  path=path+'/'+fname;
   Bin out(path,Bin::NEW);
 
-  auto& blk=this->jump_to_idex(idex);
-  this->transfer(out,blk.sz);
+  if(clear) {
+    m_cl_on_close.push_back(path);
+  };
 
-  return path;
+  auto& blk=this->jump_to_idex(
+    this->ftab(fname)
+
+  );
+
+  this->transfer(out,blk.sz);
 
 };
 
 // ---   *   ---   *   ---
 // ^whole archive
 
-strvec DAF::unpack(std::string base) {
+void DAF::unpack(
+  std::string path,
+  bool        clear
 
-  strvec      out;
-  std::string path=base;
+) {
 
-  out.resize(m_hed.used);
-
-  for(uint64_t i=0;i<m_hed.used;i++) {
-
-    if(base.length()) {
-      path=base+std::to_string(i);
-
-    };
-
-    out.push_back(this->extract(i,path));
+  for(auto& fname : m_fnames) {
+    this->extract(fname,path);
 
   };
-
-  return out;
 
 };
 
@@ -540,6 +646,7 @@ void DAF::close(void) {
 
   if(m_mode_ch&Bin::WRITE) {
     this->write_header(&m_hed);
+    this->write_ftab();
     this->zip();
 
   };
@@ -553,9 +660,7 @@ void DAF::close(void) {
 
 void DAF::rmdump(void) {
 
-  for(uint64_t i=0;i<m_hed.used;i++) {
-
-    auto path=this->dumpname(i);
+  for(auto& path : m_cl_on_close) {
     Bin::unlink(path);
 
   };

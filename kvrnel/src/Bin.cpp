@@ -12,10 +12,22 @@
 // ---   *   ---   *   ---
 // deps
 
+
+  #include <unistd.h>
+  #include <sys/stat.h>
+
   #include <filesystem>
 
   #include "kvrnel/Evil.hpp"
   #include "kvrnel/Bin.hpp"
+
+// ---   *   ---   *   ---
+// aliasing
+
+  const auto unistd_unlink = unlink;
+  const auto sys_stat      = stat;
+
+  typedef struct stat sys_stat_st;
 
 // ---   *   ---   *   ---
 // reads mode flags
@@ -261,6 +273,18 @@ void Bin::read(void* dst,uint64_t sz) {
 };
 
 // ---   *   ---   *   ---
+// read from cursor up to char
+
+std::string Bin::read_until(char c) {
+
+  std::string out;
+  std::getline(m_fh,out,c);
+
+  return out;
+
+};
+
+// ---   *   ---   *   ---
 // gets header section
 
 void Bin::read_header(void* buff) {
@@ -291,6 +315,20 @@ void Bin::write(
   m_ptr+=sz;
 
 };
+
+// ---   *   ---   *   ---
+// ^same, source is string
+
+void Bin::write(std::string s) {
+
+  char* buff  = (char*) s.c_str();
+  uint64_t sz = s.length()+1;
+
+  m_fh.write(buff,sz);
+  m_ptr+=sz;
+
+};
+
 
 // ---   *   ---   *   ---
 // overwrites header section
@@ -357,6 +395,51 @@ void Bin::f_transfer(Bin& other) {
   auto     buff = this->read(sz);
 
   other.write(&buff[0],buff.used());
+
+};
+
+// ---   *   ---   *   ---
+// rm [fname]
+
+void Bin::unlink(
+  std::string& fpath
+
+) {
+
+  if(exists(fpath)) {
+    unistd_unlink(fpath.c_str());
+
+  };
+
+};
+
+// ---   *   ---   *   ---
+// -f [fname]
+
+bool Bin::exists(
+  std::string& fpath
+
+) {
+
+  sys_stat_st b;
+  return ! sys_stat(fpath.c_str(),&b);
+
+};
+
+// ---   *   ---   *   ---
+// get current dir
+
+std::string Bin::getcwd(void) {
+  auto p=std::filesystem::current_path();
+  return p.string();
+
+};
+
+// ---   *   ---   *   ---
+// ^set
+
+void Bin::chdir(std::string dst) {
+  std::filesystem::current_path(dst);
 
 };
 
