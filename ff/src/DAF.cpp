@@ -676,7 +676,7 @@ void DAF::unpack(
 
 void DAF::close(void) {
 
-  if(m_mode_ch & m_updated) {
+  if(m_updated) {
     this->write_header(&m_hed);
     this->write_ftab();
 
