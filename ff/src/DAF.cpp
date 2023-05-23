@@ -330,6 +330,8 @@ void DAF::pop(void) {
 
   };
 
+  m_updated=true;
+
   auto& blk = this->jump_to_end();
   blk.sz    = 0;
 
@@ -367,6 +369,8 @@ void DAF::remove(uint64_t idex) {
 
   };
 
+  m_updated=true;
+
   // element in the middle
   if(idex!=m_hed.used-1) {
 
@@ -401,6 +405,8 @@ void DAF::replace(
     err(DAF::Error::OOB,m_fpath);
 
   };
+
+  m_updated=true;
 
   // element in the middle
   if(idex!=m_hed.used-1) {
@@ -437,6 +443,8 @@ void DAF::replace(
     err(DAF::Error::OOB,m_fpath);
 
   };
+
+  m_updated=true;
 
   // element in the middle
   if(idex!=m_hed.used-1) {
@@ -635,6 +643,7 @@ void DAF::extract(
 
   if(clear) {
     m_cl_on_close.push_back(path);
+
   };
 
   auto& blk=this->jump_to_idex(
@@ -667,7 +676,7 @@ void DAF::unpack(
 
 void DAF::close(void) {
 
-  if(m_mode_ch & Bin::WRITE) {
+  if(m_mode_ch & m_updated) {
     this->write_header(&m_hed);
     this->write_ftab();
 
@@ -704,18 +713,9 @@ void DAF::prich(void) {
     auto  idex = this->ftab(fname);
     auto& blk  = m_hed.blk[idex];
 
-    printf(
-
-      "%-24s %uK\n",
-
-      fname.c_str(),
-      blk.sz/1024
-
-    );
+    printf("%s\n",fname.c_str());
 
   };
-
-  printf("\n");
 
 };
 

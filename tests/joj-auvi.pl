@@ -44,7 +44,7 @@ my $calls=[
 
     -sd ../.cache/auvi/material/
     -o ../.cache/auvi/material/$:name;>
-    -as 128
+    -as 256
 
     $:name;>
 

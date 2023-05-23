@@ -15,7 +15,7 @@ class DAF: public Bin {
 
 public:
 
-  VERSION   "v2.00.9";
+  VERSION   "v2.01.0";
   AUTHOR    "IBN-3DILA";
 
 // ---   *   ---   *   ---
@@ -103,6 +103,8 @@ private:
 
   strvec m_fnames;
   strvec m_cl_on_close;
+
+  bool   m_updated=false;
 
 // ---   *   ---   *   ---
 // virtual const
@@ -267,6 +269,8 @@ public:
 
   ) {
 
+    m_updated=true;
+
     auto& blk=this->jump_to_avail();
     this->blk_from_file(src,blk);
     this->push_ftab(key,m_hed.used);
@@ -283,6 +287,8 @@ public:
     uint64_t    sz
 
   ) {
+
+    m_updated=true;
 
     auto& blk=this->jump_to_avail();
     this->blk_from_buff(src,sz,blk);
@@ -304,6 +310,8 @@ public:
 
   ) {
 
+    m_updated=true;
+
     auto& blk=this->insert_prelude(idex);
     this->blk_from_file(src,blk);
     this->insert_ftab(key,idex);
@@ -322,6 +330,8 @@ public:
     uint64_t    idex
 
   ) {
+
+    m_updated=true;
 
     auto& blk=this->insert_prelude(idex);
     this->blk_from_buff(src,sz,blk);
@@ -403,6 +413,49 @@ public:
     bool        clear = false
 
   );
+
+// ---   *   ---   *   ---
+// conditional push/replace wrapper
+
+  inline void cpush(
+    std::string key,
+    Bin&        src
+
+  ) {
+
+    auto lkp=m_tab.has(key);
+    if(lkp.key_match) {
+      this->replace(key,src);
+
+    } else {
+      this->push(key,src);
+
+    };
+
+  };
+
+  // src is buff
+  inline void cpush(
+
+    std::string key,
+
+    void*       src,
+    uint64_t    sz
+
+  ) {
+
+    auto lkp=m_tab.has(key);
+    if(lkp.key_match) {
+      this->replace(key,src,sz);
+
+    } else {
+      this->push(key,src,sz);
+
+    };
+
+  };
+
+// ---   *   ---   *   ---
 
   // debug out
   void prich(void);

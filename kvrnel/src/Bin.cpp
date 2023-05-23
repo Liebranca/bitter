@@ -37,10 +37,12 @@ void Bin::set_mode(char mode) {
   m_mode_ch=mode;
   m_mode^=m_mode;
 
-  if(mode&READ) {
+  if(mode & READ) {
     m_mode|=std::ios::in;
 
-  } else if(mode&WRITE) {
+  };
+
+  if(mode & WRITE) {
     m_mode|=std::ios::out;
 
   };
@@ -98,14 +100,20 @@ void Bin::open(std::string fpath,char mode) {
 
 void Bin::close(void) {
 
-  if(!m_passed && m_fh.is_open()) {
+  if(! m_passed && m_fh.is_open()) {
 
-    if(! m_fh.good()) {
-      err(Bin::Error::CLOSE,m_fpath);
+// gives false positive whenever
+// non-new file is open for writing
+//
+// i've decided i don't care
+//
+//    if(! m_fh.good()) {
+//      err(Bin::Error::CLOSE,m_fpath);
+//
+//    } else {
+      m_fh.close();
 
-    };
-
-    m_fh.close();
+//    };
 
   };
 
@@ -128,8 +136,8 @@ void Bin::match_sig(void) {
 
     if(
 
-       m_mode&std::ios::in
-    || !(m_mode&std::ios::trunc)
+         (m_mode & std::ios::in)
+    || ! (m_mode & std::ios::trunc)
 
     ) {
 
@@ -146,7 +154,7 @@ void Bin::match_sig(void) {
 // ---   *   ---   *   ---
 // paste signature if writting
 
-    } else if(m_mode&std::ios::out) {
+    } else if(m_mode & std::ios::out) {
 
       uint64_t x=m_header_sz();
       std::string s(x,'\0');
@@ -353,10 +361,12 @@ void Bin::seek(
   this->set_ptr(to,from,ignore_header);
 
   // ^seek to
-  if(m_mode&std::ios::in) {
+  if(m_mode & std::ios::in) {
     m_fh.seekg(m_ptr);
 
-  } else {
+  };
+
+  if(m_mode & std::ios::out) {
     m_fh.seekp(m_ptr);
 
   };

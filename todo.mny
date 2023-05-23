@@ -19,14 +19,14 @@ x ^ Make single, redundancy-free table during atlas pack
 x ^ Derive polygon cache from image tables
 x ^ Apply tile transforms to polygons
 x Reading and writing new image table format
-~ Binary for packing and unpacking images
+x Binary for packing and unpacking images
 x Binary for packing and unpacking sprites
 
 *>CRK
 x Vertex classes
-~ Vertex data compression
-~ ^ Coords
-~ ^ Normals
+x Vertex data compression
+x ^ Coords
+x ^ Normals
 
 *>DAF
 x Building files by blocks

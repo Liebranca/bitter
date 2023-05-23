@@ -22,12 +22,13 @@
 // ---   *   ---   *   ---
 // info
 
-  VERSION     "v0.00.2b";
+  VERSION     "v0.00.3b";
   AUTHOR      "IBN-3DILA";
 
   OPTIONS {
 
-    {"inspect","-i","--i",1},
+    {"update","-u","--update",1},
+    {"inspect","-i","--inspect",1},
     {"output","-o","--output",0}
 
   };
@@ -55,7 +56,9 @@ int main(int argc,char** argv) {
   strvec      source;
 
   std::string output  = "./out";
+
   bool        inspect = false;
+  bool        update  = false;
 
 // ---   *   ---   *   ---
 // input handler
@@ -72,8 +75,12 @@ int main(int argc,char** argv) {
     };
 
     // flips archive view mode
-    auto& arg_b=cli.have("inspect");
-    inspect=arg_b.on;
+    auto& arg_inspect=cli.have("inspect");
+    inspect=arg_inspect.on;
+
+    // flips append mode
+    auto& arg_update=cli.have("update");
+    update=arg_update.on;
 
     // input filenames
     auto& data=cli.have("DATA");
@@ -93,11 +100,16 @@ int main(int argc,char** argv) {
 
     if(! inspect) {
 
-      DAF daf(output+".daf",Bin::NEW);
+      uint8_t mode=(update)
+        ? Bin::READ|Bin::WRITE
+        : Bin::NEW
+        ;
+
+      DAF daf(output+".daf",mode);
 
       for(auto& fname : source) {
         Bin f(fname,Bin::READ);
-        daf.push(basef(fname),f);
+        daf.cpush(basef(fname),f);
 
         f.unlink();
 
