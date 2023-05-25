@@ -10,8 +10,6 @@ struct Bmesh_Meta {
   uint16_t num_indices;
   uint16_t num_poses;
 
-  uint16_t matidex;
-
 };
 
 // ---   *   ---   *   ---

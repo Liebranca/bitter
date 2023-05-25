@@ -87,8 +87,6 @@ void CRK::Quad_Build::get_verts(void) {
 
       },
 
-      .ID  = id
-
     };
 
   };

@@ -53,11 +53,10 @@ public:
       struct {
 
         uint8_t  XYZ[3];
-        uint8_t  NTB[3];  // 6
-        uint8_t  TEX[2];  // 8
+        uint8_t  TEX[2];  // 5
+        uint8_t  PAD[1];  // 6
 
-        uint16_t ID;      // 10
-        uint16_t BONE;    // 12
+        uint16_t NTB[3];  // 12
 
       };
 
@@ -224,7 +223,7 @@ private:
 // data packing singletons
 
   static Seph& nseph(void) {
-    static Seph s(Seph::NORMAL,0,4,4);
+    static Seph s(Seph::NORMAL,0,8,8);
     return s;
 
   };
