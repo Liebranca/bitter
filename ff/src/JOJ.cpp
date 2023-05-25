@@ -1093,7 +1093,7 @@ float* JOJ::read_pixels(
       Mem<JOJ::Pixel> pixels(m_hed.img_sz_sq);
       m_pixels.copy(pixels);
 
-      Mem<float> raw(m_hed.img_sz_sq<<2);
+      Mem<float> raw(m_hed.img_sz_sq << 2);
       m_raw.copy(raw);
 
       m_atlas_mode=false;
@@ -1123,7 +1123,7 @@ float* JOJ::read_pixels(
       Mem<JOJ::Pixel> pixels(m_hed.atlas_sz_sq);
       m_pixels.copy(pixels);
 
-      Mem<float> raw(m_hed.atlas_sz_sq<<2);
+      Mem<float> raw(m_hed.atlas_sz_sq << 2);
       m_raw.copy(raw);
 
       m_atlas_mode=true;
@@ -1161,7 +1161,7 @@ Mem<float> JOJ::to_buff(
 
   uint16_t idex,
 
-  bool     mode,
+  uint8_t  mode,
   float    mult
 
 ) {
@@ -1172,21 +1172,41 @@ Mem<float> JOJ::to_buff(
     ;
 
   uint64_t sz_sq=sz*sz;
+  uint8_t  limit;
 
+  // patch: unpack all three
+  // layers at once
+  if(mode==JOJ::UNPACK_LAYERS) {
+    sz    *= 3;
+    limit  = 3;
+
+  // ^single layer
+  } else {
+    limit=idex;
+
+  };
+
+  // walk requested layers
   Mem<float> out(sz_sq<<2);
-  float* pixels=this->read_pixels(
-    idex,mode==JOJ::UNPACK_IMAGE
+  for(uint8_t i=idex,uint8_t z;i<limit;i++) {
 
-  );
+    float* pixels=this->read_pixels(
+      i,mode!=JOJ::UNPACK_ATLAS
 
-  this->img_cpy_joj2rgba(
-    &out[0],
-    pixels,
+    );
 
-    sz,
-    mult
+    this->img_cpy_joj2rgba(
+      &out[z],
+      pixels,
 
-  );
+      sz,
+      mult
+
+    );
+
+    z+=sz*sz;
+
+  };
 
   return Mem<float>(out);
 

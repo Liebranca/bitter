@@ -14,7 +14,7 @@ class ANS {
 
 public:
 
-  VERSION   "v0.00.2b";
+  VERSION   "v0.00.3b";
   AUTHOR    "IBN-3DILA";
 
 // ---   *   ---   *   ---
@@ -64,6 +64,7 @@ public:
 
   };
 
+  // idex of
   inline uint64_t iof(std::string name) {
     auto idex=m_dict.get(name);
     return idex;

@@ -16,6 +16,7 @@
   #include "ff/ANS.hpp"
 
 // ---   *   ---   *   ---
+// cstruc
 
 void ANS::nit(std::string fpath) {
 

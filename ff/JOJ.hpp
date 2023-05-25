@@ -19,13 +19,14 @@ class JOJ: public Bin {
 
 public:
 
-  VERSION   "v2.01.1";
+  VERSION   "v2.01.2";
   AUTHOR    "IBN-3DILA";
 
   enum {
 
-    UNPACK_IMAGE=0,
-    UNPACK_ATLAS=1
+    UNPACK_IMAGE  = 0,
+    UNPACK_ATLAS  = 1,
+    UNPACK_LAYERS = 2
 
   };
 
@@ -316,7 +317,7 @@ public:
 
     uint16_t idex,
 
-    bool     mode = JOJ::UNPACK_IMAGE,
+    uint8_t  mode = JOJ::UNPACK_IMAGE,
     float    mult = 1.0f
 
   );
