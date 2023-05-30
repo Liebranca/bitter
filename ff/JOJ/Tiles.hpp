@@ -10,24 +10,24 @@
 
 private:
 
-typedef struct {
+struct Tile_Fetch {
   uint16_t src_x;
   uint16_t src_y;
   uint16_t dst_x;
   uint16_t dst_y;
 
-} Tile_Fetch;
+};
 
 // ---   *   ---   *   ---
 // atlas table helper
 
-typedef struct FwdTile_Ref {
+struct Tile_Ref {
 
   uint64_t img;
   uint64_t tile;
 
-  FwdTile_Ref(void) {};
-  FwdTile_Ref(
+  Tile_Ref(void) {};
+  Tile_Ref(
     uint16_t img,
     uint64_t tile
 
@@ -38,7 +38,7 @@ typedef struct FwdTile_Ref {
 
   };
 
-} Tile_Ref;
+};
 
 // ---   *   ---   *   ---
 // comparison/reconstruction helper
@@ -76,7 +76,7 @@ struct Tile_Desc {
 
 };
 
-typedef struct {
+struct Tile_Desc_Packed {
 
   uint16_t x;
   uint16_t y;
@@ -85,7 +85,7 @@ typedef struct {
   uint8_t  mirrored : 2;
   uint8_t  cleared  : 3;
 
-} Tile_Desc_Packed;
+};
 
 // ---   *   ---   *   ---
 // shorthands
@@ -97,11 +97,12 @@ typedef std::vector<
 
 typedef std::vector<JOJ::Tile_Desc> Img_Desc;
 typedef std::vector<Img_Desc> Atlas_Desc;
+typedef std::vector<uint64_t> Xorkeys;
 
 // ---   *   ---   *   ---
 // another comparison helper
 
-typedef struct {
+struct Tile_Cmp {
 
   JOJ::Tile_Desc& td;
 
@@ -111,13 +112,13 @@ typedef struct {
   uint16_t        x;
   uint16_t        y;
 
-} Tile_Cmp;
+};
 
 // ---   *   ---   *   ---
 
   cx8 STD_TILE_SZ=0x10;
 
-typedef struct FwdTiles {
+struct Tiles {
 
   uint16_t x;
   uint16_t y;
@@ -132,6 +133,7 @@ typedef struct FwdTiles {
 
   Mem<JOJ::Pixel>  data;
   Mem<JOJ::Pixel>  copy_tile;
+  Xorkeys          xorkeys;
 
   JOJ::Tile_Refs   users;
   JOJ::Atlas_Desc  image;
@@ -166,6 +168,7 @@ typedef struct FwdTiles {
     Mem<JOJ::Pixel> _copy_tile(this->sz_sq);
     this->copy_tile.copy(_copy_tile);
 
+    this->xorkeys.resize(this->cnt_sq);
     this->tab.resize(this->cnt_sq);
 
     if(atlas) {
@@ -198,7 +201,7 @@ typedef struct FwdTiles {
   // offsets the next table read
   void fetch_offset(
 
-    JOJ::FwdTiles& atlas,
+    JOJ::Tiles& atlas,
 
     uint16_t       img_idex,
     uint64_t       prev_tiles
@@ -235,6 +238,36 @@ typedef struct FwdTiles {
   bool cmp(
     JOJ::Pixel* a,
     JOJ::Pixel* b
+
+  );
+
+  // generate data identifier
+  // for a particular tile
+  uint64_t gen_xorkey(
+    JOJ::Pixel* a
+
+  );
+
+  // ^batch, gen for whole image
+  void map_xorkey(void);
+
+  // ^fetch generated
+  uint64_t get_xorkey(
+    uint16_t ix,
+    uint16_t iy
+
+  );
+
+  // ^compare keys of two tiles
+  bool cmp_xorkey(
+
+    // a
+    uint16_t x0,
+    uint16_t y0,
+
+    // b
+    uint16_t x1,
+    uint16_t y1
 
   );
 
@@ -383,7 +416,7 @@ typedef struct FwdTiles {
 
   // build original image from table
   void unpack(
-    JOJ::FwdTiles& atlas
+    JOJ::Tiles& atlas
 
   );
 
@@ -517,7 +550,7 @@ public:
 
 // ---   *   ---   *   ---
 
-} Tiles;
+};
 
 // ---   *   ---   *   ---
 

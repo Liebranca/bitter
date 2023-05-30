@@ -184,7 +184,7 @@ private:
 
   // sphere coords handler for nc maps
   static Seph& nseph(void) {
-    static Seph s(Seph::NC,4,6,6);
+    static Seph s(Seph::NC,2,4,4);
     return s;
 
   };

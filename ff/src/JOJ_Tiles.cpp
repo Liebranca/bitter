@@ -113,7 +113,7 @@ void JOJ::Tiles::from_buff(
 
 void JOJ::Tiles::fetch_offset(
 
-  JOJ::FwdTiles& atlas,
+  JOJ::Tiles& atlas,
 
   uint16_t       img_idex,
   uint64_t       prev_tiles
@@ -279,6 +279,93 @@ bool JOJ::Tiles::cmp(
   * sizeof(*a)
 
   );
+
+};
+
+// ---   *   ---   *   ---
+// generate data identifier
+// for a particular tile
+//
+// used to detect viable
+// candidates for xform
+
+uint64_t JOJ::Tiles::gen_xorkey(
+  JOJ::Pixel* a
+
+) {
+
+  uint64_t out=0;
+  for(uint64_t i=0;i < this->sz_sq;i+=2) {
+
+    JOJ::Pixel& p0=a[i+0];
+    JOJ::Pixel& p1=a[i+1];
+
+    out^=
+      (uint64_t(p0.as_int()) <<  0)
+    | (uint64_t(p1.as_int()) << 32)
+    ;
+
+  };
+
+  return out;
+
+};
+
+// ---   *   ---   *   ---
+// ^batch, gen for whole image
+
+void JOJ::Tiles::map_xorkey(void) {
+
+  // walk tiles
+  for(uint16_t iy=0;iy<this->cnt;iy++) {
+  for(uint16_t ix=0;ix<this->cnt;ix++) {
+
+    // get tile descriptor
+    auto td_idex=this->tile_idex(ix,iy);
+
+    // get data
+    JOJ::Tile_Desc& td = this->tab[td_idex];
+    JOJ::Pixel*     a  = this->get(ix,iy);
+
+    uint64_t key=this->gen_xorkey(a);
+    xorkeys[ix + (iy*this->cnt)]=key;
+
+  }};
+
+};
+
+// ---   *   ---   *   ---
+// ^fetch generated
+
+uint64_t JOJ::Tiles::get_xorkey(
+  uint16_t ix,
+  uint16_t iy
+
+) {
+
+  return xorkeys[ix + (iy*this->cnt)];
+
+};
+
+// ---   *   ---   *   ---
+// ^compare keys of two tiles
+
+bool JOJ::Tiles::cmp_xorkey(
+
+  // a
+  uint16_t x0,
+  uint16_t y0,
+
+  // b
+  uint16_t x1,
+  uint16_t y1
+
+) {
+
+  return
+     this->get_xorkey(x0,y0)
+  == this->get_xorkey(x1,y1)
+  ;
 
 };
 
@@ -526,32 +613,23 @@ bool JOJ::Tiles::match_cmp(
 
   bool same=false;
 
-  while(!same) {
+  while(! same) {
 
     same=this->cmp(mat.a,mat.b);
 
     // no match
     if(! same) {
 
-      break;
+      // transforms pending, retry
+      if(this->match_rotate(mat.td)) {
+        continue;
 
-//  i tried some opz on this
-//
-//  result?
-//  too slow for too little gain
-//
-//  i'll just disable it for now
-//
-//      // transforms pending, retry
-//      if(this->match_rotate(mat.td)) {
-//        continue;
-//
-//      // transforms exhausted, undo and end
-//      } else {
-//        this->match_undo(mat.td);
-//        break;
-//
-//      };
+      // transforms exhausted, undo and end
+      } else {
+        this->match_undo(mat.td);
+        break;
+
+      };
 
 // ---   *   ---   *   ---
 // match, end here
@@ -638,6 +716,11 @@ void JOJ::Tiles::match(
     } else if(b==NULL) {
       continue;
 
+    // only attempt matches on
+    // tiles with the same bytes
+    } else if(! this->cmp_xorkey(_x,_y,ix,iy)) {
+      continue;
+
     };
 
     // compare
@@ -699,8 +782,8 @@ void JOJ::Tiles::reloc_users(
     dst.x=_x;
     dst.y=_y;
 
-//    dst.rotated  = td.rotated;
-//    dst.mirrored = td.mirrored;
+    dst.rotated  = td.rotated;
+    dst.mirrored = td.mirrored;
 
   };
 
@@ -717,8 +800,8 @@ void JOJ::Tiles::reloc_users(
       dst.x=_x;
       dst.y=_y;
 
-//      dst.rotated  = td.rotated;
-//      dst.mirrored = td.mirrored;
+      dst.rotated  = td.rotated;
+      dst.mirrored = td.mirrored;
 
     };
 
@@ -844,6 +927,11 @@ void JOJ::Tiles::pack(
 
 ) {
 
+  if(! skip_match) {
+    this->map_xorkey();
+
+  };
+
   for(uint16_t _y=0;_y<this->cnt;_y++) {
   for(uint16_t _x=0;_x<this->cnt;_x++) {
 
@@ -865,7 +953,7 @@ void JOJ::Tiles::pack(
 // rebuilds original image from descriptor table
 
 void JOJ::Tiles::unpack(
-  JOJ::FwdTiles& atlas
+  JOJ::Tiles& atlas
 
 ) {
 
@@ -883,8 +971,8 @@ void JOJ::Tiles::unpack(
     // fetch and transform
     this->mov(dst,&src[offset]);
 
-    this->apply_rotation(td);
-    this->apply_mirror(td);
+    this->undo_rotation(td);
+    this->undo_mirror(td);
 
   };
 

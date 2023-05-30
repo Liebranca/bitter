@@ -1182,13 +1182,15 @@ Mem<float> JOJ::to_buff(
 
   // ^single layer
   } else {
-    limit=idex;
+    limit=idex+1;
 
   };
 
   // walk requested layers
   Mem<float> out(sz_sq<<2);
-  for(uint8_t i=idex,uint8_t z;i<limit;i++) {
+  uint8_t z=0;
+
+  for(uint8_t i=idex;i<limit;i++) {
 
     float* pixels=this->read_pixels(
       i,mode!=JOJ::UNPACK_ATLAS
