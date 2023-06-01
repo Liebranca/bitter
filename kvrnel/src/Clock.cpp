@@ -57,38 +57,47 @@ void Clock::nit(float fps) {
 };
 
 // ---   *   ---   *   ---
+// shorthand
+
+inline float get_ftime(long len) {
+
+  return
+    ((float) len)
+  / CLOCKS_PER_SEC
+  ;
+
+};
+
+// ---   *   ---   *   ---
 // updates time-interval multipliers
 // sleeps if needed
 
 void Clock::tick(int busy) {
 
-  m_beg=m_end;
-  m_beg=clock();
+  m_beg   = m_end;
+  m_beg   = clock();
 
-  m_delta=m_beg-m_end;
+  m_delta = m_beg-m_end;
 
-  long len=m_len<<((! busy)*2);
+  long  len   = m_len << ((! busy) * 2);
+  float ftime = 0.0f;
 
   if(m_delta<len) {
 
-    long  sub=(len-m_delta);
-
-    float frame_time=
-      ((float) sub)
-    / CLOCKS_PER_SEC
-    ;
-
-    m_fBy=(1.0f/frame_time)*m_scale;
+    long sub=(len-m_delta);
+    ftime=get_ftime(sub);
 
     usleep(sub);
     m_delta=0;
 
   } else {
-    m_fBy=m_scale;
+    ftime=get_ftime(len);
 
   };
 
   m_end=m_beg;
+
+  m_fBy=ftime * m_scale;
   m_uBy=std::round(m_fBy);
 
 };

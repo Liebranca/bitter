@@ -50,3 +50,25 @@ void ANS::nit(std::string fpath) {
 };
 
 // ---   *   ---   *   ---
+// ^used for blanks
+
+void ANS::enit(void) {
+
+  m_dict.nit(1);
+
+  Anim anim={
+
+    .beg=0,
+    .end=1
+
+  };
+
+  std::string tag  = "^";
+  uint64_t    idex = 0;
+
+  m_anims.push_back(anim);
+  m_dict.push(tag,idex);
+
+};
+
+// ---   *   ---   *   ---

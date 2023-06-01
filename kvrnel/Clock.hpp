@@ -14,7 +14,7 @@ class Clock {
 
 private:
 
-  VERSION   "v2.00.4";
+  VERSION   "v2.00.5";
   AUTHOR    "IBN-3DILA";
 
 // ---   *   ---   *   ---
@@ -52,6 +52,14 @@ public:
   inline void draw(void);
 
 // ---   *   ---   *   ---
+// setters
+
+  inline void set_scale(float x) {
+    m_scale=x;
+
+  };
+
+// ---   *   ---   *   ---
 // getters
 
   inline float fBy(void) {
@@ -61,6 +69,11 @@ public:
 
   inline long uBy(void) {
     return m_uBy;
+
+  };
+
+  inline float get_scale(void) {
+    return m_scale;
 
   };
 

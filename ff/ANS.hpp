@@ -50,6 +50,7 @@ public:
 
   // cstruc
   void nit(std::string fpath);
+  void enit(void);
 
   // selfex
   inline Anim& get(uint64_t i) {
