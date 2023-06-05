@@ -114,6 +114,12 @@ public:
     // simple quad arrays
     void gen_qa_indices(void);
 
+    // blank init
+    Prim(void) {};
+
+    // generate zeroed buffer
+    Prim(uint16_t size);
+
   };
 
   struct Prim_Build {

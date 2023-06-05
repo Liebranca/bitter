@@ -1,0 +1,93 @@
+#!/usr/bin/perl
+# ---   *   ---   *   ---
+# REPLEVRY
+# Replace every instance
+#
+# LIBRE SOFTWARE
+# Licensed under GNU GPL3
+# be a bro and inherit
+#
+# CONTRIBUTORS
+# lyeb,
+
+# ---   *   ---   *   ---
+# deps
+
+  use v5.36.0;
+  use strict;
+  use warnings;
+
+  use Readonly;
+  use English qw(-no_match_vars);
+
+  use lib $ENV{'ARPATH'}.'/lib/sys/';
+
+  use Style;
+  use Arstd::IO;
+
+  use Cli;
+
+# ---   *   ---   *   ---
+# info
+
+  our $VERSION = v0.00.2;#b
+  our $AUTHOR  = 'IBN-3DILA';
+
+# ---   *   ---   *   ---
+# ROM
+
+  Readonly our $MARKED=>qr{(
+
+    vec2|vec3|vec4
+
+  | uvec2|uvec3|uvec4
+  | ivec2|ivec3|ivec4
+
+  | mat3|mat4
+  | quat
+
+  )}x;
+
+  # glm colon colon something
+  Readonly our $GLMCCS=>qr{
+    glm \: \: $MARKED
+
+  }x;
+
+# ---   *   ---   *   ---
+# iter thru
+
+sub repl_file($fpath) {
+
+  my $body=orc($fpath);
+  say $fpath if ($body=~ s[$GLMCCS][$1]sxmg);
+
+  return $body;
+
+};
+
+# ---   *   ---   *   ---
+# ^save modified
+
+sub repl_write(@flist) {
+
+  map {
+    owc($ARG,repl_file($ARG))
+
+  } @flist;
+
+};
+
+# ---   *   ---   *   ---
+# the bit
+
+my $m=Cli->nit(
+
+  @{$Cli::Fstruct::ATTRS},
+
+);
+
+my @Files=Cli::Fstruct::proto_search_ex($m);
+repl_write(@Files);
+
+# ---   *   ---   *   ---

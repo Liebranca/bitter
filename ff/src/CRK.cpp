@@ -341,6 +341,15 @@ void CRK::Prim::lines_to_tris(void) {
 };
 
 // ---   *   ---   *   ---
+// generate zeroed buffer
+
+CRK::Prim::Prim(uint16_t size) {
+  verts.resize(size);
+  indices.resize(size);
+
+};
+
+// ---   *   ---   *   ---
 // generates index array for
 // simple quad arrays
 
