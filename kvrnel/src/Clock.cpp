@@ -24,7 +24,7 @@
 
 void Clock::nit(float fps) {
 
-  glm::uvec4 pos;
+  uvec4 pos;
 
   m_beg=clock();
   m_end=m_beg;

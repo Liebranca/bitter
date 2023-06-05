@@ -7,7 +7,7 @@
   #include <glm/glm.hpp>
   #include <vector>
 
-  #include "kvrnel/Style.hpp"
+  #include "kvrnel/GLM.hpp"
   #include "kvrnel/Bytes.hpp"
   #include "kvrnel/Bin.hpp"
   #include "kvrnel/Seph.hpp"
@@ -41,7 +41,7 @@ public:
 
   };
 
-  typedef std::vector<glm::vec3> Points;
+  typedef std::vector<vec3> Points;
 
 // ---   *   ---   *   ---
 // basis struct
@@ -66,17 +66,17 @@ public:
 
     // fill out struct from
     // uncompressed data
-    void set_xyz(glm::vec3& co);
-    void set_n(glm::vec3& n);
+    void set_xyz(vec3& co);
+    void set_n(vec3& n);
 
     void set_ntb(
-      glm::vec3& n,
-      glm::vec3& t,
-      glm::vec3& b
+      vec3& n,
+      vec3& t,
+      vec3& b
 
     );
 
-    void set_uv(glm::vec2& uv);
+    void set_uv(vec2& uv);
 
   };
 
@@ -88,7 +88,7 @@ public:
     std::vector<CRK::Vertex> verts;
     std::vector<uint16_t>    indices;
 
-    glm::vec3 box={0.5f,1,0.5f};
+    vec3 box={0.5f,1,0.5f};
 
     uint64_t bytesz(void);
 
@@ -166,13 +166,13 @@ public:
   struct Tri {
 
     // cstruc
-    void set(Points& pts,glm::vec3& n) {
+    void set(Points& pts,vec3& n) {
       m_points=pts;
       m_normal=n;
 
     };
 
-    Tri(Points& pts,glm::vec3& n) {
+    Tri(Points& pts,vec3& n) {
       this->set(pts,n);
 
     };
@@ -184,8 +184,8 @@ public:
     // converts to CRK format
     void pack(CRK::Prim& me);
 
-    Points    m_points;
-    glm::vec3 m_normal;
+    Points m_points;
+    vec3   m_normal;
 
   };
 

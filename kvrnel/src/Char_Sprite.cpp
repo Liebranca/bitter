@@ -22,7 +22,7 @@
 
 Char_Sprite::Char_Sprite(
   const wchar_t* anim,
-  glm::uvec4& co
+  uvec4& co
 
 ) {
 

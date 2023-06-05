@@ -21,7 +21,7 @@
 // gets inclination and azimuth angles
 // from normalized vector
 
-uint64_t Seph::angle_pack(glm::vec3& n) {
+uint64_t Seph::angle_pack(vec3& n) {
 
   Frac::Rounding_Mode=Frac::NVEC;
   uint64_t out=0x00;
@@ -60,7 +60,7 @@ uint64_t Seph::angle_pack(glm::vec3& n) {
 // ---   *   ---   *   ---
 // ^undo
 
-glm::vec3 Seph::angle_unpack(uint64_t b) {
+vec3 Seph::angle_unpack(uint64_t b) {
 
   // retrieve packed elements
   uint64_t bzen = b&m_zen_mask;
@@ -104,7 +104,7 @@ glm::vec3 Seph::angle_unpack(uint64_t b) {
 // ---   *   ---   *   ---
 // magnitude of vector eq sphere radius
 
-uint64_t Seph::radius_pack(glm::vec3& p) {
+uint64_t Seph::radius_pack(vec3& p) {
 
   Frac::Rounding_Mode=Frac::LINE;
 
@@ -139,7 +139,7 @@ float Seph::radius_unpack(uint64_t b) {
 // ---   *   ---   *   ---
 // byte-sized rotations ;>
 
-uint64_t Seph::quat_pack(glm::quat& q) {
+uint64_t Seph::quat_pack(quat& q) {
 
   Frac::Rounding_Mode=Frac::LINE;
   uint64_t out=0x00;
@@ -193,7 +193,7 @@ uint64_t Seph::quat_pack(glm::quat& q) {
 
 };
 
-glm::quat Seph::quat_unpack(uint64_t b) {
+quat Seph::quat_unpack(uint64_t b) {
 
   uint64_t bw=b&m_rad_mask;
   b >>= m_rad_nbits;
@@ -251,7 +251,7 @@ glm::quat Seph::quat_unpack(uint64_t b) {
 
   );
 
-  glm::quat q(w,x,y,z);
+  quat q(w,x,y,z);
   return glm::normalize(q);
 
 };
@@ -263,7 +263,7 @@ glm::quat Seph::quat_unpack(uint64_t b) {
 uint64_t Seph::nc_pack(float* pixel) {
 
   // color to vector
-  glm::vec3 n={
+  vec3 n={
     (pixel[0]*2)-1,
     (pixel[1]*2)-1,
     (pixel[2]*2)-1
@@ -305,7 +305,7 @@ void Seph::nc_unpack(float* dst,uint64_t b) {
 
   b>>=m_rad_nbits;
 
-  glm::vec3 n=this->angle_unpack(b);
+  vec3 n=this->angle_unpack(b);
 
   // vector to color
   dst[0]=(n.x+1)/2;
@@ -360,7 +360,7 @@ void Seph::set(
 // ---   *   ---   *   ---
 // vector to packed spherical coords
 
-uint64_t Seph::pack(glm::vec3& a) {
+uint64_t Seph::pack(vec3& a) {
 
   if(m_mode==NORMAL) {
     return this->angle_pack(a);
@@ -381,7 +381,7 @@ uint64_t Seph::pack(glm::vec3& a) {
 // ---   *   ---   *   ---
 // ^undo
 
-glm::vec3 Seph::unpack(uint64_t b) {
+vec3 Seph::unpack(uint64_t b) {
 
   if(m_mode==NORMAL) {
     return angle_unpack(b);
@@ -391,7 +391,7 @@ glm::vec3 Seph::unpack(uint64_t b) {
     float r=this->radius_unpack(b);
     b >>= m_rad_nbits;
 
-    glm::vec3 n=this->angle_unpack(b);
+    vec3 n=this->angle_unpack(b);
 
     return n*r;
 

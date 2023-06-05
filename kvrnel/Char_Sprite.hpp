@@ -5,7 +5,7 @@
 // deps
 
   #include <cwchar>
-  #include <glm/vec4.hpp>
+  #include "kvrnel/GLM.hpp"
 
 // ---   *   ---   *   ---
 
@@ -13,7 +13,7 @@ class Char_Sprite {
 
 private:
 
-  glm::vec4       m_co;
+  vec4            m_co;
 
   short           m_len;
   short           m_frame;
@@ -30,7 +30,7 @@ public:
   // constructor
   Char_Sprite(
     const wchar_t* anim,
-    glm::uvec4& co
+    uvec4& co
 
   );
 

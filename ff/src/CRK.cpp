@@ -21,7 +21,7 @@
 // fill out struct from
 // uncompressed data
 
-void CRK::Vertex::set_xyz(glm::vec3& co) {
+void CRK::Vertex::set_xyz(vec3& co) {
 
   uint32_t b=CRK::pseph().pack(co);
 
@@ -31,15 +31,15 @@ void CRK::Vertex::set_xyz(glm::vec3& co) {
 
 };
 
-void CRK::Vertex::set_n(glm::vec3& n) {
+void CRK::Vertex::set_n(vec3& n) {
   NTB[0]=CRK::nseph().pack(n) & 0xFFFF;
 
 };
 
 void CRK::Vertex::set_ntb(
-  glm::vec3& n,
-  glm::vec3& t,
-  glm::vec3& b
+  vec3& n,
+  vec3& t,
+  vec3& b
 
 ) {
 
@@ -50,7 +50,7 @@ void CRK::Vertex::set_ntb(
 };
 
 void CRK::Vertex::set_uv(
-  glm::vec2& uv
+  vec2& uv
 
 ) {
 
@@ -237,7 +237,7 @@ void CRK::Prim::to_buff(
 
   };
 
-  sz=sizeof(glm::vec3);
+  sz=sizeof(vec3);
   dst.write(&box[0],sz,ptr);
 
 };
@@ -278,7 +278,7 @@ void CRK::Prim::from_buff(
 
   };
 
-  sz=sizeof(glm::vec3);
+  sz=sizeof(vec3);
   memcpy(&box[0],&src[ptr],sz);
 
 };

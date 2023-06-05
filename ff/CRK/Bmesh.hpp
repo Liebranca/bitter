@@ -28,13 +28,13 @@ struct Bmesh_Pose_Box {
 
 struct Bmesh_Pose_Vert {
 
-  glm::vec3 co;
+  vec3 co;
 
-  glm::vec3 n;
-  glm::vec3 t;
-  glm::vec3 b;
+  vec3 n;
+  vec3 t;
+  vec3 b;
 
-  glm::vec2 uv;
+  vec2 uv;
 
 };
 

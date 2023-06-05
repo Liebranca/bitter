@@ -7,7 +7,7 @@
   #include <glm/glm.hpp>
   #include <glm/gtx/quaternion.hpp>
 
-  #include "kvrnel/Style.hpp"
+  #include "kvrnel/GLM.hpp"
   #include "kvrnel/Char_Sprite.hpp"
 
 // ---   *   ---   *   ---
@@ -59,18 +59,18 @@ private:
 
   // gets inclination and azimuth angles
   // from normalized vector
-  uint64_t angle_pack(glm::vec3& n);
+  uint64_t angle_pack(vec3& n);
 
   // ^undo
-  glm::vec3 angle_unpack(uint64_t b);
+  vec3 angle_unpack(uint64_t b);
 
   // magnitude of vector eq sphere radius
-  uint64_t radius_pack(glm::vec3& p);
+  uint64_t radius_pack(vec3& p);
   float radius_unpack(uint64_t b);
 
   // byte-sized rotations ;>
-  uint64_t quat_pack(glm::quat& q);
-  glm::quat quat_unpack(uint64_t);
+  uint64_t quat_pack(quat& q);
+  quat quat_unpack(uint64_t);
 
 // ---   *   ---   *   ---
 // iface
@@ -111,16 +111,16 @@ public:
   };
 
   // entry points
-  uint64_t pack(glm::vec3& a);
-  glm::vec3 unpack(uint64_t b);
+  uint64_t pack(vec3& a);
+  vec3 unpack(uint64_t b);
 
   // ^quat variant
-  inline uint64_t qpack(glm::quat& q) {
+  inline uint64_t qpack(quat& q) {
     return this->quat_pack(q);
 
   };
 
-  inline glm::quat qunpack(uint64_t b) {
+  inline quat qunpack(uint64_t b) {
     return this->quat_unpack(b);
 
   };
