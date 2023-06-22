@@ -120,6 +120,13 @@ public:
     // generate zeroed buffer
     Prim(uint16_t size);
 
+    // wipe data
+    inline void clear(void) {
+      verts.clear();
+      indices.clear();
+
+    };
+
   };
 
   struct Prim_Build {

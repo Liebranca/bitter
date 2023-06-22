@@ -26,6 +26,8 @@
   #include <vector>
   #include <new>
 
+  #include <functional>
+
 // ---   *   ---   *   ---
 // peso types ;>
 
@@ -116,7 +118,11 @@ cx8 AR_FATAL = 0xFF;
 // ---   *   ---   *   ---
 // shortening horrible C++ names
 
-typedef std::vector<std::string> strvec;
+#define sref std::reference_wrapper
+#define svec std::vector
+
+typedef std::string str;
+typedef svec<str> strvec;
 
 #define SINGLETON(name) \
   /* this is what idiocy looks like */  \

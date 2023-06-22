@@ -127,6 +127,28 @@ Mem<uint8_t> PNG::read(void) {
 };
 
 // ---   *   ---   *   ---
+// ^converts uint8 0..255 to float 0..1
+
+Mem<float> PNG::read_to_float(void) {
+
+  uint64_t sz=m_sz_sq<<2;
+
+  auto src=this->read();
+  Mem<float> out(sz);
+
+  for(uint16_t i=0;i<sz;i+=4) {
+    out[i+0]=float(src[i+0])/255;
+    out[i+1]=float(src[i+1])/255;
+    out[i+2]=float(src[i+2])/255;
+    out[i+3]=float(src[i+3])/255;
+
+  };
+
+  return Mem<float>(out);
+
+};
+
+// ---   *   ---   *   ---
 
 void PNG::write(Mem<uint8_t>& src) {
 

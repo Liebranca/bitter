@@ -288,3 +288,4 @@ printf
 #     different combinations
 
 # ---   *   ---   *   ---
+1; # ret

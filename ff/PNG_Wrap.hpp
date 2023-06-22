@@ -18,7 +18,7 @@ class PNG {
 
 public:
 
-  VERSION   "v0.00.2b";
+  VERSION   "v0.00.3b";
   AUTHOR    "IBN-3DILA";
 
   struct Error {
@@ -79,6 +79,7 @@ public:
 
   // io
   Mem<uint8_t> read(void);
+  Mem<float> read_to_float(void);
   void write(Mem<uint8_t>& src);
 
   // getters
