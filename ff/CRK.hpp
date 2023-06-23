@@ -21,7 +21,7 @@ class CRK: public Bin {
 
 public:
 
-  VERSION     "v2.01.1";
+  VERSION     "v2.01.2";
   AUTHOR      "IBN-3DILA";
 
 // ---   *   ---   *   ---
@@ -52,11 +52,10 @@ public:
 
       struct {
 
-        uint8_t  XYZ[3];
-        uint8_t  TEX[2];  // 5
-        uint8_t  PAD[1];  // 6
+        uint8_t XYZ[3];
+        uint8_t TEX[2];  // 5
 
-        uint16_t NTB[3];  // 12
+        uint8_t NT[2];   // 7
 
       };
 
@@ -67,21 +66,26 @@ public:
     // fill out struct from
     // uncompressed data
     void set_xyz(vec3& co);
-    void set_n(vec3& n);
-
-    void set_ntb(
-      vec3& n,
-      vec3& t,
-      vec3& b
-
-    );
-
     void set_uv(vec2& uv);
+    void set_n(vec3& n);
+    void set_t(vec3& t);
+
+    inline void set_nt(
+      vec3& n,
+      vec3& t
+
+    ) {
+
+      this->set_n(n);
+      this->set_t(t);
+
+    };
 
     // ^undo, mostly for debug
     vec3 get_xyz(void);
-    vec3 get_n(void);
     vec2 get_uv(void);
+    vec3 get_n(void);
+    vec3 get_t(void);
 
   };
 
@@ -241,7 +245,7 @@ private:
 // data packing singletons
 
   static Seph& nseph(void) {
-    static Seph s(Seph::NORMAL,0,8,8);
+    static Seph s(Seph::NORMAL,0,4,4);
     return s;
 
   };

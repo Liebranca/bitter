@@ -32,20 +32,12 @@ void CRK::Vertex::set_xyz(vec3& co) {
 };
 
 void CRK::Vertex::set_n(vec3& n) {
-  NTB[0]=CRK::nseph().pack(n) & 0xFFFF;
+  NT[0]=CRK::nseph().pack(n) & 0xFF;
 
 };
 
-void CRK::Vertex::set_ntb(
-  vec3& n,
-  vec3& t,
-  vec3& b
-
-) {
-
-  NTB[0]=CRK::nseph().pack(n) & 0xFFFF;
-  NTB[1]=CRK::nseph().pack(t) & 0xFFFF;
-  NTB[2]=CRK::nseph().pack(b) & 0xFFFF;
+void CRK::Vertex::set_t(vec3& t) {
+  NT[1]=CRK::nseph().pack(t) & 0xFF;
 
 };
 
@@ -93,7 +85,12 @@ vec3 CRK::Vertex::get_xyz(void) {
 };
 
 vec3 CRK::Vertex::get_n(void) {
-  return CRK::nseph().unpack(NTB[0]);
+  return CRK::nseph().unpack(NT[0]);
+
+};
+
+vec3 CRK::Vertex::get_t(void) {
+  return CRK::nseph().unpack(NT[1]);
 
 };
 

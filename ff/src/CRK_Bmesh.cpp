@@ -120,7 +120,7 @@ void CRK::Bmesh::set_verts(
     me.verts[i].set_xyz(vert.co);
     me.verts[i].set_uv(vert.uv);
 
-    me.verts[i].set_ntb(vert.n,vert.t,vert.b);
+    me.verts[i].set_nt(vert.n,vert.t);
 
   };
 
