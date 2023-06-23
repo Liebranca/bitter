@@ -27,7 +27,7 @@ class T3D {
 
 public:
 
-  VERSION   "v2.01.0";
+  VERSION   "v2.01.1";
   AUTHOR    "IBN-3DILA";
 
 // ---   *   ---   *   ---
@@ -112,6 +112,7 @@ public:
   ~T3D(void) {};
 
   mat4  calc_model(bool igpar=false);
+  void full_update(bool igpar=false);
   mat4& get_model(bool igpar=false);
 
   inline mat3& get_nmat(void) {

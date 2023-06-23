@@ -43,6 +43,21 @@ mat4 T3D::calc_model(bool igpar) {
 };
 
 // ---   *   ---   *   ---
+// ^caches results
+
+void T3D::full_update(bool igpar) {
+
+  m_cache.model = this->calc_model(igpar);
+  m_cache.nmat  = glm::inverseTranspose(
+    m_cache.model
+
+  );
+
+  m_cache.needs_update=0;
+
+};
+
+// ---   *   ---   *   ---
 // ^fetches or recalculates
 
 mat4& T3D::get_model(bool igpar) {
@@ -54,13 +69,7 @@ mat4& T3D::get_model(bool igpar) {
 
   ) {
 
-    m_cache.model = this->calc_model(igpar);
-    m_cache.nmat  = glm::inverseTranspose(
-      m_cache.model
-
-    );
-
-    m_cache.needs_update=0;
+    this->full_update(igpar);
 
   };
 

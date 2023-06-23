@@ -79,6 +79,53 @@ void CRK::Vertex::set_uv(
 };
 
 // ---   *   ---   *   ---
+// ^undo, mostly for debug
+
+vec3 CRK::Vertex::get_xyz(void) {
+
+  return CRK::pseph().unpack(
+    uint64_t(XYZ[0] <<  0)
+  | uint64_t(XYZ[1] <<  8)
+  | uint64_t(XYZ[2] << 16)
+
+  );
+
+};
+
+vec3 CRK::Vertex::get_n(void) {
+  return CRK::nseph().unpack(NTB[0]);
+
+};
+
+vec2 CRK::Vertex::get_uv(void) {
+
+  float x=unfrac<uint8_t>(
+
+    TEX[0],
+
+    Frac::STEP[Frac::STEP_8BIT],
+    Frac::BITS[Frac::SIZE_8BIT],
+
+    Frac::UNSIGNED
+
+  );
+
+  float y=unfrac<uint8_t>(
+
+    TEX[1],
+
+    Frac::STEP[Frac::STEP_8BIT],
+    Frac::BITS[Frac::SIZE_8BIT],
+
+    Frac::UNSIGNED
+
+  );
+
+  return {x,y};
+
+};
+
+// ---   *   ---   *   ---
 
 void CRK::open(
   std::string fpath,

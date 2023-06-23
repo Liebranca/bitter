@@ -78,6 +78,11 @@ public:
 
     void set_uv(vec2& uv);
 
+    // ^undo, mostly for debug
+    vec3 get_xyz(void);
+    vec3 get_n(void);
+    vec2 get_uv(void);
+
   };
 
 // ---   *   ---   *   ---
