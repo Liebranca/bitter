@@ -369,8 +369,8 @@ uint64_t Seph::pack(vec3& a) {
 
     uint64_t radius = this->radius_pack(a);
 
-    a=glm::normalize(a);
-    uint64_t angle  = this->angle_pack(a);
+    vec3 n=glm::normalize(a);
+    uint64_t angle  = this->angle_pack(n);
 
     return radius | (angle << m_rad_nbits);
 
